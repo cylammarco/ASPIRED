@@ -91,6 +91,7 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
         plt.subplots_adjust(bottom=0.08, wspace=0)
 
         # show the image on the left
+        ax0.cla()
         ax0.imshow(
             np.log10(img),
             origin='lower',
@@ -103,6 +104,7 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
         ax0.set_ylabel('Spatial Direction / pixel')
 
         # plot the integrated count and the detected peaks on the right
+        ax1.cla()
         ax1.plot(ztot, ydata, color='black')
         ax1.scatter(heights_y, ydata[peaks_y])
         ax1.set_xlim(min(ztot[ztot>0]),max(ztot))
@@ -114,9 +116,9 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
     return peaks_y, heights_y
 
 
-def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
-             recenter=False, prevtrace=(0, ), bigbox=8, Saxis=1,
-             nomessage=False, display=False):
+def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1,0),
+             cosmic=True, n_spec=1, recenter=False, prevtrace=(0, ),
+             bigbox=8, Saxis=1, nomessage=False, display=False):
     """
     Trace the spectrum aperture in an image
     Assumes wavelength axis is along the X, spatial axis along the Y.
@@ -151,6 +153,8 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
     my : array
         The spatial (Y) positions of the trace, interpolated over the
         entire wavelength (X) axis
+    y_sigma : array
+        The sigma measured at the nsteps 
     """
 
     # define the wavelength axis
@@ -162,10 +166,19 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
         print('Tracing Aperture using nsteps=' + str(nsteps))
 
     # the valid y-range of the chip
-    if (len(fmask) > 1):
-        ydata = np.arange(np.shape(img)[Waxis])[fmask]
-    else:
-        ydata = np.arange(np.shape(img)[Waxis])
+    if (len(spatial_mask) > 1):
+        img = img[spatial_mask]
+
+    if (len(spec_mask) > 1):
+        img = img[:,spec_mask]
+
+    # get the length in the spectral and spatial directions
+    spec_size = np.shape(img)[Waxis]
+    spatial_size = np.shape(img)[Saxis]
+
+    # the valid y-range of the chip (an array of int)
+    ydata = np.arange(spec_size)
+    ztot = np.sum(img, axis=Saxis)
 
     # need at least 4 samples along the trace. sometimes can get away with very few
     if (nsteps < 4):
@@ -179,17 +192,10 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
         if type(img)==tuple:
             img = img[1]
 
-    # get the length in the spectral and spatial directions
-    spec_size = np.shape(img)[Waxis]
-    spatial_size = np.shape(img)[Saxis]
-
-    # the valid y-range of the chip (an array of int)
-    ydata = np.arange(spec_size)
-    ztot = np.sum(img, axis=Saxis)
 
     # detect peaks by summing in the spatial direction
     peak, peak_height = _find_peaks(
-        img, spec_size, spatial_size, ydata, ztot, 0.2, display=False
+        img, spec_size, spatial_size, ydata, ztot, 0.05, display=False
         )
 
     if display:
@@ -219,6 +225,8 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
 
     my = np.zeros((n_spec, spatial_size))
     y_sigma = np.zeros((n_spec, nsteps))
+
+    # trace each individual spetrum one by one
     for i in range(n_spec):
 
         peak_guess = [peak_height[i], np.nanmedian(ztot), peak[i], 2.]
@@ -228,23 +236,41 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
             peak_guess[2] = np.nanmedian(prevtrace)
 
         # fit a Gaussian to peak
-        pgaus, pcov = curve_fit(
-            _gaus, ydata[np.isfinite(ztot)], ztot[np.isfinite(ztot)], p0=peak_guess
-            )
+        try:
+            pgaus, pcov = curve_fit(
+                _gaus,
+                ydata[np.isfinite(ztot)],
+                ztot[np.isfinite(ztot)],
+                p0=peak_guess,
+                bounds=((0., 0., peak_guess[2]-5, 1.),
+                        (np.inf, np.inf, peak_guess[2]+5, 3.))
+                )
+        except:
+            if not nomessage:
+                print('Spectrum ' + str(i) + ' of ' + str(n_spec) +
+                      ' is likely to be (1) too faint, (2) in a crowed'
+                      ' field, or (3) an extended source. Automated' +
+                      ' tracing is sub-optimal. Please (1) reduce n_spec,' +
+                      ' or (2) reduce n_steps, or (3) provide prevtrace.')
+
         if display:
             ax1.plot(
-                _gaus(ydata, pgaus[0], pgaus[1], pgaus[2], pgaus[3]), ydata
+                _gaus(ydata, pgaus[0], pgaus[1], pgaus[2], pgaus[3]),
+                ydata,
+                label='Spectrum ' + str(i+1)
                 )
 
         # only allow data within a box around this peak
         ydata2 = ydata[np.where((ydata >= pgaus[2] - pgaus[3] * bigbox) &
                                 (ydata <= pgaus[2] + pgaus[3] * bigbox))]
-        yi = np.arange(np.shape(img)[Waxis])[ydata2]
+        yi = np.arange(spec_size)[ydata2]
 
         # define the X-bin edges
         xbins = np.linspace(0, spatial_size, nsteps)
         ybins = np.zeros_like(xbins)
         ybins_sigma = np.zeros_like(xbins)
+
+        # loop through each bin
         for j in range(0, len(xbins) - 1):
             # fit gaussian w/j each window
             if Saxis is 1:
@@ -257,27 +283,45 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
                     img[int(np.floor(xbins[j])):int(np.ceil(xbins[j +
                                                                   1])), ydata2],
                     axis=Saxis)
-            pguess = [np.nanmax(zi), np.nanmedian(zi), yi[np.nanargmax(zi)], 2.]
+
+            # fit gaussian w/j each window
+            if sum(zi) == 0:
+                break
+            else:
+                pguess = [np.nanmax(zi), np.nanmedian(zi), yi[np.nanargmax(zi)], 2.]
             try:
                 popt, pcov = curve_fit(_gaus, yi, zi, p0=pguess)
             except:
-                print('Step ' + str(j) + ' of ' + str(nsteps) +
-                      ' of spectrum ' + str(i) + ' of ' + str(n_spec) +
-                      ' cannot be fitted.')
-            # if gaussian fits off chip, then use chip-integrated answer
-            if (popt[2] <= min(ydata) + 25) or (popt[2] >= max(ydata) - 25):
+                if not nomessage:
+                  print('Step ' + str(j+1) + ' of ' + str(nsteps) +
+                        ' of spectrum ' + str(i+1) + ' of ' + str(n_spec) +
+                        ' cannot be fitted.')
+                break
+
+            # if the peak is lower than background, sigma is too broad or
+            # gaussian fits off chip, then use chip-integrated answer
+            if ((popt[2] <= min(ydata) + 25) or
+                (popt[2] >= max(ydata) - 25) or
+                (popt[0] < 0) or
+                (popt[3] < 0) or
+                (popt[3] > 10)):
                 ybins[j] = pgaus[2]
                 popt = pgaus
+                if not nomessage:
+                    print('Step ' + str(j+1) + ' of ' + str(nsteps) +
+                          ' of spectrum ' + str(i+1) + ' of ' + str(n_spec) +
+                          ' has a poor fit. Initial guess is used instead.')
             else:
                 ybins[j] = popt[2]
                 ybins_sigma[j] = popt[3]
+
 
         # recenter the bin positions, trim the unused bin off in Y
         mxbins = (xbins[:-1] + xbins[1:]) / 2.
         mybins = ybins[:-1]
 
         # run a cubic spline thru the bins
-        ap_spl = itp.UnivariateSpline(mxbins, mybins, ext=0, k=3, s=0)
+        ap_spl = itp.UnivariateSpline(mxbins, mybins, ext=0, k=3)
 
         # interpolate the spline to 1 position per column
         mx = np.arange(0, spatial_size)
@@ -288,7 +332,22 @@ def ap_trace(img, nsteps=20, fmask=(1, ), cosmic=True, n_spec=1,
             ax0.plot(mx, my[i])
 
         if not nomessage:
-            print("> Trace gaussian width = " + str(pgaus[3]) + ' pixels')
+            if np.sum(ybins_sigma) == 0:
+                print('Spectrum ' + str(i+1) + ' of ' + str(n_spec) +
+                      ' is likely to be (1) too faint, (2) in a crowed'
+                      ' field, or (3) an extended source. Automated' +
+                      ' tracing is sub-optimal. Please disable multi-source' +
+                      ' mode and (1) reduce n_spec, or (2) reduce n_steps,' +
+                      '  or (3) provide prevtrace, or (4) all of above.')
 
+            print('Spectrum ' + str(i+1) + ' : Trace gaussian width = ' +
+                  str(ybins_sigma) + ' pixels')
+
+    ax1.legend()
     plt.show()
+
+    # add the minimum pixel value from fmask before returning
+    if len(spatial_mask)>1:
+        my += min(spatial_mask)
+
     return my, y_sigma
