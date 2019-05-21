@@ -6,6 +6,7 @@ from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from astropy.io import fits
 from matplotlib import pyplot as plt
+from matplotlib.patches import Rectangle
 try:
     from astroscrappy import detect_cosmics
 except ImportError:
@@ -111,12 +112,13 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
         ax1.set_ylim(0, len(ztot))
         ax1.set_xlabel('Integrated Count')
         ax1.set_xscale('log')
+        ax1.grid()
         plt.show()
     
     return peaks_y, heights_y
 
 
-def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1,0),
+def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
              cosmic=True, n_spec=1, recenter=False, prevtrace=(0, ),
              bigbox=8, Saxis=1, nomessage=False, display=False):
     """
@@ -344,10 +346,177 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1,0),
                   str(ybins_sigma) + ' pixels')
 
     ax1.legend()
+    ax1.grid()
     plt.show()
 
     # add the minimum pixel value from fmask before returning
-    if len(spatial_mask)>1:
-        my += min(spatial_mask)
+    #if len(spatial_mask)>1:
+    #    my += min(spatial_mask)
 
     return my, y_sigma
+
+
+def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
+               mode='aperture', apwidth=8, skysep=3, skywidth=7, skydeg=0,
+               coaddN=1, display=False):
+    """
+    1. Extract the spectrum using the trace. Simply add up all the flux
+    around the aperture within a specified +/- width.
+    Note: implicitly assumes wavelength axis is perfectly vertical within
+    the trace. An major simplification at present. To be changed!
+    2. Fits a polynomial to the sky at each column
+    Note: implicitly assumes wavelength axis is perfectly vertical within
+    the trace. An important simplification.
+    3. Computes the uncertainty in each pixel
+    Parameters
+    ----------
+    img : 2d numpy array
+        This is the image, stored as a normal numpy array. Can be read in
+        using astropy.io.fits like so:
+        >>> hdu = fits.open('file.fits') # doctest: +SKIP
+        >>> img = hdu[0].data # doctest: +SKIP
+    trace : 1-d array
+        The spatial positions (Y axis) corresponding to the center of the
+        trace for every wavelength (X axis), as returned from ap_trace
+    apwidth : int, optional
+        The width along the Y axis on either side of the trace to extract.
+        Note: a fixed width is used along the whole trace.
+        (default is 8 pixels)
+    skysep : int, optional
+        The separation in pixels from the aperture to the sky window.
+        (Default is 3)
+    skywidth : int, optional
+        The width in pixels of the sky windows on either side of the
+        aperture. (Default is 7)
+    skydeg : int, optional
+        The polynomial order to fit between the sky windows.
+        (Default is 0)
+    Returns
+    -------
+    onedspec : 1-d array
+        The summed flux at each column about the trace. Note: is not
+        sky subtracted!
+    skysubflux : 1-d array
+        The integrated sky values along each column, suitable for
+        subtracting from the output of ap_extract
+    fluxerr : 1-d array
+        the uncertainties of the flux values
+    """
+
+    onedspec = np.zeros_like(trace)
+    skysubflux = np.zeros_like(trace)
+    fluxerr = np.zeros_like(trace)
+    img = detect_cosmics(img)
+    if type(img)==tuple:
+        img = img[1]
+
+    if (len(spatial_mask) > 1):
+        img = img[spatial_mask]
+
+    if (len(spec_mask) > 1):
+        img = img[:,spec_mask]
+
+    for i, pos in enumerate(trace):
+
+        itrace = int(pos)
+
+        # first do the aperture flux
+        widthup = apwidth
+        widthdn = apwidth
+        # fix width if trace is too close to the edge
+        if (itrace+widthup > img.shape[0]):
+            widthup = img.shape[0]-trace[i] - 1
+        if (itrace-widthdn < 0):
+            widthdn = itrace - 1
+
+        # simply add up the total flux around the trace +/- width
+        onedspec[i] = img[itrace-widthdn:itrace+widthup+1, i].sum()
+
+        # get the indexes of the sky regions
+        y = np.append(np.arange(itrace-apwidth-skysep-skywidth, itrace-apwidth-skysep),
+                      np.arange(itrace+apwidth+skysep+1, itrace+apwidth+skysep+skywidth+1))
+
+        z = img[y,i]
+        if (skydeg>0):
+            # fit a polynomial to the sky in this column
+            pfit = np.polyfit(y,z,skydeg)
+            # define the aperture in this column
+            ap = np.arange(itrace-apwidth, itrace+apwidth+1)
+            # evaluate the polynomial across the aperture, and sum
+            skysubflux[i] = np.sum(np.polyval(pfit, ap))
+        elif (skydeg==0):
+            skysubflux[i] = np.nanmean(z)*(apwidth*2.0 + 1)
+
+        #-- finally, compute the error in this pixel
+        sigB = np.std(z) # stddev in the background data
+        N_B = len(y) # number of bkgd pixels
+        N_A = apwidth*2. + 1 # number of aperture pixels
+
+        # based on aperture phot err description by F. Masci, Caltech:
+        # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
+        fluxerr[i] = np.sqrt(np.sum((onedspec[i]-skysubflux[i])/coaddN) +
+                             (N_A + N_A**2. / N_B) * (sigB**2.))
+
+    if display:
+        fig, (ax0, ax1) = plt.subplots(nrows=2, sharex=True, figsize=(10,10))
+        fig.tight_layout()
+        plt.subplots_adjust(bottom=0.08, hspace=0)
+
+        # show the image on the left
+        ax0.imshow(
+            np.log10(img[int(np.median(trace))-widthdn-skysep-skywidth-1:int(np.median(trace))+widthup+skysep+skywidth, :]),
+            origin='lower',
+            interpolation="nearest",
+            aspect='auto',
+            extent=[0, len(trace), int(np.median(trace))-widthdn-skysep-skywidth-1, int(np.median(trace))+widthup+skysep+skywidth]
+            )
+        ax0.add_patch(
+            Rectangle(
+                (0, int(np.median(trace))-widthdn-1),
+                width=len(trace),
+                height=(apwidth*2 + 1),
+                linewidth=2,
+                edgecolor='k',
+                facecolor='none',
+                zorder=1
+                )
+            )
+        ax0.add_patch(
+            Rectangle(
+                (0, int(np.median(trace))-widthdn-skysep-skywidth-1),
+                width=len(trace),
+                height=skywidth,
+                linewidth=2,
+                edgecolor='r',
+                facecolor='none',
+                zorder=1
+                )
+            )
+        ax0.add_patch(
+            Rectangle(
+                (0, int(np.median(trace))+widthdn+skysep),
+                width=len(trace),
+                height=skywidth,
+                linewidth=2,
+                edgecolor='r',
+                facecolor='none',
+                zorder=1
+                )
+            )
+        ax0.set_xlim(0-1, len(trace)+1)
+        ax0.set_ylim(int(np.median(trace))-widthdn-skysep-skywidth-1-1, int(np.median(trace))+widthup+skysep+skywidth+1)
+        ax0.set_ylabel('Spatial Direction / pixel')
+
+        # plot the integrated count and the detected peaks on the right
+        ax1.plot(range(len(trace)), onedspec-skysubflux, label='Target spectrum')
+        ax1.plot(range(len(trace)), skysubflux, label='Sky flux')
+        ax1.plot(range(len(trace)), fluxerr, label='Uncertainty')
+        ax1.set_xlabel('Spectral Direction / pixel')
+        ax1.set_ylabel('Flux / count')
+        ax1.set_yscale('log')
+        ax1.set_ylim(bottom=1)
+        ax1.legend()
+        ax1.grid()
+        plt.gca().set_prop_cycle(None)
+
+    return onedspec-skysubflux, skysubflux, fluxerr
