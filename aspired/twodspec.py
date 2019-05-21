@@ -407,6 +407,9 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
     skysubflux = np.zeros_like(trace)
     fluxerr = np.zeros_like(trace)
     img = detect_cosmics(img)
+    median_trace = int(np.median(trace))
+    len_trace = len(trace)
+
     if type(img)==tuple:
         img = img[1]
 
@@ -427,25 +430,29 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
         if (itrace+widthup > img.shape[0]):
             widthup = img.shape[0]-trace[i] - 1
         if (itrace-widthdn < 0):
-            widthdn = itrace - 1
+            widthdn = itrace - 1 # i.e. starting at pixel row 1
 
         # simply add up the total flux around the trace +/- width
         onedspec[i] = img[itrace-widthdn:itrace+widthup+1, i].sum()
 
         # get the indexes of the sky regions
-        y = np.append(np.arange(itrace-apwidth-skysep-skywidth, itrace-apwidth-skysep),
-                      np.arange(itrace+apwidth+skysep+1, itrace+apwidth+skysep+skywidth+1))
+        y0 = max(itrace - widthdn - skysep - skywidth, 0)
+        y1 = max(itrace - widthdn - skysep, 0)
+        y2 = min(itrace + widthup + skysep + 1, img.shape[0])
+        y3 = min(itrace + widthup + skysep + skywidth + 1, img.shape[0])
+        y = np.append(np.arange(y0, y1),
+                      np.arange(y2, y3))
 
         z = img[y,i]
-        if (skydeg>0):
+        if (skydeg > 0):
             # fit a polynomial to the sky in this column
-            pfit = np.polyfit(y,z,skydeg)
+            pfit = np.polyfit(y, z, skydeg)
             # define the aperture in this column
-            ap = np.arange(itrace-apwidth, itrace+apwidth+1)
+            ap = np.arange(itrace -apwidth, itrace+apwidth+1)
             # evaluate the polynomial across the aperture, and sum
             skysubflux[i] = np.sum(np.polyval(pfit, ap))
         elif (skydeg==0):
-            skysubflux[i] = np.nanmean(z)*(apwidth*2.0 + 1)
+            skysubflux[i] = np.nanmean(z) * (apwidth*2. + 1.)
 
         #-- finally, compute the error in this pixel
         sigB = np.std(z) # stddev in the background data
@@ -464,16 +471,21 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
 
         # show the image on the left
         ax0.imshow(
-            np.log10(img[int(np.median(trace))-widthdn-skysep-skywidth-1:int(np.median(trace))+widthup+skysep+skywidth, :]),
+            np.log10(
+                img[max(0, median_trace-widthdn-skysep-skywidth-1):
+                    min(median_trace+widthup+skysep+skywidth, len(img[0])), :]),
             origin='lower',
             interpolation="nearest",
             aspect='auto',
-            extent=[0, len(trace), int(np.median(trace))-widthdn-skysep-skywidth-1, int(np.median(trace))+widthup+skysep+skywidth]
+            extent=[0,
+                    len_trace,
+                    max(0, median_trace-widthdn-skysep-skywidth-1),
+                    min(median_trace+widthup+skysep+skywidth, len(img[0]))]
             )
         ax0.add_patch(
             Rectangle(
-                (0, int(np.median(trace))-widthdn-1),
-                width=len(trace),
+                (0, median_trace-widthdn-1),
+                width=len_trace,
                 height=(apwidth*2 + 1),
                 linewidth=2,
                 edgecolor='k',
@@ -481,36 +493,39 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
                 zorder=1
                 )
             )
-        ax0.add_patch(
-            Rectangle(
-                (0, int(np.median(trace))-widthdn-skysep-skywidth-1),
-                width=len(trace),
-                height=skywidth,
-                linewidth=2,
-                edgecolor='r',
-                facecolor='none',
-                zorder=1
+        if (itrace-widthdn >= 0):
+            ax0.add_patch(
+                Rectangle(
+                    (0, max(0, median_trace-widthdn-skysep-(y1-y0)-1)),
+                    width=len_trace,
+                    height=min(skywidth, (y1-y0)),
+                    linewidth=2,
+                    edgecolor='r',
+                    facecolor='none',
+                    zorder=1
+                    )
                 )
-            )
-        ax0.add_patch(
-            Rectangle(
-                (0, int(np.median(trace))+widthdn+skysep),
-                width=len(trace),
-                height=skywidth,
-                linewidth=2,
-                edgecolor='r',
-                facecolor='none',
-                zorder=1
+        if (itrace+widthup <= img.shape[0]):
+            ax0.add_patch(
+                Rectangle(
+                    (0, min(median_trace+widthup+skysep, len(img[0]))),
+                    width=len_trace,
+                    height=min(skywidth, (y3-y2)),
+                    linewidth=2,
+                    edgecolor='r',
+                    facecolor='none',
+                    zorder=1
+                    )
                 )
-            )
-        ax0.set_xlim(0-1, len(trace)+1)
-        ax0.set_ylim(int(np.median(trace))-widthdn-skysep-skywidth-1-1, int(np.median(trace))+widthup+skysep+skywidth+1)
+        ax0.set_xlim(0-1, len_trace+1)
+        ax0.set_ylim(max(0, median_trace-widthdn-skysep-skywidth-1)-1,
+                     min(median_trace+widthup+skysep+skywidth, len(img[0])) + 1)
         ax0.set_ylabel('Spatial Direction / pixel')
 
         # plot the integrated count and the detected peaks on the right
-        ax1.plot(range(len(trace)), onedspec-skysubflux, label='Target spectrum')
-        ax1.plot(range(len(trace)), skysubflux, label='Sky flux')
-        ax1.plot(range(len(trace)), fluxerr, label='Uncertainty')
+        ax1.plot(range(len_trace), onedspec-skysubflux, label='Target flux')
+        ax1.plot(range(len_trace), skysubflux, label='Sky flux')
+        ax1.plot(range(len_trace), fluxerr, label='Uncertainty')
         ax1.set_xlabel('Spectral Direction / pixel')
         ax1.set_ylabel('Flux / count')
         ax1.set_yscale('log')
