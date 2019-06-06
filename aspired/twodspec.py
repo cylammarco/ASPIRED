@@ -2,8 +2,10 @@ from functools import partial
 
 import numpy as np
 from scipy import signal
+from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
+from scipy.optimize import minimize
 from astropy.io import fits
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
@@ -118,9 +120,42 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
     return peaks_y, heights_y
 
 
+def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit):
+
+    # construct the Gaussian model
+    gauss = _gaus(pix, 1., 0., mu, sigma)
+    
+    # weight function
+    P = gauss / np.sum(gauss)
+    var = rn + np.abs(xslice) / gain
+    
+    # get optimal signal
+    for j in range(10):
+        signal = np.sum(P * (xslice - sky) / var) / np.sum(P**2. / var)
+        var = rn + np.abs(P*signal + sky) / gain
+    
+    variance = 1. / np.sum(P**2. / var)
+    fit = _gaus(pix, max(xslice-sky), 0., mu, sigma) + sky
+    
+    if display:
+        fig, ax = plt.subplots(ncols=1, figsize=(10,10))
+        ax.plot(pix, xslice)
+        ax.plot(pix, fit)
+        ax.set_xlabel('Pixel')
+        ax.set_ylabel('Count')
+        #print(signal, variance)
+        #print(np.sum(xslice-sky_const))
+    
+    if return_fit:
+        return pix, xslice, fit, signal, np.sqrt(variance)
+    else:
+        return signal, np.sqrt(variance)
+
+
 def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
              cosmic=True, n_spec=1, recenter=False, prevtrace=(0, ),
-             bigbox=8, Saxis=1, nomessage=False, display=False):
+             fittype='cubic', bigbox=8, Saxis=1, nomessage=False,
+             display=False):
     """
     Trace the spectrum aperture in an image
     Assumes wavelength axis is along the X, spatial axis along the Y.
@@ -226,7 +261,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
         plt.gca().set_prop_cycle(None)
 
     my = np.zeros((n_spec, spatial_size))
-    y_sigma = np.zeros((n_spec, nsteps))
+    y_sigma = np.zeros((n_spec, spatial_size))
 
     # trace each individual spetrum one by one
     for i in range(n_spec):
@@ -244,8 +279,8 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
                 ydata[np.isfinite(ztot)],
                 ztot[np.isfinite(ztot)],
                 p0=peak_guess,
-                bounds=((0., 0., peak_guess[2]-5, 1.),
-                        (np.inf, np.inf, peak_guess[2]+5, 3.))
+                bounds=((0., 0., peak_guess[2]-10, 0.),
+                        (np.inf, np.inf, peak_guess[2]+10, np.inf))
                 )
         except:
             if not nomessage:
@@ -302,9 +337,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
 
             # if the peak is lower than background, sigma is too broad or
             # gaussian fits off chip, then use chip-integrated answer
-            if ((popt[2] <= min(ydata) + 25) or
-                (popt[2] >= max(ydata) - 25) or
-                (popt[0] < 0) or
+            if ((popt[0] < 0) or
                 (popt[3] < 0) or
                 (popt[3] > 10)):
                 ybins[j] = pgaus[2]
@@ -317,18 +350,28 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
                 ybins[j] = popt[2]
                 ybins_sigma[j] = popt[3]
 
-
         # recenter the bin positions, trim the unused bin off in Y
         mxbins = (xbins[:-1] + xbins[1:]) / 2.
         mybins = ybins[:-1]
-
-        # run a cubic spline thru the bins
-        ap_spl = itp.UnivariateSpline(mxbins, mybins, ext=0, k=3)
-
-        # interpolate the spline to 1 position per column
         mx = np.arange(0, spatial_size)
-        my[i] = ap_spl(mx)
-        y_sigma[i] = ybins_sigma
+
+        if (fittype=='cubic'):
+            # run a cubic spline thru the bins
+            ap_spl = itp.UnivariateSpline(mxbins, mybins, ext=0, k=3)
+
+            # interpolate the spline to 1 position per column
+            my[i] = ap_spl(mx)
+
+        elif (fittype=='linear'):
+            # linear fit
+            slope, intercept, r_value, p_value, std_err =\
+                stats.linregress(mxbins, mybins)
+            my[i] = slope * mx + intercept
+
+
+        slope, intercept, r_value, p_value, std_err =\
+                stats.linregress(mxbins, ybins_sigma[:-1])
+        y_sigma[i] = slope * mx + intercept
 
         if display:
             ax0.plot(mx, my[i])
@@ -356,9 +399,10 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
     return my, y_sigma
 
 
-def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
-               mode='aperture', apwidth=8, skysep=3, skywidth=7, skydeg=0,
-               coaddN=1, display=False):
+def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
+               Saxis=1, apwidth=8, skysep=3, skywidth=7, skydeg=0,
+               fitsky=False, coaddN=1, gain=1.0, rn=1.0, optimal=True,
+               display=False):
     """
     1. Extract the spectrum using the trace. Simply add up all the flux
     around the aperture within a specified +/- width.
@@ -396,20 +440,24 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
     onedspec : 1-d array
         The summed flux at each column about the trace. Note: is not
         sky subtracted!
-    skysubflux : 1-d array
+    skyflux : 1-d array
         The integrated sky values along each column, suitable for
         subtracting from the output of ap_extract
     fluxerr : 1-d array
         the uncertainties of the flux values
     """
 
-    onedspec = np.zeros_like(trace)
-    skysubflux = np.zeros_like(trace)
+    skyflux = np.zeros_like(trace)
     fluxerr = np.zeros_like(trace)
-    img = detect_cosmics(img)
+    flux = np.zeros_like(trace)
     median_trace = int(np.median(trace))
     len_trace = len(trace)
 
+    # cosmic ray rejection
+    img = detect_cosmics(img)
+
+    # Depending on the cosmic ray rejection, need to take [1] if processed
+    # by astroscrappy
     if type(img)==tuple:
         img = img[1]
 
@@ -433,7 +481,8 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
             widthdn = itrace - 1 # i.e. starting at pixel row 1
 
         # simply add up the total flux around the trace +/- width
-        onedspec[i] = img[itrace-widthdn:itrace+widthup+1, i].sum()
+        xslice = img[itrace-widthdn:itrace+widthup+1, i]
+        flux_ap = np.sum(xslice)
 
         # get the indexes of the sky regions
         y0 = max(itrace - widthdn - skysep - skywidth, 0)
@@ -448,11 +497,13 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
             # fit a polynomial to the sky in this column
             pfit = np.polyfit(y, z, skydeg)
             # define the aperture in this column
-            ap = np.arange(itrace -apwidth, itrace+apwidth+1)
+            ap = np.arange(itrace-apwidth, itrace+apwidth+1)
             # evaluate the polynomial across the aperture, and sum
-            skysubflux[i] = np.sum(np.polyval(pfit, ap))
+            skyflux[i] = np.sum(np.polyval(pfit, ap))
         elif (skydeg==0):
-            skysubflux[i] = np.nanmean(z) * (apwidth*2. + 1.)
+            skyflux[i] = np.sum(np.ones(apwidth*2 + 1) * np.nanmean(z))
+
+        flux[i] = flux_ap - skyflux[i]
 
         #-- finally, compute the error in this pixel
         sigB = np.std(z) # stddev in the background data
@@ -461,12 +512,24 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
 
         # based on aperture phot err description by F. Masci, Caltech:
         # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
-        fluxerr[i] = np.sqrt(np.sum((onedspec[i]-skysubflux[i])/coaddN) +
+        fluxerr[i] = np.sqrt(np.sum((flux_ap-skyflux[i])/coaddN) +
                              (N_A + N_A**2. / N_B) * (sigB**2.))
 
+        # if optimal extraction
+        if optimal:
+            pix = range(itrace-widthdn,itrace+widthup+1)
+            if (skydeg > 0):
+                sky = np.polyval(pfit, pix)
+            else:
+                sky = np.ones(len(pix)) * np.nanmean(z)
+            flux[i], fluxerr[i] = _optimal_signal(
+                pix, xslice, sky, trace[i], trace_sigma[i], rn, gain,
+                display=False, return_fit=False
+                )
+
     if display:
-        fig, (ax0, ax1) = plt.subplots(nrows=2, sharex=True, figsize=(10,10))
-        fig.tight_layout()
+        fig2, (ax0, ax1) = plt.subplots(nrows=2, sharex=True, figsize=(10,10))
+        fig2.tight_layout()
         plt.subplots_adjust(bottom=0.08, hspace=0)
 
         # show the image on the left
@@ -519,19 +582,31 @@ def ap_extract(img, trace, spatial_mask=(1, ), spec_mask=(1, ), Saxis=1,
                 )
         ax0.set_xlim(0-1, len_trace+1)
         ax0.set_ylim(max(0, median_trace-widthdn-skysep-skywidth-1)-1,
-                     min(median_trace+widthup+skysep+skywidth, len(img[0])) + 1)
+                     min(median_trace+widthup+skysep+skywidth, len(img[0]))+1)
         ax0.set_ylabel('Spatial Direction / pixel')
 
-        # plot the integrated count and the detected peaks on the right
-        ax1.plot(range(len_trace), onedspec-skysubflux, label='Target flux')
-        ax1.plot(range(len_trace), skysubflux, label='Sky flux')
+        # plot the spectrum of the target, sky and uncertainty
+        ax1.plot(range(len_trace), flux, label='Target flux')
+        ax1.plot(range(len_trace), skyflux, label='Sky flux')
         ax1.plot(range(len_trace), fluxerr, label='Uncertainty')
         ax1.set_xlabel('Spectral Direction / pixel')
         ax1.set_ylabel('Flux / count')
         ax1.set_yscale('log')
-        ax1.set_ylim(bottom=1)
+        ax1.set_ylim(bottom=10)
         ax1.legend()
         ax1.grid()
+
+        # plot the SNR
+        ax2 = ax1.twinx()
+        ax1.set_zorder(ax2.get_zorder()+1)
+        ax1.patch.set_visible(False)
+        ax2.plot(range(len_trace), flux/fluxerr, color='lightgrey',
+            label='Signal-to-Noise Ratio')
+        ax2.set_ylabel('Signal-to-Noise Ratio')
+        ax2.set_ylim(bottom=0)
+        ax2.legend(loc='upper left')
+
         plt.gca().set_prop_cycle(None)
 
-    return onedspec-skysubflux, skysubflux, fluxerr
+    return flux, skyflux, fluxerr
+
