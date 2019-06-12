@@ -120,21 +120,43 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
     return peaks_y, heights_y
 
 
-def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit):
+def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit,
+    cr_sigma):
 
     # construct the Gaussian model
     gauss = _gaus(pix, 1., 0., mu, sigma)
     
-    # weight function
+    # weight function and initial values
     P = gauss / np.sum(gauss)
-    var = rn + np.abs(xslice) / gain
-    
-    # get optimal signal
-    for j in range(10):
-        signal = np.sum(P * (xslice - sky) / var) / np.sum(P**2. / var)
-        var = rn + np.abs(P*signal + sky) / gain
-    
-    variance = 1. / np.sum(P**2. / var)
+    signal0 = np.sum(xslice - sky)
+    var0 = rn + np.abs(xslice) / gain
+    variance0 = 1. / np.sum(P**2. / var0)
+
+    for i in range(100):
+
+        # cosmic ray mask
+        mask_cr = ((xslice - sky - P*signal0)**2. < cr_sigma**2. * var0)
+
+        # compute signal and noise
+        signal1 = np.sum((P * (xslice - sky) / var0)[mask_cr]) /\
+            np.sum((P**2. / var0)[mask_cr])
+        var1 = rn + np.abs(P*signal1 + sky) / gain
+        variance1 = 1. / np.sum((P**2. / var1)[mask_cr])
+
+        # iterate
+        if (((signal1 - signal0) / signal1 > 0.001) or 
+            ((variance1 - variance0) / variance1 > 0.001)):
+            signal0 = signal1
+            var0 = var1
+            variance0 = variance1
+        else:
+            break
+
+    if i==99:
+        print('Unable to obtain optimal signal, please try a longer ' + 
+              'iteration or revert to unit-weighted extraction. Values ' +
+              'returned (if at all) are sub-optimal at best.')
+
     fit = _gaus(pix, max(xslice-sky), 0., mu, sigma) + sky
     
     if display:
@@ -147,9 +169,9 @@ def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit):
         #print(np.sum(xslice-sky_const))
     
     if return_fit:
-        return pix, xslice, fit, signal, np.sqrt(variance)
+        return pix, xslice, fit, signal1, np.sqrt(variance1)
     else:
-        return signal, np.sqrt(variance)
+        return signal1, np.sqrt(variance1)
 
 
 def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
@@ -402,7 +424,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
 def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
                Saxis=1, apwidth=8, skysep=3, skywidth=7, skydeg=0,
                fitsky=False, coaddN=1, gain=1.0, rn=1.0, optimal=True,
-               display=False):
+               display=False, cr_sigma=5.):
     """
     1. Extract the spectrum using the trace. Simply add up all the flux
     around the aperture within a specified +/- width.
@@ -524,7 +546,7 @@ def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
                 sky = np.ones(len(pix)) * np.nanmean(z)
             flux[i], fluxerr[i] = _optimal_signal(
                 pix, xslice, sky, trace[i], trace_sigma[i], rn, gain,
-                display=False, return_fit=False
+                display=False, return_fit=False, cr_sigma=cr_sigma
                 )
 
     if display:
