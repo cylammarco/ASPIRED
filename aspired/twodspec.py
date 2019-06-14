@@ -29,6 +29,7 @@ except ImportError:
 def _gaus(x, a, b, x0, sigma):
     """
     Simple Gaussian function, for internal use only
+
     Parameters
     ----------
     x : float or 1-d numpy array
@@ -45,6 +46,7 @@ def _gaus(x, a, b, x0, sigma):
     Returns
     -------
     Array or float of same type as input (x).
+
     """
 
     return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
@@ -55,12 +57,14 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
     """
     Identify peaks assuming the spatial and spectral directions are
     aligned with the X and Y direction within a few degrees.
+
+    Parameters
     ----------
     img : 2-d numpy array
         The data to evaluate the Gaussian over
-    Saxis : int
-        Set which axis the spatial dimension is along. 1 = Y axis, 0 = X.
-        (Default is 1)
+    Saxis : int, optional
+        Set the axis of the spatial dimension. 1 = Y axis, 0 = X axis.
+        (Default is 1, i.e. spectrum in the left-right direction.)
     Waxis : int
         The perpendicular axis of Saxis
     f_height : float
@@ -72,6 +76,7 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
         Array or float of the pixel values of the detected peaks
     heights_y :
         Array or float of the integrated counts at the peaks 
+
     """
     
     # get the height thershold
@@ -120,8 +125,39 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
     return peaks_y, heights_y
 
 
-def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit,
-    cr_sigma):
+def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, cr_sigma):
+    """
+    Iterate to get optimal signal, for internal use only
+
+    Parameters
+    ----------
+    pix : 1-d numpy array
+        pixel number along the spatial direction
+    xslice : 1-d numpy array
+        ADU along the pix
+    sky : 1-d numpy array
+        ADU of the fitted sky along the pix
+    my : float
+        The center of the Gaussian
+    sigma : float
+        The width of the Gaussian
+    rn : float
+        The read noise of the detector
+    gain : float
+        The gain value of the detector.
+    display : tuple
+        Set to show diagnostic plot.
+    cr_sigma : float
+        The cosmic ray rejection sigma-clipping threshold.
+
+    Returns
+    -------
+    signal : float
+        The optimal signal. 
+    noise : float
+        The noise associated with the optimal signal.
+
+    """
 
     # construct the Gaussian model
     gauss = _gaus(pix, 1., 0., mu, sigma)
@@ -138,7 +174,7 @@ def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit,
         mask_cr = ((xslice - sky - P*signal0)**2. < cr_sigma**2. * var0)
 
         # compute signal and noise
-        signal1 = np.sum((P * (xslice - sky) / var0)[mask_cr]) /\
+        signal1 = np.sum((P * (xslice - sky) / var0)[mask_cr]) / \
             np.sum((P**2. / var0)[mask_cr])
         var1 = rn + np.abs(P*signal1 + sky) / gain
         variance1 = 1. / np.sum((P**2. / var1)[mask_cr])
@@ -157,9 +193,11 @@ def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit,
               'iteration or revert to unit-weighted extraction. Values ' +
               'returned (if at all) are sub-optimal at best.')
 
-    fit = _gaus(pix, max(xslice-sky), 0., mu, sigma) + sky
-    
+    signal = signal1
+    noise = np.sqrt(variance1)
+
     if display:
+        fit = _gaus(pix, max(xslice-sky), 0., mu, sigma) + sky
         fig, ax = plt.subplots(ncols=1, figsize=(10,10))
         ax.plot(pix, xslice)
         ax.plot(pix, fit)
@@ -168,15 +206,12 @@ def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, return_fit,
         #print(signal, variance)
         #print(np.sum(xslice-sky_const))
     
-    if return_fit:
-        return pix, xslice, fit, signal1, np.sqrt(variance1)
-    else:
-        return signal1, np.sqrt(variance1)
+    return signal, noise 
 
 
-def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
+def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
              cosmic=True, n_spec=1, recenter=False, prevtrace=(0, ),
-             fittype='cubic', bigbox=8, Saxis=1, nomessage=False,
+             fittype='cubic', bigbox=8, silence=False,
              display=False):
     """
     Trace the spectrum aperture in an image
@@ -184,6 +219,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
     Chops image up in bins along the wavelength direction, fits a Gaussian
     within each bin to determine the spatial center of the trace. Finally,
     draws a cubic spline through the bins to up-sample the trace.
+
     Parameters
     ----------
     img : 2d numpy array
@@ -195,25 +231,44 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
         Keyword, number of bins in X direction to chop image into. Use
         fewer bins if ap_trace is having difficulty, such as with faint
         targets (default is 20, minimum is 4)
-    fmask : array-like, optional
-        A list of illuminated rows in the spatial direction (Y), as
-        returned by flatcombine.
+    Saxis : int, optional
+        Set the axis of the spatial dimension. 1 = Y axis, 0 = X axis.
+        (Default is 1, i.e. spectrum in the left-right direction.)
+    spatial_mask : 1-d numpy array (M), optional
+        An array of 0/1 or True/False in the spatial direction (Y).
+    spec_mask : 1-d numpy array (N), optional
+        An array of 0/1 or True/False in the spectral direction (X).
+    cosmic : tuple, optional
+        Set to apply cosmic ray removal beefore tracing using astroscrappy if
+        available, otherwise with a 2D median filter of size 5. It does not
+        alter the base image. (default is True)
+    n_spec : int, optional
+        Number of spectra to be extracted, guaranteed to return the requested
+        number of trace, but not guaranteed to contain signals.
     recenter : bool, optional
-        Set to True to use previous trace, but allow small shift in
-        position. Currently only allows linear shift (Default is False)
+        Set to True to use previous trace, allow small shift in position
+        along the spatial direction. Not doing anything if prevtrace is not
+        supplied. (Default is False)
+    prevtrace : 1-d numpy array, optional
+        Provide first guess or refitting the center with different parameters.
+    fittype : string, optional
+        Fit the spectral spatial position with a 'linear' line or with a
+        'cubic' spline
     bigbox : float, optional
         The number of sigma away from the main aperture to allow to trace
-    Saxis : int, optional
-        Set which axis the spatial dimension is along. 1 = Y axis, 0 = X.
-        (Default is 1)
+    silence : tuple, optional
+        Set to disable warning/error messages. (Default is False)
+    display : tuple, optional
+        Set to show diagnostic plots. (Default is True)
 
     Returns
     -------
-    my : array
+    my : array (N, nspec)
         The spatial (Y) positions of the trace, interpolated over the
         entire wavelength (X) axis
-    y_sigma : array
-        The sigma measured at the nsteps 
+    y_sigma : array (N, nspec)
+        The sigma measured at the nsteps.
+
     """
 
     # define the wavelength axis
@@ -221,7 +276,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
     # add a switch in case the spatial/wavelength axis is swapped
     if Saxis is 0:
         Waxis = 1
-    if not nomessage:
+    if not silence:
         print('Tracing Aperture using nsteps=' + str(nsteps))
 
     # the valid y-range of the chip
@@ -305,7 +360,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
                         (np.inf, np.inf, peak_guess[2]+10, np.inf))
                 )
         except:
-            if not nomessage:
+            if not silence:
                 print('Spectrum ' + str(i) + ' of ' + str(n_spec) +
                       ' is likely to be (1) too faint, (2) in a crowed'
                       ' field, or (3) an extended source. Automated' +
@@ -351,7 +406,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
             try:
                 popt, pcov = curve_fit(_gaus, yi, zi, p0=pguess)
             except:
-                if not nomessage:
+                if not silence:
                   print('Step ' + str(j+1) + ' of ' + str(nsteps) +
                         ' of spectrum ' + str(i+1) + ' of ' + str(n_spec) +
                         ' cannot be fitted.')
@@ -364,7 +419,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
                 (popt[3] > 10)):
                 ybins[j] = pgaus[2]
                 popt = pgaus
-                if not nomessage:
+                if not silence:
                     print('Step ' + str(j+1) + ' of ' + str(nsteps) +
                           ' of spectrum ' + str(i+1) + ' of ' + str(n_spec) +
                           ' has a poor fit. Initial guess is used instead.')
@@ -398,7 +453,7 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
         if display:
             ax0.plot(mx, my[i])
 
-        if not nomessage:
+        if not silence:
             if np.sum(ybins_sigma) == 0:
                 print('Spectrum ' + str(i+1) + ' of ' + str(n_spec) +
                       ' is likely to be (1) too faint, (2) in a crowed'
@@ -410,9 +465,10 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
             print('Spectrum ' + str(i+1) + ' : Trace gaussian width = ' +
                   str(ybins_sigma) + ' pixels')
 
-    ax1.legend()
-    ax1.grid()
-    plt.show()
+    if display:
+        ax1.legend()
+        ax1.grid()
+        plt.show()
 
     # add the minimum pixel value from fmask before returning
     #if len(spatial_mask)>1:
@@ -421,10 +477,9 @@ def ap_trace(img, nsteps=20, spatial_mask=(1, ), spec_mask=(1, ),
     return my, y_sigma
 
 
-def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
-               Saxis=1, apwidth=8, skysep=3, skywidth=7, skydeg=0,
-               fitsky=False, coaddN=1, gain=1.0, rn=1.0, optimal=True,
-               display=False, cr_sigma=5.):
+def ap_extract(img, trace, trace_width=5, Saxis=1, spatial_mask=(1, ),
+               spec_mask=(1, ), skysep=3, skywidth=7, skydeg=0, optimal=True,
+               cr_sigma=5., gain=1.0, rn=5.0, silence=False, display=False):
     """
     1. Extract the spectrum using the trace. Simply add up all the flux
     around the aperture within a specified +/- width.
@@ -434,20 +489,34 @@ def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
     Note: implicitly assumes wavelength axis is perfectly vertical within
     the trace. An important simplification.
     3. Computes the uncertainty in each pixel
+    ** In the description, we have the spectral direction on the X-axis and
+       the spatial direction on the Y-axis.
+
     Parameters
     ----------
-    img : 2d numpy array
+    img : 2d numpy array (M, N)
         This is the image, stored as a normal numpy array. Can be read in
         using astropy.io.fits like so:
         >>> hdu = fits.open('file.fits') # doctest: +SKIP
         >>> img = hdu[0].data # doctest: +SKIP
-    trace : 1-d array
+    trace : 1-d numpy array (N)
         The spatial positions (Y axis) corresponding to the center of the
         trace for every wavelength (X axis), as returned from ap_trace
-    apwidth : int, optional
-        The width along the Y axis on either side of the trace to extract.
-        Note: a fixed width is used along the whole trace.
-        (default is 8 pixels)
+    trace_width : float, or 1-d array (1 or N)
+        Tophat extraction : Float is accepted but will be rounded to an int,
+                            which gives the constant aperture size on either
+                            side of the trace to extract.
+        Optimal extraction: Float or 1-d array of the same size as the trace.
+                            If a float is supplied, a fixed standard deviation
+                            will be used to construct the gaussian weight
+                            function along the entire spectrum.
+    Saxis : int, optional
+        Set the axis of the spatial dimension. 1 = Y axis, 0 = X axis.
+        (Default is 1, i.e. spectrum in the left-right direction.)
+    spatial_mask : 1-d numpy array (M), optional
+        An array of 0/1 or True/False in the spatial direction (Y).
+    spec_mask : 1-d numpy array (N), optional
+        An array of 0/1 or True/False in the spectral direction (X).
     skysep : int, optional
         The separation in pixels from the aperture to the sky window.
         (Default is 3)
@@ -456,7 +525,21 @@ def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
         aperture. (Default is 7)
     skydeg : int, optional
         The polynomial order to fit between the sky windows.
-        (Default is 0)
+        (Default is 0, i.e. constant flat sky level)
+    optimal : tuple, optional
+        Set optimal extraction. (Default is True)
+    cr_sigma : float, optional
+        Cosmic ray sigma clipping limit, only used if extraction is optimal.
+        (Default is 5)
+    gain : float, optional
+        Gain of the detector. (Deafult is 1.0)
+    rn : float, optional
+        Readnoise of the detector. (Deafult is 5.0)
+    silence : tuple, optional
+        Set to disable warning/error messages. (Default is False)
+    display : tuple, optional
+        Set to show diagnostic plots. (Default is True)
+
     Returns
     -------
     onedspec : 1-d array
@@ -534,7 +617,7 @@ def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
 
         # based on aperture phot err description by F. Masci, Caltech:
         # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
-        fluxerr[i] = np.sqrt(np.sum((flux_ap-skyflux[i])/coaddN) +
+        fluxerr[i] = np.sqrt(np.sum((flux_ap-skyflux[i])) / gain +
                              (N_A + N_A**2. / N_B) * (sigB**2.))
 
         # if optimal extraction
@@ -546,7 +629,7 @@ def ap_extract(img, trace, trace_sigma, spatial_mask=(1, ), spec_mask=(1, ),
                 sky = np.ones(len(pix)) * np.nanmean(z)
             flux[i], fluxerr[i] = _optimal_signal(
                 pix, xslice, sky, trace[i], trace_sigma[i], rn, gain,
-                display=False, return_fit=False, cr_sigma=cr_sigma
+                display=False, cr_sigma=cr_sigma
                 )
 
     if display:
