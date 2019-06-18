@@ -7,8 +7,6 @@ from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 from astropy.io import fits
-from matplotlib import pyplot as plt
-from matplotlib.patches import Rectangle
 try:
     from astroscrappy import detect_cosmics
 except ImportError:
@@ -20,6 +18,7 @@ except ImportError:
 
 try:
     from matplotlib import pyplot as plt
+    from matplotlib.patches import Rectangle
 except ImportError:
     warn(AstropyWarning(
         'matplotlib is not present, diagnostic plots cannot be generated.'
@@ -28,7 +27,7 @@ except ImportError:
 
 def _gaus(x, a, b, x0, sigma):
     """
-    Simple Gaussian function, for internal use only
+    Simple Gaussian function.
 
     Parameters
     ----------
@@ -477,9 +476,10 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
     return my, y_sigma
 
 
-def ap_extract(img, trace, trace_width=5, Saxis=1, spatial_mask=(1, ),
-               spec_mask=(1, ), skysep=3, skywidth=7, skydeg=0, optimal=True,
-               cr_sigma=5., gain=1.0, rn=5.0, silence=False, display=False):
+def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
+               spatial_mask=(1, ), spec_mask=(1, ), skysep=3, skywidth=7,
+               skydeg=0, optimal=True, cr_sigma=5., gain=1.0, rn=5.0,
+               silence=False, display=False):
     """
     1. Extract the spectrum using the trace. Simply add up all the flux
     around the aperture within a specified +/- width.
@@ -502,7 +502,7 @@ def ap_extract(img, trace, trace_width=5, Saxis=1, spatial_mask=(1, ),
     trace : 1-d numpy array (N)
         The spatial positions (Y axis) corresponding to the center of the
         trace for every wavelength (X axis), as returned from ap_trace
-    trace_width : float, or 1-d array (1 or N)
+    trace_sigma : float, or 1-d array (1 or N)
         Tophat extraction : Float is accepted but will be rounded to an int,
                             which gives the constant aperture size on either
                             side of the trace to extract.
