@@ -4,6 +4,7 @@ from scipy import signal
 from scipy import interpolate as itp
 try:
     from matplotlib import pyplot as plt
+    from matplotlib.patches import Rectangle
 except ImportError:
     warn(AstropyWarning(
         'matplotlib is not present, diagnostic plots cannot be generated.'
@@ -242,7 +243,7 @@ def list_all():
 
 
 def get_sencurve(wave, adu, target, source, ftype='flux', kind='cubic',
-                 smooth=True, slength=11, sorder=2):
+                 smooth=True, slength=11, sorder=2, display=False):
     '''
     Get the standard flux or magnitude of the given target and source
     based on the given array of wavelengths. Some standard libraries
@@ -251,7 +252,7 @@ def get_sencurve(wave, adu, target, source, ftype='flux', kind='cubic',
     Parameters
     ----------
     wave : 1-d numpy array (N)
-        wavelength in the unit of \AA
+        wavelength in the unit of A
     flux : 1-d numpy array (N)
         the ADU of the standard spectrum
     target : string
@@ -292,8 +293,31 @@ def get_sencurve(wave, adu, target, source, ftype='flux', kind='cubic',
       flux = adu
 
     # Get the sensitivity curve
-    sensitivity = flux / std(wave)
+    sensitivity = std(wave) / flux
     sencurve = itp.interp1d(wave, sensitivity)
+
+    # Diagnostic plot
+    if display:
+        fig, ax1 = plt.subplots(figsize=(10,10))
+        ax1.plot(wave, flux, label='ADU')
+        ax1.legend()
+        ax1.set_xlabel('Wavelength / A')
+        if smooth:
+            ax1.set_ylabel('Smoothed ADU')
+            ax1.set_title('SG(' + str(slength) + ', ' + str(sorder) +
+                          ')-Smoothed ' +  source + ' : ' + target)
+        else:
+            ax1.set_ylabel('ADU')
+            ax1.set_title(source + ' : ' + target)
+
+        ax2 = ax1.twinx()
+        ax1.set_zorder(ax2.get_zorder()+1)
+        ax1.patch.set_visible(False)
+        ax2.plot(wave, sensitivity, color='black', label='Sensitivity Curve')
+        ax2.legend()
+        ax2.legend(loc='upper left')
+        ax2.set_ylabel('Sensitivity Curve')
+        ax2.set_yscale('log')
 
     return sencurve
 

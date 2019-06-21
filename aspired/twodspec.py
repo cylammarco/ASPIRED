@@ -210,7 +210,7 @@ def _optimal_signal(pix, xslice, sky, mu, sigma, rn, gain, display, cr_sigma):
 
 def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
              cosmic=True, n_spec=1, recenter=False, prevtrace=(0, ),
-             fittype='cubic', bigbox=8, silence=False,
+             fittype='spline', order=3, bigbox=8, silence=False,
              display=False):
     """
     Trace the spectrum aperture in an image
@@ -251,8 +251,11 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
     prevtrace : 1-d numpy array, optional
         Provide first guess or refitting the center with different parameters.
     fittype : string, optional
-        Fit the spectral spatial position with a 'linear' line or with a
-        'cubic' spline
+        Set to 'spline' or 'polynomial', using
+        scipy.interpolate.UnivariateSpline and numpy.polyfit
+    order : string, optional
+        Degree of the spline or polynomial. Spline must be <= 5.
+        (default is k=3)
     bigbox : float, optional
         The number of sigma away from the main aperture to allow to trace
     silence : tuple, optional
@@ -280,10 +283,16 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
 
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
-        img = img[spatial_mask]
+        if Saxis is 1:
+            img = img[spatial_mask]
+        else:
+            img = img[:,spatial_mask]
 
     if (len(spec_mask) > 1):
-        img = img[:,spec_mask]
+        if Saxis is 1:
+            img = img[:,spec_mask]
+        else:
+            img = img[spec_mask]
 
     # get the length in the spectral and spatial directions
     spec_size = np.shape(img)[Waxis]
@@ -431,20 +440,25 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
         mybins = ybins[:-1]
         mx = np.arange(0, spatial_size)
 
-        if (fittype=='cubic'):
+        if (fittype=='spline'):
             # run a cubic spline thru the bins
-            ap_spl = itp.UnivariateSpline(mxbins, mybins, ext=0, k=3)
+            interpolated = itp.UnivariateSpline(mxbins, mybins, ext=0, k=order)
+            # interpolate 1 position per column
+            my[i] = interpolated(mx)
 
-            # interpolate the spline to 1 position per column
-            my[i] = ap_spl(mx)
-
-        elif (fittype=='linear'):
+        elif (fittype=='polynomial'):
             # linear fit
-            slope, intercept, r_value, p_value, std_err =\
-                stats.linregress(mxbins, mybins)
-            my[i] = slope * mx + intercept
+            npfit = np.polyfit(mxbins, mybins, deg=order)
+            # interpolate 1 position per column
+            my[i] = np.polyval(npfit, mx)
+
+        else:
+            if not silence:
+                print('Unknown fitting type, please choose from ' + 
+                      '(1) \'spline\'; or (2) \'polynomial\'.')
 
 
+        # get the uncertainties in the spatial direction along the spectrum
         slope, intercept, r_value, p_value, std_err =\
                 stats.linregress(mxbins, ybins_sigma[:-1])
         y_sigma[i] = slope * mx + intercept
@@ -566,12 +580,21 @@ def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
     if type(img)==tuple:
         img = img[1]
 
+    # the valid y-range of the chip
     if (len(spatial_mask) > 1):
-        img = img[spatial_mask]
+        if Saxis is 1:
+            img = img[spatial_mask]
+        else:
+            img = img[:,spatial_mask]
 
     if (len(spec_mask) > 1):
-        img = img[:,spec_mask]
+        if Saxis is 1:
+            img = img[:,spec_mask]
+        else:
+            img = img[spec_mask]
 
+    if Saxis is 0:
+        img = np.transpose(img)
     for i, pos in enumerate(trace):
 
         itrace = int(pos)
