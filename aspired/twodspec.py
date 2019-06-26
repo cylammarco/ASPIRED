@@ -580,6 +580,26 @@ def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
     if type(img)==tuple:
         img = img[1]
 
+    # if spatial_mask and spec_mask contain elements other than from the list
+    # [0, 1, True, False], throw warning and use the entire given array instead
+    if not np.all(np.isin(spec_mask, [0, 1, 0., 1., True, False])):
+        print('spec_mask contains elements other than ' +
+              '[0, 1, 0., 1., True, False], the entire range in the spectral' +
+              'direction is used.')
+        if Saxis is 1:
+            spec_mask = np.ones(len(img[0]))
+        else:
+            spec_mask = np.ones(len(img))
+
+    if not np.all(np.isin(spatial_mask, [0, 1, 0., 1., True, False])):
+        print('spatial_mask contains elements other than ' +
+              '[0, 1, 0., 1., True, False], the entire range in the spatial' +
+              'direction is used.')
+        if Saxis is 1:
+            spatial_mask = np.ones(len(img))
+        else:
+            spatial_mask = np.ones(len(img[0]))
+
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
         if Saxis is 1:
@@ -595,6 +615,11 @@ def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
 
     if Saxis is 0:
         img = np.transpose(img)
+
+    # if pass in a single int/float, convert to numpy array of length spec_mask
+    if np.isscalar(trace_sigma):
+        trace_sigma = np.ones(np.sum(spec_mask)) * trace_sigma
+
     for i, pos in enumerate(trace):
 
         itrace = int(pos)
