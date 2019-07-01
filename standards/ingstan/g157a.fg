@@ -1,0 +1,60 @@
+*
+*                   G 1 578 - 34
+*
+*   Table file for G157-34, faint object flux standard,
+*   based on Filippenko and Greenstein (1984)  (Preprint,
+*   submitted to P.A.S.P.)  Note that these are fitted
+*   continuum fluxes, not directly measured fluxes, and 
+*   should be used accordingly.   This file is designed for
+*   use with the Figaro routine GSPIKE.  The data here is
+*   given to 3 decimal places and was supplied directly by
+*   Alex Filippenko.
+*
+SET .Z.UNITS = "AB Magnitudes"
+SET .Z.LABEL = "Flux"
+SET .Z.REVSCALE = 1
+SET .Z.MAGFLAG = 1
+*
+ 3300 15.78::
+ 3400 15.73::
+ 3500 15.69::
+ 3600 15.66:
+ 3700 15.62:
+ 3800 15.59:
+ 3900 15.56
+ 4000 15.53
+ 4100 15.50
+ 4200 15.48
+ 4300 15.46
+ 4400 15.44
+ 4500 15.42
+ 4600 15.41
+ 4700 15.40
+ 4800 15.39
+ 4900 15.38
+ 5000 15.37
+ 5200 15.36
+ 5400 15.35
+ 5600 15.35
+ 5800 15.35
+ 6000 15.35
+ 6200 15.36
+ 6400 15.36
+ 6600 15.37
+ 6800 15.37
+ 7000 15.38
+ 7200 15.39
+ 7400 15.39
+ 7600 15.40
+ 7800 15.41
+ 8000 15.43
+ 8200 15.44
+ 8400 15.46
+ 8600 15.47
+ 8800 15.49:
+ 9000 15.51:
+ 9200 15.52:
+ 9400 15.54:
+ 9600 15.56:
+ 9800 15.58:
+10000 15.56::
