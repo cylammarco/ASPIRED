@@ -1,0 +1,60 @@
+*
+*                   G 24 - 9
+*
+*   Table file for G24-9, faint object flux standard,
+*   based on Filippenko and Greenstein (1984)  (Preprint,
+*   submitted to P.A.S.P.)  Note that these are fitted
+*   continuum fluxes, not directly measured fluxes, and 
+*   should be used accordingly.   This file is designed for
+*   use with the Figaro routine GSPIKE.  The data here is
+*   given to 3 decimal places and was supplied directly by
+*   Alex Filippenko.
+*
+SET .Z.UNITS = "AB Magnitudes"
+SET .Z.LABEL = "Flux"
+SET .Z.REVSCALE = 1
+SET .Z.MAGFLAG = 1
+*
+ 3300 16.65:::
+ 3400 16.57:::
+ 3500 16.49::
+ 3600 16.40::
+ 3700 16.31::
+ 3800 16.24::
+ 3900 16.18:
+ 4000 16.12:
+ 4100 16.06:
+ 4200 16.02:
+ 4300 15.98:
+ 4400 15.94
+ 4500 15.91
+ 4600 15.88
+ 4700 15.85
+ 4800 15.82
+ 4900 15.38
+ 5000 15.78
+ 5200 15.75
+ 5400 15.72
+ 5600 15.70
+ 5800 15.68
+ 6000 15.66
+ 6200 15.65
+ 6400 15.63
+ 6600 15.62
+ 6800 15.61
+ 7000 15.61
+ 7200 15.60
+ 7400 15.60
+ 7600 15.59
+ 7800 15.59
+ 8000 15.58
+ 8200 15.58
+ 8400 15.58
+ 8600 15.58:
+ 8800 15.59:
+ 9000 15.59:
+ 9200 15.60:
+ 9400 15.60:
+ 9600 15.61::
+ 9800 15.61::
+10000 15.62::

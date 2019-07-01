@@ -274,22 +274,23 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
     """
 
     # define the wavelength axis
-    Waxis = 0
-    # add a switch in case the spatial/wavelength axis is swapped
     if Saxis is 0:
         Waxis = 1
+    else:
+        Waxis = 0
+
     if not silence:
         print('Tracing Aperture using nsteps=' + str(nsteps))
 
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
-        if Saxis is 1:
+        if Saxis is 0:
             img = img[spatial_mask]
         else:
             img = img[:,spatial_mask]
 
     if (len(spec_mask) > 1):
-        if Saxis is 1:
+        if Saxis is 0:
             img = img[:,spec_mask]
         else:
             img = img[spec_mask]
@@ -367,6 +368,7 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
                 bounds=((0., 0., peak_guess[2]-10, 0.),
                         (np.inf, np.inf, peak_guess[2]+10, np.inf))
                 )
+            #print(pgaus, pcov)
         except:
             if not silence:
                 print('Spectrum ' + str(i) + ' of ' + str(n_spec) +
@@ -456,7 +458,6 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
             if not silence:
                 print('Unknown fitting type, please choose from ' + 
                       '(1) \'spline\'; or (2) \'polynomial\'.')
-
 
         # get the uncertainties in the spatial direction along the spectrum
         slope, intercept, r_value, p_value, std_err =\
@@ -602,13 +603,13 @@ def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
 
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
-        if Saxis is 1:
+        if Saxis is 0:
             img = img[spatial_mask]
         else:
             img = img[:,spatial_mask]
 
     if (len(spec_mask) > 1):
-        if Saxis is 1:
+        if Saxis is 0:
             img = img[:,spec_mask]
         else:
             img = img[spec_mask]
