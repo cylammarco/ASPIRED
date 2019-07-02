@@ -233,10 +233,10 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
     Saxis : int, optional
         Set the axis of the spatial dimension. 1 = Y axis, 0 = X axis.
         (Default is 1, i.e. spectrum in the left-right direction.)
-    spatial_mask : 1-d numpy array (M), optional
-        An array of 0/1 or True/False in the spatial direction (Y).
-    spec_mask : 1-d numpy array (N), optional
-        An array of 0/1 or True/False in the spectral direction (X).
+    spatial_mask : 1-d numpy array (<=M), optional
+        An array of pixel number or True/False in the spatial direction (Y).
+    spec_mask : 1-d numpy array (<=N), optional
+        An array of pixel number or True/False in the spectral direction (X).
     cosmic : tuple, optional
         Set to apply cosmic ray removal beefore tracing using astroscrappy if
         available, otherwise with a 2D median filter of size 5. It does not
@@ -580,26 +580,6 @@ def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
     # by astroscrappy
     if type(img)==tuple:
         img = img[1]
-
-    # if spatial_mask and spec_mask contain elements other than from the list
-    # [0, 1, True, False], throw warning and use the entire given array instead
-    if not np.all(np.isin(spec_mask, [0, 1, 0., 1., True, False])):
-        print('spec_mask contains elements other than ' +
-              '[0, 1, 0., 1., True, False], the entire range in the spectral' +
-              'direction is used.')
-        if Saxis is 1:
-            spec_mask = np.ones(len(img[0]))
-        else:
-            spec_mask = np.ones(len(img))
-
-    if not np.all(np.isin(spatial_mask, [0, 1, 0., 1., True, False])):
-        print('spatial_mask contains elements other than ' +
-              '[0, 1, 0., 1., True, False], the entire range in the spatial' +
-              'direction is used.')
-        if Saxis is 1:
-            spatial_mask = np.ones(len(img))
-        else:
-            spatial_mask = np.ones(len(img[0]))
 
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
