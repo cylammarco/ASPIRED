@@ -202,15 +202,15 @@ def get_sencurve(wave, adu, target, source, exp_time, cutoff=0.4, ftype='flux',
 
     # Get the standard flux/magnitude
     std_wave, std_flux = _read_standard(
-      target, source, cutoff=cutoff, ftype=ftype, display=False
-      )
+        target, source, cutoff=cutoff, ftype=ftype, display=False
+        )
     std = itp.interp1d(std_wave, std_flux, kind=kind, fill_value='extrapolate')
 
     # apply a Savitzky-Golay filter to remove noise and Telluric lines
     if smooth:
         flux = signal.savgol_filter(adu, slength, sorder)
     else:
-      flux = adu
+        flux = adu
 
     # adjust for exposure time
     flux = flux / exp_time
