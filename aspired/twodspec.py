@@ -284,13 +284,13 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
 
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
-        if Saxis is 0:
+        if Saxis is 1:
             img = img[spatial_mask]
         else:
             img = img[:,spatial_mask]
 
     if (len(spec_mask) > 1):
-        if Saxis is 0:
+        if Saxis is 1:
             img = img[:,spec_mask]
         else:
             img = img[spec_mask]
@@ -583,13 +583,13 @@ def ap_extract(img, trace, apwidth=7, trace_sigma=(1, ), Saxis=1,
 
     # the valid y-range of the chip
     if (len(spatial_mask) > 1):
-        if Saxis is 0:
+        if Saxis is 1:
             img = img[spatial_mask]
         else:
             img = img[:,spatial_mask]
 
     if (len(spec_mask) > 1):
-        if Saxis is 0:
+        if Saxis is 1:
             img = img[:,spec_mask]
         else:
             img = img[spec_mask]
