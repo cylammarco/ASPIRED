@@ -1,10 +1,10 @@
 library_list = [
-    'ctio',
-    'hst',
+    'esoctio',
+    'esohst',
     'ing',
-    'oke',
-    'wd',
-    'xshooter',
+    'esooke',
+    'esowd',
+    'esoxshooter',
     'irafbb',
     'irafkpno',
     'irafctio',
@@ -19,12 +19,12 @@ library_list = [
     'iraf16blue',
     'iraf16red',
     'iraf50',
-    'iraf50ir',
+    'iraf50red',
     'irafhayes'
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/hamuystandards.html
-ctio = [
+esoctio = [
     'cd32d9927',
     'cd_34d241',
     'eg21',
@@ -58,7 +58,7 @@ ctio = [
     ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/hststandards.html
-hst = [
+esohst = [
     'agk81d226',
     'bd28d4211',
     'bd33d2642',
@@ -89,7 +89,7 @@ hst = [
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/okestandards_rev.html
-oke = [
+esooke = [
     'bd25d4655',
     'bd28d4211',
     'bd33d2642',
@@ -118,7 +118,7 @@ oke = [
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/wdstandards.html
-wd = [
+esowd = [
     'agk81d226_005',
     'alpha_lyr_004',
     'bd_25d4655_002',
@@ -146,7 +146,7 @@ wd = [
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/Xshooterspec.html
-xshooter = [
+esoxshooter = [
     'EG274',
     'Feige110',
     'GD153',
@@ -449,8 +449,8 @@ irafiids = [
     'eg77',
     'eg79',
     'eg91',
-    'eg99',
     'eg98',
+    'eg99',
     'eg102',
     'eg119',
     'eg129',
@@ -475,8 +475,8 @@ irafiids = [
     'feige98',
     'feige110',
     'g88',
-    'g2631',
     'g2610',
+    'g2631',
     'g4718',
     'g9937',
     'g12627',
@@ -658,7 +658,7 @@ irafred = [
     'ross627',
     'ross640',
     'sa29130',
-    'dso131065',
+    'sao131065',
     'wolf1346',
     'wolf485a'
 ]
@@ -766,7 +766,7 @@ iraf50 = [
     'wolf1346'
 ]
 
-iraf50ir = [
+iraf50red = [
     'bd284211',
     'eg71',
     'eg139',
