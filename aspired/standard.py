@@ -7,10 +7,22 @@ from scipy import interpolate as itp
 try:
     from matplotlib import pyplot as plt
     from matplotlib.patches import Rectangle
+    matplotlib_imported = True
 except ImportError:
     warn(AstropyWarning(
         'matplotlib is not present, diagnostic plots cannot be generated.'
         ))
+    matplotlib_imported = False
+try:
+    from spectres import spectres
+    spectres_imported = True
+except ImportError:
+    warn(AstropyWarning(
+        'spectres is not present, spectral resampling cannot be performed. '
+        'Flux calibration is suboptimal.'
+        ))
+    spectres_imported = False
+
 
 library_list = [
     'esoctio', 'esohst', 'ing', 'esooke', 'esowd', 'esoxshooter', 'irafbb',
@@ -398,28 +410,50 @@ def get_sencurve(wave, adu, target, source, exp_time, cutoff=0.4, ftype='flux',
     '''
 
     # Get the standard flux/magnitude
-    std_wave, std_flux = _read_standard(
+    wave_std, flux_std = _read_standard(
         target, source, cutoff=cutoff, ftype=ftype, display=False
         )
-    std = itp.interp1d(std_wave, std_flux, kind=kind, fill_value='extrapolate')
 
     # apply a Savitzky-Golay filter to remove noise and Telluric lines
     if smooth:
-        flux = signal.savgol_filter(adu, slength, sorder)
+        flux_obs = signal.savgol_filter(adu, slength, sorder)
     else:
-        flux = adu
+        flux_obs = adu
 
-    # adjust for exposure time
-    flux = flux / exp_time
+    if spectres_imported:
+        # Compute bin sizes such that the bin is roughly 100 A wide
+        wave_range = wave[-1] - wave[0]
+        bin_input = wave[1] - wave[0]
+        bin_resampled = wave_range / np.round(wave_range / 100.)
 
+        # Find the centres of the first and last bins such that
+        # the old and new spectra covers identical wavelength range 
+        wave_lhs = wave[0] - bin_input / 2. + bin_resampled / 2.
+        wave_rhs = wave[-1] + bin_input / 2. - bin_resampled / 2.
+        wave_resampled = np.arange(wave_lhs, wave_rhs, bin_resampled)
+
+        # resampling both the observed and the database standard spectra
+        flux_obs = spectres(wave_resampled, wave, flux_obs) / exp_time
+        flux_std = spectres(wave_resampled, wave_std, flux_std)
+    else:
+        flux_obs = flux_obs
+        flux_std = itp.interp1d(wave_std, flux_std)(wave)
+        wave_resampled = wave
+        
     # Get the sensitivity curve
-    sensitivity = std(wave) / flux
-    sencurve = itp.interp1d(wave, sensitivity, fill_value='extrapolate')
+    sensitivity = flux_std / flux_obs
+    mask = np.isfinite(sensitivity)
+    sensitivity = sensitivity[mask]
+    wave_resampled = wave_resampled[mask]
+    flux_obs = flux_obs[mask]
+    sencurve = itp.interp1d(
+        wave_resampled, sensitivity, kind=kind, fill_value='extrapolate'
+        )
 
     # Diagnostic plot
-    if display:
+    if display & matplotlib_imported:
         fig, ax1 = plt.subplots(figsize=(10,10))
-        ax1.plot(wave, flux, label='ADU')
+        ax1.plot(wave_resampled, flux_obs, label='ADU')
         ax1.legend()
         ax1.set_xlabel('Wavelength / A')
         if smooth:
@@ -433,7 +467,7 @@ def get_sencurve(wave, adu, target, source, exp_time, cutoff=0.4, ftype='flux',
         ax2 = ax1.twinx()
         ax1.set_zorder(ax2.get_zorder()+1)
         ax1.patch.set_visible(False)
-        ax2.plot(wave, sensitivity, color='black', label='Sensitivity Curve')
+        ax2.plot(wave_resampled, sensitivity, color='black', label='Sensitivity Curve')
         ax2.legend()
         ax2.legend(loc='upper left')
         ax2.set_ylabel('Sensitivity Curve')
