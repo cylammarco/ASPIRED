@@ -52,7 +52,7 @@ def _gaus(x, a, b, x0, sigma):
 
 
 def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
-                display=False):
+                Saxis, display):
     """
     Identify peaks assuming the spatial and spectral directions are
     aligned with the X and Y direction within a few degrees.
@@ -99,12 +99,20 @@ def _find_peaks(img, spec_size, spatial_size, ydata, ztot, f_height,
 
         # show the image on the left
         ax0.cla()
-        ax0.imshow(
-            np.log10(img),
-            origin='lower',
-            interpolation="nearest",
-            aspect='auto'
-            )
+        if Saxis == 1:
+            ax0.imshow(
+                np.log10(img),
+                origin='lower',
+                interpolation="nearest",
+                aspect='auto'
+                )
+        else:
+            ax0.imshow(
+                np.log10(np.transpose(img)),
+                origin='lower',
+                interpolation="nearest",
+                aspect='auto'
+                )
         ax0.set_xlim(0, spatial_size)
         ax0.set_ylim(0, spec_size)
         ax0.set_xlabel('Spectral Direction / pixel')
@@ -318,7 +326,7 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
 
     # detect peaks by summing in the spatial direction
     peak, peak_height = _find_peaks(
-        img, spec_size, spatial_size, ydata, ztot, 0.05, display=False
+        img, spec_size, spatial_size, ydata, ztot, 0.05, Saxis, False
         )
 
     if display:
@@ -327,12 +335,20 @@ def ap_trace(img, nsteps=20, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ),
         plt.subplots_adjust(bottom=0.08, wspace=0)
 
         # show the image on the left
-        ax0.imshow(
-            np.log10(img),
-            origin='lower',
-            interpolation="nearest",
-            aspect='auto'
-            )
+        if Saxis == 1:
+            ax0.imshow(
+                np.log10(img),
+                origin='lower',
+                interpolation="nearest",
+                aspect='auto'
+                )
+        else:
+            ax0.imshow(
+                np.log10(np.transpose(img)),
+                origin='lower',
+                interpolation="nearest",
+                aspect='auto'
+                )
         ax0.set_xlim(0, spatial_size)
         ax0.set_ylim(0, spec_size)
         ax0.set_xlabel('Spectral Direction / pixel')
