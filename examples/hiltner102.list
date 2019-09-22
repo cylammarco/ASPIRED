@@ -1,0 +1,3 @@
+#flat, examples/calibration_files/v_slit_red_1.fits
+dark, examples/calibration_files/v_dark_1.fits
+light, examples/Hiltner102_raw/v_s_20180703_65_1_0_0.fits

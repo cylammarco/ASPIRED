@@ -45,7 +45,7 @@ from standard_list import *
 class ImageReduction:
     def __init__(self, filelistpath, ftype='csv', combinetype='median'):
         '''
-        bias, dark, flat, science
+        bias, dark, flat, light
         filepath include HDU number if not [0]  
         '''
         self.filelistpath = filelistpath
@@ -76,87 +76,98 @@ class ImageReduction:
         self.bias_list = None
         self.dark_list = None
         self.flat_list = None
-        self.science_list = None
+        self.light = None
 
         self.bias_master = None
         self.dark_master = None
         self.flat_master = None
-        self.science_master = None
+        self.light_master = None
+
+        self.light_filename = []
+        self.bias_filename = []
+        self.dark_filename = []
+        self.flat_filename = []
 
         # import file with first column as image type and second column as 
         # file path
-        filelist = np.loadtxt(self.filepath, delimiter=self.delimiter)
+        filelist = np.genfromtxt(
+            self.filelistpath,
+            delimiter=self.delimiter,
+            dtype='str',
+            autostrip=True
+            )
         imtype = filelist[:,0]
         impath = filelist[:,1]
 
         self.bias_list = impath[imtype=='bias']
         self.dark_list = impath[imtype=='dark']
         self.flat_list = impath[imtype=='flat']
-        self.science_list = impath[imtype=='science']
+        self.light_list = impath[imtype=='light']
 
         # If there is no science frames, nothing to process.
-        assert(science_list.size > 0), 'There is no science frame.'
+        assert(self.light_list.size > 0), 'There is no light frame.'
 
         # Only load the science data, other types of image data are loaded by
         # separate methods.
-        science_CCDData = []
-        science_time = []
+        light_CCDData = []
+        light_time = []
 
-        for i in range(science_list.size):
-            # Open all the science frames
-            science = fits.open(science_list[i])
-            science_CCDData.append(CCDData(science.data, unit=u.adu))
+        for i in range(self.light_list.size):
+            # Open all the light frames
+            light = fits.open(self.light_list[i])[0]
+            light_CCDData.append(CCDData(light.data, unit=u.adu))
 
-            # Get the exposure time for the science frames
-            for exptime in exptime_keyword:
+            self.light_filename.append(self.light_list[i].split('/')[-1])
+
+            # Get the exposure time for the light frames
+            for exptime in self.exptime_keyword:
                 try:
-                    science_time.append(science.header[exptime])
+                    light_time.append(light.header[exptime])
                     break
                 except:
                     continue
 
         # Put data into a Combiner
-        science_combiner = Combiner(science_CCDData)
+        light_combiner = Combiner(light_CCDData)
         # Free memory
-        del science_CCDData
+        del light_CCDData
 
         # Image combine by median or average
         if self.combinetype == 'median':
-            self.science_master = science_combiner.median_combine()
-            if self.science_time != 1.:
-                self.science_time = np.median(science_time)
+            self.light_master = light_combiner.median_combine()
+            self.light_time = np.median(light_time)
         elif self.combinetype == 'average':
-            self.science_master = science_combiner.average_combine()
-            if self.science_time != 1.:
-                self.science_time = np.mean(science_time)
+            self.light_master = light_combiner.average_combine()
+            self.light_time = np.mean(light_time)
         else:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Free memory
-        del science_combiner
+        del light_combiner
 
         # If exposure time cannot be found from the header, use 1 second
-        if science_time.size == 0:
-            self.science_time = 1.
-            warnings.warn('Science frame exposure time cannot be found. '
+        if len(light_time) == 0:
+            self.light_time = 1.
+            warnings.warn('Light frame exposure time cannot be found. '
                                 '1 second is used as the exposure time.')
 
         # Frame in unit of ADU per second
-        self.science_master = self.science_master
+        self.light_master = self.light_master
 
     def _bias_subtract(self):
 
         bias_CCDData = []
 
-        for i in range(bias_list.size):
+        for i in range(self.bias_list.size):
             # Open all the bias frames
+            bias = fits.open(self.bias_list[i])[0]
             bias_CCDData.append(
-                CCDData(fits.open(bias_list[i]).data, unit=u.adu))
+                CCDData(biad.data, unit=u.adu))
+
+            self.bias_filename.append(self.bias_list[i].split('/')[-1])
 
         # Put data into a Combiner
         bias_combiner = Combiner(bias_CCDData)
-        # Free memory
-        del bias_CCDData
 
         # Image combine by median or average
         if self.combinetype == 'median':
@@ -166,24 +177,27 @@ class ImageReduction:
         else:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
-        # Free memory
-        del bias_combiner
-
         # Bias subtract
-        self.science_master = self.science_master - self.bias_master
+        self.light_master = self.light_master - self.bias_master
+
+        # Free memory
+        del bias_CCDData
+        del bias_combiner
 
     def _dark_subtract(self):
 
         dark_CCDData = []
         dark_time = []
 
-        for i in range(dark_list.size):
+        for i in range(self.dark_list.size):
             # Open all the dark frames
-            dark = fits.open(dark_list[i])
+            dark = fits.open(self.dark_list[i])[0]
             dark_CCDData.append(CCDData(dark.data, unit=u.adu))
 
+            self.dark_filename.append(self.dark_list[i].split('/')[-1])
+ 
             # Get the exposure time for the dark frames
-            for exptime in exptime_keyword:
+            for exptime in self.exptime_keyword:
                 try:
                     dark_time.append(dark.header[exptime])
                     break
@@ -192,48 +206,46 @@ class ImageReduction:
 
         # Put data into a Combiner
         dark_combiner = Combiner(dark_CCDData)
-        # Free memory
-        del dark_CCDData
 
         # Image combine by median or average
         if self.combinetype == 'median':
             self.dark_master = dark_combiner.median_combine()
-            if self.dark_time != 1.:
-                self.dark_time = np.median(dark_time)
+            self.dark_time = np.median(dark_time)
         elif self.combinetype == 'average':
             self.dark_master = dark_combiner.average_combine()
-            if self.dark_time != 1.:
-                self.dark_time = np.mean(dark_time)
+            self.dark_time = np.mean(dark_time)
         else:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
-        # Free memory
-        del dark_combiner
-
         # If exposure time cannot be found from the header, use 1 second
-        if dark_time.size == 0:
+        if len(dark_time) == 0:
             warnings.warn('Dark frame exposure time cannot be found. '
                           '1 second is used as the exposure time.')
             self.dark_time = 1.
 
         # Frame in unit of ADU per second
-        self.science_master =\
-            self.science_master -\
-            self.dark_master / self.dark_time * self.science_time
+        self.light_master =\
+            self.light_master -\
+            self.dark_master / self.dark_time * self.light_time
+
+        # Free memory
+        del dark_CCDData
+        del dark_combiner
 
     def _flatfield(self):
 
         flat_CCDData = []
 
-        for i in range(flat_list.size):
-           # Open all the flatfield frames
+        for i in range(self.flat_list.size):
+            # Open all the flatfield frames
+            flat = fits.open(self.flat_list[i])[0]
             flat_CCDData.append(
-                CCDData(fits.open(flat_list[i]).data, unit=u.adu))
+                CCDData(flat.data, unit=u.adu))
+
+            self.flat_filename.append(self.flat_list[i].split('/')[-1])
 
         # Put data into a Combiner
         flat_combiner = Combiner(flat_CCDData)
-        # Free memory
-        del flat_CCDData
 
         # Image combine by median or average
         if self.combinetype == 'median':
@@ -243,11 +255,12 @@ class ImageReduction:
         else:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
-        # Free memory
-        del flat_combiner
-
         # Field-flattening
-        self.science_master = self.science_master / self.flat_master
+        self.light_master = self.light_master / self.flat_master
+
+        # Free memory
+        del flat_CCDData
+        del flat_combiner
 
     def reduce(self, display=False, log=True):
 
@@ -266,21 +279,41 @@ class ImageReduction:
         else:
             warnings.warn('No flat frames. Field-flattening is not performed.')
 
+        self.light_master = np.array((self.light_master))
+        self.fits_data = fits.PrimaryHDU(self.light_master)
+
+        if len(self.light_filename) > 0:
+            for i in range(len(self.light_filename)):
+                self.fits_data.header.set('light'+str(i+1), self.light_filename[i], 'Light frames')
+        if len(self.bias_filename) > 0:
+            for i in range(len(self.bias_filename)):
+                self.fits_data.header.set('bias'+str(i+1), self.bias_filename[i], 'Bias frames')
+        if len(self.dark_filename) > 0:
+            for i in range(len(self.dark_filename)):
+                self.fits_data.header.set('dark'+str(i+1), self.dark_filename[i], 'Dark frames')
+        if len(self.flat_filename) > 0:
+            for i in range(len(self.flat_filename)):
+                self.fits_data.header.set('flat'+str(i+1), self.flat_filename[i], 'Flat frames')
+
         if display:
             self.inspect(log=log)
+
+    def savefits(self, filepath='reduced_image.fits', overwrite=False):
+        self.fits_data.writeto(filepath, overwrite=overwrite)
 
     def inspect(self, log=True):
 
         # Generate plot with matplotlib can be imported
         if matplotlib_imported:
+            plt.figure(figsize=(10,10))
             if log:
                 plt.imshow(
-                    np.log10(self.science_master),
+                    np.log10(self.light_master),
                     origin='lower',
                     aspect='auto')
             else:
                 plt.imshow(
-                    self.science_master,
+                    self.light_master,
                     origin='lower',
                     aspect='auto')
             plt.xlabel('NAXIS1')
@@ -748,7 +781,7 @@ class TwoDSpec:
                     try:
                         popt, pcov = curve_fit(self._gaus, yi, zi, p0=pguess)
                     except:
-                        if not silence:
+                        if not self.silence:
                           print('Step ' + str(j+1) + ' of ' + str(nsteps) +
                                 ' of spectrum ' + str(i+1) + ' of ' + str(self.n_spec) +
                                 ' cannot be fitted.')

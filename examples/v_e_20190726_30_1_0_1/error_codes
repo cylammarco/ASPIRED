@@ -1,0 +1,5 @@
+L2STATCL	0	Status flag for L2 spclip routine
+L2STATFI	0	Status flag for L2 spfind routine
+L2STATT1	2	Status flag for L2 sptrace routine (ref uncorrected)
+L2STATOT	0	Status flag for L2 spcorrect routine (ref)
+L2STATFI	0	Status flag for L2 spfind routine
