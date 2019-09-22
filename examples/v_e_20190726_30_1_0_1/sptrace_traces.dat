@@ -1,0 +1,9 @@
+#### sptrace_traces.dat ####
+
+# Lists the trace coefficients and corresponding chi-squareds found using the sptrace program.
+
+# Run datetime:		31-07-2019 17:21:32
+# Polynomial Order:	2
+
+9.1986884408e+01	1.2246035055e-03	-1.1716997253e-06	0.07
+-1
