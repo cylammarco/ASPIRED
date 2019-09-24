@@ -481,7 +481,7 @@ class TwoDSpec:
             fig.add_trace(
                 go.Scatter(
                     x=ztot,
-                    y=ydata, 
+                    y=ydata,
                     line=dict(color='black'),
                     xaxis='x2'
                     )
@@ -1165,6 +1165,7 @@ class TwoDSpec:
                     y=adu,
                     xaxis='x2',
                     yaxis='y2',
+                    line=dict(color='royalblue'),
                     name='Target ADU'
                 )
             )
@@ -1174,6 +1175,7 @@ class TwoDSpec:
                     y=skyadu,
                     xaxis='x2',
                     yaxis='y2',
+                    line=dict(color='firebrick'),
                     name='Sky ADU'
                 )
             )
@@ -1183,6 +1185,7 @@ class TwoDSpec:
                     y=aduerr,
                     xaxis='x2',
                     yaxis='y2',
+                    line=dict(color='orange'),
                     name='Uncertainty'
                 )
             )
@@ -1842,7 +1845,7 @@ class OneDSpec:
                 go.Scatter(
                     x=self.wave_std,
                     y=self.fluxerr_std,
-                    line=dict(color='firebrick'),
+                    line=dict(color='orange'),
                     name='Flux Uncertainty'
                     )
                 )
@@ -1850,7 +1853,7 @@ class OneDSpec:
                 go.Scatter(
                     x=self.wave_std,
                     y=self.skyflux_std,
-                    line=dict(color='orange'),
+                    line=dict(color='firebrick'),
                     name='Sky Flux'
                     )
                 )
@@ -1901,7 +1904,7 @@ class OneDSpec:
                 go.Scatter(
                     x=self.wave,
                     y=self.fluxerr,
-                    line=dict(color='firebrick'),
+                    line=dict(color='orange'),
                     name='Flux Uncertainty'
                     )
                 )
@@ -1909,7 +1912,7 @@ class OneDSpec:
                 go.Scatter(
                     x=self.wave,
                     y=self.skyflux,
-                    line=dict(color='orange'),
+                    line=dict(color='firebrick'),
                     name='Sky Flux'
                     )
                 )
@@ -1952,7 +1955,7 @@ class OneDSpec:
                 go.Scatter(
                     x=self.wave_std,
                     y=self.fluxerr_std,
-                    line=dict(color='firebrick'),
+                    line=dict(color='orange'),
                     name='Flux Uncertainty'
                     )
                 )
@@ -1960,7 +1963,7 @@ class OneDSpec:
                 go.Scatter(
                     x=self.wave_std,
                     y=self.skyflux_std,
-                    line=dict(color='orange'),
+                    line=dict(color='firebrick'),
                     name='Sky Flux'
                     )
                 )
