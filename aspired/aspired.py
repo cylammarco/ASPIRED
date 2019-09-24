@@ -32,12 +32,13 @@ except ImportError:
         )
     spectres_imported = False
 try:
-    from matplotlib import pyplot as plt
-    from matplotlib.patches import Rectangle
-    matplotlib_imported = True
+    import plotly.graph_objects as go
+    import plotly.io as pio
+    pio.renderers.default = "notebook"
+    plotly_imported = True
 except ImportError:
     warnings.warn(
-        'matplotlib is not present, diagnostic plots cannot be generated.'
+        'plotly is not present, diagnostic plots cannot be generated.'
         )
 
 from standard_list import *
@@ -303,26 +304,26 @@ class ImageReduction:
 
     def inspect(self, log=True):
 
-        # Generate plot with matplotlib can be imported
-        if matplotlib_imported:
-            plt.figure(figsize=(10,10))
+        # Generate plot with plotly can be imported
+        if plotly_imported:
             if log:
-                plt.imshow(
-                    np.log10(self.light_master),
-                    origin='lower',
-                    aspect='auto')
+                fig = go.Figure(
+                    data=go.Heatmap(
+                        z=np.log10(self.light_master),
+                        colorscale="Viridis"
+                        )
+                    )
             else:
-                plt.imshow(
-                    self.light_master,
-                    origin='lower',
-                    aspect='auto')
-            plt.xlabel('NAXIS1')
-            plt.ylabel('NAXIS2')
-            plt.colorbar()
-            plt.tight_layout()
+                fig = go.Figure(
+                    data=go.Heatmap(
+                        z=self.light_master,
+                        colorscale="Viridis"
+                        )
+                    )
+            fig.show()
         else:
             warnings.warn(
-                'matplotlib is not present, diagnostic plots cannot be '
+                'plotly is not present, diagnostic plots cannot be '
                 'generated.')
 
     def list_files(self):
@@ -359,7 +360,7 @@ class TwoDSpec:
         self.exptime = exptime
         self.silence = silence
         self.display = display
-        if not matplotlib_imported:
+        if not plotly_imported:
             self.display = False
 
         # cosmic ray rejection
@@ -454,42 +455,67 @@ class TwoDSpec:
         # display disgnostic plot
         if display:
             # set a side-by-side subplot
-            fig, (ax0, ax1) = plt.subplots(ncols=2, sharey=True, figsize=(10,10))
-            fig.tight_layout()
-            plt.subplots_adjust(bottom=0.08, wspace=0)
+            fig = go.Figure()
 
             # show the image on the left
-            ax0.cla()
             if Saxis == 1:
-                ax0.imshow(
-                    np.log10(self.img),
-                    origin='lower',
-                    interpolation="nearest",
-                    aspect='auto'
+                fig.add_trace(
+                    go.Heatmap(
+                        z=np.log10(self.img),
+                        colorscale="Viridis",
+                        xaxis='x',
+                        yaxis='y'
+                        )
                     )
             else:
-                ax0.imshow(
-                    np.log10(np.transpose(self.img)),
-                    origin='lower',
-                    interpolation="nearest",
-                    aspect='auto'
+                fig.add_trace(
+                    go.Heatmap(
+                        z=np.log10(np.transpose(self.img)),
+                        colorscale="Viridis",
+                        xaxis='x',
+                        yaxis='y'
+                        )
                     )
-            ax0.set_xlim(0, self.spatial_size)
-            ax0.set_ylim(0, self.spec_size)
-            ax0.set_xlabel('Spectral Direction / pixel')
-            ax0.set_ylabel('Spatial Direction / pixel')
 
             # plot the integrated count and the detected peaks on the right
-            ax1.cla()
-            ax1.plot(ztot, ydata, color='black')
-            ax1.scatter(heights_y, ydata[peaks_y])
-            ax1.set_xlim(min(ztot[ztot>0]),max(ztot))
-            ax1.set_ylim(0, len(ztot))
-            ax1.set_xlabel('Integrated Count')
-            ax1.set_xscale('log')
-            ax1.grid()
-            plt.show()
-        
+            fig.add_trace(
+                go.Scatter(
+                    x=ztot,
+                    y=ydata, 
+                    line=dict(color='black'),
+                    xaxis='x2'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=heights_y, 
+                    y=ydata[peaks_y], 
+                    marker=dict(color='firebrick'),
+                    xaxis='x2'
+                    )
+                )
+            fig.update_layout(
+                autosize = True,
+                yaxis_title='Spatial Direction / pixel',
+                xaxis = dict(
+                    zeroline = False,
+                    domain = [0,0.5],
+                    showgrid = False,
+                    title='Spectral Direction / pixel'
+                ),
+                xaxis2 = dict(
+                    zeroline = False,
+                    domain = [0.5,1],
+                    showgrid = True,
+                    title='Integrated Count'
+                ),
+                bargap = 0,
+                hovermode = 'closest',
+                showlegend = False
+            )
+
+            fig.show()
+
         self.peak = peaks_y
         self.peak_height = heights_y
 
@@ -656,39 +682,53 @@ class TwoDSpec:
         self._identify_spectrum(0.01, self.Saxis, display=False)
 
         if self.display:
-            fig, (ax0, ax1) = plt.subplots(
-                ncols=2, sharey=True, figsize=(10,10)
-                )
-            fig.tight_layout()
-            plt.subplots_adjust(bottom=0.08, wspace=0)
+            # set a side-by-side subplot
+            fig = go.Figure()
 
             # show the image on the left
             if self.Saxis == 1:
-                ax0.imshow(
-                    np.log10(self.img),
-                    origin='lower',
-                    interpolation="nearest",
-                    aspect='auto'
+                fig.add_trace(
+                    go.Heatmap(
+                        z=np.log10(self.img),
+                        colorscale="Viridis",
+                        xaxis='x',
+                        yaxis='y',
+                        colorbar=dict(
+                            title='log(ADU)'
+                            )
+                        )
                     )
             else:
-                ax0.imshow(
-                    np.log10(np.transpose(self.img)),
-                    origin='lower',
-                    interpolation="nearest",
-                    aspect='auto'
+                fig.add_trace(
+                    go.Heatmap(
+                        z=np.log10(np.transpose(self.img)),
+                        colorscale="Viridis",
+                        xaxis='x',
+                        yaxis='y',
+                        colorbar=dict(
+                            title='log(ADU)'
+                            )
+                        )
                     )
-            ax0.set_xlim(0, self.spatial_size)
-            ax0.set_ylim(0, self.spec_size)
-            ax0.set_xlabel('Spectral Direction / pixel')
-            ax0.set_ylabel('Spatial Direction / pixel')
 
             # plot the integrated count and the detected peaks on the right
-            ax1.plot(ztot, ydata, color='black')
-            ax1.set_xlim(min(ztot[ztot>0]),max(ztot))
-            ax1.set_ylim(0, len(ztot))
-            ax1.set_xlabel('Integrated Count')
-            ax1.set_xscale('log')
-            plt.gca().set_prop_cycle(None)
+            fig.add_trace(
+                go.Scatter(
+                    x=np.log10(ztot),
+                    y=ydata, 
+                    line=dict(color='black'),
+                    xaxis='x2'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=np.log10(self.peak_height), 
+                    y=self.peak,
+                    mode='markers',
+                    marker=dict(color='firebrick'),
+                    xaxis='x2'
+                    )
+                )
 
         my = np.zeros((self.n_spec, self.spatial_size))
         y_sigma = np.zeros((self.n_spec))
@@ -702,15 +742,21 @@ class TwoDSpec:
                 self.trace = prevtrace
                 self.trace_sigma = np.ones(len(prevtrace)) * self.seeing
                 if self.display:
-                    ax1.plot(
-                        [min(ztot[ztot>0]),max(ztot)],
-                        [min(self.trace), max(self.trace)],
-                        label='Spectrum ' + str(i+1)
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[min(ztot[ztot>0]),max(ztot)],
+                            y=[min(self.trace), max(self.trace)], 
+                            mode='lines',
+                            xaxis='x2'
+                            )
                         )
-                    ax0.plot(
-                        np.arange(len(self.trace)),
-                        self.trace,
-                        label='Spectrum ' + str(i+1)
+                    fig.add_trace(
+                        go.Scatter(
+                            x=np.arange(len(self.trace)),
+                            y=self.trace,
+                            mode='lines',
+                            xaxis='x2'
+                            )
                         )
                 break
 
@@ -739,10 +785,13 @@ class TwoDSpec:
                               ' or (2) reduce n_steps, or (3) provide prevtrace.')
 
                 if self.display:
-                    ax1.plot(
-                        self._gaus(ydata, pgaus[0], pgaus[1], pgaus[2], pgaus[3]),
-                        ydata,
-                        label='Spectrum ' + str(i+1)
+                    fig.add_trace(
+                        go.Scatter(
+                            x=np.log10(self._gaus(ydata, pgaus[0], pgaus[1], pgaus[2], pgaus[3])),
+                            y=ydata,
+                            mode='lines',
+                            xaxis='x2'
+                            )
                         )
 
                 # only allow data within a box around this peak
@@ -830,7 +879,14 @@ class TwoDSpec:
                 y_sigma[i] = np.nanmedian(slope * mx + intercept)
 
                 if self.display:
-                    ax0.plot(mx, my[i])
+                    fig.add_trace(
+                        go.Scatter(
+                            x=mx,
+                            y=my[i],
+                            mode='lines',
+                            xaxis='x'
+                            )
+                        )
 
                 if not self.silence:
                     if np.sum(ybins_sigma) == 0:
@@ -845,9 +901,27 @@ class TwoDSpec:
                           str(ybins_sigma) + ' pixels')
 
             if self.display:
-                ax1.legend()
-                ax1.grid()
-                plt.show()
+                fig.update_layout(
+                    autosize = True,
+                    yaxis_title='Spatial Direction / pixel',
+                    xaxis = dict(
+                        zeroline = False,
+                        domain = [0,0.5],
+                        showgrid = False,
+                        title='Spectral Direction / pixel'
+                    ),
+                    xaxis2 = dict(
+                        zeroline = False,
+                        domain = [0.5,1],
+                        showgrid = True,
+                        title='Integrated Count'
+                    ),
+                    bargap = 0,
+                    hovermode = 'closest',
+                    showlegend = False,
+                    height = 800
+                )
+                fig.show()
 
             # add the minimum pixel value from fmask before returning
             #if len(spatial_mask)>1:
@@ -1000,85 +1074,178 @@ class TwoDSpec:
                     )
 
         if self.display:
-            fig2, (ax0, ax1) = plt.subplots(nrows=2, sharex=True, figsize=(10,10))
-            fig2.tight_layout()
-            plt.subplots_adjust(bottom=0.08, hspace=0)
+            fig = go.Figure()
 
-            # show the image on the left
-            ax0.imshow(
-                np.log10(
-                    self.img[max(0, median_trace-widthdn-skysep-skywidth-1):
-                        min(median_trace+widthup+skysep+skywidth, len(self.img[0])), :]),
-                origin='lower',
-                interpolation="nearest",
-                aspect='auto',
-                extent=[0,
-                        len_trace,
-                        max(0, median_trace-widthdn-skysep-skywidth-1),
-                        min(median_trace+widthup+skysep+skywidth, len(self.img[0]))]
-                )
-            ax0.add_patch(
-                Rectangle(
-                    (0, median_trace-widthdn-1),
-                    width=len_trace,
-                    height=(apwidth*2 + 1),
-                    linewidth=2,
-                    edgecolor='k',
-                    facecolor='none',
-                    zorder=1
+            # show the image on the top
+            fig.add_trace(
+                go.Heatmap(
+                    x=np.arange(len_trace),
+                    y=np.arange(max(0, median_trace-widthdn-skysep-skywidth-1),min(median_trace+widthup+skysep+skywidth,len(self.img[0]))),
+                    z=np.log10(
+                        self.img[max(0, median_trace-widthdn-skysep-skywidth-1):min(median_trace+widthup+skysep+skywidth,len(self.img[0])),
+                                 :]
+                        ),
+                    colorscale="Viridis",
+                    xaxis='x',
+                    yaxis='y',
+                    colorbar=dict(
+                        title='log(ADU)'
+                        )
                     )
                 )
+
+            # Middle black box on the image
+            fig.add_trace(
+                go.Scatter(
+                    x=[0,
+                       len_trace,
+                       len_trace,
+                       0,
+                       0],
+                    y=[median_trace-widthdn-1,
+                       median_trace-widthdn-1,
+                       median_trace-widthdn-1 + (apwidth*2 + 1),
+                       median_trace-widthdn-1 + (apwidth*2 + 1),
+                       median_trace-widthdn-1],
+                    xaxis='x',
+                    yaxis='y',
+                    mode='lines',
+                    line_color='black',
+                    showlegend=False
+                    )
+            )
+
+            # Lower red box on the image
             if (itrace-widthdn >= 0):
-                ax0.add_patch(
-                    Rectangle(
-                        (0, max(0, median_trace-widthdn-skysep-(y1-y0)-1)),
-                        width=len_trace,
-                        height=min(skywidth, (y1-y0)),
-                        linewidth=2,
-                        edgecolor='r',
-                        facecolor='none',
-                        zorder=1
+                fig.add_trace(
+                    go.Scatter(
+                        x=[0,
+                           len_trace,
+                           len_trace,
+                           0,
+                           0],
+                        y=[max(0, median_trace-widthdn-skysep-(y1-y0)-1),
+                           max(0, median_trace-widthdn-skysep-(y1-y0)-1),
+                           max(0, median_trace-widthdn-skysep-(y1-y0)-1) + min(skywidth, (y1-y0)),
+                           max(0, median_trace-widthdn-skysep-(y1-y0)-1) + min(skywidth, (y1-y0)),
+                           max(0, median_trace-widthdn-skysep-(y1-y0)-1)],
+                        line_color='red',
+                        xaxis='x',
+                        yaxis='y',
+                        mode='lines',
+                        showlegend=False
                         )
-                    )
+                )
+
+            # Upper red box on the image
             if (itrace+widthup <= self.spatial_size):
-                ax0.add_patch(
-                    Rectangle(
-                        (0, min(median_trace+widthup+skysep, len(self.img[0]))),
-                        width=len_trace,
-                        height=min(skywidth, (y3-y2)),
-                        linewidth=2,
-                        edgecolor='r',
-                        facecolor='none',
-                        zorder=1
+                fig.add_trace(
+                    go.Scatter(
+                        x=[0,
+                           len_trace,
+                           len_trace,
+                           0,
+                           0],
+                        y=[min(median_trace+widthup+skysep, len(self.img[0])),
+                           min(median_trace+widthup+skysep, len(self.img[0])),
+                           min(median_trace+widthup+skysep, len(self.img[0])) + min(skywidth, (y3-y2)),
+                           min(median_trace+widthup+skysep, len(self.img[0])) + min(skywidth, (y3-y2)),
+                           min(median_trace+widthup+skysep, len(self.img[0]))],
+                        xaxis='x',
+                        yaxis='y',
+                        mode='lines',
+                        line_color='red',
+                        showlegend=False
                         )
-                    )
-            ax0.set_xlim(0-1, len_trace+1)
-            ax0.set_ylim(max(0, median_trace-widthdn-skysep-skywidth-1)-1,
-                         min(median_trace+widthup+skysep+skywidth, len(self.img[0]))+1)
-            ax0.set_ylabel('Spatial Direction / pixel')
-
-            # plot the spectrum of the target, sky and uncertainty
-            ax1.plot(range(len_trace), adu, label='Target ADU')
-            ax1.plot(range(len_trace), skyadu, label='Sky ADU')
-            ax1.plot(range(len_trace), aduerr, label='Uncertainty')
-            ax1.set_xlabel('Spectral Direction / pixel')
-            ax1.set_ylabel('ADU / count')
-            ax1.set_yscale('log')
-            ax1.set_ylim(bottom=10)
-            ax1.legend()
-            ax1.grid()
-
+                )
+            # extrated source, sky and uncertainty
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=adu,
+                    xaxis='x2',
+                    yaxis='y2',
+                    name='Target ADU'
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=skyadu,
+                    xaxis='x2',
+                    yaxis='y2',
+                    name='Sky ADU'
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=aduerr,
+                    xaxis='x2',
+                    yaxis='y2',
+                    name='Uncertainty'
+                )
+            )
             # plot the SNR
-            ax2 = ax1.twinx()
-            ax1.set_zorder(ax2.get_zorder()+1)
-            ax1.patch.set_visible(False)
-            ax2.plot(range(len_trace), adu/aduerr, color='lightgrey',
-                label='Signal-to-Noise Ratio')
-            ax2.set_ylabel('Signal-to-Noise Ratio')
-            ax2.set_ylim(bottom=0)
-            ax2.legend(loc='upper left')
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=adu/aduerr,
+                    xaxis='x2',
+                    yaxis='y3',
+                    line=dict(color='slategrey'),
+                    name='Signal-to-Noise Ratio'
+                )
+            )
 
-            plt.gca().set_prop_cycle(None)
+            # Decorative stuff
+            fig.update_layout(
+                autosize = True,
+                xaxis = dict(
+                    showticklabels=False
+                ),
+                yaxis = dict(
+                    zeroline = False,
+                    domain = [0.5,1],
+                    showgrid = False,
+                    title='Spatial Direction / pixel'
+                ),
+                yaxis2 = dict(
+                    range=[max(np.nanmin(np.log10(adu)),1),np.nanmax(np.log10(skyadu))],
+                    zeroline = False,
+                    domain = [0,0.5],
+                    showgrid = True,
+                    type='log',
+                    title='log(ADU / Count)',
+                ),
+                yaxis3 = dict(
+                    title='S/N ratio',
+                    anchor="x2",
+                    overlaying="y2",
+                    side="right"
+                ),
+                xaxis2 = dict(
+                    title='Spectral Direction / pixel',
+                    anchor="y2",
+                    matches="x"
+                ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=0.45,
+                    traceorder="normal",
+                    font=dict(
+                        family="sans-serif",
+                        size=12,
+                        color="black"
+                    ),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                bargap = 0,
+                hovermode = 'closest',
+                showlegend = True,
+                height = 800
+            )
+            fig.show()
 
         self.adu = adu
         self.skyadu = skyadu
@@ -1113,18 +1280,37 @@ class WavelengthPolyFit:
         self.peaks, _ = signal.find_peaks(
             self.spec, distance=self.distance, prominence=p)
 
-        if diaplay & matplotlib_imported:
-            plt.figure(1, figsize=(8,8))
-            plt.clf()
-            plt.plot(self.spec)
-            plt.vlines(
-                peaks,
-                self.spec[self.peaks.astype('int')],
-                self.spec.max()*1.1, colors='C1')
-            plt.ylim(0, self.spec.max()*1.1)
-            plt.xlim(0, len(self.spec))
-            plt.ylabel('Count')
-            plt.xlabel('Pixel')
+        if diaplay & plotly_imported:
+            fig = go.Figure()
+
+            # show the image on the top
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(self.spec),
+                    y=self.spec,
+                    line=dict(color='royalblue', width=4)
+                    )
+                )
+
+            for i in peaks:
+                fig.add_trace(
+                    go.Scatter(
+                        x=[i,i],
+                        y=[self.spec[self.peaks.astype('int')], self.spec.max()*1.1],
+                        line=dict(color='firebrick', width=4)
+                        )
+                    )
+
+            fig.update_layout(
+                autosize = True,
+                xaxis_title='Pixel',
+                yaxis_title='Count',
+                hovermode = 'closest',
+                showlegend = False,
+                height = 800
+            )
+
+        fig.show()
 
     def calibrate(self, elements=["Hg", "Ar", "Xe", "CuNeAr", "Kr"],
                   display=False, **kwargs):
@@ -1149,7 +1335,7 @@ class WavelengthPolyFit:
 
         pfit = c.match_peaks_to_atlas(p)[0]
 
-        if display & matplotlib_imported:
+        if display & plotly_imported:
             c.plot_fit(spec, pfit, tolerance=pix_scale)
 
         self.pfit = pfit
@@ -1231,21 +1417,32 @@ class StandardFlux:
         self.wave_std = wave
         self.fluxmag_std = fluxmag
 
-        if display & matplotlib_imported:
+        if display & plotly_imported:
             self.inspect_standard()
 
     def inspect_standard(self):
-        plt.figure(figsize=(10,6))
-        if self.ftype == 'flux':
-            plt.plot(self.wave_std, self.fluxmag_std, label='Standard Flux')
-        else:
-            plt.plot(self.wave_std, self.fluxmag_std, label='Standard Magnitude')
-        plt.title(self.group + ' : ' + self.target)
-        plt.xlabel(r'Wavelength / $\AA$')
-        plt.ylabel(r'Flux / ergs cm$^{-2}$ s$^{-1} \AA^{-1}$')
-        plt.ylim(min(self.fluxmag_std)*0.9, max(self.fluxmag_std)*1.1)
-        plt.grid()
-        plt.legend()
+        fig = go.Figure()
+
+        # show the image on the top
+        fig.add_trace(
+            go.Scatter(
+                x=self.wave_std,
+                y=self.fluxmag_std,
+                line=dict(color='royalblue', width=4)
+                )
+            )
+
+        fig.update_layout(
+            autosize=True,
+            title=self.group + ' : ' + self.target + ' ' + self.ftype,
+            xaxis_title=r'$\text{Wavelength / A}$',
+            yaxis_title=r'$\text{Flux / ergs cm}^{-2} \text{s}^{-1} \text{A}^{-1}$',
+            hovermode='closest',
+            showlegend=False,
+            height=800
+        )
+
+        fig.show()
 
 
 class OneDSpec:
@@ -1477,34 +1674,84 @@ class OneDSpec:
         self.flux_sen = flux_std
  
         # Diagnostic plot
-        if display & matplotlib_imported:
+        if display & plotly_imported:
             self.inspect_sencurve()
 
 
     def inspect_sencurve(self):
-        fig, ax1 = plt.subplots(figsize=(10,10))
-        ax1.plot(self.wave_sen, self.flux_sen,
-                 label='ADU (Observed)')
-        ax1.legend()
-        ax1.set_xlabel('Wavelength / A')
-        if self.smooth:
-            ax1.set_ylabel('Smoothed ADU')
-            ax1.set_title('SG(' + str(self.slength) + ', ' + str(self.sorder) +
-                          ')-Smoothed ' +  self.group + ' : ' + self.target)
-        else:
-            ax1.set_ylabel('ADU')
-            ax1.set_title(self.group + ' : ' + self.target)
+        fig = go.Figure()
+        # show the image on the top
+        fig.add_trace(
+            go.Scatter(
+                x=self.wave_sen,
+                y=self.flux_sen,
+                line=dict(color='royalblue', width=4),
+                name='ADU (Observed)'
+                )
+            )
 
-        ax2 = ax1.twinx()
-        ax1.set_zorder(ax2.get_zorder()+1)
-        ax1.patch.set_visible(False)
-        ax2.plot(self.wave_sen, self.sensitivity, color='grey',
-                 label='Sensitivity Curve')
-        ax2.plot(self.wave_sen, 10.**self.sencurve(self.wave_sen), color='black',
-                 label='Best-fit Sensitivity Curve')
-        ax2.legend(loc='upper left')
-        ax2.set_ylabel('Sensitivity Curve')
-        ax2.set_yscale('log')
+        fig.add_trace(
+            go.Scatter(
+                x=self.wave_sen,
+                y=self.sensitivity,
+                yaxis='y2',
+                line=dict(color='firebrick', width=4),
+                name='Sensitivity Curve'
+                )
+            )
+
+        fig.add_trace(
+            go.Scatter(
+                x=self.wave_sen,
+                y=10.**self.sencurve(self.wave_sen),
+                yaxis='y2',
+                line=dict(color='black', width=2),
+                name='Best-fit Sensitivity Curve'
+                )
+            )
+
+        if self.smooth:
+            fig.update_layout(
+                title='SG(' + str(self.slength) + ', ' + str(self.sorder) +
+                      ')-Smoothed ' +  self.group + ' : ' + self.target,
+                yaxis_title='Smoothed ADU'
+                )
+        else:
+            fig.update_layout(
+                title=self.group + ' : ' + self.target,
+                yaxis_title='ADU'
+                )
+
+        fig.update_layout(
+            autosize=True,
+            hovermode='closest',
+            showlegend=True,
+            xaxis_title=r'$\text{Wavelength / A}$',
+            yaxis = dict(
+                title='ADU'
+            ),
+            yaxis2 = dict(
+                title='Sensitivity Curve',
+                type='log',
+                anchor="x",
+                overlaying="y",
+                side="right"
+            ),
+            legend=go.layout.Legend(
+                x=0,
+                y=1,
+                traceorder="normal",
+                font=dict(
+                    family="sans-serif",
+                    size=12,
+                    color="black"
+                ),
+                bgcolor='rgba(0,0,0,0)'
+            ),
+            height=800
+        )
+
+        fig.show()
 
 
     def apply_flux_calibration(self, stype='all'):
@@ -1529,55 +1776,226 @@ class OneDSpec:
 
     def inspect_reduced_spectrum(self, stype='all'):
         if stype=='science':
-            plt.figure(figsize=(10,10))
-            plt.plot(self.wave, self.flux, label='Flux', zorder=20)
-            plt.plot(self.wave, self.fluxerr, label='Flux Uncertainty')
-            plt.plot(self.wave, self.skyflux, label='Sky Flux')
-            plt.ylim(
-                np.nanpercentile(self.flux, 10)*0.9,
-                np.nanpercentile(self.flux, 95)*1.1)
-            plt.legend()
-            plt.ylabel('Flux')
-            plt.xlabel('Wavelength / A')
-            plt.grid()
-        elif stype=='standard':
-            plt.figure(figsize=(10,10))
-            plt.plot(self.wave_std, self.flux_std, label='Flux', zorder=20)
-            plt.plot(self.wave_std, self.fluxerr_std, label='Flux Uncertainty')
-            plt.plot(self.wave_std, self.skyflux_std, label='Sky Flux')
-            plt.plot(self.wave_std_true, self.fluxmag_std_true, label='Standard')
-            plt.ylim(
-                np.nanpercentile(self.fluxmag_std_true, 10)*0.9,
-                np.nanpercentile(self.fluxmag_std_true, 95)*1.1)
-            plt.legend()
-            plt.ylabel('Flux')
-            plt.xlabel('Wavelength / A')
-            plt.grid()
-        elif stype=='all':
-            plt.figure(1, figsize=(10,10))
-            plt.plot(self.wave, self.flux, label='Flux', zorder=20)
-            plt.plot(self.wave, self.fluxerr, label='Flux Uncertainty')
-            plt.plot(self.wave, self.skyflux, label='Sky Flux')
-            plt.ylim(
-                np.nanpercentile(self.flux, 10)*0.9,
-                np.nanpercentile(self.flux, 95)*1.1)
-            plt.legend()
-            plt.ylabel('Flux')
-            plt.xlabel('Wavelength / A')
-            plt.grid()
+            fig = go.Figure()
+            # show the image on the top
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave,
+                    y=self.flux,
+                    line=dict(color='royalblue'),
+                    name='Flux'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave,
+                    y=self.fluxerr,
+                    line=dict(color='firebrick'),
+                    name='Flux Uncertainty'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave,
+                    y=self.skyflux,
+                    line=dict(color='orange'),
+                    name='Sky Flux'
+                    )
+                )
+            fig.update_layout(
+                autosize=True,
+                hovermode='closest',
+                showlegend=True,
+                xaxis_title='Wavelength / A',
+                yaxis=dict(
+                    title='Flux',
+                    type='log'
+                    ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=1,
+                    traceorder="normal",
+                    font=dict(
+                        family="sans-serif",
+                        size=12,
+                        color="black"
+                    ),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                height=800
+            )
 
-            plt.figure(2, figsize=(10,10))
-            plt.plot(self.wave_std, self.flux_std, label='Flux', zorder=15)
-            plt.plot(self.wave_std, self.fluxerr_std, label='Flux Uncertainty')
-            plt.plot(self.wave_std, self.skyflux_std, label='Sky Flux')
-            plt.plot(self.wave_std_true, self.fluxmag_std_true, label='Standard', zorder=20)
-            plt.ylim(
-                np.nanpercentile(self.fluxmag_std_true, 10)*0.9,
-                np.nanpercentile(self.fluxmag_std_true, 95)*1.1)
-            plt.legend()
-            plt.ylabel('Flux')
-            plt.xlabel('Wavelength / A')
-            plt.grid()
+            fig.show()
+
+        elif stype=='standard':
+            fig = go.Figure()
+            # show the image on the top
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave_std,
+                    y=self.flux_std,
+                    line=dict(color='royalblue'),
+                    name='Flux'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave_std,
+                    y=self.fluxerr_std,
+                    line=dict(color='firebrick'),
+                    name='Flux Uncertainty'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave_std,
+                    y=self.skyflux_std,
+                    line=dict(color='orange'),
+                    name='Sky Flux'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave_std_true,
+                    y=self.fluxmag_std_true,
+                    line=dict(color='black'),
+                    name='Standard'
+                    )
+                )
+            fig.update_layout(
+                autosize=True,
+                hovermode='closest',
+                showlegend=True,
+                xaxis_title='Wavelength / A',
+                yaxis=dict(
+                    title='Flux',
+                    type='log'
+                    ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=1,
+                    traceorder="normal",
+                    font=dict(
+                        family="sans-serif",
+                        size=12,
+                        color="black"
+                    ),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                height=800
+            )
+
+            fig.show()
+        elif stype=='all':
+            fig = go.Figure()
+            # show the image on the top
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave,
+                    y=self.flux,
+                    line=dict(color='royalblue'),
+                    name='Flux'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave,
+                    y=self.fluxerr,
+                    line=dict(color='firebrick'),
+                    name='Flux Uncertainty'
+                    )
+                )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.wave,
+                    y=self.skyflux,
+                    line=dict(color='orange'),
+                    name='Sky Flux'
+                    )
+                )
+            fig.update_layout(
+                autosize=True,
+                hovermode='closest',
+                showlegend=True,
+                xaxis_title='Wavelength / A',
+                yaxis=dict(
+                    title='Flux',
+                    type='log'
+                    ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=1,
+                    traceorder="normal",
+                    font=dict(
+                        family="sans-serif",
+                        size=12,
+                        color="black"
+                    ),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                height=800
+            )
+
+            fig.show()
+
+            fig2 = go.Figure()
+            # show the image on the top
+            fig2.add_trace(
+                go.Scatter(
+                    x=self.wave_std,
+                    y=self.flux_std,
+                    line=dict(color='royalblue'),
+                    name='Flux'
+                    )
+                )
+            fig2.add_trace(
+                go.Scatter(
+                    x=self.wave_std,
+                    y=self.fluxerr_std,
+                    line=dict(color='firebrick'),
+                    name='Flux Uncertainty'
+                    )
+                )
+            fig2.add_trace(
+                go.Scatter(
+                    x=self.wave_std,
+                    y=self.skyflux_std,
+                    line=dict(color='orange'),
+                    name='Sky Flux'
+                    )
+                )
+            fig2.add_trace(
+                go.Scatter(
+                    x=self.wave_std_true,
+                    y=self.fluxmag_std_true,
+                    line=dict(color='black'),
+                    name='Standard'
+                    )
+                )
+            fig2.update_layout(
+                autosize=True,
+                hovermode='closest',
+                showlegend=True,
+                xaxis_title='Wavelength / A',
+                yaxis=dict(
+                    title='Flux',
+                    type='log'
+                    ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=1,
+                    traceorder="normal",
+                    font=dict(
+                        family="sans-serif",
+                        size=12,
+                        color="black"
+                    ),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                height=800
+            )
+
+            fig2.show()
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
                 '(2) standard; or (3) all.')
