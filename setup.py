@@ -13,7 +13,7 @@ setup(
     packages=find_packages(),
     author='Marco Lam',
     author_email='cylammarco@gmail.com',
-    license='GPL',
+    license='GPLv3',
     long_description=open('README.md').read(),
     zip_safe=False,
     include_package_data=True,
