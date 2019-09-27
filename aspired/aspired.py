@@ -37,7 +37,7 @@ except ImportError:
     warnings.warn(
         'plotly is not present, diagnostic plots cannot be generated.')
 
-from standard_list import *
+from .standard_list import *
 
 
 class ImageReduction:
@@ -339,10 +339,7 @@ class TwoDSpec:
                  gain=1.,
                  seeing=1.2,
                  exptime=1.,
-                 silence=False,
-                 display=True,
-                 renderer='default',
-                 verbose=False):
+                 silence=False):
         '''
         cr_sigma : float, optional
             Cosmic ray sigma clipping limit, only used if extraction is optimal.
@@ -367,11 +364,6 @@ class TwoDSpec:
         self.seeing = seeing
         self.exptime = exptime
         self.silence = silence
-        self.display = display
-        if not plotly_imported:
-            self.display = False
-        self.renderer = renderer
-        self.verbose = verbose
 
         # cosmic ray rejection
         if cr:
@@ -426,7 +418,7 @@ class TwoDSpec:
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
-    def _identify_spectrum(self, f_height, Saxis, display, renderer):
+    def _identify_spectrum(self, f_height, Saxis, display, renderer, verbose):
         """
         Identify peaks assuming the spatial and spectral directions are
         aligned with the X and Y direction within a few degrees.
@@ -519,7 +511,7 @@ class TwoDSpec:
         self.peak = peaks_y
         self.peak_height = heights_y
 
-    def _optimal_signal(self, pix, xslice, sky, mu, sigma, display, renderer):
+    def _optimal_signal(self, pix, xslice, sky, mu, sigma, display, renderer, verbose):
         """
         Iterate to get optimal signal, for internal use only
 
@@ -603,7 +595,7 @@ class TwoDSpec:
                  prevtrace=(0, ),
                  fittype='spline',
                  order=3,
-                 bigbox=8):
+                 bigbox=8, display=False, renderer='default', verbose=False):
         """
         Trace the spectrum aperture in an image
         Assumes wavelength axis is along the X, spatial axis along the Y.
@@ -686,9 +678,10 @@ class TwoDSpec:
         self._identify_spectrum(0.01,
                                 self.Saxis,
                                 display=False,
-                                renderer=self.renderer)
+                                renderer=renderer,
+                                verbose=verbose)
 
-        if self.display:
+        if display:
             # set a side-by-side subplot
             fig = go.Figure()
 
@@ -735,7 +728,7 @@ class TwoDSpec:
             if (recenter is False) and (len(prevtrace) > 10):
                 self.trace = prevtrace
                 self.trace_sigma = np.ones(len(prevtrace)) * self.seeing
-                if self.display:
+                if display:
                     fig.add_trace(
                         go.Scatter(x=[min(ztot[ztot > 0]),
                                       max(ztot)],
@@ -776,7 +769,7 @@ class TwoDSpec:
                             ' or (2) reduce n_steps, or (3) provide prevtrace.'
                         )
 
-                if self.display:
+                if display:
                     fig.add_trace(
                         go.Scatter(x=np.log10(
                             self._gaus(ydata, pgaus[0], pgaus[1], pgaus[2],
@@ -873,7 +866,7 @@ class TwoDSpec:
                         stats.linregress(mxbins, ybins_sigma[:-1])
                 y_sigma[i] = np.nanmedian(slope * mx + intercept)
 
-                if self.display:
+                if display:
                     fig.add_trace(
                         go.Scatter(x=mx, y=my[i], mode='lines', xaxis='x'))
 
@@ -894,7 +887,14 @@ class TwoDSpec:
                           ' : Trace gaussian width = ' + str(ybins_sigma) +
                           ' pixels')
 
-            if self.display:
+            # add the minimum pixel value from fmask before returning
+            #if len(spatial_mask)>1:
+            #    my += min(spatial_mask)
+
+            self.trace = my[0]
+            self.trace_sigma = y_sigma[0]
+
+            if display:
                 fig.update_layout(autosize=True,
                                   yaxis_title='Spatial Direction / pixel',
                                   xaxis=dict(
@@ -910,27 +910,19 @@ class TwoDSpec:
                                   hovermode='closest',
                                   showlegend=False,
                                   height=800)
-            if self.renderer == 'default':
-                fig.show()
-            else:
-                fig.show(self.renderer)
 
-            if self.verbose:
-                return fig.to_json()
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
 
-            # add the minimum pixel value from fmask before returning
-            #if len(spatial_mask)>1:
-            #    my += min(spatial_mask)
+                if verbose:
+                    return fig.to_json()
 
-            self.trace = my[0]
-            self.trace_sigma = y_sigma[0]
 
-    def ap_extract(self,
-                   apwidth=7,
-                   skysep=3,
-                   skywidth=7,
-                   skydeg=0,
-                   optimal=True):
+    def ap_extract(self, apwidth=7, skysep=3, skywidth=7, skydeg=0, 
+                   optimal=True, display=False, renderer='default',
+                   verbose=False):
 
         #
         # CURRENTLY ONLY WORK FOR A SINGLE TRACE. EVEN THOUGH ap_trace
@@ -1075,9 +1067,14 @@ class TwoDSpec:
                     self.trace[i],
                     trace_sigma[i],
                     display=False,
-                    renderer=self.renderer)
+                    renderer=renderer,
+                    verbose=verbose)
 
-        if self.display:
+        self.adu = adu
+        self.skyadu = skyadu
+        self.aduerr = aduerr
+
+        if display:
             fig = go.Figure()
 
             # show the image on the top
@@ -1231,17 +1228,13 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=True,
                               height=800)
-            if self.renderer == 'default':
+            if renderer == 'default':
                 fig.show()
             else:
-                fig.show(self.renderer)
+                fig.show(renderer)
 
-            if self.verbose:
+            if verbose:
                 return fig.to_json()
-
-        self.adu = adu
-        self.skyadu = skyadu
-        self.aduerr = aduerr
 
 
 class WavelengthPolyFit:
@@ -1306,12 +1299,12 @@ class WavelengthPolyFit:
                               showlegend=False,
                               height=800)
 
-        if self.renderer == 'default':
+        if renderer == 'default':
             fig.show()
         else:
-            fig.show(self.renderer)
+            fig.show(renderer)
 
-        if self.verbose:
+        if verbose:
             return fig.to_json()
 
     def calibrate(self,
@@ -1349,16 +1342,12 @@ class StandardFlux:
                  group,
                  cutoff=0.4,
                  ftype='flux',
-                 silence=False,
-                 renderer='default',
-                 verbose=False):
+                 silence=False):
         self.target = target
         self.group = group
         self.cutoff = cutoff
         self.ftype = ftype
         self.silence = silence
-        self.renderer = renderer
-        self.verbose = verbose
         self._lookup_standard()
 
     def _lookup_standard(self):
@@ -1381,7 +1370,7 @@ class StandardFlux:
                 'The requrested spectrophotometric library contains: ',
                 target_list, '', 'Are you looking for these: ', best_match)
 
-    def load_standard(self, display=False):
+    def load_standard(self, display=False, renderer='default', verbose=False):
         '''
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag in units of
@@ -1423,10 +1412,12 @@ class StandardFlux:
         self.wave_std = wave
         self.fluxmag_std = fluxmag
 
+        # Note that if the renderer does not generate any image (e.g. JSON)
+        # nothing will be displayed
         if display & plotly_imported:
-            self.inspect_standard()
+            self.inspect_standard(renderer, verbose)
 
-    def inspect_standard(self):
+    def inspect_standard(self, renderer='default', verbose=False):
         fig = go.Figure()
 
         # show the image on the top
@@ -1445,12 +1436,12 @@ class StandardFlux:
             showlegend=False,
             height=800)
 
-        if self.renderer == 'default':
+        if renderer == 'default':
             fig.show()
         else:
-            fig.show(self.renderer)
+            fig.show(renderer)
 
-        if self.verbose:
+        if verbose:
             return fig.to_json()
 
 
@@ -1460,17 +1451,13 @@ class OneDSpec:
                  wave_cal,
                  standard=None,
                  wave_cal_std=None,
-                 flux_cal=None,
-                 renderer='default',
-                 verbose=False):
+                 flux_cal=None):
         '''
         twodspec : TwoDSpec object
         wavelength_calibrate : WavelengthPolyFit object
         flux_calibrate : StandardFlux object
         '''
 
-        self.renderer = renderer
-        self.verbose = verbose
         try:
             self.adu = science.adu
             self.aduerr = science.aduerr
@@ -1610,12 +1597,8 @@ class OneDSpec:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
 
-    def compute_sencurve(self,
-                         kind=3,
-                         smooth=False,
-                         slength=5,
-                         sorder=2,
-                         display=False):
+    def compute_sencurve(self, kind=3, smooth=False, slength=5, sorder=2,
+                         display=False, renderer='default', verbose=False):
         '''
         Get the standard flux or magnitude of the given target and group
         based on the given array of wavelengths. Some standard libraries
@@ -1697,7 +1680,7 @@ class OneDSpec:
         if display & plotly_imported:
             self.inspect_sencurve()
 
-    def inspect_sencurve(self):
+    def inspect_sencurve(self, renderer='default', verbose=False):
         fig = go.Figure()
         # show the image on the top
         fig.add_trace(
@@ -1749,12 +1732,12 @@ class OneDSpec:
                                                   bgcolor='rgba(0,0,0,0)'),
                           height=800)
 
-        if self.renderer == 'default':
+        if renderer == 'default':
             fig.show()
         else:
-            fig.show(self.renderer)
+            fig.show(renderer)
 
-        if self.verbose:
+        if verbose:
             print(fig.to_json())
 
     def apply_flux_calibration(self, stype='all'):
@@ -1781,7 +1764,9 @@ class OneDSpec:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
 
-    def inspect_reduced_spectrum(self, stype='all'):
+    def inspect_reduced_spectrum(self, stype='all', wave_min=4000.,
+                                 wave_max=8000., renderer='default',
+                                 verbose=False):
         if stype == 'science':
             fig = go.Figure()
             # show the image on the top
@@ -1803,7 +1788,9 @@ class OneDSpec:
             fig.update_layout(autosize=True,
                               hovermode='closest',
                               showlegend=True,
-                              xaxis_title='Wavelength / A',
+                              xaxis=dict(
+                                  title='Wavelength / A',
+                                  range=[wave_min, wave_max]),
                               yaxis=dict(title='Flux', type='log'),
                               legend=go.layout.Legend(x=0,
                                                       y=1,
@@ -1815,12 +1802,12 @@ class OneDSpec:
                                                       bgcolor='rgba(0,0,0,0)'),
                               height=800)
 
-            if self.renderer == 'default':
+            if renderer == 'default':
                 fig.show()
             else:
-                fig.show(self.renderer)
+                fig.show(renderer)
 
-            if self.verbose:
+            if verbose:
                 return fig.to_json()
 
         elif stype == 'standard':
@@ -1849,7 +1836,9 @@ class OneDSpec:
             fig.update_layout(autosize=True,
                               hovermode='closest',
                               showlegend=True,
-                              xaxis_title='Wavelength / A',
+                              xaxis=dict(
+                                  title='Wavelength / A',
+                                  range=[wave_min, wave_max]),
                               yaxis=dict(title='Flux', type='log'),
                               legend=go.layout.Legend(x=0,
                                                       y=1,
@@ -1861,7 +1850,7 @@ class OneDSpec:
                                                       bgcolor='rgba(0,0,0,0)'),
                               height=800)
 
-            fig.show(self.renderer)
+            fig.show(renderer)
         elif stype == 'all':
             fig = go.Figure()
             # show the image on the top
@@ -1883,7 +1872,9 @@ class OneDSpec:
             fig.update_layout(autosize=True,
                               hovermode='closest',
                               showlegend=True,
-                              xaxis_title='Wavelength / A',
+                              xaxis=dict(
+                                  title='Wavelength / A',
+                                  range=[wave_min, wave_max]),
                               yaxis=dict(title='Flux', type='log'),
                               legend=go.layout.Legend(x=0,
                                                       y=1,
@@ -1895,10 +1886,10 @@ class OneDSpec:
                                                       bgcolor='rgba(0,0,0,0)'),
                               height=800)
 
-            if self.renderer == 'default':
+            if renderer == 'default':
                 fig.show()
             else:
-                fig.show(self.renderer)
+                fig.show(renderer)
 
             fig2 = go.Figure()
             # show the image on the top
@@ -1925,8 +1916,12 @@ class OneDSpec:
             fig2.update_layout(autosize=True,
                                hovermode='closest',
                                showlegend=True,
-                               xaxis_title='Wavelength / A',
-                               yaxis=dict(title='Flux', type='log'),
+                               xaxis=dict(
+                                   title='Wavelength / A',
+                                   range=[wave_min, wave_max]),
+                               yaxis=dict(
+                                   title='Flux',
+                                   type='log'),
                                legend=go.layout.Legend(
                                    x=0,
                                    y=1,
@@ -1937,12 +1932,12 @@ class OneDSpec:
                                    bgcolor='rgba(0,0,0,0)'),
                                height=800)
 
-            if self.renderer == 'default':
+            if renderer == 'default':
                 fig2.show()
             else:
-                fig2.show(self.renderer)
+                fig2.show(renderer)
 
-            if self.verbose:
+            if verbose:
                 return fig.to_json(), fig2.to_json()
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
