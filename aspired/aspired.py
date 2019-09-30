@@ -1197,8 +1197,8 @@ class TwoDSpec:
                                          title='Spatial Direction / pixel'),
                               yaxis2=dict(
                                   range=[
-                                      max(np.nanmin(np.log10(adu)), 1),
-                                      np.nanmax(np.log10(skyadu))
+                                      min(np.nanmin(np.log10(adu)), np.nanmin(np.log10(aduerr)), np.nanmin(np.log10(skyadu)), 1),
+                                      max(np.nanmax(np.log10(adu)), np.nanmax(np.log10(skyadu)))
                                   ],
                                   zeroline=False,
                                   domain=[0, 0.5],
