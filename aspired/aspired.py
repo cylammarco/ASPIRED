@@ -313,11 +313,10 @@ class ImageReduction:
                     data=go.Heatmap(z=self.light_master, colorscale="Viridis"))
             if renderer == 'default':
                 fig.show()
+            elif verbose:
+                return fig.to_json()
             else:
                 fig.show(renderer)
-
-            if verbose:
-                return fig.to_json()
         else:
             warnings.warn('plotly is not present, diagnostic plots cannot be '
                           'generated.')
@@ -502,11 +501,10 @@ class TwoDSpec:
 
             if renderer == 'default':
                 fig.show()
+            elif verbose:
+                return fig.to_json()
             else:
                 fig.show(renderer)
-
-            if verbose:
-                return fig.to_json()
 
         self.peak = peaks_y
         self.peak_height = heights_y
@@ -913,11 +911,10 @@ class TwoDSpec:
 
                 if renderer == 'default':
                     fig.show()
+                elif verbose:
+                    return fig.to_json()
                 else:
                     fig.show(renderer)
-
-                if verbose:
-                    return fig.to_json()
 
 
     def ap_extract(self, apwidth=7, skysep=3, skywidth=7, skydeg=0, 
@@ -1230,11 +1227,10 @@ class TwoDSpec:
                               height=800)
             if renderer == 'default':
                 fig.show()
+            elif verbose:
+                return fig.to_json()
             else:
                 fig.show(renderer)
-
-            if verbose:
-                return fig.to_json()
 
 
 class WavelengthPolyFit:
@@ -1301,11 +1297,10 @@ class WavelengthPolyFit:
 
         if renderer == 'default':
             fig.show()
+        elif verbose:
+            return fig.to_json()
         else:
             fig.show(renderer)
-
-        if verbose:
-            return fig.to_json()
 
     def calibrate(self,
                   elements=["Hg", "Ar", "Xe", "CuNeAr", "Kr"],
@@ -1438,11 +1433,10 @@ class StandardFlux:
 
         if renderer == 'default':
             fig.show()
+        elif verbose:
+            return fig.to_json()
         else:
             fig.show(renderer)
-
-        if verbose:
-            return fig.to_json()
 
 
 class OneDSpec:
@@ -1731,14 +1725,12 @@ class OneDSpec:
                                                       color="black"),
                                                   bgcolor='rgba(0,0,0,0)'),
                           height=800)
-
         if renderer == 'default':
             fig.show()
+        elif verbose:
+            return fig.to_json()
         else:
             fig.show(renderer)
-
-        if verbose:
-            print(fig.to_json())
 
     def apply_flux_calibration(self, stype='all'):
         if stype == 'science':
@@ -1804,11 +1796,10 @@ class OneDSpec:
 
             if renderer == 'default':
                 fig.show()
+            elif verbose:
+                return fig.to_json()
             else:
                 fig.show(renderer)
-
-            if verbose:
-                return fig.to_json()
 
         elif stype == 'standard':
             fig = go.Figure()
@@ -1934,11 +1925,10 @@ class OneDSpec:
 
             if renderer == 'default':
                 fig2.show()
+            elif verbose:
+                return fig1.to_json(), fig2.to_json()
             else:
                 fig2.show(renderer)
-
-            if verbose:
-                return fig.to_json(), fig2.to_json()
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
