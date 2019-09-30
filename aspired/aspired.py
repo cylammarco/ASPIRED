@@ -311,10 +311,10 @@ class ImageReduction:
             else:
                 fig = go.Figure(
                     data=go.Heatmap(z=self.light_master, colorscale="Viridis"))
+            if verbose:
+                return fig.to_json()
             if renderer == 'default':
                 fig.show()
-            elif verbose:
-                return fig.to_json()
             else:
                 fig.show(renderer)
         else:
@@ -499,10 +499,10 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=False)
 
+            if verbose:
+                return fig.to_json()
             if renderer == 'default':
                 fig.show()
-            elif verbose:
-                return fig.to_json()
             else:
                 fig.show(renderer)
 
@@ -909,10 +909,10 @@ class TwoDSpec:
                                   showlegend=False,
                                   height=800)
 
+                if verbose:
+                    return fig.to_json()
                 if renderer == 'default':
                     fig.show()
-                elif verbose:
-                    return fig.to_json()
                 else:
                     fig.show(renderer)
 
@@ -1225,10 +1225,10 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=True,
                               height=800)
+            if verbose:
+                return fig.to_json()
             if renderer == 'default':
                 fig.show()
-            elif verbose:
-                return fig.to_json()
             else:
                 fig.show(renderer)
 
@@ -1295,10 +1295,10 @@ class WavelengthPolyFit:
                               showlegend=False,
                               height=800)
 
+        if verbose:
+            return fig.to_json()
         if renderer == 'default':
             fig.show()
-        elif verbose:
-            return fig.to_json()
         else:
             fig.show(renderer)
 
@@ -1431,10 +1431,10 @@ class StandardFlux:
             showlegend=False,
             height=800)
 
+        if verbose:
+            return fig.to_json()
         if renderer == 'default':
             fig.show()
-        elif verbose:
-            return fig.to_json()
         else:
             fig.show(renderer)
 
@@ -1725,10 +1725,10 @@ class OneDSpec:
                                                       color="black"),
                                                   bgcolor='rgba(0,0,0,0)'),
                           height=800)
+        if verbose:
+            return fig.to_json()
         if renderer == 'default':
             fig.show()
-        elif verbose:
-            return fig.to_json()
         else:
             fig.show(renderer)
 
@@ -1794,10 +1794,10 @@ class OneDSpec:
                                                       bgcolor='rgba(0,0,0,0)'),
                               height=800)
 
+            if verbose:
+                return fig.to_json()
             if renderer == 'default':
                 fig.show()
-            elif verbose:
-                return fig.to_json()
             else:
                 fig.show(renderer)
 
@@ -1923,12 +1923,12 @@ class OneDSpec:
                                    bgcolor='rgba(0,0,0,0)'),
                                height=800)
 
+            if verbose:
+                return fig.to_json()
             if renderer == 'default':
-                fig2.show()
-            elif verbose:
-                return fig1.to_json(), fig2.to_json()
+                fig.show()
             else:
-                fig2.show(renderer)
+                fig.show(renderer)
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
