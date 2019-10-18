@@ -37,7 +37,7 @@ except ImportError:
     warnings.warn(
         'plotly is not present, diagnostic plots cannot be generated.')
 
-from .standard_list import *
+from standard_list import *
 
 
 class ImageReduction:
@@ -1359,7 +1359,7 @@ class StandardFlux:
         if self.target not in target_list:
             best_match = difflib.get_close_matches(self.target,
                                                    target_list,
-                                                   cutoff=cutoff)
+                                                   cutoff=self.cutoff)
             raise ValueError(
                 'Requested standard star is not in the library.', '',
                 'The requrested spectrophotometric library contains: ',
@@ -1924,11 +1924,11 @@ class OneDSpec:
                                height=800)
 
             if verbose:
-                return fig.to_json()
+                return fig2.to_json()
             if renderer == 'default':
-                fig.show()
+                fig2.show()
             else:
-                fig.show(renderer)
+                fig2.show(renderer)
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
