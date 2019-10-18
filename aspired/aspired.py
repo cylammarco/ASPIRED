@@ -37,7 +37,7 @@ except ImportError:
     warnings.warn(
         'plotly is not present, diagnostic plots cannot be generated.')
 
-from standard_list import *
+from .standard_list import *
 
 
 class ImageReduction:
