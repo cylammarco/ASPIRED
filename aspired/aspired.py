@@ -350,10 +350,10 @@ class TwoDSpec:
         '''
 
         self.Saxis = Saxis
-        if Saxis is 0:
-            self.Waxis = 1
-        else:
+        if Saxis is 1:
             self.Waxis = 0
+        else:
+            self.Waxis = 1
         self.spatial_mask = spatial_mask
         self.spec_mask = spec_mask
         self.n_spec = n_spec
@@ -588,12 +588,222 @@ class TwoDSpec:
         return signal, noise
 
     def ap_trace(self,
-                 nsteps=20,
-                 recenter=False,
-                 prevtrace=(0, ),
-                 fittype='spline',
-                 order=3,
-                 bigbox=8, display=False, renderer='default', verbose=False):
+                 N_spec,
+                 N_window=25,
+                 spec_ref=0.5,
+                 spec_sep=5,
+                 resample_factor=10,
+                 rescale=False,
+                 scaling_min=0.975,
+                 scaling_max=1.025,
+                 scaling_step=0.005,
+                 p_bg=5,
+                 tol=3,
+                 display=False,
+                 renderer='default',
+                 verbose=False):
+
+        # Get the shape of the 2D spectrum and define upsampling ratio
+        if self.Saxis is 1:
+            N_wave = len(self.img[0])
+            N_spatial = len(self.img)
+        else:
+            N_wave = len(self.img)
+            N_spatial = len(self.img[0])
+
+        N_resample = N_spatial * resample_factor
+
+        # window size
+        w_size = N_wave // N_window
+        img_split = np.array_split(self.img, N_window, axis=self.Saxis)
+
+        lines_ref_init = np.nanmedian(img_split[0], axis=self.Saxis)
+        lines_ref_init_resampled = signal.resample(lines_ref_init, N_resample)
+
+        # linear scaling limits
+        if rescale:
+            scaling_range = np.arange(scaling_min, scaling_max, scaling_step)
+        else:
+            scaling_range = np.ones(1)
+
+        # estimate the 5-th percentile as the sky background level
+        lines_ref = lines_ref_init_resampled - np.percentile(lines_ref_init_resampled, p_bg)
+
+        shift_solution = np.zeros(N_window)
+        scale_solution = np.ones(N_window)
+
+        # maximum shift (SEMI-AMPLITUDE) from the neighbour (pixel)
+        tol_len = int(tol * resample_factor)
+
+        # Scipy correlate method
+        for i in range(N_window):
+
+            # smooth by taking the median
+            lines = np.nanmedian(img_split[i], axis=self.Saxis)
+            lines = signal.resample(lines, N_resample)
+            lines = lines - np.percentile(lines, p_bg)
+
+            # cross-correlation values and indices
+            corr_val = np.zeros(len(scaling_range)) 
+            corr_idx = np.zeros(len(scaling_range)) 
+
+            # upsample by the same amount as the reference
+            for j, scale in enumerate(scaling_range):
+
+                # Upsampling the reference lines
+                lines_ref_j = signal.resample(lines_ref, int(N_resample * scale))
+
+                # find the linear shift
+                corr = signal.correlate(lines_ref_j, lines)
+
+                # only consider the defined range of shift tolerance
+                corr = corr[N_resample-1-tol_len:N_resample+tol_len]
+
+                # Maximum corr position is the shift
+                corr_val[j] = np.nanmax(corr)
+                corr_idx[j] = np.nanargmax(corr) - tol_len
+
+            # Maximum corr_val position is the scaling
+            shift_solution[i] = corr_idx[np.nanargmax(corr_val)]
+            scale_solution[i] = scaling_range[np.nanargmax(corr_val)]
+
+            # Update (increment) the reference line
+            lines_ref = lines
+
+        # Find the spectral position in the middle of the gram in the upsampled pixel location location
+        peaks = signal.find_peaks(
+            signal.resample(
+                np.nanmedian(img_split[N_window//2], axis=self.Saxis),
+                N_resample
+                ),
+            distance=spec_sep,
+            prominence=1)
+
+        # update the number of spectra if the number of peaks detected is less
+        # than the number requested
+        N_spec = min(len(peaks), N_spec)
+
+        # Sort the positions by the prominences, and return to the original scale (i.e. with subpixel position)
+        spec_init = np.sort(
+            peaks[0][np.argsort(-peaks[1]['prominences'])][:N_spec]
+            ) / resample_factor
+
+        # Create array to populate the spectral locations
+        spec = np.zeros((len(spec_init), len(img_split)))
+        #spec_val = np.zeros((len(spec_init), len(img_split)))
+
+        # Populate the initial values
+        spec[:,N_window//2] = spec_init
+
+        # Pixel positions of the mid point of each data_split
+        spec_pix = np.arange(len(img_split)) * w_size + w_size / 2.
+
+        # Looping through pixels larger than middle pixel 
+        for i in range(N_window//2+1, len(img_split)):
+            spec[:,i] = (spec[:,i-1] * resample_factor * int(N_resample * scale_solution[i]) / N_resample - shift_solution[i]) / resample_factor
+            #spec_val[:,i] = signal.resample(np.nanmedian(img_split[i], axis=0), int(N_resample*scale_solution[i]))[(spec[:,i] * scale_solution[i]).astype('int')]
+
+        # Looping through pixels smaller than middle pixel
+        for i in range(N_window//2-1, -1, -1):
+            spec[:,i] = (spec[:,i+1] * resample_factor + shift_solution[i+1]) / (int(N_resample * scale_solution[i+1]) / N_resample) / resample_factor
+            #spec_val[:,i] = signal.resample(np.nanmedian(img_split[i], axis=0), int(N_resample*scale_solution[i]))[(spec[:,i] * scale_solution[i]).astype('int')]
+
+        self.trace = spec
+
+        ap_p = np.zeros((len(spec), max(1, N_window//10) + 1))
+        ap = np.zeros((len(spec), N_wave))        
+        for i in range(len(spec)):
+            ap_p[i] = np.polyfit(spec_pix, spec[i], max(1, N_window//10))
+            ap[i] = np.polyval(ap_p[i], np.arange(N_wave))
+
+        # Plot
+        if display:
+
+            zmin = np.nanpercentile(np.log10(self.img), 5)
+            zmax = np.nanpercentile(np.log10(self.img), 95)
+
+            # set a side-by-side subplot
+            fig = go.Figure()
+
+            # show the image on the left
+            if self.Saxis is 1:
+                fig.add_trace(
+                    go.Heatmap(z=np.log10(self.img),
+                               zmin=zmin,
+                               zmax=zmax,
+                               colorscale="Viridis",
+                               colorbar=dict(title='log(ADU)')))
+                for i in range(len(spec)):
+                    fig.add_trace(
+                        go.Scatter(x=np.arange(N_wave),
+                                   y=ap[i],
+                                   line=dict(color='black')
+                                   ))
+                    fig.add_trace(
+                        go.Scatter(x=spec_pix,
+                                   y=spec[i],
+                                   mode='markers',
+                                   marker=dict(color='grey')
+                                   ))
+                fig.add_trace(
+                    go.Scatter(x=np.ones(len(spec))*spec_pix[N_window//2],
+                               y=spec[:, N_window//2],
+                               mode='markers',
+                               marker=dict(color='firebrick')
+                               ))
+            else:
+                fig.add_trace(
+                    go.Heatmap(z=np.log10(np.transpose(self.img)),
+                               zmin=zmin,
+                               zmax=zmax,
+                               colorscale="Viridis",
+                               colorbar=dict(title='log(ADU)')))
+                for i in range(len(spec)):
+                    fig.add_trace(
+                        go.Scatter(x=ap[i],
+                                   y=np.arange(N_wave),
+                                   line=dict(color='black')
+                                   ))
+                    fig.add_trace(
+                        go.Scatter(x=spec[i],
+                                   y=spec_pix,
+                                   mode='markers',
+                                   marker=dict(color='grey')
+                                   ))
+                fig.add_trace(
+                    go.Scatter(x=spec[:, N_window//2],
+                               y=np.ones(len(spec))*spec_pix[N_window//2],
+                               mode='markers',
+                               marker=dict(color='firebrick')
+                               ))
+
+            fig.update_layout(autosize=True,
+                              yaxis_title='SpectralDirection / pixel',
+                              xaxis=dict(
+                                  zeroline=False,
+                                  showgrid=False,
+                                  title='Spatial Direction / pixel'),
+                              bargap=0,
+                              hovermode='closest',
+                              showlegend=False,
+                              height=800)
+            if verbose:
+                return fig.to_json()
+            if renderer == 'default':
+                fig.show()
+            else:
+                fig.show(renderer)
+
+    def ap_trace_iraf(self,
+                      nsteps=20,
+                      recenter=False,
+                      prevtrace=(0, ),
+                      fittype='spline',
+                      order=3,
+                      bigbox=8,
+                      display=False,
+                      renderer='default',
+                      verbose=False):
         """
         Trace the spectrum aperture in an image
         Assumes wavelength axis is along the X, spatial axis along the Y.
@@ -764,7 +974,7 @@ class TwoDSpec:
                             ' field, or (3) an extended source. Automated' +
                             ' tracing is sub-optimal. Please (1) reduce n_spec,'
                             +
-                            ' or (2) reduce n_steps, or (3) provide prevtrace.'
+                            ' (2) reduce n_steps, or (3) provide prevtrace.'
                         )
 
                 if display:
@@ -1877,10 +2087,11 @@ class OneDSpec:
                                                       bgcolor='rgba(0,0,0,0)'),
                               height=800)
 
-            if renderer == 'default':
-                fig.show()
-            else:
-                fig.show(renderer)
+            if not verbose:
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
 
             fig2 = go.Figure()
             # show the image on the top
@@ -1924,7 +2135,7 @@ class OneDSpec:
                                height=800)
 
             if verbose:
-                return fig2.to_json()
+                return fig.to_json(), fig2.to_json()
             if renderer == 'default':
                 fig2.show()
             else:
