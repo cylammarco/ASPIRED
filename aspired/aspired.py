@@ -2134,11 +2134,11 @@ class OneDSpec:
                                                           bgcolor='rgba(0,0,0,0)'),
                                   height=800)
 
-            if not verbose:
-                if renderer == 'default':
-                    fig.show()
-                else:
-                    fig.show(renderer)
+                if not verbose:
+                    if renderer == 'default':
+                        fig.show()
+                    else:
+                        fig.show(renderer)
 
             fig2 = go.Figure()
             # show the image on the top
