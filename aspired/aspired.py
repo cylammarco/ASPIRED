@@ -391,6 +391,9 @@ class TwoDSpec:
         self.spec_size = np.shape(img)[self.Waxis]
         self.spatial_size = np.shape(img)[Saxis]
         self.img = img
+        self.zmin = np.nanpercentile(np.log10(self.img), 5)
+        self.zmax = np.nanpercentile(np.log10(self.img), 95)
+
 
     def _gaus(self, x, a, b, x0, sigma):
         """
@@ -538,15 +541,23 @@ class TwoDSpec:
         """
 
         # construct the Gaussian model
-        gauss = self._gaus(pix, 1., 0., mu, sigma)
+        P = self._gaus(pix, 1., 0., mu, sigma)
+        P /= np.sum(P)
 
         # weight function and initial values
-        P = gauss / np.sum(gauss)
-        signal0 = np.sum(xslice - sky)
-        var0 = self.rn + np.abs(xslice) / self.gain
-        variance0 = 1. / np.sum(P**2. / var0)
+        signal1 = np.sum(xslice - sky)
+        var1 = self.rn + np.abs(xslice) / self.gain
+        variance1 = 1. / np.sum(P**2. / var1)
 
-        for i in range(100):
+        signal_diff = 1
+        variance_diff = 1
+        i = 0
+
+        while (( signal_diff > 0.0001) or ( variance_diff > 0.0001)):
+
+            signal0 = signal1
+            var0 = var1
+            variance0 = variance1
 
             # cosmic ray mask
             mask_cr = ((xslice - sky - P * signal0)**2. <
@@ -558,19 +569,18 @@ class TwoDSpec:
             var1 = self.rn + np.abs(P * signal1 + sky) / self.gain
             variance1 = 1. / np.sum((P**2. / var1)[mask_cr])
 
-            # iterate
-            if (((signal1 - signal0) / signal1 > 0.001)
-                    or ((variance1 - variance0) / variance1 > 0.001)):
-                signal0 = signal1
-                var0 = var1
-                variance0 = variance1
-            else:
-                break
+            signal_diff = (signal1 - signal0) / signal1
+            variance_diff = (variance1 - variance0) / variance1
 
-        if i == 99:
-            print('Unable to obtain optimal signal, please try a longer ' +
-                  'iteration or revert to unit-weighted extraction. Values ' +
-                  'returned (if at all) are sub-optimal at best.')
+            P = (xslice - sky) / signal1
+            P[P < 0.] = 0.
+            P /= np.sum(P)
+
+            if i == 999:
+                print('Unable to obtain optimal signal, please try a longer ' +
+                      'iteration or revert to unit-weighted extraction. Values ' +
+                      'returned (if at all) are sub-optimal at best.')
+                break
 
         signal = signal1
         noise = np.sqrt(variance1)
@@ -588,7 +598,7 @@ class TwoDSpec:
         return signal, noise
 
     def ap_trace(self,
-                 N_spec,
+                 n_spec=1,
                  N_window=25,
                  spec_ref=0.5,
                  spec_sep=5,
@@ -669,6 +679,8 @@ class TwoDSpec:
 
             # Update (increment) the reference line
             lines_ref = lines
+        
+        N_scaled = (N_resample * scale_solution).astype('int')
 
         # Find the spectral position in the middle of the gram in the upsampled pixel location location
         peaks = signal.find_peaks(
@@ -681,11 +693,11 @@ class TwoDSpec:
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
-        N_spec = min(len(peaks), N_spec)
+        self.n_spec = min(len(peaks), n_spec)
 
         # Sort the positions by the prominences, and return to the original scale (i.e. with subpixel position)
         spec_init = np.sort(
-            peaks[0][np.argsort(-peaks[1]['prominences'])][:N_spec]
+            peaks[0][np.argsort(-peaks[1]['prominences'])][:self.n_spec]
             ) / resample_factor
 
         # Create array to populate the spectral locations
@@ -700,27 +712,54 @@ class TwoDSpec:
 
         # Looping through pixels larger than middle pixel 
         for i in range(N_window//2+1, len(img_split)):
-            spec[:,i] = (spec[:,i-1] * resample_factor * int(N_resample * scale_solution[i]) / N_resample - shift_solution[i]) / resample_factor
-            #spec_val[:,i] = signal.resample(np.nanmedian(img_split[i], axis=0), int(N_resample*scale_solution[i]))[(spec[:,i] * scale_solution[i]).astype('int')]
-
+            spec[:,i] = (spec[:,i-1] * resample_factor * N_scaled[i] / N_resample - shift_solution[i]) / resample_factor
+            
         # Looping through pixels smaller than middle pixel
         for i in range(N_window//2-1, -1, -1):
             spec[:,i] = (spec[:,i+1] * resample_factor + shift_solution[i+1]) / (int(N_resample * scale_solution[i+1]) / N_resample) / resample_factor
             #spec_val[:,i] = signal.resample(np.nanmedian(img_split[i], axis=0), int(N_resample*scale_solution[i]))[(spec[:,i] * scale_solution[i]).astype('int')]
 
-        self.trace = spec
+        ap = np.zeros((len(spec), N_wave))
+        ap_sigma = np.zeros((len(spec), N_wave))
 
-        ap_p = np.zeros((len(spec), max(1, N_window//10) + 1))
-        ap = np.zeros((len(spec), N_wave))        
         for i in range(len(spec)):
-            ap_p[i] = np.polyfit(spec_pix, spec[i], max(1, N_window//10))
-            ap[i] = np.polyval(ap_p[i], np.arange(N_wave))
+            ap_p = np.polyfit(spec_pix, spec[i], max(1, N_window//10))
+            ap[i] = np.polyval(ap_p, np.arange(N_wave))
+
+            for j, ap_idx in enumerate(ap[i][spec_pix.astype('int')]):
+                ap_slice = np.nanmedian(img_split[i], axis=1)
+                start_idx = int(ap_idx - 10)
+                end_idx = int(ap_idx + 10 + 1)
+                if j==0:
+                    ap_spatial = ap_slice[start_idx:end_idx]
+                else:
+                    ap_spatial += ap_slice[start_idx:end_idx]
+
+            pguess = [
+                np.nanmax(ap_spatial),
+                np.nanpercentile(ap_spatial, 10),
+                ap_idx,
+                2.
+            ]
+
+            popt, pcov = curve_fit(
+                self._gaus,
+                np.arange(start_idx, end_idx).astype('int'),
+                ap_spatial,
+                p0=pguess
+                )
+
+            ap_sigma[i] = np.median(popt[3])
+
+        if self.n_spec is 1:
+            self.trace = ap
+            self.trace_sigma = ap_sigma
+        else:
+            self.trace = ap
+            self.trace_sigma = ap_sigma
 
         # Plot
         if display:
-
-            zmin = np.nanpercentile(np.log10(self.img), 5)
-            zmax = np.nanpercentile(np.log10(self.img), 95)
 
             # set a side-by-side subplot
             fig = go.Figure()
@@ -729,8 +768,8 @@ class TwoDSpec:
             if self.Saxis is 1:
                 fig.add_trace(
                     go.Heatmap(z=np.log10(self.img),
-                               zmin=zmin,
-                               zmax=zmax,
+                               zmin=self.zmin,
+                               zmax=self.zmax,
                                colorscale="Viridis",
                                colorbar=dict(title='log(ADU)')))
                 for i in range(len(spec)):
@@ -923,7 +962,7 @@ class TwoDSpec:
                            xaxis='x2'))
 
         my = np.zeros((self.n_spec, self.spatial_size))
-        y_sigma = np.zeros((self.n_spec))
+        y_sigma = np.zeros((self.n_spec, self.spatial_size))
 
         # trace each individual spetrum one by one
         for i in range(self.n_spec):
@@ -1099,8 +1138,8 @@ class TwoDSpec:
             #if len(spatial_mask)>1:
             #    my += min(spatial_mask)
 
-            self.trace = my[0]
-            self.trace_sigma = y_sigma[0]
+            self.trace = my
+            self.trace_sigma = y_sigma
 
             if display:
                 fig.update_layout(autosize=True,
@@ -1127,7 +1166,7 @@ class TwoDSpec:
                     fig.show(renderer)
 
 
-    def ap_extract(self, apwidth=7, skysep=3, skywidth=7, skydeg=0, 
+    def ap_extract(self, apwidth=7, skysep=3, skywidth=5, skydeg=1, 
                    optimal=True, display=False, renderer='default',
                    verbose=False):
 
@@ -1200,248 +1239,252 @@ class TwoDSpec:
             the uncertainties of the adu values
         """
 
-        skyadu = np.zeros_like(self.trace)
-        aduerr = np.zeros_like(self.trace)
-        adu = np.zeros_like(self.trace)
-        median_trace = int(np.median(self.trace))
-        len_trace = len(self.trace)
+        len_trace = len(self.trace[0])
+        skyadu = np.zeros((self.n_spec, len_trace))
+        aduerr = np.zeros((self.n_spec, len_trace))
+        adu = np.zeros((self.n_spec, len_trace))
 
-        # convert to numpy array of length spec_mask
-        trace_sigma = np.ones(len(self.trace)) * self.trace_sigma
+        for j in range(self.n_spec):
 
-        for i, pos in enumerate(self.trace):
+            median_trace = int(np.median(self.trace[j]))
 
-            itrace = int(round(pos))
+            for i, pos in enumerate(self.trace[j]):
+                itrace = int(round(pos))
 
-            # first do the aperture adu
-            widthup = apwidth
-            widthdn = apwidth
-            # fix width if trace is too close to the edge
-            if (itrace + widthup > self.spatial_size):
-                widthup = spatial_size - itrace - 1
-            if (itrace - widthdn < 0):
-                widthdn = itrace - 1  # i.e. starting at pixel row 1
+                # first do the aperture adu
+                widthup = apwidth
+                widthdn = apwidth
 
-            # simply add up the total adu around the trace +/- width
-            xslice = self.img[itrace - widthdn:itrace + widthup + 1, i]
-            adu_ap = np.sum(xslice)
+                # fix width if trace is too close to the edge
+                if (itrace + widthup > self.spatial_size):
+                    widthup = spatial_size - itrace - 1
+                if (itrace - widthdn < 0):
+                    widthdn = itrace - 1  # i.e. starting at pixel row 1
 
-            if skywidth > 0:
-                # get the indexes of the sky regions
-                y0 = max(itrace - widthdn - skysep - skywidth, 0)
-                y1 = max(itrace - widthdn - skysep, 0)
-                y2 = min(itrace + widthup + skysep + 1, self.spatial_size)
-                y3 = min(itrace + widthup + skysep + skywidth + 1,
-                         self.spatial_size)
-                y = np.append(np.arange(y0, y1), np.arange(y2, y3))
+                # simply add up the total adu around the trace +/- width
+                xslice = self.img[itrace - widthdn:itrace + widthup + 1, i]
+                adu_ap = np.sum(xslice)
 
-                z = self.img[y, i]
-                if (skydeg > 0):
-                    # fit a polynomial to the sky in this column
-                    pfit = np.polyfit(y, z, skydeg)
-                    # define the aperture in this column
-                    ap = np.arange(itrace - apwidth, itrace + apwidth + 1)
-                    # evaluate the polynomial across the aperture, and sum
-                    skyadu[i] = np.sum(np.polyval(pfit, ap))
-                elif (skydeg == 0):
-                    skyadu[i] = np.sum(
-                        np.ones(apwidth * 2 + 1) * np.nanmean(z))
+                if skywidth > 0:
+                    # get the indexes of the sky regions
+                    y0 = max(itrace - widthdn - skysep - skywidth, 0)
+                    y1 = max(itrace - widthdn - skysep, 0)
+                    y2 = min(itrace + widthup + skysep + 1, self.spatial_size)
+                    y3 = min(itrace + widthup + skysep + skywidth + 1,
+                             self.spatial_size)
+                    y = np.append(np.arange(y0, y1), np.arange(y2, y3))
 
-                #-- finally, compute the error in this pixel
-                sigB = np.std(z)  # stddev in the background data
-                N_B = len(y)  # number of bkgd pixels
-                N_A = apwidth * 2. + 1  # number of aperture pixels
+                    z = self.img[y, i]
+                    if (skydeg > 0):
+                        # fit a polynomial to the sky in this column
+                        pfit = np.polyfit(y, z, skydeg)
+                        # define the aperture in this column
+                        ap = np.arange(itrace - apwidth, itrace + apwidth + 1)
+                        # evaluate the polynomial across the aperture, and sum
+                        skyadu[j][i] = np.sum(np.polyval(pfit, ap))
+                    elif (skydeg == 0):
+                        skyadu[j][i] = np.sum(
+                            np.ones(apwidth * 2 + 1) * np.nanmean(z))
 
-                # based on aperture phot err description by F. Masci, Caltech:
-                # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
-                aduerr[i] = np.sqrt(
-                    np.sum((adu_ap - skyadu[i])) / self.gain +
-                    (N_A + N_A**2. / N_B) * (sigB**2.))
-
-            adu[i] = adu_ap - skyadu[i]
-
-            # if optimal extraction
-            if optimal:
-                pix = range(itrace - widthdn, itrace + widthup + 1)
-                if (skydeg > 0):
-                    sky = np.polyval(pfit, pix)
+                # if optimal extraction
+                if optimal:
+                    pix = range(itrace - widthdn, itrace + widthup + 1)
+                    # Fit the sky background
+                    if (skydeg > 0):
+                        sky = np.polyval(pfit, pix)
+                    else:
+                        sky = np.ones(len(pix)) * np.nanmean(z)
+                    # Get the optimal signals
+                    adu[j][i], aduerr[j][i] = self._optimal_signal(
+                        pix,
+                        xslice,
+                        sky,
+                        self.trace[j][i],
+                        self.trace_sigma[j][i],
+                        display=False,
+                        renderer=renderer,
+                        verbose=verbose)
                 else:
-                    sky = np.ones(len(pix)) * np.nanmean(z)
-                adu[i], aduerr[i] = self._optimal_signal(
-                    pix,
-                    xslice,
-                    sky,
-                    self.trace[i],
-                    trace_sigma[i],
-                    display=False,
-                    renderer=renderer,
-                    verbose=verbose)
+                    #-- finally, compute the error in this pixel
+                    sigB = np.std(z)  # stddev in the background data
+                    N_B = len(y)  # number of bkgd pixels
+                    N_A = apwidth * 2. + 1  # number of aperture pixels
+
+                    # based on aperture phot err description by F. Masci, Caltech:
+                    # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
+                    aduerr[j][i] = np.sqrt(
+                        np.sum((adu_ap - skyadu[j][i])) / self.gain +
+                        (N_A + N_A**2. / N_B) * (sigB**2.))
+                    adu[j][i] = adu_ap - skyadu[j][i]
+
+            if display:
+
+                fig = go.Figure()
+
+                # show the image on the top
+                fig.add_trace(
+                    go.Heatmap(
+                        x=np.arange(len_trace),
+                        y=np.arange(
+                            max(0, median_trace - widthdn - skysep - skywidth - 1),
+                            min(median_trace + widthup + skysep + skywidth,
+                                len(self.img[0]))),
+                        z=np.log10(self.img[max(
+                            0, median_trace - widthdn - skysep - skywidth -
+                            1):min(median_trace + widthup + skysep +
+                                   skywidth, len(self.img[0])), :]),
+                        colorscale="Viridis",
+                        zmin=self.zmin,
+                        zmax=self.zmax,
+                        xaxis='x',
+                        yaxis='y',
+                        colorbar=dict(title='log(ADU)')))
+
+                # Middle black box on the image
+                fig.add_trace(
+                    go.Scatter(x=[0, len_trace, len_trace, 0, 0],
+                               y=[
+                                   median_trace - widthdn - 1,
+                                   median_trace - widthdn - 1,
+                                   median_trace - widthdn - 1 + (apwidth * 2 + 1),
+                                   median_trace - widthdn - 1 + (apwidth * 2 + 1),
+                                   median_trace - widthdn - 1
+                               ],
+                               xaxis='x',
+                               yaxis='y',
+                               mode='lines',
+                               line_color='black',
+                               showlegend=False))
+
+                # Lower red box on the image
+                if (itrace - widthdn >= 0):
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[0, len_trace, len_trace, 0, 0],
+                            y=[
+                                max(
+                                    0, median_trace - widthdn - skysep -
+                                    (y1 - y0) - 1),
+                                max(
+                                    0, median_trace - widthdn - skysep -
+                                    (y1 - y0) - 1),
+                                max(
+                                    0, median_trace - widthdn - skysep -
+                                    (y1 - y0) - 1) + min(skywidth, (y1 - y0)),
+                                max(
+                                    0, median_trace - widthdn - skysep -
+                                    (y1 - y0) - 1) + min(skywidth, (y1 - y0)),
+                                max(
+                                    0, median_trace - widthdn - skysep -
+                                    (y1 - y0) - 1)
+                            ],
+                            line_color='red',
+                            xaxis='x',
+                            yaxis='y',
+                            mode='lines',
+                            showlegend=False))
+
+                # Upper red box on the image
+                if (itrace + widthup <= self.spatial_size):
+                    fig.add_trace(
+                        go.Scatter(
+                            x=[0, len_trace, len_trace, 0, 0],
+                            y=[
+                                min(median_trace + widthup + skysep,
+                                    len(self.img[0])),
+                                min(median_trace + widthup + skysep,
+                                    len(self.img[0])),
+                                min(median_trace + widthup + skysep,
+                                    len(self.img[0])) + min(skywidth, (y3 - y2)),
+                                min(median_trace + widthup + skysep,
+                                    len(self.img[0])) + min(skywidth, (y3 - y2)),
+                                min(median_trace + widthup + skysep,
+                                    len(self.img[0]))
+                            ],
+                            xaxis='x',
+                            yaxis='y',
+                            mode='lines',
+                            line_color='red',
+                            showlegend=False))
+                # plot the SNR
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=adu[j] / aduerr[j],
+                               xaxis='x2',
+                               yaxis='y3',
+                               line=dict(color='slategrey'),
+                               name='Signal-to-Noise Ratio'))
+
+                # extrated source, sky and uncertainty
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=skyadu[j],
+                               xaxis='x2',
+                               yaxis='y2',
+                               line=dict(color='firebrick'),
+                               name='Sky ADU'))
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=aduerr[j],
+                               xaxis='x2',
+                               yaxis='y2',
+                               line=dict(color='orange'),
+                               name='Uncertainty'))
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=adu[j],
+                               xaxis='x2',
+                               yaxis='y2',
+                               line=dict(color='royalblue'),
+                               name='Target ADU'))
+
+                # Decorative stuff
+                fig.update_layout(autosize=True,
+                                  xaxis=dict(showticklabels=False),
+                                  yaxis=dict(zeroline=False,
+                                             domain=[0.5, 1],
+                                             showgrid=False,
+                                             title='Spatial Direction / pixel'),
+                                  yaxis2=dict(
+                                      range=[
+                                          min(np.nanmin(np.log10(adu[j])), np.nanmin(np.log10(aduerr[j])), np.nanmin(np.log10(skyadu[j])), 1),
+                                          max(np.nanmax(np.log10(adu[j])), np.nanmax(np.log10(skyadu[j])))
+                                      ],
+                                      zeroline=False,
+                                      domain=[0, 0.5],
+                                      showgrid=True,
+                                      type='log',
+                                      title='log(ADU / Count)',
+                                  ),
+                                  yaxis3=dict(title='S/N ratio',
+                                              anchor="x2",
+                                              overlaying="y2",
+                                              side="right"),
+                                  xaxis2=dict(title='Spectral Direction / pixel',
+                                              anchor="y2",
+                                              matches="x"),
+                                  legend=go.layout.Legend(x=0,
+                                                          y=0.45,
+                                                          traceorder="normal",
+                                                          font=dict(
+                                                              family="sans-serif",
+                                                              size=12,
+                                                              color="black"),
+                                                          bgcolor='rgba(0,0,0,0)'),
+                                  bargap=0,
+                                  hovermode='closest',
+                                  showlegend=True,
+                                  height=800)
+                if verbose:
+                    return fig.to_json()
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
 
         self.adu = adu
-        self.skyadu = skyadu
         self.aduerr = aduerr
-
-        if display:
-            fig = go.Figure()
-
-            # show the image on the top
-            fig.add_trace(
-                go.Heatmap(
-                    x=np.arange(len_trace),
-                    y=np.arange(
-                        max(0, median_trace - widthdn - skysep - skywidth - 1),
-                        min(median_trace + widthup + skysep + skywidth,
-                            len(self.img[0]))),
-                    z=np.log10(self.img[max(
-                        0, median_trace - widthdn - skysep - skywidth -
-                        1):min(median_trace + widthup + skysep +
-                               skywidth, len(self.img[0])), :]),
-                    colorscale="Viridis",
-                    xaxis='x',
-                    yaxis='y',
-                    colorbar=dict(title='log(ADU)')))
-
-            # Middle black box on the image
-            fig.add_trace(
-                go.Scatter(x=[0, len_trace, len_trace, 0, 0],
-                           y=[
-                               median_trace - widthdn - 1,
-                               median_trace - widthdn - 1,
-                               median_trace - widthdn - 1 + (apwidth * 2 + 1),
-                               median_trace - widthdn - 1 + (apwidth * 2 + 1),
-                               median_trace - widthdn - 1
-                           ],
-                           xaxis='x',
-                           yaxis='y',
-                           mode='lines',
-                           line_color='black',
-                           showlegend=False))
-
-            # Lower red box on the image
-            if (itrace - widthdn >= 0):
-                fig.add_trace(
-                    go.Scatter(
-                        x=[0, len_trace, len_trace, 0, 0],
-                        y=[
-                            max(
-                                0, median_trace - widthdn - skysep -
-                                (y1 - y0) - 1),
-                            max(
-                                0, median_trace - widthdn - skysep -
-                                (y1 - y0) - 1),
-                            max(
-                                0, median_trace - widthdn - skysep -
-                                (y1 - y0) - 1) + min(skywidth, (y1 - y0)),
-                            max(
-                                0, median_trace - widthdn - skysep -
-                                (y1 - y0) - 1) + min(skywidth, (y1 - y0)),
-                            max(
-                                0, median_trace - widthdn - skysep -
-                                (y1 - y0) - 1)
-                        ],
-                        line_color='red',
-                        xaxis='x',
-                        yaxis='y',
-                        mode='lines',
-                        showlegend=False))
-
-            # Upper red box on the image
-            if (itrace + widthup <= self.spatial_size):
-                fig.add_trace(
-                    go.Scatter(
-                        x=[0, len_trace, len_trace, 0, 0],
-                        y=[
-                            min(median_trace + widthup + skysep,
-                                len(self.img[0])),
-                            min(median_trace + widthup + skysep,
-                                len(self.img[0])),
-                            min(median_trace + widthup + skysep,
-                                len(self.img[0])) + min(skywidth, (y3 - y2)),
-                            min(median_trace + widthup + skysep,
-                                len(self.img[0])) + min(skywidth, (y3 - y2)),
-                            min(median_trace + widthup + skysep,
-                                len(self.img[0]))
-                        ],
-                        xaxis='x',
-                        yaxis='y',
-                        mode='lines',
-                        line_color='red',
-                        showlegend=False))
-            # extrated source, sky and uncertainty
-            fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=adu,
-                           xaxis='x2',
-                           yaxis='y2',
-                           line=dict(color='royalblue'),
-                           name='Target ADU'))
-            fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=skyadu,
-                           xaxis='x2',
-                           yaxis='y2',
-                           line=dict(color='firebrick'),
-                           name='Sky ADU'))
-            fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=aduerr,
-                           xaxis='x2',
-                           yaxis='y2',
-                           line=dict(color='orange'),
-                           name='Uncertainty'))
-            # plot the SNR
-            fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=adu / aduerr,
-                           xaxis='x2',
-                           yaxis='y3',
-                           line=dict(color='slategrey'),
-                           name='Signal-to-Noise Ratio'))
-
-            # Decorative stuff
-            fig.update_layout(autosize=True,
-                              xaxis=dict(showticklabels=False),
-                              yaxis=dict(zeroline=False,
-                                         domain=[0.5, 1],
-                                         showgrid=False,
-                                         title='Spatial Direction / pixel'),
-                              yaxis2=dict(
-                                  range=[
-                                      min(np.nanmin(np.log10(adu)), np.nanmin(np.log10(aduerr)), np.nanmin(np.log10(skyadu)), 1),
-                                      max(np.nanmax(np.log10(adu)), np.nanmax(np.log10(skyadu)))
-                                  ],
-                                  zeroline=False,
-                                  domain=[0, 0.5],
-                                  showgrid=True,
-                                  type='log',
-                                  title='log(ADU / Count)',
-                              ),
-                              yaxis3=dict(title='S/N ratio',
-                                          anchor="x2",
-                                          overlaying="y2",
-                                          side="right"),
-                              xaxis2=dict(title='Spectral Direction / pixel',
-                                          anchor="y2",
-                                          matches="x"),
-                              legend=go.layout.Legend(x=0,
-                                                      y=0.45,
-                                                      traceorder="normal",
-                                                      font=dict(
-                                                          family="sans-serif",
-                                                          size=12,
-                                                          color="black"),
-                                                      bgcolor='rgba(0,0,0,0)'),
-                              bargap=0,
-                              hovermode='closest',
-                              showlegend=True,
-                              height=800)
-            if verbose:
-                return fig.to_json()
-            if renderer == 'default':
-                fig.show()
-            else:
-                fig.show(renderer)
-
+        self.skyadu = skyadu
 
 class WavelengthPolyFit:
     def __init__(self,
@@ -1667,6 +1710,7 @@ class OneDSpec:
             self.aduerr = science.aduerr
             self.skyadu = science.skyadu
             self.exptime = science.exptime
+            self.n_spec = science.n_spec
         except:
             raise TypeError('Please provide a valid TwoDSpec.')
 
@@ -1705,9 +1749,9 @@ class OneDSpec:
 
     def set_standard(self, standard):
         try:
-            self.adu_std = standard.adu
-            self.aduerr_std = standard.aduerr
-            self.skyadu_std = standard.skyadu
+            self.adu_std = standard.adu[0]
+            self.aduerr_std = standard.aduerr[0]
+            self.skyadu_std = standard.skyadu[0]
             self.exptime_std = standard.exptime
         except:
             raise TypeError('Please provide a valid TwoDSpec.')
@@ -1781,7 +1825,7 @@ class OneDSpec:
 
     def apply_wavelength_calibration(self, stype):
         if stype == 'science':
-            pix = np.arange(len(self.adu))
+            pix = np.arange(len(self.adu[0]))
             self.wave = self.polyval(self.pfit, pix)
         elif stype == 'standard':
             if self.standard_imported:
@@ -1793,7 +1837,7 @@ class OneDSpec:
                     'observation is not available. Flux calibration will not '
                     'be performed.')
         elif stype == 'all':
-            pix = np.arange(len(self.adu))
+            pix = np.arange(len(self.adu[0]))
             pix_std = np.arange(len(self.adu_std))
             self.wave = self.polyval(self.pfit, pix)
             self.wave_std = self.polyval(self.pfit_std, pix_std)
@@ -1970,46 +2014,48 @@ class OneDSpec:
                                  wave_max=8000., renderer='default',
                                  verbose=False):
         if stype == 'science':
-            fig = go.Figure()
-            # show the image on the top
-            fig.add_trace(
-                go.Scatter(x=self.wave,
-                           y=self.flux,
-                           line=dict(color='royalblue'),
-                           name='Flux'))
-            fig.add_trace(
-                go.Scatter(x=self.wave,
-                           y=self.fluxerr,
-                           line=dict(color='firebrick'),
-                           name='Flux Uncertainty'))
-            fig.add_trace(
-                go.Scatter(x=self.wave,
-                           y=self.skyflux,
-                           line=dict(color='orange'),
-                           name='Sky Flux'))
-            fig.update_layout(autosize=True,
-                              hovermode='closest',
-                              showlegend=True,
-                              xaxis=dict(
-                                  title='Wavelength / A',
-                                  range=[wave_min, wave_max]),
-                              yaxis=dict(title='Flux', type='log'),
-                              legend=go.layout.Legend(x=0,
-                                                      y=1,
-                                                      traceorder="normal",
-                                                      font=dict(
-                                                          family="sans-serif",
-                                                          size=12,
-                                                          color="black"),
-                                                      bgcolor='rgba(0,0,0,0)'),
-                              height=800)
+            for j in range(self.n_spec):
 
-            if verbose:
-                return fig.to_json()
-            if renderer == 'default':
-                fig.show()
-            else:
-                fig.show(renderer)
+                fig = go.Figure()
+                # show the image on the top
+                fig.add_trace(
+                    go.Scatter(x=self.wave,
+                               y=self.flux[j],
+                               line=dict(color='royalblue'),
+                               name='Flux'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave,
+                               y=self.fluxerr[j],
+                               line=dict(color='firebrick'),
+                               name='Flux Uncertainty'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave,
+                               y=self.skyflux[j],
+                               line=dict(color='orange'),
+                               name='Sky Flux'))
+                fig.update_layout(autosize=True,
+                                  hovermode='closest',
+                                  showlegend=True,
+                                  xaxis=dict(
+                                      title='Wavelength / A',
+                                      range=[wave_min, wave_max]),
+                                  yaxis=dict(title='Flux', type='log'),
+                                  legend=go.layout.Legend(x=0,
+                                                          y=1,
+                                                          traceorder="normal",
+                                                          font=dict(
+                                                              family="sans-serif",
+                                                              size=12,
+                                                              color="black"),
+                                                          bgcolor='rgba(0,0,0,0)'),
+                                  height=800)
+
+                if verbose:
+                    return fig.to_json()
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
 
         elif stype == 'standard':
             fig = go.Figure()
@@ -2053,39 +2099,40 @@ class OneDSpec:
 
             fig.show(renderer)
         elif stype == 'all':
-            fig = go.Figure()
-            # show the image on the top
-            fig.add_trace(
-                go.Scatter(x=self.wave,
-                           y=self.flux,
-                           line=dict(color='royalblue'),
-                           name='Flux'))
-            fig.add_trace(
-                go.Scatter(x=self.wave,
-                           y=self.fluxerr,
-                           line=dict(color='orange'),
-                           name='Flux Uncertainty'))
-            fig.add_trace(
-                go.Scatter(x=self.wave,
-                           y=self.skyflux,
-                           line=dict(color='firebrick'),
-                           name='Sky Flux'))
-            fig.update_layout(autosize=True,
-                              hovermode='closest',
-                              showlegend=True,
-                              xaxis=dict(
-                                  title='Wavelength / A',
-                                  range=[wave_min, wave_max]),
-                              yaxis=dict(title='Flux', type='log'),
-                              legend=go.layout.Legend(x=0,
-                                                      y=1,
-                                                      traceorder="normal",
-                                                      font=dict(
-                                                          family="sans-serif",
-                                                          size=12,
-                                                          color="black"),
-                                                      bgcolor='rgba(0,0,0,0)'),
-                              height=800)
+            for j in range(self.n_spec):
+                fig = go.Figure()
+                # show the image on the top
+                fig.add_trace(
+                    go.Scatter(x=self.wave,
+                               y=self.flux[j],
+                               line=dict(color='royalblue'),
+                               name='Flux'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave,
+                               y=self.fluxerr[j],
+                               line=dict(color='orange'),
+                               name='Flux Uncertainty'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave,
+                               y=self.skyflux[j],
+                               line=dict(color='firebrick'),
+                               name='Sky Flux'))
+                fig.update_layout(autosize=True,
+                                  hovermode='closest',
+                                  showlegend=True,
+                                  xaxis=dict(
+                                      title='Wavelength / A',
+                                      range=[wave_min, wave_max]),
+                                  yaxis=dict(title='Flux', type='log'),
+                                  legend=go.layout.Legend(x=0,
+                                                          y=1,
+                                                          traceorder="normal",
+                                                          font=dict(
+                                                              family="sans-serif",
+                                                              size=12,
+                                                              color="black"),
+                                                          bgcolor='rgba(0,0,0,0)'),
+                                  height=800)
 
             if not verbose:
                 if renderer == 'default':
