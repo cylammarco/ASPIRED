@@ -14,6 +14,10 @@ from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from scipy.optimize import minimize
+
+from rascal.calibrator import Calibrator
+from rascal.util import load_calibration_lines
+
 try:
     from astroscrappy import detect_cosmics
 except ImportError:
@@ -75,17 +79,20 @@ class ImageReduction:
         self.bias_list = None
         self.dark_list = None
         self.flat_list = None
+        self.arc_list = None
         self.light = None
 
         self.bias_master = None
         self.dark_master = None
         self.flat_master = None
+        self.arc_master = None
         self.light_master = None
 
-        self.light_filename = []
         self.bias_filename = []
         self.dark_filename = []
         self.flat_filename = []
+        self.arc_filename = []
+        self.light_filename = []
 
         # import file with first column as image type and second column as
         # file path
@@ -99,6 +106,7 @@ class ImageReduction:
         self.bias_list = impath[imtype == 'bias']
         self.dark_list = impath[imtype == 'dark']
         self.flat_list = impath[imtype == 'flat']
+        self.arc_list = impath[imtype == 'arc']
         self.light_list = impath[imtype == 'light']
 
         # If there is no science frames, nothing to process.
@@ -150,6 +158,23 @@ class ImageReduction:
 
         # Frame in unit of ADU per second
         self.light_master = self.light_master
+
+        # Combine the arcs
+        arc_CCDData = []
+        for i in range(self.arc_list.size):
+            # Open all the light frames
+            arc = fits.open(self.arc_list[i])[0]
+            arc_CCDData.append(CCDData(arc.data, unit=u.adu))
+
+            self.arc_filename.append(self.arc_list[i].split('/')[-1])
+
+        # combine the arc frames
+        arc_combiner = Combiner(arc_CCDData)
+        self.arc_master = arc_combiner.median_combine()
+
+        # Free memory
+        del arc_CCDData
+        del arc_combiner
 
     def _bias_subtract(self):
 
@@ -542,12 +567,15 @@ class TwoDSpec:
 
         # construct the Gaussian model
         P = self._gaus(pix, 1., 0., mu, sigma)
-        P /= np.sum(P)
+        P /= np.nansum(P)
 
+        #
+        signal = xslice - sky
+        signal[signal<0] = 0.
         # weight function and initial values
-        signal1 = np.sum(xslice - sky)
+        signal1 = np.nansum(signal)
         var1 = self.rn + np.abs(xslice) / self.gain
-        variance1 = 1. / np.sum(P**2. / var1)
+        variance1 = 1. / np.nansum(P**2. / var1)
 
         signal_diff = 1
         variance_diff = 1
@@ -559,22 +587,29 @@ class TwoDSpec:
             var0 = var1
             variance0 = variance1
 
-            # cosmic ray mask
-            mask_cr = ((xslice - sky - P * signal0)**2. <
-                       self.cr_sigma**2. * var0)
+            # cosmic ray mask, only start considering after the 2nd iteration
+            if i >1:
+                mask_cr = ((signal - P * signal0)**2. <
+                           self.cr_sigma**2. * var0)
+            else:
+                mask_cr = True
 
             # compute signal and noise
-            signal1 = np.sum((P * (xslice - sky) / var0)[mask_cr]) / \
-                np.sum((P**2. / var0)[mask_cr])
+            signal1 = np.nansum((P * (signal) / var0)[mask_cr]) / \
+                np.nansum((P**2. / var0)[mask_cr])
             var1 = self.rn + np.abs(P * signal1 + sky) / self.gain
-            variance1 = 1. / np.sum((P**2. / var1)[mask_cr])
+            variance1 = 1. / np.nansum((P**2. / var1)[mask_cr])
 
-            signal_diff = (signal1 - signal0) / signal1
-            variance_diff = (variance1 - variance0) / variance1
-
-            P = (xslice - sky) / signal1
+            signal_diff = (signal1 - signal0) / signal0
+            variance_diff = (variance1 - variance0) / variance0
+            if np.isnan(signal1):
+                print(signal)
+                print(P*signal0)
+                print(mask_cr)
+                print(signal1)
+            P = signal / signal1
             P[P < 0.] = 0.
-            P /= np.sum(P)
+            P /= np.nansum(P)
 
             if i == 999:
                 print('Unable to obtain optimal signal, please try a longer ' +
@@ -586,7 +621,7 @@ class TwoDSpec:
         noise = np.sqrt(variance1)
 
         if display:
-            fit = self._gaus(pix, max(xslice - sky), 0., mu, sigma) + sky
+            fit = self._gaus(pix, max(signal), 0., mu, sigma) + sky
             fig, ax = plt.subplots(ncols=1, figsize=(10, 10))
             ax.plot(pix, xslice)
             ax.plot(pix, fit)
@@ -723,23 +758,26 @@ class TwoDSpec:
         ap_sigma = np.zeros((len(spec), N_wave))
 
         for i in range(len(spec)):
+            # fit the trace
             ap_p = np.polyfit(spec_pix, spec[i], max(1, N_window//10))
             ap[i] = np.polyval(ap_p, np.arange(N_wave))
 
+            # stacking up the slices
             for j, ap_idx in enumerate(ap[i][spec_pix.astype('int')]):
-                ap_slice = np.nanmedian(img_split[i], axis=1)
-                start_idx = int(ap_idx - 10)
-                end_idx = int(ap_idx + 10 + 1)
+                ap_slice = np.nanmedian(img_split[j], axis=1)
+                start_idx = int(ap_idx - 20)
+                end_idx = int(ap_idx + 20 + 1)
                 if j==0:
                     ap_spatial = ap_slice[start_idx:end_idx]
                 else:
                     ap_spatial += ap_slice[start_idx:end_idx]
 
+            # compute ONE sigma for each trace
             pguess = [
                 np.nanmax(ap_spatial),
                 np.nanpercentile(ap_spatial, 10),
                 ap_idx,
-                2.
+                3.
             ]
 
             popt, pcov = curve_fit(
@@ -748,8 +786,7 @@ class TwoDSpec:
                 ap_spatial,
                 p0=pguess
                 )
-
-            ap_sigma[i] = np.median(popt[3])
+            ap_sigma[i] = popt[3]
 
         if self.n_spec is 1:
             self.trace = ap
@@ -1007,8 +1044,8 @@ class TwoDSpec:
                     #print(pgaus, pcov)
                 except:
                     if not self.silence:
-                        print(
-                            'Spectrum ' + str(i) + ' of ' + str(self.n_spec) +
+                        ValueError(
+                            'Spectrum ' + str(i+1) + ' of ' + str(self.n_spec) +
                             ' is likely to be (1) too faint, (2) in a crowed'
                             ' field, or (3) an extended source. Automated' +
                             ' tracing is sub-optimal. Please (1) reduce n_spec,'
@@ -1062,7 +1099,7 @@ class TwoDSpec:
                         popt, pcov = curve_fit(self._gaus, yi, zi, p0=pguess)
                     except:
                         if not self.silence:
-                            print('Step ' + str(j + 1) + ' of ' + str(nsteps) +
+                            ValueError('Step ' + str(j + 1) + ' of ' + str(nsteps) +
                                   ' of spectrum ' + str(i + 1) + ' of ' +
                                   str(self.n_spec) + ' cannot be fitted.')
                         break
@@ -1073,7 +1110,7 @@ class TwoDSpec:
                         ybins[j] = pgaus[2]
                         popt = pgaus
                         if not self.silence:
-                            print(
+                            ValueError(
                                 'Step ' + str(j + 1) + ' of ' + str(nsteps) +
                                 ' of spectrum ' + str(i + 1) + ' of ' +
                                 str(self.n_spec) +
@@ -1105,7 +1142,7 @@ class TwoDSpec:
 
                 else:
                     if not self.silence:
-                        print('Unknown fitting type, please choose from ' +
+                        ValueError('Unknown fitting type, please choose from ' +
                               '(1) \'spline\'; or (2) \'polynomial\'.')
 
                 # get the uncertainties in the spatial direction along the spectrum
@@ -1130,7 +1167,7 @@ class TwoDSpec:
                             +
                             '  or (3) provide prevtrace, or (4) all of above.')
 
-                    print('Spectrum ' + str(i + 1) +
+                    ValueError('Spectrum ' + str(i + 1) +
                           ' : Trace gaussian width = ' + str(ybins_sigma) +
                           ' pixels')
 
@@ -1489,71 +1526,91 @@ class TwoDSpec:
 class WavelengthPolyFit:
     def __init__(self,
                  spec,
-                 distance=3.,
+                 arc,
+                 distance=5.,
                  percentile=20.,
-                 pix_scale=10.,
-                 min_wave=3000.,
-                 max_wave=9000.,
+                 min_wave=3500.,
+                 max_wave=8500.,
                  sample_size=5,
-                 max_tries=100,
+                 max_tries=5000,
                  top_n=100,
-                 n_slopes=10000):
+                 n_slope=10000,
+                 fit_mode='manual',
+                 hough_pix=1024,
+                 range_tolerance=1000):
         '''
-        spec : TwoDSpec object of the arc image
+        arc : TwoDSpec object of the arc image
+        spec : TwoDSpec object of the science/standard image
+
         '''
         self.spec = spec
+        self.arc = arc
         self.distance = distance
         self.percentile = percentile
-        self.pix_scale = pix_scale
         self.min_wave = min_wave
         self.max_wave = max_wave
         self.sample_size = sample_size
         self.max_tries = max_tries
         self.top_n = top_n
-        self.n_slopes = n_slopes
+        self.n_slope = n_slope
+        self.fit_mode = fit_mode
+        self.hough_pix=hough_pix
+        self.range_tolerance=range_tolerance
 
-    def find_arc_lines(self, display=False):
+    def find_arc_lines(self, display=False, verbose=False, renderer='default'):
         '''
         # pixelscale in unit of A/pix
 
         '''
 
-        p = np.percentile(self.spec, self.percentile)
-        self.peaks, _ = signal.find_peaks(self.spec,
+        p = np.percentile(self.arc, self.percentile)
+        trace = int(np.mean(self.spec.trace))
+        width = int(np.mean(self.spec.trace_sigma[0]) * 3)
+
+        self.arc_trace = self.arc[
+            max(0, trace - width - 1):
+            min(trace + width, len(self.spec.img[0])),
+            :]
+
+        self.peaks, _ = signal.find_peaks(np.median(self.arc_trace, axis=0),
                                           distance=self.distance,
                                           prominence=p)
 
-        if diaplay & plotly_imported:
+        if display & plotly_imported:
             fig = go.Figure()
 
             # show the image on the top
             fig.add_trace(
-                go.Scatter(x=np.arange(self.spec),
-                           y=self.spec,
-                           line=dict(color='royalblue', width=4)))
+                go.Heatmap(x=np.arange(self.arc.shape[0]),
+                           y=np.arange(self.arc.shape[1]),
+                           z=np.log10(self.arc),
+                    colorscale="Viridis",
+                    colorbar=dict(title='log(ADU)')))
 
-            for i in peaks:
+            for i in self.peaks:
                 fig.add_trace(
                     go.Scatter(x=[i, i],
-                               y=[
-                                   self.spec[self.peaks.astype('int')],
-                                   self.spec.max() * 1.1
-                               ],
-                               line=dict(color='firebrick', width=4)))
+                               y=[0, self.arc.shape[0]],
+                               mode='lines',
+                               line=dict(color='firebrick', width=1)))
 
             fig.update_layout(autosize=True,
-                              xaxis_title='Pixel',
-                              yaxis_title='Count',
+                              xaxis=dict(zeroline=False,
+                                         range=[0, self.arc.shape[1]],
+                                         title='Spectral Direction / pixel'),
+                              yaxis=dict(zeroline=False,
+                                         range=[0, self.arc.shape[0]],
+                                         title='Spatial Direction / pixel'),
                               hovermode='closest',
                               showlegend=False,
-                              height=800)
+                              height=600)
 
-        if verbose:
-            return fig.to_json()
-        if renderer == 'default':
-            fig.show()
-        else:
-            fig.show(renderer)
+            if verbose:
+                return fig.to_json()
+            if renderer == 'default':
+                fig.show()
+            else:
+                fig.show(renderer)
 
     def calibrate(self,
                   elements=["Hg", "Ar", "Xe", "CuNeAr", "Kr"],
@@ -1565,23 +1622,26 @@ class WavelengthPolyFit:
         '''
 
         c = Calibrator(self.peaks,
-                       elements=self.elements,
+                       elements=elements,
                        min_wavelength=self.min_wave,
                        max_wavelength=self.max_wave)
 
-        c.set_fit_constraints(**kwargs)
+        c.set_fit_constraints(self.hough_pix, self.range_tolerance, **kwargs)
+        c.use_plotly()
 
         p = c.fit(sample_size=self.sample_size,
                   max_tries=self.max_tries,
+                  mode=self.fit_mode,
                   top_n=self.top_n,
                   n_slope=self.n_slope)
 
         pfit = c.match_peaks_to_atlas(p)[0]
 
-        if display & plotly_imported:
-            c.plot_fit(spec, pfit, tolerance=pix_scale)
-
         self.pfit = pfit
+        self.pfit_type = 'poly'
+
+        if display:
+            c.plot_fit(np.median(self.arc_trace, axis=0), self.pfit)
 
 
 class StandardFlux:
@@ -1845,7 +1905,7 @@ class OneDSpec:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
 
-    def compute_sencurve(self, kind=3, smooth=False, slength=5, sorder=2,
+    def compute_sencurve(self, kind=3, smooth=False, slength=5, sorder=3,
                          display=False, renderer='default', verbose=False):
         '''
         Get the standard flux or magnitude of the given target and group
@@ -2016,6 +2076,15 @@ class OneDSpec:
         if stype == 'science':
             for j in range(self.n_spec):
 
+                wave_mask = ((self.wave > wave_min) & 
+                             (self.wave < wave_max)
+                            )
+                flux_mask = ((self.flux[j] > np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
+                             (self.flux[j] < np.nanpercentile(self.flux[j][wave_mask], 95) * 1.5)
+                            )
+                flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
+                flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
+
                 fig = go.Figure()
                 # show the image on the top
                 fig.add_trace(
@@ -2039,7 +2108,10 @@ class OneDSpec:
                                   xaxis=dict(
                                       title='Wavelength / A',
                                       range=[wave_min, wave_max]),
-                                  yaxis=dict(title='Flux', type='log'),
+                                  yaxis=dict(
+                                      title='Flux',
+                                      range=[flux_min, flux_max],
+                                      type='log'),
                                   legend=go.layout.Legend(x=0,
                                                           y=1,
                                                           traceorder="normal",
@@ -2058,6 +2130,16 @@ class OneDSpec:
                     fig.show(renderer)
 
         elif stype == 'standard':
+
+            wave_std_mask = ((self.wave_std > wave_min) & 
+                             (self.wave_std < wave_max)
+                             )
+            flux_std_mask = ((self.flux_std > np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
+                             (self.flux_std < np.nanpercentile(self.flux_std[wave_std_mask], 95) * 1.5)
+                             )
+            flux_std_min = np.log10(np.nanmin(self.flux_std[flux_std_mask]))
+            flux_std_max = np.log10(np.nanmax(self.flux_std[flux_std_mask]))
+
             fig = go.Figure()
             # show the image on the top
             fig.add_trace(
@@ -2086,7 +2168,10 @@ class OneDSpec:
                               xaxis=dict(
                                   title='Wavelength / A',
                                   range=[wave_min, wave_max]),
-                              yaxis=dict(title='Flux', type='log'),
+                              yaxis=dict(
+                                  title='Flux',
+                                  range=[flux_std_min, flux_std_max],
+                                  type='log'),
                               legend=go.layout.Legend(x=0,
                                                       y=1,
                                                       traceorder="normal",
@@ -2100,6 +2185,16 @@ class OneDSpec:
             fig.show(renderer)
         elif stype == 'all':
             for j in range(self.n_spec):
+
+                wave_mask = ((self.wave > wave_min) & 
+                             (self.wave < wave_max)
+                            )
+                flux_mask = ((self.flux[j] > np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
+                             (self.flux[j] < np.nanpercentile(self.flux[j][wave_mask], 95) * 1.5)
+                            )
+                flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
+                flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
+
                 fig = go.Figure()
                 # show the image on the top
                 fig.add_trace(
@@ -2123,7 +2218,10 @@ class OneDSpec:
                                   xaxis=dict(
                                       title='Wavelength / A',
                                       range=[wave_min, wave_max]),
-                                  yaxis=dict(title='Flux', type='log'),
+                                  yaxis=dict(
+                                      title='Flux',
+                                      range=[flux_min, flux_max],
+                                      type='log'),
                                   legend=go.layout.Legend(x=0,
                                                           y=1,
                                                           traceorder="normal",
@@ -2139,6 +2237,15 @@ class OneDSpec:
                         fig.show()
                     else:
                         fig.show(renderer)
+
+            wave_std_mask = ((self.wave_std > wave_min) & 
+                             (self.wave_std < wave_max)
+                             )
+            flux_std_mask = ((self.flux_std > np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
+                             (self.flux_std < np.nanpercentile(self.flux_std[wave_std_mask], 95) * 1.5)
+                             )
+            flux_std_min = np.log10(np.nanmin(self.flux_std[flux_std_mask]))
+            flux_std_max = np.log10(np.nanmax(self.flux_std[flux_std_mask]))
 
             fig2 = go.Figure()
             # show the image on the top
@@ -2170,6 +2277,7 @@ class OneDSpec:
                                    range=[wave_min, wave_max]),
                                yaxis=dict(
                                    title='Flux',
+                                   range=[flux_std_min, flux_std_max],
                                    type='log'),
                                legend=go.layout.Legend(
                                    x=0,

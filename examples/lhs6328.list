@@ -1,4 +1,0 @@
-#flat, examples/calibration_files/v_slit_red_1.fits
-dark, examples/calibration_files/v_dark_1.fits
-dark, examples/calibration_files/v_dark_1.fits
-light, examples/LHS6328_raw/v_e_20180906_22_1_0_0.fits
