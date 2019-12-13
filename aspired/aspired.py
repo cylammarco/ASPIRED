@@ -48,7 +48,7 @@ class ImageReduction:
     def __init__(self, filelistpath, ftype='csv', combinetype='median'):
         '''
         bias, dark, flat, light
-        filepath include HDU number if not [0]  
+        HDU number is default to 0 if not given  
         '''
         self.filelistpath = filelistpath
         self.ftype = ftype
@@ -102,12 +102,22 @@ class ImageReduction:
                                  autostrip=True)
         imtype = filelist[:, 0]
         impath = filelist[:, 1]
+        try:
+            hdunum = filelist[:, 2].astype('int')
+        except:
+            hdunum = np.zeros(len(impath)).astype('int')
 
         self.bias_list = impath[imtype == 'bias']
         self.dark_list = impath[imtype == 'dark']
         self.flat_list = impath[imtype == 'flat']
         self.arc_list = impath[imtype == 'arc']
         self.light_list = impath[imtype == 'light']
+
+        self.bias_hdunum = hdunum[imtype == 'bias']
+        self.dark_hdunum = hdunum[imtype == 'dark']
+        self.flat_hdunum = hdunum[imtype == 'flat']
+        self.arc_hdunum = hdunum[imtype == 'arc']
+        self.light_hdunum = hdunum[imtype == 'light']
 
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
@@ -119,7 +129,7 @@ class ImageReduction:
 
         for i in range(self.light_list.size):
             # Open all the light frames
-            light = fits.open(self.light_list[i])[0]
+            light = fits.open(self.light_list[i])[self.light_hdunum[i]]
             light_CCDData.append(CCDData(light.data, unit=u.adu))
 
             self.light_filename.append(self.light_list[i].split('/')[-1])
@@ -157,13 +167,13 @@ class ImageReduction:
                           '1 second is used as the exposure time.')
 
         # Frame in unit of ADU per second
-        self.light_master = self.light_master
+        #self.light_master = self.light_master
 
         # Combine the arcs
         arc_CCDData = []
         for i in range(self.arc_list.size):
             # Open all the light frames
-            arc = fits.open(self.arc_list[i])[0]
+            arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
             arc_CCDData.append(CCDData(arc.data, unit=u.adu))
 
             self.arc_filename.append(self.arc_list[i].split('/')[-1])
@@ -182,8 +192,8 @@ class ImageReduction:
 
         for i in range(self.bias_list.size):
             # Open all the bias frames
-            bias = fits.open(self.bias_list[i])[0]
-            bias_CCDData.append(CCDData(biad.data, unit=u.adu))
+            bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
+            bias_CCDData.append(CCDData(bias.data, unit=u.adu))
 
             self.bias_filename.append(self.bias_list[i].split('/')[-1])
 
@@ -199,7 +209,7 @@ class ImageReduction:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Bias subtract
-        self.light_master = self.light_master - self.bias_master
+        self.light_master = self.light_master.subtract(self.bias_master)
 
         # Free memory
         del bias_CCDData
@@ -212,7 +222,7 @@ class ImageReduction:
 
         for i in range(self.dark_list.size):
             # Open all the dark frames
-            dark = fits.open(self.dark_list[i])[0]
+            dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
             dark_CCDData.append(CCDData(dark.data, unit=u.adu))
 
             self.dark_filename.append(self.dark_list[i].split('/')[-1])
@@ -246,8 +256,9 @@ class ImageReduction:
 
         # Frame in unit of ADU per second
         self.light_master =\
-            self.light_master -\
-            self.dark_master / self.dark_time * self.light_time
+            self.light_master.subtract(
+                self.dark_master.multiply(self.light_time / self.dark_time)
+            )
 
         # Free memory
         del dark_CCDData
@@ -259,7 +270,7 @@ class ImageReduction:
 
         for i in range(self.flat_list.size):
             # Open all the flatfield frames
-            flat = fits.open(self.flat_list[i])[0]
+            flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
             flat_CCDData.append(CCDData(flat.data, unit=u.adu))
 
             self.flat_filename.append(self.flat_list[i].split('/')[-1])
@@ -276,7 +287,7 @@ class ImageReduction:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Field-flattening
-        self.light_master = self.light_master / self.flat_master
+        self.light_master = self.light_master.divide(self.flat_master)
 
         # Free memory
         del flat_CCDData
@@ -356,6 +367,7 @@ class TwoDSpec:
                  Saxis=1,
                  spatial_mask=(1, ),
                  spec_mask=(1, ),
+                 flip=False,
                  n_spec=1,
                  cr=True,
                  cr_sigma=5.,
@@ -381,6 +393,7 @@ class TwoDSpec:
             self.Waxis = 1
         self.spatial_mask = spatial_mask
         self.spec_mask = spec_mask
+        self.flip = flip
         self.n_spec = n_spec
         self.cr_sigma = cr_sigma
         self.rn = rn
@@ -415,7 +428,14 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(img)[self.Waxis]
         self.spatial_size = np.shape(img)[Saxis]
-        self.img = img
+        if self.Saxis == 1:
+            self.img = img
+        else:
+            self.img = np.transpose(img)
+
+        if self.flip:
+            self.img = np.flip(self.img)
+
         self.zmin = np.nanpercentile(np.log10(self.img), 5)
         self.zmax = np.nanpercentile(np.log10(self.img), 95)
 
@@ -469,10 +489,10 @@ class TwoDSpec:
 
         """
         ydata = np.arange(self.spec_size)
-        ztot = np.sum(self.img, axis=Saxis)
+        ztot = np.nanmedian(self.img, axis=Saxis)
 
         # get the height thershold
-        height = max(ztot) * f_height
+        height = np.nanmax(ztot) * f_height
 
         # identify peaks
         peaks_y, heights_y = signal.find_peaks(ztot, height=height)
@@ -602,11 +622,7 @@ class TwoDSpec:
 
             signal_diff = (signal1 - signal0) / signal0
             variance_diff = (variance1 - variance0) / variance0
-            if np.isnan(signal1):
-                print(signal)
-                print(P*signal0)
-                print(mask_cr)
-                print(signal1)
+
             P = signal / signal1
             P[P < 0.] = 0.
             P /= np.nansum(P)
@@ -649,20 +665,16 @@ class TwoDSpec:
                  verbose=False):
 
         # Get the shape of the 2D spectrum and define upsampling ratio
-        if self.Saxis is 1:
-            N_wave = len(self.img[0])
-            N_spatial = len(self.img)
-        else:
-            N_wave = len(self.img)
-            N_spatial = len(self.img[0])
+        N_wave = len(self.img[0])
+        N_spatial = len(self.img)
 
         N_resample = N_spatial * resample_factor
 
         # window size
         w_size = N_wave // N_window
-        img_split = np.array_split(self.img, N_window, axis=self.Saxis)
+        img_split = np.array_split(self.img, N_window, axis=1)
 
-        lines_ref_init = np.nanmedian(img_split[0], axis=self.Saxis)
+        lines_ref_init = np.nanmedian(img_split[0], axis=1)
         lines_ref_init_resampled = signal.resample(lines_ref_init, N_resample)
 
         # linear scaling limits
@@ -684,7 +696,7 @@ class TwoDSpec:
         for i in range(N_window):
 
             # smooth by taking the median
-            lines = np.nanmedian(img_split[i], axis=self.Saxis)
+            lines = np.nanmedian(img_split[i], axis=1)
             lines = signal.resample(lines, N_resample)
             lines = lines - np.percentile(lines, p_bg)
 
@@ -720,7 +732,7 @@ class TwoDSpec:
         # Find the spectral position in the middle of the gram in the upsampled pixel location location
         peaks = signal.find_peaks(
             signal.resample(
-                np.nanmedian(img_split[N_window//2], axis=self.Saxis),
+                np.nanmedian(img_split[N_window//2], axis=1),
                 N_resample
                 ),
             distance=spec_sep,
@@ -802,57 +814,30 @@ class TwoDSpec:
             fig = go.Figure()
 
             # show the image on the left
-            if self.Saxis is 1:
+            fig.add_trace(
+                go.Heatmap(z=np.log10(self.img),
+                           zmin=self.zmin,
+                           zmax=self.zmax,
+                           colorscale="Viridis",
+                           colorbar=dict(title='log(ADU)')))
+            for i in range(len(spec)):
                 fig.add_trace(
-                    go.Heatmap(z=np.log10(self.img),
-                               zmin=self.zmin,
-                               zmax=self.zmax,
-                               colorscale="Viridis",
-                               colorbar=dict(title='log(ADU)')))
-                for i in range(len(spec)):
-                    fig.add_trace(
-                        go.Scatter(x=np.arange(N_wave),
-                                   y=ap[i],
-                                   line=dict(color='black')
-                                   ))
-                    fig.add_trace(
-                        go.Scatter(x=spec_pix,
-                                   y=spec[i],
-                                   mode='markers',
-                                   marker=dict(color='grey')
-                                   ))
-                fig.add_trace(
-                    go.Scatter(x=np.ones(len(spec))*spec_pix[N_window//2],
-                               y=spec[:, N_window//2],
-                               mode='markers',
-                               marker=dict(color='firebrick')
+                    go.Scatter(x=np.arange(N_wave),
+                               y=ap[i],
+                               line=dict(color='black')
                                ))
-            else:
                 fig.add_trace(
-                    go.Heatmap(z=np.log10(np.transpose(self.img)),
-                               zmin=zmin,
-                               zmax=zmax,
-                               colorscale="Viridis",
-                               colorbar=dict(title='log(ADU)')))
-                for i in range(len(spec)):
-                    fig.add_trace(
-                        go.Scatter(x=ap[i],
-                                   y=np.arange(N_wave),
-                                   line=dict(color='black')
-                                   ))
-                    fig.add_trace(
-                        go.Scatter(x=spec[i],
-                                   y=spec_pix,
-                                   mode='markers',
-                                   marker=dict(color='grey')
-                                   ))
-                fig.add_trace(
-                    go.Scatter(x=spec[:, N_window//2],
-                               y=np.ones(len(spec))*spec_pix[N_window//2],
+                    go.Scatter(x=spec_pix,
+                               y=spec[i],
                                mode='markers',
-                               marker=dict(color='firebrick')
+                               marker=dict(color='grey')
                                ))
-
+            fig.add_trace(
+                go.Scatter(x=np.ones(len(spec))*spec_pix[N_window//2],
+                           y=spec[:, N_window//2],
+                           mode='markers',
+                           marker=dict(color='firebrick')
+                           ))
             fig.update_layout(autosize=True,
                               yaxis_title='SpectralDirection / pixel',
                               xaxis=dict(
@@ -952,15 +937,15 @@ class TwoDSpec:
 
         # the valid y-range of the chip (an array of int)
         ydata = np.arange(self.spec_size)
-        ztot = np.sum(self.img, axis=self.Saxis)
+        ztot = np.sum(self.img, axis=1)
 
-        # need at least 4 samples along the trace. sometimes can get away with very few
-        if (nsteps < 4):
-            nsteps = 4
+        # need at least 3 samples along the trace
+        if (nsteps < 3):
+            nsteps = 3
 
         # detect peaks by summing in the spatial direction
         self._identify_spectrum(0.01,
-                                self.Saxis,
+                                1,
                                 display=False,
                                 renderer=renderer,
                                 verbose=verbose)
@@ -970,20 +955,12 @@ class TwoDSpec:
             fig = go.Figure()
 
             # show the image on the left
-            if self.Saxis == 1:
-                fig.add_trace(
-                    go.Heatmap(z=np.log10(self.img),
-                               colorscale="Viridis",
-                               xaxis='x',
-                               yaxis='y',
-                               colorbar=dict(title='log(ADU)')))
-            else:
-                fig.add_trace(
-                    go.Heatmap(z=np.log10(np.transpose(self.img)),
-                               colorscale="Viridis",
-                               xaxis='x',
-                               yaxis='y',
-                               colorbar=dict(title='log(ADU)')))
+            fig.add_trace(
+                go.Heatmap(z=np.log10(self.img),
+                           colorscale="Viridis",
+                           xaxis='x',
+                           yaxis='y',
+                           colorbar=dict(title='log(ADU)')))
 
             # plot the integrated count and the detected peaks on the right
             fig.add_trace(
@@ -1010,21 +987,46 @@ class TwoDSpec:
             ]
 
             if (recenter is False) and (len(prevtrace) > 10):
-                self.trace = prevtrace
-                self.trace_sigma = np.ones(len(prevtrace)) * self.seeing
+                my[i] = prevtrace
+                y_sigma[i] = np.ones(len(prevtrace)) * self.seeing
+                self.trace = my
+                self.trace_sigma = y_sigma
                 if display:
                     fig.add_trace(
                         go.Scatter(x=[min(ztot[ztot > 0]),
                                       max(ztot)],
-                                   y=[min(self.trace),
-                                      max(self.trace)],
+                                   y=[min(self.trace[i]),
+                                      max(self.trace[i])],
                                    mode='lines',
-                                   xaxis='x2'))
+                                   xaxis='x1'))
                     fig.add_trace(
-                        go.Scatter(x=np.arange(len(self.trace)),
-                                   y=self.trace,
+                        go.Scatter(x=np.arange(len(self.trace[i])),
+                                   y=self.trace[i],
                                    mode='lines',
-                                   xaxis='x2'))
+                                   xaxis='x1'))
+                    fig.update_layout(autosize=True,
+                                      yaxis_title='Spatial Direction / pixel',
+                                      xaxis=dict(
+                                          zeroline=False,
+                                          domain=[0, 0.5],
+                                          showgrid=False,
+                                          title='Spectral Direction / pixel'),
+                                      xaxis2=dict(zeroline=False,
+                                                  domain=[0.5, 1],
+                                                  showgrid=True,
+                                                  title='Integrated Count'),
+                                      bargap=0,
+                                      hovermode='closest',
+                                      showlegend=False,
+                                      height=800)
+
+                    if verbose:
+                        return fig.to_json()
+                    if renderer == 'default':
+                        fig.show()
+                    else:
+                        fig.show(renderer)
+
                 break
 
             # use middle of previous trace as starting guess
@@ -1076,17 +1078,10 @@ class TwoDSpec:
                 # loop through each bin
                 for j in range(0, len(xbins) - 1):
                     # fit gaussian w/j each window
-                    if self.Saxis is 1:
-                        zi = np.sum(self.img[ydata2,
-                                             int(np.floor(xbins[j])
-                                                 ):int(np.ceil(xbins[j + 1]))],
-                                    axis=self.Saxis)
-                    else:
-                        zi = np.sum(
-                            self.img[int(np.floor(xbins[j])
-                                         ):int(np.ceil(xbins[j + 1])), ydata2],
-                            axis=self.Saxis)
-
+                    zi = np.sum(self.img[ydata2,
+                                         int(np.floor(xbins[j])
+                                             ):int(np.ceil(xbins[j + 1]))],
+                                axis=1)
                     # fit gaussian w/j each window
                     if sum(zi) == 0:
                         break
@@ -1310,8 +1305,8 @@ class TwoDSpec:
                     y3 = min(itrace + widthup + skysep + skywidth + 1,
                              self.spatial_size)
                     y = np.append(np.arange(y0, y1), np.arange(y2, y3))
-
                     z = self.img[y, i]
+
                     if (skydeg > 0):
                         # fit a polynomial to the sky in this column
                         pfit = np.polyfit(y, z, skydeg)
@@ -1357,6 +1352,10 @@ class TwoDSpec:
             if display:
 
                 fig = go.Figure()
+                img_display = np.log10(self.img[max(
+                                0, median_trace - widthdn - skysep - skywidth -
+                                1):min(median_trace + widthup + skysep +
+                                       skywidth, len(self.img[0])), :])
 
                 # show the image on the top
                 fig.add_trace(
@@ -1366,10 +1365,7 @@ class TwoDSpec:
                             max(0, median_trace - widthdn - skysep - skywidth - 1),
                             min(median_trace + widthup + skysep + skywidth,
                                 len(self.img[0]))),
-                        z=np.log10(self.img[max(
-                            0, median_trace - widthdn - skysep - skywidth -
-                            1):min(median_trace + widthup + skysep +
-                                   skywidth, len(self.img[0])), :]),
+                        z=img_display,
                         colorscale="Viridis",
                         zmin=self.zmin,
                         zmax=self.zmax,
@@ -1528,10 +1524,10 @@ class WavelengthPolyFit:
                  spec,
                  arc,
                  distance=5.,
-                 percentile=20.,
+                 percentile=25.,
                  min_wave=3500.,
                  max_wave=8500.,
-                 sample_size=5,
+                 sample_size=10,
                  max_tries=5000,
                  top_n=100,
                  n_slope=10000,
@@ -1555,7 +1551,31 @@ class WavelengthPolyFit:
         self.n_slope = n_slope
         self.fit_mode = fit_mode
         self.hough_pix=hough_pix
-        self.range_tolerance=range_tolerance
+        self.range_tolerance = range_tolerance
+
+        # the valid y-range of the chip (i.e. spatial direction)
+        if (len(self.spec.spatial_mask) > 1):
+            if self.spec.Saxis is 1:
+                self.arc = self.arc[self.spec.spatial_mask]
+            else:
+                self.arc = self.arc[:, self.spec.spatial_mask]
+
+        # the valid x-range of the chip (i.e. spectral direction)
+        if (len(self.spec.spec_mask) > 1):
+            if self.spec.Saxis is 1:
+                self.arc = self.arc[:, self.spec.spec_mask]
+            else:
+                self.arc = self.arc[self.spec.spec_mask]
+
+        # get the length in the spectral and spatial directions
+        if self.spec.Saxis == 1:
+            self.arc = self.arc
+        else:
+            self.arc = np.transpose(self.arc)
+
+        if self.spec.flip:
+            self.arc = np.flip(self.arc)
+
 
     def find_arc_lines(self, display=False, verbose=False, renderer='default'):
         '''
