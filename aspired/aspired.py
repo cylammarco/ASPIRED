@@ -17,6 +17,7 @@ from scipy.optimize import minimize
 
 from rascal.calibrator import Calibrator
 from rascal.util import load_calibration_lines
+from rascal.util import refine_peaks
 
 try:
     from astroscrappy import detect_cosmics
@@ -428,10 +429,10 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(img)[self.Waxis]
         self.spatial_size = np.shape(img)[Saxis]
-        if self.Saxis == 1:
-            self.img = img
-        else:
+        if self.Saxis is 0:
             self.img = np.transpose(img)
+        else:
+            self.img = img
 
         if self.flip:
             self.img = np.flip(self.img)
@@ -1522,36 +1523,15 @@ class TwoDSpec:
 class WavelengthPolyFit:
     def __init__(self,
                  spec,
-                 arc,
-                 distance=5.,
-                 percentile=25.,
-                 min_wave=3500.,
-                 max_wave=8500.,
-                 sample_size=10,
-                 max_tries=5000,
-                 top_n=100,
-                 n_slope=10000,
-                 fit_mode='manual',
-                 hough_pix=1024,
-                 range_tolerance=1000):
+                 arc):
         '''
         arc : TwoDSpec object of the arc image
         spec : TwoDSpec object of the science/standard image
 
         '''
+
         self.spec = spec
         self.arc = arc
-        self.distance = distance
-        self.percentile = percentile
-        self.min_wave = min_wave
-        self.max_wave = max_wave
-        self.sample_size = sample_size
-        self.max_tries = max_tries
-        self.top_n = top_n
-        self.n_slope = n_slope
-        self.fit_mode = fit_mode
-        self.hough_pix=hough_pix
-        self.range_tolerance = range_tolerance
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spec.spatial_mask) > 1):
@@ -1568,22 +1548,20 @@ class WavelengthPolyFit:
                 self.arc = self.arc[self.spec.spec_mask]
 
         # get the length in the spectral and spatial directions
-        if self.spec.Saxis == 1:
-            self.arc = self.arc
-        else:
+        if self.spec.Saxis is 0:
             self.arc = np.transpose(self.arc)
 
         if self.spec.flip:
             self.arc = np.flip(self.arc)
 
 
-    def find_arc_lines(self, display=False, verbose=False, renderer='default'):
+    def find_arc_lines(self, percentile=20., distance=5., display=False, verbose=False, renderer='default'):
         '''
         # pixelscale in unit of A/pix
 
         '''
 
-        p = np.percentile(self.arc, self.percentile)
+        p = np.percentile(self.arc, percentile)
         trace = int(np.mean(self.spec.trace))
         width = int(np.mean(self.spec.trace_sigma[0]) * 3)
 
@@ -1591,11 +1569,13 @@ class WavelengthPolyFit:
             max(0, trace - width - 1):
             min(trace + width, len(self.spec.img[0])),
             :]
-
-        self.peaks, _ = signal.find_peaks(np.median(self.arc_trace, axis=0),
-                                          distance=self.distance,
-                                          prominence=p)
-
+        spectrum = np.median(self.arc_trace, axis=0)
+        peaks, _ = signal.find_peaks(spectrum,
+                                     distance=distance,
+                                     prominence=p)
+        
+        self.peaks = refine_peaks(spectrum, peaks, window_width=3)
+        
         if display & plotly_imported:
             fig = go.Figure()
 
@@ -1633,9 +1613,27 @@ class WavelengthPolyFit:
                 fig.show(renderer)
 
     def calibrate(self,
-                  elements=["Hg", "Ar", "Xe", "CuNeAr", "Kr"],
+                  elements,
+                  sample_size=5,
+                  min_wave=3500.,
+                  max_wave=8500.,
+                  max_tries=5000,
                   display=False,
-                  **kwargs):
+                  n_pix=1024,
+                  num_slopes=1000,
+                  range_tolerance=500,
+                  fit_tolerance=20.,
+                  polydeg=5,
+                  top_n=20,
+                  candidate_thresh=15.,
+                  ransac_thresh=1,
+                  xbins=50,
+                  ybins=50,
+                  brute_force=False,
+                  fittype='poly',
+                  mode='manual',
+                  progress=True,
+                  coeff=None):
         '''
         thresh (A) :: the individual line fitting tolerance to accept as a valid fitting point
         fit_tolerance (A) :: the RMS
@@ -1643,25 +1641,45 @@ class WavelengthPolyFit:
 
         c = Calibrator(self.peaks,
                        elements=elements,
-                       min_wavelength=self.min_wave,
-                       max_wavelength=self.max_wave)
+                       min_wavelength=min_wave,
+                       max_wavelength=max_wave)
 
-        c.set_fit_constraints(self.hough_pix, self.range_tolerance, **kwargs)
-        c.use_plotly()
+        c.set_fit_constraints(
+            n_pix=n_pix,
+            num_slopes=num_slopes,
+            range_tolerance=range_tolerance,
+            fit_tolerance=fit_tolerance,
+            polydeg=polydeg,
+            candidate_thresh=candidate_thresh,
+            ransac_thresh=ransac_thresh,
+            xbins=xbins,
+            ybins=ybins,
+            brute_force=brute_force,
+            fittype=fittype)
 
-        p = c.fit(sample_size=self.sample_size,
-                  max_tries=self.max_tries,
-                  mode=self.fit_mode,
-                  top_n=self.top_n,
-                  n_slope=self.n_slope)
+        p = c.fit(sample_size=sample_size,
+                  max_tries=max_tries,
+                  top_n=top_n,
+                  n_slope=num_slopes,
+                  mode=mode,
+                  progress=progress,
+                  coeff=coeff
+                  )
 
-        pfit = c.match_peaks_to_atlas(p)[0]
+        pfit, _, _ = c.match_peaks_to_atlas(p, tolerance=1)
+        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=0.5)
 
         self.pfit = pfit
         self.pfit_type = 'poly'
 
         if display:
-            c.plot_fit(np.median(self.arc_trace, axis=0), self.pfit)
+            c.plot_fit(
+                np.median(self.arc_trace, axis=0),
+                self.pfit,
+                plot_atlas=True,
+                log_spectrum=False,
+                tolerance=0.5
+                )
 
 
 class StandardFlux:
