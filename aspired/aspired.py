@@ -1569,12 +1569,12 @@ class WavelengthPolyFit:
             max(0, trace - width - 1):
             min(trace + width, len(self.spec.img[0])),
             :]
-        spectrum = np.median(self.arc_trace, axis=0)
-        peaks, _ = signal.find_peaks(spectrum,
+        self.spectrum = np.median(self.arc_trace, axis=0)
+        peaks, _ = signal.find_peaks(self.spectrum,
                                      distance=distance,
                                      prominence=p)
         
-        self.peaks = refine_peaks(spectrum, peaks, window_width=3)
+        self.peaks = refine_peaks(self.spectrum, peaks, window_width=3)
         
         if display & plotly_imported:
             fig = go.Figure()
@@ -1619,7 +1619,6 @@ class WavelengthPolyFit:
                   max_wave=8500.,
                   max_tries=5000,
                   display=False,
-                  n_pix=1024,
                   num_slopes=1000,
                   range_tolerance=500,
                   fit_tolerance=20.,
@@ -1645,7 +1644,7 @@ class WavelengthPolyFit:
                        max_wavelength=max_wave)
 
         c.set_fit_constraints(
-            n_pix=n_pix,
+            n_pix=len(self.spectrum),
             num_slopes=num_slopes,
             range_tolerance=range_tolerance,
             fit_tolerance=fit_tolerance,
