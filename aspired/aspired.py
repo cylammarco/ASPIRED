@@ -1951,7 +1951,7 @@ class OneDSpec:
 
         Parameters
         ----------
-        kind : string
+        kind : string or integer [1,2,3,4,5 only]
             interpolation kind
             >>> [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,
                  ‘previous’, ‘next’]
