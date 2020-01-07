@@ -18,7 +18,7 @@ bias, examples/isis_pso1801p6254_g93m48_raw/r2700986.fit.gz, 1
 #bias, examples/isis_pso1801p6254_g93m48_raw/r2700994.fit.gz, 1
 #bias, examples/isis_pso1801p6254_g93m48_raw/r2700996.fit.gz, 1
 #bias, examples/isis_pso1801p6254_g93m48_raw/r2700998.fit.gz, 1
-#ßbias, examples/isis_pso1801p6254_g93m48_raw/r2701000.fit.gz, 1
+#bias, examples/isis_pso1801p6254_g93m48_raw/r2701000.fit.gz, 1
 #bias, examples/isis_pso1801p6254_g93m48_raw/r2701002.fit.gz, 1
 arc, examples/isis_pso1801p6254_g93m48_raw/r2701247.fit.gz, 1
 arc, examples/isis_pso1801p6254_g93m48_raw/r2701248.fit.gz, 1
