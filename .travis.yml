@@ -2,7 +2,6 @@ sudo: enabled
 dist: trusty
 language: python
 python:
-  - "2.7"
   - "3.4"
   - "3.5"
   - "3.6"      # current default Python on Travis CI
@@ -12,4 +11,4 @@ os:
   - linux
 
 install:
-  - python setup.py
+  - python setup.py install
