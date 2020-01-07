@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 install_requires=[
-    'scipy', 'numpy', 'matplotlib', 'astropy', 'ccdproc', 'astroscrappy',
+    'scipy', 'numpy', 'matplotlib', 'astropy==3.2.3', 'ccdproc', 'astroscrappy',
     'spectres @ git+https://github.com/cylammarco/SpectRes#egg=SpectRes', 'plotly'
     ]
 
