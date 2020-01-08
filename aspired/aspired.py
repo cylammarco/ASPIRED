@@ -791,7 +791,7 @@ class TwoDSpec:
         '''
 
         self.Saxis = Saxis
-        if Saxis is 1:
+        if self.Saxis is 1:
             self.Waxis = 0
         else:
             self.Waxis = 1
@@ -823,29 +823,29 @@ class TwoDSpec:
         # cosmic ray rejection
         if cr:
             img = detect_cosmics(img,
-                                 sigclip=cr_sigma,
-                                 readnoise=rn,
-                                 gain=gain,
+                                 sigclip=self.cr_sigma,
+                                 readnoise=self.rn,
+                                 gain=self.gain,
                                  fsmode='convolve',
-                                 psffwhm=seeing)[1]
+                                 psffwhm=self.seeing)[1]
 
         # the valid y-range of the chip (i.e. spatial direction)
-        if (len(spatial_mask) > 1):
-            if Saxis is 1:
-                img = img[spatial_mask]
+        if (len(self.spatial_mask) > 1):
+            if self.Saxis is 1:
+                img = img[self.spatial_mask]
             else:
-                img = img[:, spatial_mask]
+                img = img[:, self.spatial_mask]
 
         # the valid x-range of the chip (i.e. spectral direction)
-        if (len(spec_mask) > 1):
-            if Saxis is 1:
-                img = img[:, spec_mask]
+        if (len(self.spec_mask) > 1):
+            if self.Saxis is 1:
+                img = img[:, self.spec_mask]
             else:
-                img = img[spec_mask]
+                img = img[self.spec_mask]
 
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(img)[self.Waxis]
-        self.spatial_size = np.shape(img)[Saxis]
+        self.spatial_size = np.shape(img)[self.Saxis]
         if self.Saxis is 0:
             self.img = np.transpose(img)
         else:
@@ -1246,11 +1246,12 @@ class TwoDSpec:
             ap_p = np.polyfit(spec_pix, spec[i], max(1, nwindow // 10))
             ap[i] = np.polyval(ap_p, np.arange(nwave))
 
-            # stacking up the slices
+            # stacking up the slices to get a good guess of the LSF
             for j, ap_idx in enumerate(ap[i][spec_pix.astype('int')]):
                 ap_slice = np.nanmedian(img_split[j], axis=1)
-                start_idx = int(ap_idx - 20)
-                end_idx = int(ap_idx + 20 + 1)
+                # Add 0.5 to allow proper rounding
+                start_idx = int(ap_idx - 20 + 0.5)
+                end_idx = start_idx + 20 + 20 + 1
                 if j == 0:
                     ap_spatial = ap_slice[start_idx:end_idx]
                 else:
@@ -1263,7 +1264,7 @@ class TwoDSpec:
             ]
 
             popt, pcov = curve_fit(self._gaus,
-                                   np.arange(start_idx, end_idx).astype('int'),
+                                   range(start_idx, end_idx),
                                    ap_spatial,
                                    p0=pguess)
             ap_sigma[i] = popt[3]
