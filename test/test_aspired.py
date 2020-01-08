@@ -1,7 +1,7 @@
 import sys
 import numpy as np
 from astropy.io import fits
-from ASPIRED.aspired import aspired
+from aspired import aspired
 import plotly.io as pio
 pio.renderers.default = 'notebook+jpg'
 
