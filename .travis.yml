@@ -11,4 +11,4 @@ os:
 install:
   - python setup.py install
 
-script: pytest --disable-warnings -p no:warnings test/test_aspired.py
+script: pytest --disable-warnings -p no:warnings -W test/test_aspired.py
