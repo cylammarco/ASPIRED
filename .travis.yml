@@ -10,3 +10,5 @@ os:
 
 install:
   - python setup.py install
+
+script: pytest test/test_aspired.py
