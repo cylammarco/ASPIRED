@@ -6,7 +6,7 @@ install_requires=[
     'spectres @ git+https://github.com/cylammarco/SpectRes#egg=SpectRes', 'plotly'
     ]
 
-os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git')
+os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git@dev')
 
 __packagename__ = "aspired"
 
