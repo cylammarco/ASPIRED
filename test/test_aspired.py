@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 from astropy.io import fits
@@ -71,5 +72,5 @@ assert trace == 35, 'Trace is at ' + str(trace) + ' instead of 35, the expected 
 
 # Optimal extracting spectrum by summing over the aperture along the trace
 dummy_twodspec.ap_extract(apwidth=5, optimal=False)
-adu = dummy_twodspec.adu
+adu = np.mean(dummy_twodspec.adu)
 assert adu == 19, 'Extracted ADU is ' + str(adu) + ' but it should be 19.'
