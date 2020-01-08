@@ -70,7 +70,8 @@ class ImageReduction:
                  combinetype_flat='median',
                  sigma_clipping_flat=True,
                  clip_low_flat=5,
-                 clip_high_flat=5):
+                 clip_high_flat=5,
+                 silence=False):
         '''
         This class is not intented for quality data reduction, it exists for
         completeness such that users can produce a minimal pipeline with
@@ -191,6 +192,8 @@ class ImageReduction:
         self.clip_low_flat = clip_low_flat
         self.clip_high_flat = clip_high_flat
 
+        self.silence = silence
+
         self.bias_list = None
         self.dark_list = None
         self.flat_list = None
@@ -253,8 +256,9 @@ class ImageReduction:
             try:
                 self.saxis = int(light.header[self.saxis_keyword])
             except:
-                warnings.warn('Saxis keyword "' + self.saxis_keyword + '" is'
-                              ' not in the header. Saxis is set to 1.')
+                if not self.silence:
+                    warnings.warn('Saxis keyword "' + self.saxis_keyword +
+                                  '" is not in the header. Saxis is set to 1.')
                 self.saxis = 1
         else:
             self.saxis = saxis
@@ -317,8 +321,9 @@ class ImageReduction:
         # to supply the exposure time, use 1 second
         if len(light_time) == 0:
             self.light_time = 1.
-            warnings.warn('Light frame exposure time cannot be found. '
-                          '1 second is used as the exposure time.')
+            if not self.silence:
+                warnings.warn('Light frame exposure time cannot be found. '
+                              '1 second is used as the exposure time.')
 
         # Combine the arcs
         arc_CCDData = []
@@ -439,8 +444,9 @@ class ImageReduction:
 
         # If exposure time cannot be found from the header, use 1 second
         if len(dark_time) == 0:
-            warnings.warn('Dark frame exposure time cannot be found. '
-                          '1 second is used as the exposure time.')
+            if not self.silence:
+                warnings.warn('Dark frame exposure time cannot be found. '
+                              '1 second is used as the exposure time.')
             self.exptime_dark = 1.
 
         # Frame in unit of ADU per second
@@ -504,19 +510,25 @@ class ImageReduction:
         if self.bias_list.size > 0:
             self._bias_subtract()
         else:
-            warnings.warn('No bias frames. Bias subtraction is not performed.')
+            if not self.silence:
+                warnings.warn('No bias frames. Bias subtraction is not '
+                              'performed.')
 
         # Dark subtraction
         if self.dark_list.size > 0:
             self._dark_subtract()
         else:
-            warnings.warn('No dark frames. Dark subtraction is not performed.')
+            if not self.silence:
+                warnings.warn('No dark frames. Dark subtraction is not '
+                              'performed.')
 
         # Field flattening
         if self.flat_list.size > 0:
             self._flatfield()
         else:
-            warnings.warn('No flat frames. Field-flattening is not performed.')
+            if not self.silence:
+                warnings.warn('No flat frames. Field-flattening is not '
+                              'performed.')
 
         # rotate the frame by 90 degrees anti-clockwise if Saxis is 0
         if self.saxis is 0:
@@ -597,8 +609,8 @@ class ImageReduction:
         self.fits_data.header.set(
             keyword='LKEYWORD',
             value=self.exptime_light_keyword,
-            comment='Automatically identified exposure time keyword of the ' +
-            'light frames.')
+            comment='Automatically identified exposure time keyword of the '
+                    'light frames.')
         self.fits_data.header.set(
             keyword='DCOMTYPE',
             value=self.combinetype_dark,
@@ -623,7 +635,7 @@ class ImageReduction:
             keyword='DKEYWORD',
             value=self.exptime_dark_keyword,
             comment='Automatically identified exposure time keyword of the ' +
-            'dark frames.')
+                    'dark frames.')
         self.fits_data.header.set(
             keyword='BCOMTYPE',
             value=self.combinetype_bias,
@@ -695,8 +707,9 @@ class ImageReduction:
             else:
                 fig.show(renderer)
         else:
-            warnings.warn('plotly is not present, diagnostic plots cannot be '
-                          'generated.')
+            if not self.silence:
+                warnings.warn('plotly is not present, diagnostic plots cannot '
+                              'be generated.')
 
     def list_files(self):
         '''

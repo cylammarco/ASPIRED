@@ -8,7 +8,7 @@ pio.renderers.default = 'notebook+jpg'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from aspired import aspired
 
-science_frame = aspired.ImageReduction('examples/sprat_LHS6328.list')
+science_frame = aspired.ImageReduction('examples/sprat_LHS6328.list', silence=True)
 science_frame.reduce()
 
 properties_len = len(science_frame.__dict__)
