@@ -2,12 +2,14 @@ import os
 import sys
 import numpy as np
 from astropy.io import fits
+import pytest
 import plotly.io as pio
 pio.renderers.default = 'notebook+jpg'
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from aspired import aspired
 
+@pytest.mark.filterwarnings('ignore::DeprecationWarning')
 science_frame = aspired.ImageReduction('examples/sprat_LHS6328.list', silence=True)
 science_frame.reduce()
 
