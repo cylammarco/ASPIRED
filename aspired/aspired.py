@@ -2194,8 +2194,8 @@ class StandardFlux:
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag in units of
 
-        wavelength: \AA
-        flux:       ergs / cm / cm / s / \AA
+        wavelength: A
+        flux:       ergs / cm / cm / s / A
         mag:        mag (AB) 
 
         Returns
