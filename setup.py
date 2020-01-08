@@ -1,10 +1,12 @@
+import os
 from setuptools import setup, find_packages
 
 install_requires=[
     'scipy', 'numpy>1.16', 'matplotlib', 'astropy', 'reproject==0.5', 'ccdproc', 'astroscrappy',
-    'spectres @ git+https://github.com/cylammarco/SpectRes#egg=SpectRes', 'plotly',
-    'rascal @ git+https://github.com/jveitchmichaelis/rascal/archive/master.zip'
+    'spectres @ git+https://github.com/cylammarco/SpectRes#egg=SpectRes', 'plotly'
     ]
+
+os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git')
 
 __packagename__ = "aspired"
 
