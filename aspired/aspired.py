@@ -42,7 +42,7 @@ except ImportError:
     warnings.warn(
         'plotly is not present, diagnostic plots cannot be generated.')
 
-from .standard_list import *
+from aspired.standard_list import *
 
 
 class ImageReduction:
@@ -2009,7 +2009,7 @@ class WavelengthPolyFit:
                        jsonstring=False,
                        renderer='default'):
         '''
-        # pixelscale in unit of A/pix
+        pixelscale in unit of A/pix
 
         '''
 
@@ -2223,7 +2223,7 @@ class StandardFlux:
                 raise ValueError('The type has to be \'flux\' of \'mag\'.')
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        filepath = os.path.join(dir_path, '..', 'standards',
+        filepath = os.path.join(dir_path, 'standards',
                                 str(self.group) + 'stan', target_name)
 
         if self.group[:4] == 'iraf':
@@ -2340,6 +2340,7 @@ class OneDSpec:
         '''
         Extract the required information from a TwoDSpec object
         '''
+
         try:
             self.adu_std = standard.adu[0]
             self.aduerr_std = standard.aduerr[0]
@@ -2352,6 +2353,7 @@ class OneDSpec:
         '''
         Extract the required information from a WavelengthPolyFit object
         '''
+
         if stype == 'science':
             try:
                 self.pfit_type = wave_cal.pfit_type
@@ -2413,6 +2415,7 @@ class OneDSpec:
         '''
         Extract the required information from a StandardFlux object.
         '''
+
         try:
             self.group = flux_cal.group
             self.target = flux_cal.target
@@ -2425,6 +2428,7 @@ class OneDSpec:
         '''
         Apply the wavelength calibration
         '''
+
         if stype == 'science':
             pix = np.arange(len(self.adu[0]))
             self.wave = self.polyval(self.pfit, pix)
@@ -2546,6 +2550,7 @@ class OneDSpec:
         '''
         Display the computed sensitivity curve.
         '''
+
         fig = go.Figure()
         # show the image on the top
         fig.add_trace(
