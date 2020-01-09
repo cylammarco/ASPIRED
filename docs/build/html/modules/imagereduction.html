@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>ImageReduction &#8212; ASPIRED 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="TwoDSpec" href="twodspec.html" />
+    <link rel="prev" title="Example - ISIS (William Herschel Telescope)" href="../tutorials/wht-isis.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="imagereduction">
+<h1>ImageReduction<a class="headerlink" href="#imagereduction" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="aspired.aspired.ImageReduction">
+<em class="property">class </em><code class="sig-prename descclassname">aspired.aspired.</code><code class="sig-name descname">ImageReduction</code><span class="sig-paren">(</span><em class="sig-param">filelistpath</em>, <em class="sig-param">ftype='csv'</em>, <em class="sig-param">saxis=None</em>, <em class="sig-param">saxis_keyword=None</em>, <em class="sig-param">combinetype_light='median'</em>, <em class="sig-param">sigma_clipping_light=True</em>, <em class="sig-param">clip_low_light=5</em>, <em class="sig-param">clip_high_light=5</em>, <em class="sig-param">exptime_light=None</em>, <em class="sig-param">exptime_light_keyword=None</em>, <em class="sig-param">combinetype_dark='median'</em>, <em class="sig-param">sigma_clipping_dark=True</em>, <em class="sig-param">clip_low_dark=5</em>, <em class="sig-param">clip_high_dark=5</em>, <em class="sig-param">exptime_dark=None</em>, <em class="sig-param">exptime_dark_keyword=None</em>, <em class="sig-param">combinetype_bias='median'</em>, <em class="sig-param">sigma_clipping_bias=True</em>, <em class="sig-param">clip_low_bias=5</em>, <em class="sig-param">clip_high_bias=5</em>, <em class="sig-param">combinetype_flat='median'</em>, <em class="sig-param">sigma_clipping_flat=True</em>, <em class="sig-param">clip_low_flat=5</em>, <em class="sig-param">clip_high_flat=5</em>, <em class="sig-param">silence=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class is not intented for quality data reduction, it exists for
+completeness such that users can produce a minimal pipeline with
+a single pacakge. Users should preprocess calibration frames, for
+example, arc frames taken with long and short exposures for
+wavelength calibration with both bright and faint lines; fringing
+correction of flat frames; light frames with various exposure times.</p>
+<p>If a field-flattening 2D spectrum is already avaialble, it can be
+the only listed item. Set it as a ‘light’ frame.</p>
+<dl class="simple">
+<dt>filelistpath: string</dt><dd><p>file location, does not support URL</p>
+</dd>
+<dt>ftype: string, optional</dt><dd><p>one of csv, tsv and ascii. Default is csv.</p>
+</dd>
+<dt>Sxais: int, 0 or 1</dt><dd><p>OVERRIDE the SAXIS value in the FITS header, or to provide the
+SAXIS if it does not exist</p>
+</dd>
+<dt>saxis_keyword: string</dt><dd><p>HDU keyword for the spectral axis direction</p>
+</dd>
+<dt>combinetype_light: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+CCDproc.Combiner.median_combine(). All the frame types follow
+the same combinetype.</p>
+</dd>
+<dt>sigma_clipping_light: tuple</dt><dd><p>perform sigma clipping if set to True. sigma is computed with the
+numpy.ma.std method</p>
+</dd>
+<dt>clip_low_light: float</dt><dd><p>lower threshold of the sigma clipping</p>
+</dd>
+<dt>clip_high_light: float</dt><dd><p>upper threshold of the sigma clipping</p>
+</dd>
+<dt>exptime_light: float</dt><dd><p>OVERRIDE the exposure time value in the FITS header, or to provide
+one if the keyword does not exist</p>
+</dd>
+<dt>exptime_light_keyword: string</dt><dd><p>HDU keyword for the exposure time of the light frame</p>
+</dd>
+<dt>combinetype_dark: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+CCDproc.Combiner.median_combine(). All the frame types follow
+the same combinetype.</p>
+</dd>
+<dt>sigma_clipping_dark: tuple</dt><dd><p>perform sigma clipping if set to True. sigma is computed with the
+numpy.ma.std method</p>
+</dd>
+<dt>clip_low_dark: float</dt><dd><p>lower threshold of the sigma clipping</p>
+</dd>
+<dt>clip_high_dark: float</dt><dd><p>upper threshold of the sigma clipping</p>
+</dd>
+<dt>exptime_dark: float</dt><dd><p>OVERRIDE the exposure time value in the FITS header, or to provide
+one if the keyword does not exist</p>
+</dd>
+<dt>exptime_dark_keyword: string</dt><dd><p>HDU keyword for the exposure time of the dark frame</p>
+</dd>
+<dt>combinetype_bias: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+CCDproc.Combiner.median_combine(). All the frame types follow
+the same combinetype.</p>
+</dd>
+<dt>sigma_clipping_bias: tuple</dt><dd><p>perform sigma clipping if set to True. sigma is computed with the
+numpy.ma.std method</p>
+</dd>
+<dt>clip_low_bias: float</dt><dd><p>lower threshold of the sigma clipping</p>
+</dd>
+<dt>clip_high_bias: float</dt><dd><p>upper threshold of the sigma clipping</p>
+</dd>
+<dt>combinetype_flat: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+CCDproc.Combiner.median_combine(). All the frame types follow
+the same combinetype.</p>
+</dd>
+<dt>sigma_clipping_flat: tuple</dt><dd><p>perform sigma clipping if set to True. sigma is computed with the
+numpy.ma.std method</p>
+</dd>
+<dt>clip_low_flat: float</dt><dd><p>lower threshold of the sigma clipping</p>
+</dd>
+<dt>clip_high_flat: float</dt><dd><p>upper threshold of the sigma clipping</p>
+</dd>
+</dl>
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction._bias_subtract">
+<code class="sig-name descname">_bias_subtract</code><span class="sig-paren">(</span><em class="sig-param">combinetype='median'</em>, <em class="sig-param">sigma_clipping=True</em>, <em class="sig-param">clip_low=5</em>, <em class="sig-param">clip_high=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._bias_subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._bias_subtract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform bias subtraction if bias frames are available.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction._check_files">
+<code class="sig-name descname">_check_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._check_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._check_files" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction._dark_subtract">
+<code class="sig-name descname">_dark_subtract</code><span class="sig-paren">(</span><em class="sig-param">combinetype='median'</em>, <em class="sig-param">sigma_clipping=True</em>, <em class="sig-param">clip_low=5</em>, <em class="sig-param">clip_high=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._dark_subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._dark_subtract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform dark subtraction if dark frames are available</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction._flatfield">
+<code class="sig-name descname">_flatfield</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._flatfield"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._flatfield" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform field flattening if flat frames are available</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction.inspect">
+<code class="sig-name descname">inspect</code><span class="sig-paren">(</span><em class="sig-param">log=True</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction.inspect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction.inspect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display the reduced image with a supported plotly renderer or export
+as json strings.</p>
+<dl class="simple">
+<dt>log: tuple</dt><dd><p>Log the ADU count per second in the display. Default is True.</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer: jpg, png</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plot.ly
+in any support language</p>
+</dd>
+</dl>
+<p>json string if jsonstring is True, otherwise only an image is displayed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction.list_files">
+<code class="sig-name descname">list_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction.list_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction.list_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the file input list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction.reduce">
+<code class="sig-name descname">reduce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction.reduce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction.reduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform data reduction using the frames provided.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.ImageReduction.savefits">
+<code class="sig-name descname">savefits</code><span class="sig-paren">(</span><em class="sig-param">filepath='reduced_image.fits'</em>, <em class="sig-param">overwrite=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction.savefits"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction.savefits" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save the reduced image to disk.</p>
+<dl class="simple">
+<dt>filepath: String</dt><dd><p>Disk location to be written to. Default is at where the Python
+process/subprocess is execuated.</p>
+</dd>
+<dt>overwrite: tuple</dt><dd><p>Default is False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">ASPIRED</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation/pip.html">pip</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Behind the Scene</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../background/imagereduction.html">Image Reduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../background/aptrace.html">Aperture Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../background/apextract.html">Aperture Extraction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../background/wavecal.html">Wavelength Calibration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../background/fluxcal.html">Flux Calibration</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/lt-sprat.html">Example - SPRAT (Liverpool Telescope)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tutorials/wht-isis.html">Example - ISIS (William Herschel Telescope)</a></li>
+</ul>
+<p class="caption"><span class="caption-text">List of Modules</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ImageReduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#aspired.aspired.ImageReduction">ImageReduction</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="twodspec.html">TwoDSpec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="onedspec.html">OneDSpec</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wavelengthpolyfit.html">WavelengthPolyFit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="standardflux.html">StandardFlux</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../autoapi/index.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="../tutorials/wht-isis.html" title="previous chapter">Example - ISIS (William Herschel Telescope)</a></li>
+      <li>Next: <a href="twodspec.html" title="next chapter">TwoDSpec</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Marco Lam.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/modules/imagereduction.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

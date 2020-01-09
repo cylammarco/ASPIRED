@@ -1,0 +1,615 @@
+:mod:`aspired`
+==============
+
+.. py:module:: aspired
+
+
+Module Contents
+---------------
+
+.. data:: detect_cosmics
+   
+
+   
+
+.. data:: spectres_imported
+   :annotation: = True
+
+   
+
+.. data:: plotly_imported
+   :annotation: = True
+
+   
+
+.. py:class:: ImageReduction(filelistpath, ftype='csv', saxis=None, saxis_keyword=None, combinetype_light='median', sigma_clipping_light=True, clip_low_light=5, clip_high_light=5, exptime_light=None, exptime_light_keyword=None, combinetype_dark='median', sigma_clipping_dark=True, clip_low_dark=5, clip_high_dark=5, exptime_dark=None, exptime_dark_keyword=None, combinetype_bias='median', sigma_clipping_bias=True, clip_low_bias=5, clip_high_bias=5, combinetype_flat='median', sigma_clipping_flat=True, clip_low_flat=5, clip_high_flat=5, silence=False)
+
+   This class is not intented for quality data reduction, it exists for
+   completeness such that users can produce a minimal pipeline with
+   a single pacakge. Users should preprocess calibration frames, for
+   example, arc frames taken with long and short exposures for
+   wavelength calibration with both bright and faint lines; fringing
+   correction of flat frames; light frames with various exposure times.
+
+   If a field-flattening 2D spectrum is already avaialble, it can be
+   the only listed item. Set it as a 'light' frame.
+
+   Parameters
+   ----------
+   filelistpath: string
+       file location, does not support URL
+   ftype: string, optional
+       one of csv, tsv and ascii. Default is csv.
+   Sxais: int, 0 or 1
+       OVERRIDE the SAXIS value in the FITS header, or to provide the
+       SAXIS if it does not exist
+   saxis_keyword: string
+       HDU keyword for the spectral axis direction
+   combinetype_light: string, optional
+       average of median for CCDproc.Combiner.average_combine() and
+       CCDproc.Combiner.median_combine(). All the frame types follow
+       the same combinetype.
+   sigma_clipping_light: tuple
+       perform sigma clipping if set to True. sigma is computed with the
+       numpy.ma.std method
+   clip_low_light: float
+       lower threshold of the sigma clipping
+   clip_high_light: float
+       upper threshold of the sigma clipping
+   exptime_light: float
+       OVERRIDE the exposure time value in the FITS header, or to provide
+       one if the keyword does not exist
+   exptime_light_keyword: string
+       HDU keyword for the exposure time of the light frame
+   combinetype_dark: string, optional
+       average of median for CCDproc.Combiner.average_combine() and
+       CCDproc.Combiner.median_combine(). All the frame types follow
+       the same combinetype.
+   sigma_clipping_dark: tuple
+       perform sigma clipping if set to True. sigma is computed with the
+       numpy.ma.std method
+   clip_low_dark: float
+       lower threshold of the sigma clipping
+   clip_high_dark: float
+       upper threshold of the sigma clipping
+   exptime_dark: float
+       OVERRIDE the exposure time value in the FITS header, or to provide
+       one if the keyword does not exist
+   exptime_dark_keyword: string
+       HDU keyword for the exposure time of the dark frame
+   combinetype_bias: string, optional
+       average of median for CCDproc.Combiner.average_combine() and
+       CCDproc.Combiner.median_combine(). All the frame types follow
+       the same combinetype.
+   sigma_clipping_bias: tuple
+       perform sigma clipping if set to True. sigma is computed with the
+       numpy.ma.std method
+   clip_low_bias: float
+       lower threshold of the sigma clipping
+   clip_high_bias: float
+       upper threshold of the sigma clipping
+   combinetype_flat: string, optional
+       average of median for CCDproc.Combiner.average_combine() and
+       CCDproc.Combiner.median_combine(). All the frame types follow
+       the same combinetype.
+   sigma_clipping_flat: tuple
+       perform sigma clipping if set to True. sigma is computed with the
+       numpy.ma.std method
+   clip_low_flat: float
+       lower threshold of the sigma clipping
+   clip_high_flat: float
+       upper threshold of the sigma clipping
+
+   .. method:: _check_files(self)
+
+
+
+   .. method:: _bias_subtract(self, combinetype='median', sigma_clipping=True, clip_low=5, clip_high=5)
+
+
+      Perform bias subtraction if bias frames are available.
+
+
+   .. method:: _dark_subtract(self, combinetype='median', sigma_clipping=True, clip_low=5, clip_high=5)
+
+
+      Perform dark subtraction if dark frames are available
+
+
+   .. method:: _flatfield(self)
+
+
+      Perform field flattening if flat frames are available
+
+
+   .. method:: reduce(self)
+
+
+      Perform data reduction using the frames provided.
+
+
+   .. method:: savefits(self, filepath='reduced_image.fits', overwrite=False)
+
+
+      Save the reduced image to disk.
+
+      Parameters
+      ----------
+      filepath: String
+          Disk location to be written to. Default is at where the Python
+          process/subprocess is execuated.
+      overwrite: tuple
+          Default is False. 
+
+
+   .. method:: inspect(self, log=True, renderer='default', jsonstring=False)
+
+
+      Display the reduced image with a supported plotly renderer or export
+      as json strings.
+
+      Parameters
+      ----------
+      log: tuple
+          Log the ADU count per second in the display. Default is True.
+      renderer: string
+          plotly renderer: jpg, png
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plot.ly
+          in any support language
+
+      Return
+      ------
+      json string if jsonstring is True, otherwise only an image is displayed
+
+
+   .. method:: list_files(self)
+
+
+      Print the file input list.
+
+
+
+.. py:class:: TwoDSpec(img, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ), flip=False, cr=True, cr_sigma=5.0, rn=None, gain=None, seeing=None, exptime=None, silence=False)
+
+   Currently, there is no automated way to decide if a flip is needed.
+
+   The supplied file should contain 2 or 3 columns with the following
+   structure:
+
+       column 1: one of bias, dark, flat or light
+       column 2: file location
+       column 3: HDU number (default to 0 if not given)
+
+   If the 2D spectrum is
+   +--------+--------+-------+-------+
+   |  blue  |   red  | Saxis |  flip |
+   +--------+--------+-------+-------+
+   |  left  |  right |   1   | False |
+   |  right |  left  |   1   |  True |
+   |   top  | bottom |   0   | False |
+   | bottom |   top  |   0   |  True |
+   +--------+--------+-------+-------+
+
+   Spectra are sorted by their brightness. If there are multiple spectra
+   on the image, and the target is not the brightest source, use at least
+   the number of spectra visible to eye and pick the one required later.
+   The default automated outputs is the brightest one, which is the
+   most common case for images from a long-slit spectrograph.
+
+   Parameters
+   ----------
+   img: 2D numpy array (M x N)
+       2D spectral image
+   Saxis: int, optional
+       Spectral direction, 0 for vertical, 1 for horizontal.
+       (Default is 1)
+   spatial_mask: 1D numpy array (N), optional
+       Mask in the spatial direction, can be the indices of the pixels
+       to be included (size <N) or a 1D numpy array of True/False (size N)
+       (Default is (1,) i.e. keep everything)
+   spec_mask: 1D numpy array (M), optional
+       Mask in the spectral direction, can be the indices of the pixels
+       to be included (size <M) or a 1D numpy array of True/False (size M)
+       (Default is (1,) i.e. keep everything)
+   flip: tuple, optional
+       If the frame has to be left-right flipped, set to True.
+       (Deafult is False)
+   cr: tuple, optional
+       Set to True to apply cosmic ray rejection by sigma clipping with
+       astroscrappy if available, otherwise a 2D median filter of size 5
+       would be used. (default is True)
+   cr_sigma: float, optional
+       Cosmic ray sigma clipping limit (Deafult is 5.0)
+   rn: float, optional
+       Readnoise of the detector, not important if noise estimation is
+       not needed.
+       (Deafult is None, which will be replaced with 1.0)
+   gain: float, optional
+       Gain of the detector, not important if noise estimation is
+       not needed.
+       (Deafult is None, which will be replaced with 1.0)
+   seeing: float, optional
+       Seeing in unit of arcsec, use as the first guess of the line
+       spread function of the spectra.
+       (Deafult is None, which will be replaced with 1.0)
+   exptime: float, optional
+       Esposure time for the observation, not important if absolute flux
+       calibration is not needed.
+       (Deafult is None, which will be replaced with 1.0)
+   silence: tuple, optional
+       Set to True to suppress all verbose output.
+
+   .. method:: _gaus(self, x, a, b, x0, sigma)
+
+
+      Simple Gaussian function.
+
+      Parameters
+      ----------
+      x: float or 1-d numpy array
+          The data to evaluate the Gaussian over
+      a: float
+          the amplitude
+      b: float
+          the constant offset
+      x0: float
+          the center of the Gaussian
+      sigma: float
+          the width of the Gaussian
+
+      Returns
+      -------
+      Array or float of same type as input (x).
+
+
+   .. method:: _identify_spectra(self, f_height, display, renderer, jsonstring)
+
+
+      Identify peaks assuming the spatial and spectral directions are
+      aligned with the X and Y direction within a few degrees.
+
+      Parameters
+      ----------
+      f_height: float
+          The minimum intensity as a fraction of maximum height.
+      display: tuple
+          Set to True to display disgnostic plot.
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      peaks_y :
+          Array or float of the pixel values of the detected peaks
+      heights_y :
+          Array or float of the integrated counts at the peaks 
+
+
+   .. method:: _optimal_signal(self, pix, xslice, sky, mu, sigma, display, renderer, jsonstring)
+
+
+      Iterate to get optimal signal, for internal use only
+
+      Parameters
+      ----------
+      pix: 1-d numpy array
+          pixel number along the spatial direction
+      xslice: 1-d numpy array
+          ADU along the pix
+      sky: 1-d numpy array
+          ADU of the fitted sky along the pix
+      mu: float
+          The center of the Gaussian
+      sigma: float
+          The width of the Gaussian
+      display: tuple
+          Set to True to display disgnostic plot.
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      signal: float
+          The optimal signal. 
+      noise: float
+          The noise associated with the optimal signal.
+
+
+   .. method:: ap_trace(self, nspec=1, nwindow=25, spec_sep=5, resample_factor=10, rescale=False, scaling_min=0.975, scaling_max=1.025, scaling_step=0.005, p_bg=5, tol=3, display=False, renderer='default', jsonstring=False)
+
+
+      trace: 1-d numpy array (N)
+          The spatial positions (Y axis) corresponding to the center of the
+          trace for every wavelength (X axis), as returned from ap_trace
+      trace_sigma: float, or 1-d array (1 or N)
+          Tophat extraction: Float is accepted but will be rounded to an int,
+                              which gives the constant aperture size on either
+                              side of the trace to extract.
+          Optimal extraction: Float or 1-d array of the same size as the trace.
+                              If a float is supplied, a fixed standard deviation
+                              will be used to construct the gaussian weight
+                              function along the entire spectrum.
+
+      Parameters
+      ----------
+      nspec: int, optional
+
+      nwindow: int, optional
+
+      spec_sep: int, optional
+
+      resample_factor: int, optional
+
+      rescale: tuple, optional
+
+      scaling_min: float, optional
+
+      scaling_max: float, optional
+
+      scaling_step: float, optional
+
+      p_bg: float, optional
+
+      tol: float, optional
+
+      display: tuple, optional
+          Set to True to display disgnostic plot.
+      renderer: string, optional
+          plotly renderer options.
+      jsonstring: tuple, optional
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+
+   .. method:: ap_trace_quick(self, nspec=1, nsteps=20, recenter=False, prevtrace=(0, ), fittype='spline', order=3, bigbox=8, display=False, renderer='default', jsonstring=False)
+
+
+      Trace the spectrum aperture in an image. It only works for bright
+      spectra with good wavelength coverage.
+
+      It works by chopping image up in bins along the wavelength direction,
+      fits a Gaussian for each bin to determine the spatial center of the
+      trace. Finally, draws a cubic spline through the bins.
+
+      Parameters
+      ----------
+      nspec: int, optional
+          Number of spectra to be extracted. It does not guarantee returning
+          the same number of spectra if fewer can be detected. (Default is 1)
+      nsteps: int, optional
+          Keyword, number of bins in X direction to chop image into. Use
+          fewer bins if ap_trace is having difficulty, such as with faint
+          targets (default is 20, minimum is 4)
+      recenter: bool, optional
+          Set to True to use previous trace, allow small shift in position
+          along the spatial direction. Not doing anything if prevtrace is not
+          supplied. (Default is False)
+      prevtrace: 1-d numpy array, optional
+          Provide first guess or refitting the center with different parameters.
+      fittype: string, optional
+          Set to 'spline' or 'polynomial', using
+          scipy.interpolate.UnivariateSpline and numpy.polyfit
+      order: string, optional
+          Degree of the spline or polynomial. Spline must be <= 5.
+          (default is k=3)
+      bigbox: float, optional
+          The number of sigma away from the main aperture to allow to trace
+      silence: tuple, optional
+          Set to disable warning/error messages. (Default is False)
+      display: tuple, optional
+          Set to True to display disgnostic plot.
+      renderer: string, optional
+          plotly renderer options.
+      jsonstring: tuple, optional
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      my: array (N, nspec)
+          The spatial (Y) positions of the trace, interpolated over the
+          entire wavelength (X) axis
+      y_sigma: array (N, nspec)
+          The sigma measured at the nsteps.
+
+
+   .. method:: ap_extract(self, apwidth=7, skysep=3, skywidth=5, skydeg=1, optimal=True, display=False, renderer='default', jsonstring=False)
+
+
+      Extract the spectra using the traces, support aperture or optimal
+      extraction. The sky background is fitted in one dimention only. The
+      uncertainty at each pixel is also computed, but it is only meaningful
+      if correct gain, read noise and are provided.
+
+      Parameters
+      ----------
+      apwidth: int, optional
+      skysep: int, optional
+          The separation in pixels from the aperture to the sky window.
+          (Default is 3)
+      skywidth: int, optional
+          The width in pixels of the sky windows on either side of the
+          aperture. (Default is 7)
+      skydeg: int, optional
+          The polynomial order to fit between the sky windows.
+          (Default is 0, i.e. constant flat sky level)
+      optimal: tuple, optional
+          Set optimal extraction. (Default is True)
+      silence: tuple, optional
+          Set to disable warning/error messages. (Default is False)
+      display: tuple, optional
+          Set to True to display disgnostic plot.
+      renderer: string, optional
+          plotly renderer options.
+      jsonstring: tuple, optional
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      onedspec: 1-d array
+          The summed adu at each column about the trace. Note: is not
+          sky subtracted!
+      skyadu: 1-d array
+          The integrated sky values along each column, suitable for
+          subtracting from the output of ap_extract
+      aduerr: 1-d array
+          the uncertainties of the adu values
+
+
+
+.. py:class:: WavelengthPolyFit(spec, arc)
+
+   arc: TwoDSpec object of the arc image
+   spec: TwoDSpec object of the science/standard image
+
+   .. method:: find_arc_lines(self, percentile=20.0, distance=5.0, display=False, jsonstring=False, renderer='default')
+
+
+      pixelscale in unit of A/pix
+
+
+   .. method:: calibrate(self, elements, sample_size=5, min_wave=3500.0, max_wave=8500.0, max_tries=5000, display=False, num_slopes=1000, range_tolerance=500, fit_tolerance=20.0, polydeg=5, top_n=20, candidate_thresh=15.0, ransac_thresh=1, xbins=50, ybins=50, brute_force=False, fittype='poly', mode='manual', progress=True, coeff=None)
+
+
+      thresh (A) :: the individual line fitting tolerance to accept as a valid fitting point
+      fit_tolerance (A) :: the RMS
+
+
+   .. method:: calibrate_pfit(self, elements, pfit, min_wave=3500.0, max_wave=8500.0, tolerance=10.0, display=False)
+
+
+
+
+.. py:class:: StandardFlux(target, group, cutoff=0.4, ftype='flux', silence=False)
+
+   .. method:: _lookup_standard(self)
+
+
+      Check if the requested standard and library exist.
+
+
+   .. method:: load_standard(self, display=False, renderer='default', jsonstring=False)
+
+
+      Read the standard flux/magnitude file. And return the wavelength and
+      flux/mag in units of
+
+      wavelength: A
+      flux:       ergs / cm / cm / s / A
+      mag:        mag (AB) 
+
+      Returns
+      -------
+      display: tuple, optional
+          Set to True to display disgnostic plot.
+      renderer: string, optional
+          plotly renderer options.
+      jsonstring: tuple, optional
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+
+   .. method:: inspect_standard(self, renderer='default', jsonstring=False)
+
+
+
+
+.. py:class:: OneDSpec(science, wave_cal, standard=None, wave_cal_std=None, flux_cal=None)
+
+   Parameters
+   ----------
+   science: TwoDSpec object
+
+   wave_cal: WavelengthPolyFit object
+
+   standard: TwoDSpec object, optional
+
+   wave_cal_std: WavelengthPolyFit object, optional
+
+   flux_cal: StandardFlux object, optional (require wave_cal_std)
+
+   .. method:: _set_standard(self, standard)
+
+
+      Extract the required information from a TwoDSpec object
+
+
+   .. method:: _set_wavecal(self, wave_cal, stype)
+
+
+      Extract the required information from a WavelengthPolyFit object
+
+
+   .. method:: _set_fluxcal(self, flux_cal)
+
+
+      Extract the required information from a StandardFlux object.
+
+
+   .. method:: apply_wavelength_calibration(self, stype)
+
+
+      Apply the wavelength calibration
+
+
+   .. method:: compute_sencurve(self, kind=3, smooth=False, slength=5, sorder=3, display=False, renderer='default', jsonstring=False)
+
+
+      Get the standard flux or magnitude of the given target and group
+      based on the given array of wavelengths. Some standard libraries
+      contain the same target with slightly different values.
+
+      Parameters
+      ----------
+      kind: string or integer [1,2,3,4,5 only]
+          interpolation kind
+          >>> [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,
+               ‘previous’, ‘next’]
+          (default is 'cubic')
+      smooth: tuple
+          set to smooth the input ADU/flux/mag with scipy.signal.savgol_filter
+          (default is True)
+      slength: int
+          SG-filter window size
+      sorder: int
+          SG-filter polynomial order
+      display: tuple, optional
+          Set to True to display disgnostic plot.
+      renderer: string, optional
+          plotly renderer options.
+      jsonstring: tuple, optional
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      A scipy interp1d object.
+
+
+   .. method:: inspect_sencurve(self, renderer='default', jsonstring=False)
+
+
+      Display the computed sensitivity curve.
+
+
+   .. method:: apply_flux_calibration(self, stype='all')
+
+
+      Apply the computed sensitivity curve
+
+
+   .. method:: inspect_reduced_spectrum(self, stype='all', wave_min=4000.0, wave_max=8000.0, renderer='default', jsonstring=False)
+
+
+      Display the reduced spectra.
+
+
+
