@@ -1,0 +1,9 @@
+sphinx-autoapi
+astropy
+ccdproc
+rascal
+plotly
+astroscrappy
+spectres
+numpy
+scipy

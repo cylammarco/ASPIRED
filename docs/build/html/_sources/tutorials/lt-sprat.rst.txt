@@ -1,0 +1,3 @@
+Example - SPRAT (Liverpool Telescope)
+=====================================
+
