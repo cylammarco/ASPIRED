@@ -87,7 +87,7 @@ Copyright 2019-2020
 
 If you make use of ASPIRED in your work, please cite our paper
 (`arXiv <https://arxiv.org/abs/1912.05885>`_,
-`ADS <https://https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract>`_,
+`ADS <https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract>`_,
 `BibTeX <https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/exportcitation>`_).
 
 
