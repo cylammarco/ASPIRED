@@ -16,7 +16,7 @@ def test_imagereduction():
     science_frame.reduce()
 
     properties_len = len(science_frame.__dict__)
-    assert properties_len == 53, 'There should be 53 properties. You have ' + str(
+    assert properties_len == 52, 'There should be 52 properties. You have ' + str(
         properties_len) + '.'
 
     # Check if files are loaded to the right place
