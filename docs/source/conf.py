@@ -14,8 +14,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
-
-
 # -- Project information -----------------------------------------------------
 
 project = 'ASPIRED'
@@ -32,9 +30,10 @@ release = __version__
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc',
+extensions = [
+    'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc',
     'sphinx.ext.autosectionlabel', 'sphinx.ext.coverage', 'autoapi.extension'
-    ]
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -50,7 +49,7 @@ autodoc_default_options = {
     'members': None,
     'undoc-members': None,
     'private-members': None
-    }
+}
 autoclass_content = 'both'
 autoapi_python_class_content = 'both'
 
