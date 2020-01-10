@@ -148,6 +148,8 @@ class ImageReduction:
             lower threshold of the sigma clipping
         clip_high_flat: float
             upper threshold of the sigma clipping
+        silence: tuple
+            set to suppress all messages
         '''
 
         self.filelistpath = filelistpath
@@ -257,8 +259,8 @@ class ImageReduction:
                 self.saxis = int(light.header[self.saxis_keyword])
             except:
                 if not self.silence:
-                    warnings.warn('Saxis keyword "' + self.saxis_keyword +
-                                  '" is not in the header. Saxis is set to 1.')
+                    warnings.warn('saxis keyword "' + self.saxis_keyword +
+                                  '" is not in the header. saxis is set to 1.')
                 self.saxis = 1
         else:
             self.saxis = saxis
@@ -343,17 +345,17 @@ class ImageReduction:
         del arc_combiner
 
     def _check_files(self):
+        '''
+        Go through the filelist provided and check if all files exist.
+        '''
+
         for filepath in self.impath:
             try:
                 os.path.isfile(filepath)
             except:
                 ValueError('File ' + filepath + ' does not exist.')
 
-    def _bias_subtract(self,
-                       combinetype='median',
-                       sigma_clipping=True,
-                       clip_low=5,
-                       clip_high=5):
+    def _bias_subtract(self):
         '''
         Perform bias subtraction if bias frames are available.
         '''
@@ -378,10 +380,8 @@ class ImageReduction:
 
         # Image combine by median or average
         if self.combinetype_bias == 'median':
-            self.biascombinetype = combinetype
             self.bias_master = bias_combiner.median_combine()
         elif self.combinetype_bias == 'average':
-            self.biascombinetype = combinetype
             self.bias_master = bias_combiner.average_combine()
         else:
             self.bias_filename = []
@@ -394,11 +394,7 @@ class ImageReduction:
         del bias_CCDData
         del bias_combiner
 
-    def _dark_subtract(self,
-                       combinetype='median',
-                       sigma_clipping=True,
-                       clip_low=5,
-                       clip_high=5):
+    def _dark_subtract(self):
         '''
         Perform dark subtraction if dark frames are available
         '''
@@ -431,11 +427,9 @@ class ImageReduction:
                                          func=np.ma.median)
         # Image combine by median or average
         if self.combinetype_dark == 'median':
-            self.darkcombinetype = combinetype
             self.dark_master = dark_combiner.median_combine()
             self.exptime_dark = np.median(dark_time)
         elif self.combinetype_dark == 'average':
-            self.darkcombinetype = combinetype
             self.dark_master = dark_combiner.average_combine()
             self.exptime_dark = np.mean(dark_time)
         else:
@@ -485,10 +479,8 @@ class ImageReduction:
 
         # Image combine by median or average
         if self.combinetype_flat == 'median':
-            self.flatcombinetype = combinetype
             self.flat_master = flat_combiner.median_combine()
         elif self.combinetype_flat == 'average':
-            self.flatcombinetype = combinetype
             self.flat_master = flat_combiner.average_combine()
         else:
             self.flat_filename = []
@@ -530,7 +522,7 @@ class ImageReduction:
                 warnings.warn('No flat frames. Field-flattening is not '
                               'performed.')
 
-        # rotate the frame by 90 degrees anti-clockwise if Saxis is 0
+        # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis is 0:
             self.light_master = np.rot(self.light_master)
 
@@ -547,7 +539,7 @@ class ImageReduction:
             Disk location to be written to. Default is at where the Python
             process/subprocess is execuated.
         overwrite: tuple
-            Default is False. 
+            Default is False.
 
         '''
 
@@ -587,30 +579,30 @@ class ImageReduction:
                                   value=self.filelistpath,
                                   comment='File location of the frames used.')
         self.fits_data.header.set(
-            keyword='LCOMTYPE',
+            keyword='COMBTYPE',
             value=self.combinetype_light,
             comment='Type of image combine of the light frames.')
         self.fits_data.header.set(
-            keyword='LSIGCLIP',
+            keyword='SIGCLIP',
             value=self.sigma_clipping_light,
             comment='True if the light frames are sigma clipped.')
         self.fits_data.header.set(
-            keyword='LCLIPLOW',
+            keyword='CLIPLOW',
             value=self.clip_low_light,
             comment='Lower threshold of sigma clipping of the light frames.')
         self.fits_data.header.set(
-            keyword='LCLIPHIG',
+            keyword='CLIPHIG',
             value=self.clip_high_light,
             comment='Higher threshold of sigma clipping of the light frames.')
         self.fits_data.header.set(
-            keyword='LXPOSURE',
+            keyword='XPOSURE',
             value=self.exptime_light,
             comment='Average exposure time of the light frames.')
         self.fits_data.header.set(
-            keyword='LKEYWORD',
+            keyword='KEYWORD',
             value=self.exptime_light_keyword,
             comment='Automatically identified exposure time keyword of the '
-                    'light frames.')
+            'light frames.')
         self.fits_data.header.set(
             keyword='DCOMTYPE',
             value=self.combinetype_dark,
@@ -635,7 +627,7 @@ class ImageReduction:
             keyword='DKEYWORD',
             value=self.exptime_dark_keyword,
             comment='Automatically identified exposure time keyword of the ' +
-                    'dark frames.')
+            'dark frames.')
         self.fits_data.header.set(
             keyword='BCOMTYPE',
             value=self.combinetype_bias,
@@ -721,12 +713,13 @@ class ImageReduction:
 
 class TwoDSpec:
     def __init__(self,
-                 img,
-                 Saxis=1,
+                 data,
+                 header=None,
+                 saxis=1,
                  spatial_mask=(1, ),
                  spec_mask=(1, ),
                  flip=False,
-                 cr=True,
+                 cr=False,
                  cr_sigma=5.,
                  rn=None,
                  gain=None,
@@ -734,6 +727,11 @@ class TwoDSpec:
                  exptime=None,
                  silence=False):
         '''
+        This is a class for processing a 2D spectral image, the read noise,
+        detector gain, seeing and exposure time will be automatically extracted
+        from the FITS header if it conforms with the IAUFWG FITS standard.
+
+
         Currently, there is no automated way to decide if a flip is needed.
 
         The supplied file should contain 2 or 3 columns with the following
@@ -745,7 +743,7 @@ class TwoDSpec:
 
         If the 2D spectrum is
         +--------+--------+-------+-------+
-        |  blue  |   red  | Saxis |  flip |
+        |  blue  |   red  | saxis |  flip |
         +--------+--------+-------+-------+
         |  left  |  right |   1   | False |
         |  right |  left  |   1   |  True |
@@ -761,9 +759,11 @@ class TwoDSpec:
 
         Parameters
         ----------
-        img: 2D numpy array (M x N)
-            2D spectral image
-        Saxis: int, optional
+        data: 2D numpy array (M x N) OR astropy.io.fits object
+            2D spectral image in either format
+        header: FITS header
+            THIS WILL OVERRIDE the header from the astropy.io.fits object
+        saxis: int, optional
             Spectral direction, 0 for vertical, 1 for horizontal.
             (Default is 1)
         spatial_mask: 1D numpy array (N), optional
@@ -803,8 +803,21 @@ class TwoDSpec:
             Set to True to suppress all verbose output.
         '''
 
-        self.Saxis = Saxis
-        if self.Saxis is 1:
+        # If data provided is an numpy array
+        if isinstance(data, np.ndarray):
+            img = data
+            self.header = header
+        # If data is not an numpy array, it has to be an
+        #fits.hdu.image.PrimaryHDU object
+        elif isinstance(data, fits.hdu.image.PrimaryHDU):
+            img = data.data
+            self.header = data.header
+        else:
+            TypeError('Please provide a numpy array or an' +
+                      'astropy.io.fits.hdu.image.PrimaryHDU object.')
+
+        self.saxis = saxis
+        if self.saxis is 1:
             self.Waxis = 0
         else:
             self.Waxis = 1
@@ -812,25 +825,137 @@ class TwoDSpec:
         self.spec_mask = spec_mask
         self.flip = flip
         self.cr_sigma = cr_sigma
-        if rn is None:
-            self.rn = 1.
-        else:
-            self.rn = rn
-        if gain is None:
-            self.gain = 1.
-        else:
-            self.gain = gain
-        if seeing is None:
-            self.seeing = 1.
-        else:
-            self.seeing = seeing
-        if exptime is None:
-            self.exptime = 1.
-        else:
-            self.exptime = exptime
 
-        
-        
+        # Default values if not supplied or cannot be automatically identified
+        # from the header
+        self.rn = 0.
+        self.gain = 1.
+        self.seeing = 1.
+        self.exptime = 1.
+
+        # Default keywords to be searched in the order in the list
+        self.rn_keyword = ['RDNOISE', 'RNOISE', 'RN']
+        self.gain_keyword = ['GAIN']
+        self.seeing_keyword = ['SEEING', 'L1SEEING']
+        self.exptime_keyword = [
+            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+        ]
+
+        # Get the Read Noise
+        if rn is not None:
+            if isinstance(rn, str):
+                # use the supplied keyword
+                self.rn = float(data.header[rn])
+            elif np.isfinite(rn):
+                # use the given rn value
+                self.rn = float(rn)
+            else:
+                warnings.warn('rn has to be None, a numeric value or the ' +
+                              'FITS header keyword, ' + str(rn) + ' is ' +
+                              'given. It is set to 0.')
+        else:
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if header is not None:
+                rn_keyword_matched = np.in1d(self.rn_keyword, header)
+                if rn_keyword_matched.any():
+                    self.rn = data.header[self.rn_keyword[np.where(
+                        rn_keyword_matched)[0][0]]]
+                else:
+                    warnings.warn('Read Noise value cannot be identified. ' +
+                                  'It is set to 0.')
+            else:
+                warnings.warn('Header is not provide. ' +
+                              'Read Noise value is not provided. ' +
+                              'It is set to 0.')
+
+        # Get the Gain
+        if gain is not None:
+            if isinstance(gain, str):
+                # use the supplied keyword
+                self.gain = float(data.header[gain])
+            elif np.isfinite(gain):
+                # use the given gain value
+                self.gain = float(gain)
+            else:
+                warnings.warn('Gain has to be None, a numeric value or the ' +
+                              'FITS header keyword, ' + str(gain) + ' is ' +
+                              'given. It is set to 1.')
+        else:
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if header is not None:
+                gain_keyword_matched = np.in1d(self.gain_keyword, header)
+                if gain_keyword_matched.any():
+                    self.gain = data.header[self.gain_keyword[np.where(
+                        gain_keyword_matched)[0][0]]]
+                else:
+                    warnings.warn('Gain value cannot be identified. ' +
+                                  'It is set to 1.')
+            else:
+                warnings.warn('Header is not provide. ' +
+                              'Gain value is not provided. ' +
+                              'It is set to 1.')
+
+        # Get the Seeing
+        if seeing is not None:
+            if isinstance(seeing, str):
+                # use the supplied keyword
+                self.seeing = float(data.header[seeing])
+            elif np.isfinite(gain):
+                # use the given gain value
+                self.seeing = float(seeing)
+            else:
+                warnings.warn(
+                    'Seeing has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(seeing) + ' is ' +
+                    'given. It is set to 1.')
+        else:
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if header is not None:
+                seeing_keyword_matched = np.in1d(self.seeing_keyword, header)
+                if seeing_keyword_matched.any():
+                    self.seeing = data.header[self.seeing_keyword[np.where(
+                        seeing_keyword_matched)[0][0]]]
+                else:
+                    warnings.warn('Seeing value cannot be identified. ' +
+                                  'It is set to 1.')
+            else:
+                warnings.warn('Header is not provide. ' +
+                              'Seeing value is not provided. ' +
+                              'It is set to 1.')
+
+        # Get the Exposure Time
+        if exptime is not None:
+            if isinstance(exptime, str):
+                # use the supplied keyword
+                self.exptime = float(data.header[exptime])
+            elif isfinite(gain):
+                # use the given gain value
+                self.exptime = float(exptime)
+            else:
+                warnings.warn(
+                    'Exposure Time has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(exptime) + ' is ' +
+                    'given. It is set to 1.')
+        else:
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if header is not None:
+                exptime_keyword_matched = np.in1d(self.exptime_keyword, header)
+                if exptime_keyword_matched.any():
+                    self.exptime = data.header[self.exptime_keyword[np.where(
+                        exptime_keyword_matched)[0][0]]]
+                else:
+                    warnings.warn(
+                        'Exposure Time value cannot be identified. ' +
+                        'It is set to 1.')
+            else:
+                warnings.warn('Header is not provide. ' +
+                              'Exposure Time value is not provided. ' +
+                              'It is set to 1.')
+
         self.silence = silence
 
         # cosmic ray rejection
@@ -840,26 +965,28 @@ class TwoDSpec:
                                  readnoise=self.rn,
                                  gain=self.gain,
                                  fsmode='convolve',
+                                 psfmodel='gaussy',
+                                 psfsize=31,
                                  psffwhm=self.seeing)[1]
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spatial_mask) > 1):
-            if self.Saxis is 1:
+            if self.saxis is 1:
                 img = img[self.spatial_mask]
             else:
                 img = img[:, self.spatial_mask]
 
         # the valid x-range of the chip (i.e. spectral direction)
         if (len(self.spec_mask) > 1):
-            if self.Saxis is 1:
+            if self.saxis is 1:
                 img = img[:, self.spec_mask]
             else:
                 img = img[self.spec_mask]
 
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(img)[self.Waxis]
-        self.spatial_size = np.shape(img)[self.Saxis]
-        if self.Saxis is 0:
+        self.spatial_size = np.shape(img)[self.saxis]
+        if self.saxis is 0:
             self.img = np.transpose(img)
         else:
             self.img = img
@@ -870,6 +997,38 @@ class TwoDSpec:
         # set the 2D histogram z-limits
         self.zmin = np.nanpercentile(np.log10(self.img), 5)
         self.zmax = np.nanpercentile(np.log10(self.img), 95)
+
+    def _set_default_rn_keyword(self, keyword_list):
+        ''' Change the default read noise keyword list.'''
+        self.rn_keyword = list(keyword_list)
+
+    def _set_default_gain_keyword(self, keyword_list):
+        ''' Change the default gain keyword list.'''
+        self.gain_keyword = list(keyword_list)
+
+    def _set_default_seeing_keyword(self, keyword_list):
+        ''' Change the default seeing keyword list.'''
+        self.seeing_keyword = list(keyword_list)
+
+    def _set_default_exptime_keyword(self, keyword_list):
+        ''' Change the default exposure time keyword list.'''
+        self.exptime_keyword = list(keyword_list)
+
+    def _append_rn_keyword(self, keyword_list):
+        ''' Append to the existing read noise keyword list.'''
+        self.rn_keyword += list(keyword_list)
+
+    def _append_gain_keyword(self, keyword_list):
+        ''' Append to the existing gain keyword list.'''
+        self.gain_keyword += list(keyword_list)
+
+    def _append_seeing_keyword(self, keyword_list):
+        ''' Append to the existing seeing keyword list.'''
+        self.seeing_keyword += list(keyword_list)
+
+    def _append_exptime_keyword(self, keyword_list):
+        ''' Append to the existing exptime keyword list.'''
+        self.exptime_keyword += list(keyword_list)
 
     def _gaus(self, x, a, b, x0, sigma):
         """
@@ -918,11 +1077,11 @@ class TwoDSpec:
         peaks_y :
             Array or float of the pixel values of the detected peaks
         heights_y :
-            Array or float of the integrated counts at the peaks 
+            Array or float of the integrated counts at the peaks
 
         """
         ydata = np.arange(self.spec_size)
-        ztot = np.nanmedian(self.img, axis=self.Saxis)
+        ztot = np.nanmedian(self.img, axis=self.saxis)
 
         # get the height thershold
         height = np.nanmax(ztot) * f_height
@@ -942,7 +1101,7 @@ class TwoDSpec:
             fig = go.Figure()
 
             # show the image on the left
-            if self.Saxis == 1:
+            if self.saxis == 1:
                 fig.add_trace(
                     go.Heatmap(z=np.log10(self.img),
                                colorscale="Viridis",
@@ -1018,7 +1177,7 @@ class TwoDSpec:
         Returns
         -------
         signal: float
-            The optimal signal. 
+            The optimal signal.
         noise: float
             The noise associated with the optimal signal.
 
@@ -1973,9 +2132,10 @@ class TwoDSpec:
 class WavelengthPolyFit:
     def __init__(self, spec, arc):
         '''
-        arc: TwoDSpec object of the arc image
+        Parameters
+        ----------
         spec: TwoDSpec object of the science/standard image
-
+        arc: TwoDSpec object of the arc image
         '''
 
         self.spec = spec
@@ -1983,20 +2143,20 @@ class WavelengthPolyFit:
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spec.spatial_mask) > 1):
-            if self.spec.Saxis is 1:
+            if self.spec.saxis is 1:
                 self.arc = self.arc[self.spec.spatial_mask]
             else:
                 self.arc = self.arc[:, self.spec.spatial_mask]
 
         # the valid x-range of the chip (i.e. spectral direction)
         if (len(self.spec.spec_mask) > 1):
-            if self.spec.Saxis is 1:
+            if self.spec.saxis is 1:
                 self.arc = self.arc[:, self.spec.spec_mask]
             else:
                 self.arc = self.arc[self.spec.spec_mask]
 
         # get the length in the spectral and spatial directions
-        if self.spec.Saxis is 0:
+        if self.spec.saxis is 0:
             self.arc = np.transpose(self.arc)
 
         if self.spec.flip:
@@ -2011,6 +2171,21 @@ class WavelengthPolyFit:
         '''
         pixelscale in unit of A/pix
 
+        Parameters
+        ----------
+        percentile: float
+
+        distance: float
+
+        display: tuple
+
+        jsonstring: tuple
+
+        renderer: str
+
+        Returns
+        -------
+        JSON strings if jsonstring is set to True
         '''
 
         p = np.percentile(self.arc, percentile)
@@ -2196,7 +2371,7 @@ class StandardFlux:
 
         wavelength: A
         flux:       ergs / cm / cm / s / A
-        mag:        mag (AB) 
+        mag:        mag (AB)
 
         Returns
         -------

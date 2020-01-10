@@ -1,27 +1,32 @@
 import os
 from setuptools import setup, find_packages
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 setup_requires = ['numpy>=1.16', 'reproject==0.5']
 
 install_requires = [
     'scipy', 'astropy', 'ccdproc', 'astroscrappy',
-    'spectres @ git+https://github.com/cylammarco/SpectRes#egg=SpectRes', 'plotly'
-    ]
+    'spectres @ git+https://github.com/cylammarco/SpectRes#egg=SpectRes',
+    'plotly'
+]
 
 os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git@dev')
 
 __packagename__ = "aspired"
 
-setup(
-    name=__packagename__,
-    version='0.0.1',
-    packages=find_packages(),
-    author='Marco Lam',
-    author_email='cylammarco@gmail.com',
-    license='GPLv3',
-    long_description=open('README.md').read(),
-    zip_safe=False,
-    include_package_data=True,
-    setup_requires=setup_requires,
-    install_requires=install_requires
-    )
+setup(name=__packagename__,
+      version='0.0.1',
+      packages=find_packages(),
+      author='Marco Lam',
+      author_email='cylammarco@gmail.com',
+      description="ASPIRED",
+      url="https://github.com/cylammarco/ASPIRED",
+      license='GPLv3',
+      long_description=open('README.md').read(),
+      zip_safe=False,
+      include_package_data=True,
+      setup_requires=setup_requires,
+      install_requires=install_requires,
+      python_requires='>3.6')
