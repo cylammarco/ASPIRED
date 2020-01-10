@@ -83,16 +83,68 @@ irafctio = [
 ]
 
 irafctionew = [
-    'cd32', 'eg21', 'eg274', 'f56', 'f110', 'h600', 'l377', 'l745', 'l1020',
-    'l1788', 'l2415', 'l2511', 'l3218', 'l3864', 'l4364', 'l4816', 'l6248',
-    'l7379', 'l7987', 'l9239', 'l9491', 'cd32blue', 'eg21blue', 'eg274blue',
-    'f56blue', 'f110blue', 'h600blue', 'l377blue', 'l1020blue', 'l1788blue',
-    'l2415blue', 'l2511blue', 'l3218blue', 'l3864blue', 'l4364blue',
-    'l4816blue', 'l6248blue', 'l7379blue', 'l7987blue', 'l9239blue', 'l9491blue',
-    'cd32red', 'eg21red', 'eg274red', 'f56red', 'f110red', 'h600red', 'l377red',
-    'l745red', 'l1020red', 'l1788red', 'l2415red', 'l2511red', 'l3218red',
-    'l3864red', 'l4364red', 'l4816red', 'l6248red', 'l7379red', 'l7987red',
-    'l9239red', 'l9491red',
+    'cd32',
+    'eg21',
+    'eg274',
+    'f56',
+    'f110',
+    'h600',
+    'l377',
+    'l745',
+    'l1020',
+    'l1788',
+    'l2415',
+    'l2511',
+    'l3218',
+    'l3864',
+    'l4364',
+    'l4816',
+    'l6248',
+    'l7379',
+    'l7987',
+    'l9239',
+    'l9491',
+    'cd32blue',
+    'eg21blue',
+    'eg274blue',
+    'f56blue',
+    'f110blue',
+    'h600blue',
+    'l377blue',
+    'l1020blue',
+    'l1788blue',
+    'l2415blue',
+    'l2511blue',
+    'l3218blue',
+    'l3864blue',
+    'l4364blue',
+    'l4816blue',
+    'l6248blue',
+    'l7379blue',
+    'l7987blue',
+    'l9239blue',
+    'l9491blue',
+    'cd32red',
+    'eg21red',
+    'eg274red',
+    'f56red',
+    'f110red',
+    'h600red',
+    'l377red',
+    'l745red',
+    'l1020red',
+    'l1788red',
+    'l2415red',
+    'l2511red',
+    'l3218red',
+    'l3864red',
+    'l4364red',
+    'l4816red',
+    'l6248red',
+    'l7379red',
+    'l7987red',
+    'l9239red',
+    'l9491red',
 ]
 
 irafiids = [
@@ -152,8 +204,8 @@ iraf16 = [
     'hr8634blue', 'hr9087blue', 'hd15318red', 'hd30739red', 'hd74280red',
     'hd100889red', 'hd114330red', 'hd129956red', 'hd188350red', 'hd198001red',
     'hd214923red', 'hd224926red', 'hr718red', 'hr1544red', 'hr3454red',
-    'hr4468red', 'hr4963red', 'hr5501red', 'hr7596red', 'hr7950red', 'hr8634red',
-    'hr9087red'
+    'hr4468red', 'hr4963red', 'hr5501red', 'hr7596red', 'hr7950red',
+    'hr8634red', 'hr9087red'
 ]
 
 iraf50 = [
@@ -172,12 +224,13 @@ irafhayes = [
     'pg0939262', 'pg1121145', 'pg1545035', 'pg1708602', 'wolf1346'
 ]
 
+
 def list_all():
     '''
     List all the built-in Spectrophotometric Standards
 
     '''
-    
+
     print('CTIO Spectrophotometric Standards')
     print(ctio)
     print('')
