@@ -679,8 +679,8 @@ class ImageReduction:
             set to True to return json string that can be rendered by Plot.ly
             in any support language
 
-        Return
-        ------
+        Returns
+        -------
         json string if jsonstring is True, otherwise only an image is displayed
 
         '''
@@ -1050,7 +1050,6 @@ class TwoDSpec:
         Returns
         -------
         Array or float of same type as input (x).
-
         """
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
@@ -1078,8 +1077,8 @@ class TwoDSpec:
             Array or float of the pixel values of the detected peaks
         heights_y :
             Array or float of the integrated counts at the peaks
-
         """
+
         ydata = np.arange(self.spec_size)
         ztot = np.nanmedian(self.img, axis=self.saxis)
 
@@ -1149,10 +1148,10 @@ class TwoDSpec:
         self.peak = peaks_y
         self.peak_height = heights_y
 
-    def _optimal_signal(self, pix, xslice, sky, mu, sigma, display, renderer,
-                        jsonstring):
+    def _optimal_signal(self, pix, xslice, sky, mu, sigma):
         """
-        Iterate to get optimal signal, for internal use only
+        Iterate to get the optimal signal. Following the algorithm on
+        Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).
 
         Parameters
         ----------
@@ -1166,13 +1165,6 @@ class TwoDSpec:
             The center of the Gaussian
         sigma: float
             The width of the Gaussian
-        display: tuple
-            Set to True to display disgnostic plot.
-        renderer: string
-            plotly renderer options.
-        jsonstring: tuple
-            set to True to return json string that can be rendered by Plotly
-            in any support language.
 
         Returns
         -------
@@ -1180,7 +1172,6 @@ class TwoDSpec:
             The optimal signal.
         noise: float
             The noise associated with the optimal signal.
-
         """
 
         # construct the Gaussian model
@@ -1235,16 +1226,6 @@ class TwoDSpec:
         signal = signal1
         noise = np.sqrt(variance1)
 
-        if display:
-            fit = self._gaus(pix, max(signal), 0., mu, sigma) + sky
-            fig, ax = plt.subplots(ncols=1, figsize=(10, 10))
-            ax.plot(pix, xslice)
-            ax.plot(pix, fit)
-            ax.set_xlabel('Pixel')
-            ax.set_ylabel('Count')
-            #print(signal, variance)
-            #print(np.sum(xslice-sky_const))
-
         return signal, noise
 
     def ap_trace(self,
@@ -1262,41 +1243,61 @@ class TwoDSpec:
                  renderer='default',
                  jsonstring=False):
         '''
+        Aperture tracing by first using cross-correlation then the peaks are
+        fitting with a polynomial with an order of floor(nwindow, 10) with a
+        minimum order of 1. Nothing is returned unless jsonstring of the
+        plotly graph is set to be returned.
 
-                trace: 1-d numpy array (N)
-            The spatial positions (Y axis) corresponding to the center of the
-            trace for every wavelength (X axis), as returned from ap_trace
-        trace_sigma: float, or 1-d array (1 or N)
-            Tophat extraction: Float is accepted but will be rounded to an int,
-                                which gives the constant aperture size on either
-                                side of the trace to extract.
-            Optimal extraction: Float or 1-d array of the same size as the trace.
-                                If a float is supplied, a fixed standard deviation
-                                will be used to construct the gaussian weight
-                                function along the entire spectrum.
+        Each spectral slice is convolved with the adjacent one in the spectral
+        direction. Basic tests show that the geometrical distortion from one
+        end to the other in the spectral direction is small. With LT/SPRAT, the
+        linear distortion is less than 0.5%, thus, even provided as an option,
+        the rescale option is set to False by default. Given how unlikely a
+        geometrical distortion correction is needed, higher order correction
+        options are not provided.
+
+        A rough estimation on the background level is done by taking the
+        p_bg-th percentile of the slice, a rough guess can improve the
+        cross-correlation process significantly due to low dynamic range in a
+        typical spectral image. The removing of the "background" can massively
+        improve the contrast between the peaks and the relative background,
+        hence the correlation method is more likely to yield a true positive.
+
+        The trace(s), i.e. the spatial positions of the spectra (Y-axis),
+        found will be stored as the properties of the TwoDSpec object as a
+        1D numpy array, of length N, which is the size of the spectrum after
+        applying the spec_mask. The line spread function is stored in
+        trace_sigma, by fitting a gaussian on the shift-corrected stack of the
+        spectral slices. Given the scaling was found to be small, reporting
+        a single value of the averaged gaussian sigma is sufficient as the
+        first guess to be used by the aperture extraction function.
 
         Parameters
         ----------
         nspec: int, optional
-
+            Number of spectra to be extracted.
         nwindow: int, optional
-
+            Number of spectral slices to be produced for cross-correlation.
         spec_sep: int, optional
-
+            Minimum separation between sky lines.
         resample_factor: int, optional
-
+            Number of times the collapsed 1D slices in the spatial directions
+            are to be upsampled.
         rescale: tuple, optional
-
+            Fit for the linear scaling factor between adjacent slices.
         scaling_min: float, optional
-
+            Minimum scaling factor to be fitted.
         scaling_max: float, optional
-
+            Maximum scaling factor to be fitted.
         scaling_step: float, optional
-
+            Steps of the scaling factor.
         p_bg: float, optional
-
+            The percentile of the flux to be used as the estimate of the
+            background sky level to the first order. [ADU]
         tol: float, optional
-
+            Maximum allowed shift between neighbouring slices, this value is
+            referring to native pixel size without the application of the
+            resampling or rescaling. [pix]
         display: tuple, optional
             Set to True to display disgnostic plot.
         renderer: string, optional
@@ -1304,6 +1305,10 @@ class TwoDSpec:
         jsonstring: tuple, optional
             set to True to return json string that can be rendered by Plotly
             in any support language.
+
+        Returns
+        -------
+        json string if jsonstring is True, otherwise only an image is displayed
         '''
 
         # Get the shape of the 2D spectrum and define upsampling ratio
@@ -1325,7 +1330,7 @@ class TwoDSpec:
         else:
             scaling_range = np.ones(1)
 
-        # estimate the 5-th percentile as the sky background level
+        # estimate the p_bg-th percentile as the sky background level
         lines_ref = lines_ref_init_resampled - np.percentile(
             lines_ref_init_resampled, p_bg)
 
@@ -1408,7 +1413,6 @@ class TwoDSpec:
                           shift_solution[i + 1]) / (
                               int(nresample * scale_solution[i + 1]) /
                               nresample) / resample_factor
-            #spec_val[:,i] = signal.resample(np.nanmedian(img_split[i], axis=0), int(nresample*scale_solution[i]))[(spec[:,i] * scale_solution[i]).astype('int')]
 
         ap = np.zeros((len(spec), nwave))
         ap_sigma = np.zeros((len(spec), nwave))
@@ -1441,12 +1445,8 @@ class TwoDSpec:
                                    p0=pguess)
             ap_sigma[i] = popt[3]
 
-        if self.nspec is 1:
-            self.trace = ap
-            self.trace_sigma = ap_sigma
-        else:
-            self.trace = ap
-            self.trace_sigma = ap_sigma
+        self.trace = ap
+        self.trace_sigma = ap_sigma
 
         # Plot
         if display:
@@ -1494,7 +1494,7 @@ class TwoDSpec:
 
     def ap_trace_quick(self,
                        nspec=1,
-                       nsteps=20,
+                       nwindow=25,
                        recenter=False,
                        prevtrace=(0, ),
                        fittype='spline',
@@ -1504,19 +1504,23 @@ class TwoDSpec:
                        renderer='default',
                        jsonstring=False):
         """
-        Trace the spectrum aperture in an image. It only works for bright
-        spectra with good wavelength coverage.
+        This only works for bright spectra with good wavelength coverage.
 
-        It works by chopping image up in bins along the wavelength direction,
-        fits a Gaussian for each bin to determine the spatial center of the
-        trace. Finally, draws a cubic spline through the bins.
+        It works by splitting the image in nwindow bins in the wavelength
+        direction, then a Gaussian is fitted for each bin to determine the
+        spatial position of the trace. Finally, a cubic spline is computed
+        for these spatial positions as a function of the spectral position.
+
+        Nothing is returned unless jsonstring of the plotly graph is set to be
+        returned. The trace and trace_sigma are stored as properties of the
+        TwoDSpec object.
 
         Parameters
         ----------
         nspec: int, optional
             Number of spectra to be extracted. It does not guarantee returning
             the same number of spectra if fewer can be detected. (Default is 1)
-        nsteps: int, optional
+        nwindow: int, optional
             Keyword, number of bins in X direction to chop image into. Use
             fewer bins if ap_trace is having difficulty, such as with faint
             targets (default is 20, minimum is 4)
@@ -1543,15 +1547,6 @@ class TwoDSpec:
         jsonstring: tuple, optional
             set to True to return json string that can be rendered by Plotly
             in any support language.
-
-        Returns
-        -------
-        my: array (N, nspec)
-            The spatial (Y) positions of the trace, interpolated over the
-            entire wavelength (X) axis
-        y_sigma: array (N, nspec)
-            The sigma measured at the nsteps.
-
         """
 
         self.nspec = nspec
@@ -1832,14 +1827,38 @@ class TwoDSpec:
                    renderer='default',
                    jsonstring=False):
         """
-        Extract the spectra using the traces, support aperture or optimal
+        Extract the spectra using the traces, support tophat or optimal
         extraction. The sky background is fitted in one dimention only. The
-        uncertainty at each pixel is also computed, but it is only meaningful
-        if correct gain, read noise and are provided.
+        uncertainty at each pixel is also computed, but the values are only
+        meaningful if correct gain and read noise are provided.
+
+        Tophat extraction: Float is accepted but will be rounded to an int,
+                            which gives the constant aperture size on either
+                            side of the trace to extract.
+        Optimal extraction: Float or 1-d array of the same size as the trace.
+                            If a float is supplied, a fixed standard deviation
+                            will be used to construct the gaussian weight
+                            function along the entire spectrum.
+
+        Nothing is returned unless jsonstring of the plotly graph is set to be
+        returned. The adu, skyadu and aduerr are stored as properties of the
+        TwoDSpec object.
+
+        adu: 1-d array
+            The summed adu at each column about the trace. Note: is not
+            sky subtracted!
+        skyadu: 1-d array
+            The integrated sky values along each column, suitable for
+            subtracting from the output of ap_extract
+        aduerr: 1-d array
+            the uncertainties of the adu values
 
         Parameters
         ----------
         apwidth: int, optional
+            The size of the aperature (fixed value for tophat extraction) or
+            the sigma of the Gaussian (for the first iteration of optimal
+            extraction).
         skysep: int, optional
             The separation in pixels from the aperture to the sky window.
             (Default is 3)
@@ -1860,17 +1879,6 @@ class TwoDSpec:
         jsonstring: tuple, optional
             set to True to return json string that can be rendered by Plotly
             in any support language.
-
-        Returns
-        -------
-        onedspec: 1-d array
-            The summed adu at each column about the trace. Note: is not
-            sky subtracted!
-        skyadu: 1-d array
-            The integrated sky values along each column, suitable for
-            subtracting from the output of ap_extract
-        aduerr: 1-d array
-            the uncertainties of the adu values
         """
 
         len_trace = len(self.trace[0])
@@ -2132,10 +2140,22 @@ class TwoDSpec:
 class WavelengthPolyFit:
     def __init__(self, spec, arc):
         '''
+        A wrapper function for using RASCAL to perform wavelength calibration,
+        which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
+        guarantees to provide something sensible or nothing at all. It will
+        require some fine-tuning when using the first time. The more GOOD
+        initial guesses provided, the faster the solution converges and with
+        better fit. Knowing the dispersion, wavelength ranges and one or two
+        known lines will significantly improve the fit. Conversely, wrong
+        values supplied by the user will siginificantly distort the solution
+        as any user supplied information will be treated as the ground truth.
+
         Parameters
         ----------
-        spec: TwoDSpec object of the science/standard image
-        arc: TwoDSpec object of the arc image
+        spec: TwoDSpec object
+            TwoDSpec of the science/standard image containing the trace(s).
+        arc: 2D numpy array
+            The image of the arc image.
         '''
 
         self.spec = spec
@@ -2169,7 +2189,7 @@ class WavelengthPolyFit:
                        jsonstring=False,
                        renderer='default'):
         '''
-        pixelscale in unit of A/pix
+        Pixelscale in unit of A/pix
 
         Parameters
         ----------
@@ -2200,6 +2220,7 @@ class WavelengthPolyFit:
                                      distance=distance,
                                      prominence=p)
 
+        # Fine ftuning
         self.peaks = refine_peaks(self.spectrum, peaks, window_width=3)
 
         if display & plotly_imported:
@@ -2239,7 +2260,7 @@ class WavelengthPolyFit:
                 fig.show(renderer)
 
     def calibrate(self,
-                  elements,
+                  elements=None,
                   sample_size=5,
                   min_wave=3500.,
                   max_wave=8500.,
@@ -2344,7 +2365,6 @@ class StandardFlux:
     def _lookup_standard(self):
         '''
         Check if the requested standard and library exist.
-
         '''
 
         try:
