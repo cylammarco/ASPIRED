@@ -37,83 +37,152 @@
 <dl class="class">
 <dt id="aspired.aspired.OneDSpec">
 <em class="property">class </em><code class="sig-prename descclassname">aspired.aspired.</code><code class="sig-name descname">OneDSpec</code><span class="sig-paren">(</span><em class="sig-param">science</em>, <em class="sig-param">wave_cal</em>, <em class="sig-param">standard=None</em>, <em class="sig-param">wave_cal_std=None</em>, <em class="sig-param">flux_cal=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec" title="Permalink to this definition">¶</a></dt>
-<dd><p>science: TwoDSpec object</p>
-<p>wave_cal: WavelengthPolyFit object</p>
-<p>standard: TwoDSpec object, optional</p>
-<p>wave_cal_std: WavelengthPolyFit object, optional</p>
-<p>flux_cal: StandardFlux object, optional (require wave_cal_std)</p>
+<dd><p>This class applies the wavelength calibrations and compute &amp; apply the
+flux calibration to the extracted 1D spectra. The standard TwoDSpec
+object is not required for data reduction, but the flux calibrated
+standard observation will not be available for diagnostic.</p>
+<dl class="simple">
+<dt>science: TwoDSpec object</dt><dd><p>The TwoDSpec object with the extracted science target</p>
+</dd>
+<dt>wave_cal: WavelengthPolyFit object</dt><dd><p>The WavelengthPolyFit object for the science target, flux will
+not be calibrated if this is not provided.</p>
+</dd>
+<dt>standard: TwoDSpec object</dt><dd><p>The TwoDSpec object with the extracted standard target</p>
+</dd>
+<dt>wave_cal_std: WavelengthPolyFit object</dt><dd><p>The WavelengthPolyFit object for the standard target, flux will
+not be calibrated if this is not provided.</p>
+</dd>
+<dt>flux_cal: StandardFlux object</dt><dd><p>The true mag/flux values.</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec._set_fluxcal">
 <code class="sig-name descname">_set_fluxcal</code><span class="sig-paren">(</span><em class="sig-param">flux_cal</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec._set_fluxcal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec._set_fluxcal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extract the required information from a StandardFlux object.</p>
+<dl class="simple">
+<dt>flux_cal: StandardFlux object</dt><dd><p>The true mag/flux values.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec._set_standard">
 <code class="sig-name descname">_set_standard</code><span class="sig-paren">(</span><em class="sig-param">standard</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec._set_standard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec._set_standard" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract the required information from a TwoDSpec object</p>
+<dd><p>Extract the required information from the TwoDSpec object of the
+standard.</p>
+<dl class="simple">
+<dt>standard: TwoDSpec object</dt><dd><p>The TwoDSpec object with the extracted standard target</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec._set_wavecal">
 <code class="sig-name descname">_set_wavecal</code><span class="sig-paren">(</span><em class="sig-param">wave_cal</em>, <em class="sig-param">stype</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec._set_wavecal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec._set_wavecal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract the required information from a WavelengthPolyFit object</p>
+<dd><p>Extract the required information from a WavelengthPolyFit object, it
+can be used to apply the polynomial coefficients for science, standard
+or both.</p>
+<dl class="simple">
+<dt>wave_cal: WavelengthPolyFit object</dt><dd><p>The WavelengthPolyFit object for the standard target, flux will
+not be calibrated if this is not provided.</p>
+</dd>
+<dt>stype: string</dt><dd><p>‘science’, ‘standard’ or ‘all’ to indicate type</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec.apply_flux_calibration">
 <code class="sig-name descname">apply_flux_calibration</code><span class="sig-paren">(</span><em class="sig-param">stype='all'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec.apply_flux_calibration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec.apply_flux_calibration" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply the computed sensitivity curve</p>
+<dd><p>Apply the computed sensitivity curve.</p>
+<dl class="simple">
+<dt>stype: string</dt><dd><p>‘science’, ‘standard’ or ‘all’ to indicate type</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec.apply_wavelength_calibration">
 <code class="sig-name descname">apply_wavelength_calibration</code><span class="sig-paren">(</span><em class="sig-param">stype</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec.apply_wavelength_calibration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec.apply_wavelength_calibration" title="Permalink to this definition">¶</a></dt>
-<dd><p>Apply the wavelength calibration</p>
+<dd><p>Apply the wavelength calibration.</p>
+<dl class="simple">
+<dt>stype: string</dt><dd><p>‘science’, ‘standard’ or ‘all’ to indicate type</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec.compute_sencurve">
-<code class="sig-name descname">compute_sencurve</code><span class="sig-paren">(</span><em class="sig-param">kind=3</em>, <em class="sig-param">smooth=False</em>, <em class="sig-param">slength=5</em>, <em class="sig-param">sorder=3</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec.compute_sencurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec.compute_sencurve" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the standard flux or magnitude of the given target and group
-based on the given array of wavelengths. Some standard libraries
-contain the same target with slightly different values.</p>
+<code class="sig-name descname">compute_sencurve</code><span class="sig-paren">(</span><em class="sig-param">kind=3, smooth=False, slength=5, sorder=3, mask_range=[[6850, 7000], [7150, 7400], [7575, 7775]], display=False, renderer='default', jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec.compute_sencurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec.compute_sencurve" title="Permalink to this definition">¶</a></dt>
+<dd><p>The sensitivity curve is computed by dividing the true values by the
+wavelength calibrated standard spectrum, which is resampled with the
+spectres.spectres(). The curve is then interpolated with a cubic spline
+by default and is stored as a scipy interp1d object.</p>
+<p>A Savitzky-Golay filter is available for smoothing before the
+interpolation but it is not used by default.</p>
+<p>6850 - 7000 A,  7150 - 7400 A and 7575 - 7775 A are masked by default.</p>
 <dl>
 <dt>kind: string or integer [1,2,3,4,5 only]</dt><dd><p>interpolation kind
 &gt;&gt;&gt; [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,</p>
 <blockquote>
 <div><p>‘previous’, ‘next’]</p>
 </div></blockquote>
-<p>(default is ‘cubic’)</p>
 </dd>
-<dt>smooth: tuple</dt><dd><p>set to smooth the input ADU/flux/mag with scipy.signal.savgol_filter
-(default is True)</p>
+<dt>smooth: tuple</dt><dd><p>set to smooth the input spectrum with scipy.signal.savgol_filter</p>
 </dd>
 <dt>slength: int</dt><dd><p>SG-filter window size</p>
 </dd>
 <dt>sorder: int</dt><dd><p>SG-filter polynomial order</p>
 </dd>
-<dt>display: tuple, optional</dt><dd><p>Set to True to display disgnostic plot.</p>
+<dt>mask_range: None or list of list</dt><dd><dl class="simple">
+<dt>Masking out regions not suitable for fitting the sensitivity curve.</dt><dd><p>None:         no mask
+list of list: [[min1, max1], [min2, max2],…]</p>
 </dd>
-<dt>renderer: string, optional</dt><dd><p>plotly renderer options.</p>
+</dl>
 </dd>
-<dt>jsonstring: tuple, optional</dt><dd><p>set to True to return json string that can be rendered by Plotly
+<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
 in any support language.</p>
 </dd>
 </dl>
-<p>A scipy interp1d object.</p>
+<p>JSON strings if jsonstring is set to True.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec.inspect_reduced_spectrum">
 <code class="sig-name descname">inspect_reduced_spectrum</code><span class="sig-paren">(</span><em class="sig-param">stype='all'</em>, <em class="sig-param">wave_min=4000.0</em>, <em class="sig-param">wave_max=8000.0</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec.inspect_reduced_spectrum"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec.inspect_reduced_spectrum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the reduced spectra.</p>
+<dl class="simple">
+<dt>stype: string</dt><dd><p>‘science’, ‘standard’ or ‘all’ to indicate type</p>
+</dd>
+<dt>wave_min: float</dt><dd><p>Minimum wavelength to display</p>
+</dd>
+<dt>wave_max: float</dt><dd><p>Maximum wavelength to display</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
+in any support language.</p>
+</dd>
+</dl>
+<p>JSON strings if jsonstring is set to True.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.OneDSpec.inspect_sencurve">
 <code class="sig-name descname">inspect_sencurve</code><span class="sig-paren">(</span><em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#OneDSpec.inspect_sencurve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.OneDSpec.inspect_sencurve" title="Permalink to this definition">¶</a></dt>
 <dd><p>Display the computed sensitivity curve.</p>
+<dl class="simple">
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
+in any support language.</p>
+</dd>
+</dl>
+<p>JSON strings if jsonstring is set to True.</p>
 </dd></dl>
 
 </dd></dl>

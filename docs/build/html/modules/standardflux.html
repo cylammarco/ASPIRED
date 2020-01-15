@@ -37,34 +37,72 @@
 <dl class="class">
 <dt id="aspired.aspired.StandardFlux">
 <em class="property">class </em><code class="sig-prename descclassname">aspired.aspired.</code><code class="sig-name descname">StandardFlux</code><span class="sig-paren">(</span><em class="sig-param">target</em>, <em class="sig-param">group</em>, <em class="sig-param">cutoff=0.4</em>, <em class="sig-param">ftype='flux'</em>, <em class="sig-param">silence=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#StandardFlux"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.StandardFlux" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
+<dd><p>This class handles flux calibration by comparing the extracted and
+wavelength-calibrated standard observation to the “ground truth”
+from</p>
+<p><a class="reference external" href="https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstds">https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstds</a>
+<a class="reference external" href="https://www.eso.org/sci/observing/tools/standards/spectra.html">https://www.eso.org/sci/observing/tools/standards/spectra.html</a></p>
+<p>See explanation notes at those links for details.</p>
+<p>The list of targets and groups can be listed with
+&gt;&gt;&gt; from aspired.standard_list import list_all
+&gt;&gt;&gt; list_all()</p>
+<dl class="simple">
+<dt>The units of the data are</dt><dd><p>wavelength: A
+flux:       ergs / cm / cm / s / A
+mag:        mag (AB)</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>target: string</dt><dd><p>Name of the standard star</p>
+</dd>
+<dt>group: string</dt><dd><p>Name of the group of standard star</p>
+</dd>
+<dt>cutoff: float</dt><dd><p>The threshold for the word similarity in the range of [0, 1].</p>
+</dd>
+<dt>ftype: string</dt><dd><p>‘flux’ or ‘mag’ (AB magnitude)</p>
+</dd>
+<dt>silence: tuple</dt><dd><p>Set to suppress all verbose warning.</p>
+</dd>
+</dl>
+<dl class="method">
 <dt id="aspired.aspired.StandardFlux._lookup_standard">
 <code class="sig-name descname">_lookup_standard</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#StandardFlux._lookup_standard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.StandardFlux._lookup_standard" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check if the requested standard and library exist.</p>
+<dd><p>Check if the requested standard and library exist. Return the three
+most similar words if the requested one does not exist. See</p>
+<blockquote>
+<div><p><a class="reference external" href="https://docs.python.org/3.7/library/difflib.html">https://docs.python.org/3.7/library/difflib.html</a></p>
+</div></blockquote>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.StandardFlux.inspect_standard">
 <code class="sig-name descname">inspect_standard</code><span class="sig-paren">(</span><em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#StandardFlux.inspect_standard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.StandardFlux.inspect_standard" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Display the standard star plot.</p>
+<dl class="simple">
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
+in any support language.</p>
+</dd>
+</dl>
+<p>JSON strings if jsonstring is set to True</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.StandardFlux.load_standard">
 <code class="sig-name descname">load_standard</code><span class="sig-paren">(</span><em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#StandardFlux.load_standard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.StandardFlux.load_standard" title="Permalink to this definition">¶</a></dt>
 <dd><p>Read the standard flux/magnitude file. And return the wavelength and
-flux/mag in units of</p>
-<p>wavelength: A
-flux:       ergs / cm / cm / s / A
-mag:        mag (AB)</p>
+flux/mag.</p>
 <dl class="simple">
-<dt>display: tuple, optional</dt><dd><p>Set to True to display disgnostic plot.</p>
+<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
 </dd>
-<dt>renderer: string, optional</dt><dd><p>plotly renderer options.</p>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
 </dd>
-<dt>jsonstring: tuple, optional</dt><dd><p>set to True to return json string that can be rendered by Plotly
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
 in any support language.</p>
 </dd>
 </dl>
+<p>JSON strings if jsonstring is set to True</p>
 </dd></dl>
 
 </dd></dl>
