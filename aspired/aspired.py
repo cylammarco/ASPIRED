@@ -87,14 +87,14 @@ class ImageReduction:
         ----------
         filelistpath: string
             file location, does not support URL
-        ftype: string, optional
+        ftype: string
             one of csv, tsv and ascii. Default is csv.
         Sxais: int, 0 or 1
             OVERRIDE the SAXIS value in the FITS header, or to provide the
             SAXIS if it does not exist
         saxis_keyword: string
             HDU keyword for the spectral axis direction
-        combinetype_light: string, optional
+        combinetype_light: string
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
@@ -110,7 +110,7 @@ class ImageReduction:
             one if the keyword does not exist
         exptime_light_keyword: string
             HDU keyword for the exposure time of the light frame
-        combinetype_dark: string, optional
+        combinetype_dark: string
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
@@ -126,7 +126,7 @@ class ImageReduction:
             one if the keyword does not exist
         exptime_dark_keyword: string
             HDU keyword for the exposure time of the dark frame
-        combinetype_bias: string, optional
+        combinetype_bias: string
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
@@ -137,7 +137,7 @@ class ImageReduction:
             lower threshold of the sigma clipping
         clip_high_bias: float
             upper threshold of the sigma clipping
-        combinetype_flat: string, optional
+        combinetype_flat: string
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
@@ -763,43 +763,43 @@ class TwoDSpec:
             2D spectral image in either format
         header: FITS header
             THIS WILL OVERRIDE the header from the astropy.io.fits object
-        saxis: int, optional
+        saxis: int
             Spectral direction, 0 for vertical, 1 for horizontal.
             (Default is 1)
-        spatial_mask: 1D numpy array (N), optional
+        spatial_mask: 1D numpy array (N)
             Mask in the spatial direction, can be the indices of the pixels
             to be included (size <N) or a 1D numpy array of True/False (size N)
             (Default is (1,) i.e. keep everything)
-        spec_mask: 1D numpy array (M), optional
+        spec_mask: 1D numpy array (M)
             Mask in the spectral direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
             (Default is (1,) i.e. keep everything)
-        flip: tuple, optional
+        flip: tuple
             If the frame has to be left-right flipped, set to True.
             (Deafult is False)
-        cr: tuple, optional
+        cr: tuple
             Set to True to apply cosmic ray rejection by sigma clipping with
             astroscrappy if available, otherwise a 2D median filter of size 5
             would be used. (default is True)
-        cr_sigma: float, optional
+        cr_sigma: float
             Cosmic ray sigma clipping limit (Deafult is 5.0)
-        rn: float, optional
+        rn: float
             Readnoise of the detector, not important if noise estimation is
             not needed.
             (Deafult is None, which will be replaced with 1.0)
-        gain: float, optional
+        gain: float
             Gain of the detector, not important if noise estimation is
             not needed.
             (Deafult is None, which will be replaced with 1.0)
-        seeing: float, optional
+        seeing: float
             Seeing in unit of arcsec, use as the first guess of the line
             spread function of the spectra.
             (Deafult is None, which will be replaced with 1.0)
-        exptime: float, optional
+        exptime: float
             Esposure time for the observation, not important if absolute flux
             calibration is not needed.
             (Deafult is None, which will be replaced with 1.0)
-        silence: tuple, optional
+        silence: tuple
             Set to True to suppress all verbose output.
         '''
 
@@ -1237,7 +1237,7 @@ class TwoDSpec:
                  scaling_min=0.975,
                  scaling_max=1.025,
                  scaling_step=0.005,
-                 p_bg=5,
+                 percentile=5,
                  tol=3,
                  display=False,
                  renderer='default',
@@ -1257,7 +1257,7 @@ class TwoDSpec:
         options are not provided.
 
         A rough estimation on the background level is done by taking the
-        p_bg-th percentile of the slice, a rough guess can improve the
+        n-th percentile percentile of the slice, a rough guess can improve the
         cross-correlation process significantly due to low dynamic range in a
         typical spectral image. The removing of the "background" can massively
         improve the contrast between the peaks and the relative background,
@@ -1274,35 +1274,35 @@ class TwoDSpec:
 
         Parameters
         ----------
-        nspec: int, optional
+        nspec: int
             Number of spectra to be extracted.
-        nwindow: int, optional
+        nwindow: int
             Number of spectral slices to be produced for cross-correlation.
-        spec_sep: int, optional
+        spec_sep: int
             Minimum separation between sky lines.
-        resample_factor: int, optional
+        resample_factor: int
             Number of times the collapsed 1D slices in the spatial directions
             are to be upsampled.
-        rescale: tuple, optional
+        rescale: tuple
             Fit for the linear scaling factor between adjacent slices.
-        scaling_min: float, optional
+        scaling_min: float
             Minimum scaling factor to be fitted.
-        scaling_max: float, optional
+        scaling_max: float
             Maximum scaling factor to be fitted.
-        scaling_step: float, optional
+        scaling_step: float
             Steps of the scaling factor.
-        p_bg: float, optional
+        percentile: float
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. [ADU]
-        tol: float, optional
+        tol: float
             Maximum allowed shift between neighbouring slices, this value is
             referring to native pixel size without the application of the
             resampling or rescaling. [pix]
-        display: tuple, optional
+        display: tuple
             Set to True to display disgnostic plot.
-        renderer: string, optional
+        renderer: string
             plotly renderer options.
-        jsonstring: tuple, optional
+        jsonstring: tuple
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -1330,9 +1330,9 @@ class TwoDSpec:
         else:
             scaling_range = np.ones(1)
 
-        # estimate the p_bg-th percentile as the sky background level
+        # estimate the n-th percentile as the sky background level
         lines_ref = lines_ref_init_resampled - np.percentile(
-            lines_ref_init_resampled, p_bg)
+            lines_ref_init_resampled, percentile)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -1346,7 +1346,7 @@ class TwoDSpec:
             # smooth by taking the median
             lines = np.nanmedian(img_split[i], axis=1)
             lines = signal.resample(lines, nresample)
-            lines = lines - np.percentile(lines, p_bg)
+            lines = lines - np.percentile(lines, percentile)
 
             # cross-correlation values and indices
             corr_val = np.zeros(len(scaling_range))
@@ -1517,34 +1517,34 @@ class TwoDSpec:
 
         Parameters
         ----------
-        nspec: int, optional
+        nspec: int
             Number of spectra to be extracted. It does not guarantee returning
             the same number of spectra if fewer can be detected. (Default is 1)
-        nwindow: int, optional
+        nwindow: int
             Keyword, number of bins in X direction to chop image into. Use
             fewer bins if ap_trace is having difficulty, such as with faint
             targets (default is 20, minimum is 4)
-        recenter: bool, optional
+        recenter: bool
             Set to True to use previous trace, allow small shift in position
             along the spatial direction. Not doing anything if prevtrace is not
             supplied. (Default is False)
-        prevtrace: 1-d numpy array, optional
+        prevtrace: 1-d numpy array
             Provide first guess or refitting the center with different parameters.
-        fittype: string, optional
+        fittype: string
             Set to 'spline' or 'polynomial', using
             scipy.interpolate.UnivariateSpline and numpy.polyfit
-        order: string, optional
+        order: string
             Degree of the spline or polynomial. Spline must be <= 5.
             (default is k=3)
-        bigbox: float, optional
+        bigbox: float
             The number of sigma away from the main aperture to allow to trace
-        silence: tuple, optional
+        silence: tuple
             Set to disable warning/error messages. (Default is False)
-        display: tuple, optional
+        display: tuple
             Set to True to display disgnostic plot.
-        renderer: string, optional
+        renderer: string
             plotly renderer options.
-        jsonstring: tuple, optional
+        jsonstring: tuple
             set to True to return json string that can be rendered by Plotly
             in any support language.
         """
@@ -1855,28 +1855,28 @@ class TwoDSpec:
 
         Parameters
         ----------
-        apwidth: int, optional
+        apwidth: int
             The size of the aperature (fixed value for tophat extraction) or
             the sigma of the Gaussian (for the first iteration of optimal
             extraction).
-        skysep: int, optional
+        skysep: int
             The separation in pixels from the aperture to the sky window.
             (Default is 3)
-        skywidth: int, optional
+        skywidth: int
             The width in pixels of the sky windows on either side of the
             aperture. (Default is 7)
-        skydeg: int, optional
+        skydeg: int
             The polynomial order to fit between the sky windows.
             (Default is 0, i.e. constant flat sky level)
-        optimal: tuple, optional
+        optimal: tuple
             Set optimal extraction. (Default is True)
-        silence: tuple, optional
+        silence: tuple
             Set to disable warning/error messages. (Default is False)
-        display: tuple, optional
+        display: tuple
             Set to True to display disgnostic plot.
-        renderer: string, optional
+        renderer: string
             plotly renderer options.
-        jsonstring: tuple, optional
+        jsonstring: tuple
             set to True to return json string that can be rendered by Plotly
             in any support language.
         """
@@ -1942,10 +1942,7 @@ class TwoDSpec:
                         xslice,
                         sky,
                         self.trace[j][i],
-                        self.trace_sigma[j][i],
-                        display=False,
-                        renderer=renderer,
-                        jsonstring=jsonstring)
+                        self.trace_sigma[j][i])
                 else:
                     #-- finally, compute the error in this pixel
                     sigB = np.std(z)  # stddev in the background data
@@ -2140,7 +2137,7 @@ class TwoDSpec:
 class WavelengthPolyFit:
     def __init__(self, spec, arc):
         '''
-        A wrapper function for using RASCAL to perform wavelength calibration,
+        This is a wrapper for using RASCAL to perform wavelength calibration,
         which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
         guarantees to provide something sensible or nothing at all. It will
         require some fine-tuning when using the first time. The more GOOD
@@ -2149,6 +2146,10 @@ class WavelengthPolyFit:
         known lines will significantly improve the fit. Conversely, wrong
         values supplied by the user will siginificantly distort the solution
         as any user supplied information will be treated as the ground truth.
+
+        Deatils of how RASCAL works should be referred to
+
+            https://rascal.readthedocs.io/en/latest/
 
         Parameters
         ----------
@@ -2189,19 +2190,30 @@ class WavelengthPolyFit:
                        jsonstring=False,
                        renderer='default'):
         '''
-        Pixelscale in unit of A/pix
+        This function applies the trace to the arc image then take median
+        average of the stripe before identifying the arc lines (peaks) with
+        scipy.signal.find_peaks(), where only the distance and the prominence
+        keywords are used. Distance is the minimum separation between peaks,
+        the default value is roughly twice the nyquist sampling rate (i.e.
+        pixel size is 2.3 times smaller than the object that is being resolved,
+        hence, the sepration between two clearly resolved peaks are ~5 pixels
+        apart). An crude estimate of the background can exclude random noise
+        which look like small peaks.
 
         Parameters
         ----------
         percentile: float
-
+            The percentile of the flux to be used as the estimate of the
+            background sky level to the first order. [ADU]
         distance: float
-
+            Minimum separation between peaks
         display: tuple
-
+            Set to True to display disgnostic plot.
+        renderer: string
+            plotly renderer options.
         jsonstring: tuple
-
-        renderer: str
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
 
         Returns
         -------
@@ -2261,16 +2273,15 @@ class WavelengthPolyFit:
 
     def calibrate(self,
                   elements=None,
-                  sample_size=5,
                   min_wave=3500.,
                   max_wave=8500.,
+                  sample_size=5,
                   max_tries=5000,
-                  display=False,
-                  num_slopes=1000,
-                  range_tolerance=500,
+                  top_n=20,
+                  nslopes=1000,
+                  range_tolerance=500.,
                   fit_tolerance=20.,
                   polydeg=5,
-                  top_n=20,
                   candidate_thresh=15.,
                   ransac_thresh=1,
                   xbins=50,
@@ -2278,11 +2289,77 @@ class WavelengthPolyFit:
                   brute_force=False,
                   fittype='poly',
                   mode='manual',
-                  progress=True,
-                  coeff=None):
+                  progress=False,
+                  coeff=None,
+                  display=False):
         '''
-        thresh (A) :: the individual line fitting tolerance to accept as a valid fitting point
-        fit_tolerance (A) :: the RMS
+        A wrapper function to perform wavelength calibration with RASCAL.
+
+        As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
+        Hg and Th from NIST:
+
+            https://physics.nist.gov/PhysRefData/ASD/lines_form.html
+
+        If there is already a set of good coefficienes, use calibrate_pfit()
+        instead.
+
+        Parameters
+        ----------
+        elements: string or list of string
+            String or list of strings of Chemical symbol. Case insensitive.
+        min_wave: float
+            Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
+        max_wave: float
+            Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+        sample_size: int
+            Number of lines to be fitted in each loop.
+        max_tries: int
+            Number of trials of polynomial fitting.
+        top_n: int
+            Top ranked lines to be fitted.
+        nslopes: int
+            Number of lines to be used in Hough transform.
+        range_tolerance: float
+            Estimation of the error on the provided spectral range
+            e.g. 3000 - 5000 with tolerance 500 will search for
+            solutions that may satisfy 2500 - 5500
+        fit_tolerance: float
+            Maximum RMS allowed
+        polydeg: int
+            Degree of the polynomial
+        candidate_thresh: float
+            Threshold for considering a point to be an inlier during candidate
+            peak/line selection. Don't make this too small, it should allow
+            for the error between a linear and non-linear fit.
+        ransac_thresh: float
+            The distance criteria to be considered an inlier to a fit. This
+            should be close to the size of the expected residuals on the final
+            fit.
+        xbins: int
+            The number of bins in the pixel direction (in Hough space).
+        ybins : int
+            The number of bins in the wavelength direction (in Hough space).
+        brute_force: tuple
+            Set to try all possible combinations and choose the best fit as
+            the solution. This takes tens of minutes for tens of lines.
+        fittype: string
+            One of 'poly', 'legendre' or 'chebyshev'.
+        mode: string
+            Default to 'manual' to read take in user supplied sample_size,
+            max_tries, top_n and nslope, which are by default equivalent to
+            'normal' mode. Predefined modes are 'fast', 'normal' and 'slow':
+            fast:
+                sample_size = 3, max_tries = 1000, top_n = 20, nslope = 500
+            normal:
+                sample_size = 5, max_tries = 5000, top_n = 20, nslope = 1000
+            slow:
+                sample_size = 5, max_tries = 10000, top_n = 20, nslope = 2000
+        progress: tuple
+            Set to show the progress using tdqm (if imported).
+        pfit: list
+            List of the polynomial fit coefficients for the first guess.
+        display: tuple
+            Set to show diagnostic plot.
         '''
 
         c = Calibrator(self.peaks,
@@ -2303,16 +2380,17 @@ class WavelengthPolyFit:
                               brute_force=brute_force,
                               fittype=fittype)
 
-        p = c.fit(sample_size=sample_size,
-                  max_tries=max_tries,
-                  top_n=top_n,
-                  n_slope=num_slopes,
-                  mode=mode,
-                  progress=progress,
-                  coeff=coeff)
+        pfit = c.fit(sample_size=sample_size,
+                     max_tries=max_tries,
+                     top_n=top_n,
+                     n_slope=num_slopes,
+                     mode=mode,
+                     progress=progress,
+                     pfit=pfit)
 
-        pfit, _, _ = c.match_peaks_to_atlas(p, tolerance=1)
-        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=0.5)
+        # Overwriting and fine tuning polynomial coefficients
+        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=5.)
+        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=1.)
 
         self.pfit = pfit
         self.pfit_type = 'poly'
@@ -2331,6 +2409,28 @@ class WavelengthPolyFit:
                        max_wave=8500.,
                        tolerance=10.,
                        display=False):
+        '''
+        A wrapper function to fine tune wavelength calibration with RASCAL
+        when there is already a set of good coefficienes.
+
+        As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
+        Hg and Th from NIST:
+
+            https://physics.nist.gov/PhysRefData/ASD/lines_form.html
+
+        Parameters
+        ----------
+        elements: string or list of string
+            String or list of strings of Chemical symbol. Case insensitive.
+        pfit : list
+            List of polynomial fit coefficients
+        min_wave: float
+            Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
+        max_wave: float
+            Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+        tolerance : float
+            Absolute difference between fit and model.
+        '''
 
         c = Calibrator(self.peaks,
                        min_wavelength=min_wave,
@@ -2355,23 +2455,63 @@ class WavelengthPolyFit:
 
 class StandardFlux:
     def __init__(self, target, group, cutoff=0.4, ftype='flux', silence=False):
+        '''
+        This class handles flux calibration by comparing the extracted and
+        wavelength-calibrated standard observation to the "ground truth"
+        from
+
+        https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstds
+        https://www.eso.org/sci/observing/tools/standards/spectra.html
+
+        See explanation notes at those links for details.
+
+        The list of targets and groups can be listed with
+        >>> from aspired.standard_list import list_all
+        >>> list_all()
+
+        The units of the data are
+            wavelength: A
+            flux:       ergs / cm / cm / s / A
+            mag:        mag (AB)
+
+        Parameters
+        ----------
+        target: string
+            Name of the standard star
+        group: string
+            Name of the group of standard star
+        cutoff: float
+            The threshold for the word similarity in the range of [0, 1].
+        ftype: string
+            'flux' or 'mag' (AB magnitude)
+        silence: tuple
+            Set to suppress all verbose warning.
+        '''
+
         self.target = target
         self.group = group
         self.cutoff = cutoff
         self.ftype = ftype
         self.silence = silence
+
         self._lookup_standard()
 
     def _lookup_standard(self):
         '''
-        Check if the requested standard and library exist.
+        Check if the requested standard and library exist. Return the three
+        most similar words if the requested one does not exist. See
+
+            https://docs.python.org/3.7/library/difflib.html
         '''
 
+        # Load the list of targets in the requested group
         try:
             target_list = eval(self.group)
         except:
             raise ValueError('Requested standard star library does not exist.')
 
+        # If the requested target is not in the target list, suggest the three
+        # closest match
         if self.target not in target_list:
             best_match = difflib.get_close_matches(self.target,
                                                    target_list,
@@ -2387,21 +2527,21 @@ class StandardFlux:
                       jsonstring=False):
         '''
         Read the standard flux/magnitude file. And return the wavelength and
-        flux/mag in units of
-
-        wavelength: A
-        flux:       ergs / cm / cm / s / A
-        mag:        mag (AB)
+        flux/mag.
 
         Returns
         -------
-        display: tuple, optional
+        display: tuple
             Set to True to display disgnostic plot.
-        renderer: string, optional
+        renderer: string
             plotly renderer options.
-        jsonstring: tuple, optional
+        jsonstring: tuple
             set to True to return json string that can be rendered by Plotly
             in any support language.
+
+        Returns
+        -------
+        JSON strings if jsonstring is set to True
         '''
 
         flux_multiplier = 1.
@@ -2441,6 +2581,21 @@ class StandardFlux:
             self.inspect_standard(renderer, jsonstring)
 
     def inspect_standard(self, renderer='default', jsonstring=False):
+        '''
+        Display the standard star plot.
+
+        Parameters
+        ----------
+        renderer: string
+            plotly renderer options.
+        jsonstring: tuple
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+
+        Returns
+        -------
+        JSON strings if jsonstring is set to True
+        '''
         fig = go.Figure()
 
         # show the image on the top
@@ -2475,18 +2630,25 @@ class OneDSpec:
                  wave_cal_std=None,
                  flux_cal=None):
         '''
+        This class applies the wavelength calibrations and compute & apply the
+        flux calibration to the extracted 1D spectra. The standard TwoDSpec
+        object is not required for data reduction, but the flux calibrated
+        standard observation will not be available for diagnostic.
+
         Parameters
         ----------
         science: TwoDSpec object
-
+            The TwoDSpec object with the extracted science target
         wave_cal: WavelengthPolyFit object
-
-        standard: TwoDSpec object, optional
-
-        wave_cal_std: WavelengthPolyFit object, optional
-
-        flux_cal: StandardFlux object, optional (require wave_cal_std)
-
+            The WavelengthPolyFit object for the science target, flux will
+            not be calibrated if this is not provided.
+        standard: TwoDSpec object
+            The TwoDSpec object with the extracted standard target
+        wave_cal_std: WavelengthPolyFit object
+            The WavelengthPolyFit object for the standard target, flux will
+            not be calibrated if this is not provided.
+        flux_cal: StandardFlux object
+            The true mag/flux values.
         '''
 
         try:
@@ -2533,7 +2695,13 @@ class OneDSpec:
 
     def _set_standard(self, standard):
         '''
-        Extract the required information from a TwoDSpec object
+        Extract the required information from the TwoDSpec object of the
+        standard.
+
+        Parameters
+        ----------
+        standard: TwoDSpec object
+            The TwoDSpec object with the extracted standard target
         '''
 
         try:
@@ -2546,7 +2714,17 @@ class OneDSpec:
 
     def _set_wavecal(self, wave_cal, stype):
         '''
-        Extract the required information from a WavelengthPolyFit object
+        Extract the required information from a WavelengthPolyFit object, it
+        can be used to apply the polynomial coefficients for science, standard
+        or both.
+
+        Parameters
+        ----------
+        wave_cal: WavelengthPolyFit object
+            The WavelengthPolyFit object for the standard target, flux will
+            not be calibrated if this is not provided.
+        stype: string
+            'science', 'standard' or 'all' to indicate type
         '''
 
         if stype == 'science':
@@ -2609,6 +2787,11 @@ class OneDSpec:
     def _set_fluxcal(self, flux_cal):
         '''
         Extract the required information from a StandardFlux object.
+
+        Parameters
+        ----------
+        flux_cal: StandardFlux object
+            The true mag/flux values.
         '''
 
         try:
@@ -2621,7 +2804,12 @@ class OneDSpec:
 
     def apply_wavelength_calibration(self, stype):
         '''
-        Apply the wavelength calibration
+        Apply the wavelength calibration.
+
+        Parameters
+        ----------
+        stype: string
+            'science', 'standard' or 'all' to indicate type
         '''
 
         if stype == 'science':
@@ -2650,13 +2838,20 @@ class OneDSpec:
                          smooth=False,
                          slength=5,
                          sorder=3,
+                         mask_range=[[6850, 7000], [7150, 7400], [7575, 7775]],
                          display=False,
                          renderer='default',
                          jsonstring=False):
         '''
-        Get the standard flux or magnitude of the given target and group
-        based on the given array of wavelengths. Some standard libraries
-        contain the same target with slightly different values.
+        The sensitivity curve is computed by dividing the true values by the
+        wavelength calibrated standard spectrum, which is resampled with the
+        spectres.spectres(). The curve is then interpolated with a cubic spline
+        by default and is stored as a scipy interp1d object.
+
+        A Savitzky-Golay filter is available for smoothing before the
+        interpolation but it is not used by default.
+
+        6850 - 7000 A,  7150 - 7400 A and 7575 - 7775 A are masked by default.
 
         Parameters
         ----------
@@ -2664,43 +2859,33 @@ class OneDSpec:
             interpolation kind
             >>> [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,
                  ‘previous’, ‘next’]
-            (default is 'cubic')
         smooth: tuple
-            set to smooth the input ADU/flux/mag with scipy.signal.savgol_filter
-            (default is True)
+            set to smooth the input spectrum with scipy.signal.savgol_filter
         slength: int
             SG-filter window size
         sorder: int
             SG-filter polynomial order
-        display: tuple, optional
+        mask_range: None or list of list
+            Masking out regions not suitable for fitting the sensitivity curve.
+                None:         no mask
+                list of list: [[min1, max1], [min2, max2],...]
+        display: tuple
             Set to True to display disgnostic plot.
-        renderer: string, optional
+        renderer: string
             plotly renderer options.
-        jsonstring: tuple, optional
+        jsonstring: tuple
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
         Returns
         -------
-        A scipy interp1d object.
-
+        JSON strings if jsonstring is set to True.
         '''
 
         # Get the standard flux/magnitude
         self.slength = slength
         self.sorder = sorder
         self.smooth = smooth
-
-        # Compute bin sizes such that the bin is roughly 10 A wide
-        #wave_range = self.wave_std[-1] - self.wave_std[0]
-        #bin_size = self.wave_std[1] - self.wave_std[0]
-
-        # Find the centres of the first and last bins such that
-        # the old and new spectra covers identical wavelength range
-        #wave_lhs = self.wave_std[0] - bin_size / 2.
-        #wave_rhs = self.wave_std[-1] + bin_size / 2.
-        #wave_obs = np.arange(wave_lhs, wave_rhs, bin_size)
-        #wave_std = self.wave_std
 
         if spectres_imported:
             # resampling both the observed and the database standard spectra
@@ -2714,10 +2899,14 @@ class OneDSpec:
                                          self.fluxmag_std_true)(self.wave_obs)
         # Get the sensitivity curve
         sensitivity = flux_std_true / flux_std
-        mask = (np.isfinite(sensitivity) & (sensitivity > 0.) &
-                ((self.wave_std_true < 6850.) | (self.wave_std_true > 7000.)) &
-                ((self.wave_std_true < 7150.) | (self.wave_std_true > 7400.)) &
-                ((self.wave_std_true < 7575.) | (self.wave_std_true > 7775.)))
+
+        if mask_range is None:
+            mask = (np.isfinite(sensitivity) & (sensitivity > 0.))
+        else:
+            mask = (np.isfinite(sensitivity) & (sensitivity > 0.))
+            for m in mask_range:
+                mask = mask & ((self.wave_std_true < m[0]) |
+                               (self.wave_std_true > m[1]))
 
         sensitivity = sensitivity[mask]
         wave_std = self.wave_std_true[mask]
@@ -2744,6 +2933,18 @@ class OneDSpec:
     def inspect_sencurve(self, renderer='default', jsonstring=False):
         '''
         Display the computed sensitivity curve.
+
+        Parameters
+        ----------
+        renderer: string
+            plotly renderer options.
+        jsonstring: tuple
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+
+        Returns
+        -------
+        JSON strings if jsonstring is set to True.
         '''
 
         fig = go.Figure()
@@ -2805,7 +3006,12 @@ class OneDSpec:
 
     def apply_flux_calibration(self, stype='all'):
         '''
-        Apply the computed sensitivity curve
+        Apply the computed sensitivity curve.
+
+        Parameters
+        ----------
+        stype: string
+            'science', 'standard' or 'all' to indicate type
         '''
 
         if stype == 'science':
@@ -2839,6 +3045,24 @@ class OneDSpec:
                                  jsonstring=False):
         '''
         Display the reduced spectra.
+
+        Parameters
+        ----------
+        stype: string
+            'science', 'standard' or 'all' to indicate type
+        wave_min: float
+            Minimum wavelength to display
+        wave_max: float
+            Maximum wavelength to display
+        renderer: string
+            plotly renderer options.
+        jsonstring: tuple
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+
+        Returns
+        -------
+        JSON strings if jsonstring is set to True.
         '''
 
         if stype == 'science':
@@ -2947,7 +3171,11 @@ class OneDSpec:
                                                       bgcolor='rgba(0,0,0,0)'),
                               height=800)
 
-            fig.show(renderer)
+            if not jsonstring:
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
 
         elif stype == 'all':
 

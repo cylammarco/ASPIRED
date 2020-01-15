@@ -4,3 +4,4 @@
 *.eggs
 dist/
 aspired.egg-info/
+iframe_figures/
