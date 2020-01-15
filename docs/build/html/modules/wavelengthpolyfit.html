@@ -37,24 +37,150 @@
 <dl class="class">
 <dt id="aspired.aspired.WavelengthPolyFit">
 <em class="property">class </em><code class="sig-prename descclassname">aspired.aspired.</code><code class="sig-name descname">WavelengthPolyFit</code><span class="sig-paren">(</span><em class="sig-param">spec</em>, <em class="sig-param">arc</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#WavelengthPolyFit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.WavelengthPolyFit" title="Permalink to this definition">¶</a></dt>
-<dd><p>arc: TwoDSpec object of the arc image
-spec: TwoDSpec object of the science/standard image</p>
+<dd><p>This is a wrapper for using RASCAL to perform wavelength calibration,
+which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
+guarantees to provide something sensible or nothing at all. It will
+require some fine-tuning when using the first time. The more GOOD
+initial guesses provided, the faster the solution converges and with
+better fit. Knowing the dispersion, wavelength ranges and one or two
+known lines will significantly improve the fit. Conversely, wrong
+values supplied by the user will siginificantly distort the solution
+as any user supplied information will be treated as the ground truth.</p>
+<p>Deatils of how RASCAL works should be referred to</p>
+<blockquote>
+<div><p><a class="reference external" href="https://rascal.readthedocs.io/en/latest/">https://rascal.readthedocs.io/en/latest/</a></p>
+</div></blockquote>
+<dl class="simple">
+<dt>spec: TwoDSpec object</dt><dd><p>TwoDSpec of the science/standard image containing the trace(s).</p>
+</dd>
+<dt>arc: 2D numpy array</dt><dd><p>The image of the arc image.</p>
+</dd>
+</dl>
 <dl class="method">
 <dt id="aspired.aspired.WavelengthPolyFit.calibrate">
-<code class="sig-name descname">calibrate</code><span class="sig-paren">(</span><em class="sig-param">elements</em>, <em class="sig-param">sample_size=5</em>, <em class="sig-param">min_wave=3500.0</em>, <em class="sig-param">max_wave=8500.0</em>, <em class="sig-param">max_tries=5000</em>, <em class="sig-param">display=False</em>, <em class="sig-param">num_slopes=1000</em>, <em class="sig-param">range_tolerance=500</em>, <em class="sig-param">fit_tolerance=20.0</em>, <em class="sig-param">polydeg=5</em>, <em class="sig-param">top_n=20</em>, <em class="sig-param">candidate_thresh=15.0</em>, <em class="sig-param">ransac_thresh=1</em>, <em class="sig-param">xbins=50</em>, <em class="sig-param">ybins=50</em>, <em class="sig-param">brute_force=False</em>, <em class="sig-param">fittype='poly'</em>, <em class="sig-param">mode='manual'</em>, <em class="sig-param">progress=True</em>, <em class="sig-param">coeff=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#WavelengthPolyFit.calibrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.WavelengthPolyFit.calibrate" title="Permalink to this definition">¶</a></dt>
-<dd><p>thresh (A) :: the individual line fitting tolerance to accept as a valid fitting point
-fit_tolerance (A) :: the RMS</p>
+<code class="sig-name descname">calibrate</code><span class="sig-paren">(</span><em class="sig-param">elements=None</em>, <em class="sig-param">min_wave=3500.0</em>, <em class="sig-param">max_wave=8500.0</em>, <em class="sig-param">sample_size=5</em>, <em class="sig-param">max_tries=5000</em>, <em class="sig-param">top_n=20</em>, <em class="sig-param">nslopes=1000</em>, <em class="sig-param">range_tolerance=500.0</em>, <em class="sig-param">fit_tolerance=20.0</em>, <em class="sig-param">polydeg=5</em>, <em class="sig-param">candidate_thresh=15.0</em>, <em class="sig-param">ransac_thresh=1</em>, <em class="sig-param">xbins=50</em>, <em class="sig-param">ybins=50</em>, <em class="sig-param">brute_force=False</em>, <em class="sig-param">fittype='poly'</em>, <em class="sig-param">mode='manual'</em>, <em class="sig-param">progress=False</em>, <em class="sig-param">coeff=None</em>, <em class="sig-param">display=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#WavelengthPolyFit.calibrate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.WavelengthPolyFit.calibrate" title="Permalink to this definition">¶</a></dt>
+<dd><p>A wrapper function to perform wavelength calibration with RASCAL.</p>
+<p>As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
+Hg and Th from NIST:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://physics.nist.gov/PhysRefData/ASD/lines_form.html">https://physics.nist.gov/PhysRefData/ASD/lines_form.html</a></p>
+</div></blockquote>
+<p>If there is already a set of good coefficienes, use calibrate_pfit()
+instead.</p>
+<dl>
+<dt>elements: string or list of string</dt><dd><p>String or list of strings of Chemical symbol. Case insensitive.</p>
+</dd>
+<dt>min_wave: float</dt><dd><p>Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.</p>
+</dd>
+<dt>max_wave: float</dt><dd><p>Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.</p>
+</dd>
+<dt>sample_size: int</dt><dd><p>Number of lines to be fitted in each loop.</p>
+</dd>
+<dt>max_tries: int</dt><dd><p>Number of trials of polynomial fitting.</p>
+</dd>
+<dt>top_n: int</dt><dd><p>Top ranked lines to be fitted.</p>
+</dd>
+<dt>nslopes: int</dt><dd><p>Number of lines to be used in Hough transform.</p>
+</dd>
+<dt>range_tolerance: float</dt><dd><p>Estimation of the error on the provided spectral range
+e.g. 3000 - 5000 with tolerance 500 will search for
+solutions that may satisfy 2500 - 5500</p>
+</dd>
+<dt>fit_tolerance: float</dt><dd><p>Maximum RMS allowed</p>
+</dd>
+<dt>polydeg: int</dt><dd><p>Degree of the polynomial</p>
+</dd>
+<dt>candidate_thresh: float</dt><dd><p>Threshold for considering a point to be an inlier during candidate
+peak/line selection. Don’t make this too small, it should allow
+for the error between a linear and non-linear fit.</p>
+</dd>
+<dt>ransac_thresh: float</dt><dd><p>The distance criteria to be considered an inlier to a fit. This
+should be close to the size of the expected residuals on the final
+fit.</p>
+</dd>
+<dt>xbins: int</dt><dd><p>The number of bins in the pixel direction (in Hough space).</p>
+</dd>
+<dt>ybins<span class="classifier">int</span></dt><dd><p>The number of bins in the wavelength direction (in Hough space).</p>
+</dd>
+<dt>brute_force: tuple</dt><dd><p>Set to try all possible combinations and choose the best fit as
+the solution. This takes tens of minutes for tens of lines.</p>
+</dd>
+<dt>fittype: string</dt><dd><p>One of ‘poly’, ‘legendre’ or ‘chebyshev’.</p>
+</dd>
+<dt>mode: string</dt><dd><p>Default to ‘manual’ to read take in user supplied sample_size,
+max_tries, top_n and nslope, which are by default equivalent to
+‘normal’ mode. Predefined modes are ‘fast’, ‘normal’ and ‘slow’:
+fast:</p>
+<blockquote>
+<div><p>sample_size = 3, max_tries = 1000, top_n = 20, nslope = 500</p>
+</div></blockquote>
+<dl class="simple">
+<dt>normal:</dt><dd><p>sample_size = 5, max_tries = 5000, top_n = 20, nslope = 1000</p>
+</dd>
+<dt>slow:</dt><dd><p>sample_size = 5, max_tries = 10000, top_n = 20, nslope = 2000</p>
+</dd>
+</dl>
+</dd>
+<dt>progress: tuple</dt><dd><p>Set to show the progress using tdqm (if imported).</p>
+</dd>
+<dt>pfit: list</dt><dd><p>List of the polynomial fit coefficients for the first guess.</p>
+</dd>
+<dt>display: tuple</dt><dd><p>Set to show diagnostic plot.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.WavelengthPolyFit.calibrate_pfit">
 <code class="sig-name descname">calibrate_pfit</code><span class="sig-paren">(</span><em class="sig-param">elements</em>, <em class="sig-param">pfit</em>, <em class="sig-param">min_wave=3500.0</em>, <em class="sig-param">max_wave=8500.0</em>, <em class="sig-param">tolerance=10.0</em>, <em class="sig-param">display=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#WavelengthPolyFit.calibrate_pfit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.WavelengthPolyFit.calibrate_pfit" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>A wrapper function to fine tune wavelength calibration with RASCAL
+when there is already a set of good coefficienes.</p>
+<p>As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
+Hg and Th from NIST:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://physics.nist.gov/PhysRefData/ASD/lines_form.html">https://physics.nist.gov/PhysRefData/ASD/lines_form.html</a></p>
+</div></blockquote>
+<dl class="simple">
+<dt>elements: string or list of string</dt><dd><p>String or list of strings of Chemical symbol. Case insensitive.</p>
+</dd>
+<dt>pfit<span class="classifier">list</span></dt><dd><p>List of polynomial fit coefficients</p>
+</dd>
+<dt>min_wave: float</dt><dd><p>Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.</p>
+</dd>
+<dt>max_wave: float</dt><dd><p>Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.</p>
+</dd>
+<dt>tolerance<span class="classifier">float</span></dt><dd><p>Absolute difference between fit and model.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.WavelengthPolyFit.find_arc_lines">
 <code class="sig-name descname">find_arc_lines</code><span class="sig-paren">(</span><em class="sig-param">percentile=20.0</em>, <em class="sig-param">distance=5.0</em>, <em class="sig-param">display=False</em>, <em class="sig-param">jsonstring=False</em>, <em class="sig-param">renderer='default'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#WavelengthPolyFit.find_arc_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.WavelengthPolyFit.find_arc_lines" title="Permalink to this definition">¶</a></dt>
-<dd><p>pixelscale in unit of A/pix</p>
+<dd><p>This function applies the trace to the arc image then take median
+average of the stripe before identifying the arc lines (peaks) with
+scipy.signal.find_peaks(), where only the distance and the prominence
+keywords are used. Distance is the minimum separation between peaks,
+the default value is roughly twice the nyquist sampling rate (i.e.
+pixel size is 2.3 times smaller than the object that is being resolved,
+hence, the sepration between two clearly resolved peaks are ~5 pixels
+apart). An crude estimate of the background can exclude random noise
+which look like small peaks.</p>
+<dl class="simple">
+<dt>percentile: float</dt><dd><p>The percentile of the flux to be used as the estimate of the
+background sky level to the first order. [ADU]</p>
+</dd>
+<dt>distance: float</dt><dd><p>Minimum separation between peaks</p>
+</dd>
+<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
+in any support language.</p>
+</dd>
+</dl>
+<p>JSON strings if jsonstring is set to True</p>
 </dd></dl>
 
 </dd></dl>

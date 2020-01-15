@@ -13,9 +13,10 @@ ASPIRED documentation!
 Basic Usage
 ===========
 
-The bare minimum example code to to get a wavelength calibration:
+The bare minimum example code to perform a complete spectral data reduction with both wavelength and flux calibrated:
 
 .. code-block:: python
+
     import sys
     import numpy as np
     from astropy.io import fits
@@ -56,6 +57,7 @@ The bare minimum example code to to get a wavelength calibration:
     science_reduced.apply_wavelength_calibration()
     science_reduced.compute_sencurve()
     science_reduced.inspect_reduced_spectrum()
+
 
 Some more complete examples are available in the tutorials.
 

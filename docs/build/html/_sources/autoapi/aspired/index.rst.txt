@@ -38,14 +38,14 @@ Module Contents
    ----------
    filelistpath: string
        file location, does not support URL
-   ftype: string, optional
+   ftype: string
        one of csv, tsv and ascii. Default is csv.
    Sxais: int, 0 or 1
        OVERRIDE the SAXIS value in the FITS header, or to provide the
        SAXIS if it does not exist
    saxis_keyword: string
        HDU keyword for the spectral axis direction
-   combinetype_light: string, optional
+   combinetype_light: string
        average of median for CCDproc.Combiner.average_combine() and
        CCDproc.Combiner.median_combine(). All the frame types follow
        the same combinetype.
@@ -61,7 +61,7 @@ Module Contents
        one if the keyword does not exist
    exptime_light_keyword: string
        HDU keyword for the exposure time of the light frame
-   combinetype_dark: string, optional
+   combinetype_dark: string
        average of median for CCDproc.Combiner.average_combine() and
        CCDproc.Combiner.median_combine(). All the frame types follow
        the same combinetype.
@@ -77,7 +77,7 @@ Module Contents
        one if the keyword does not exist
    exptime_dark_keyword: string
        HDU keyword for the exposure time of the dark frame
-   combinetype_bias: string, optional
+   combinetype_bias: string
        average of median for CCDproc.Combiner.average_combine() and
        CCDproc.Combiner.median_combine(). All the frame types follow
        the same combinetype.
@@ -88,7 +88,7 @@ Module Contents
        lower threshold of the sigma clipping
    clip_high_bias: float
        upper threshold of the sigma clipping
-   combinetype_flat: string, optional
+   combinetype_flat: string
        average of median for CCDproc.Combiner.average_combine() and
        CCDproc.Combiner.median_combine(). All the frame types follow
        the same combinetype.
@@ -99,18 +99,22 @@ Module Contents
        lower threshold of the sigma clipping
    clip_high_flat: float
        upper threshold of the sigma clipping
+   silence: tuple
+       set to suppress all messages
 
    .. method:: _check_files(self)
 
 
+      Go through the filelist provided and check if all files exist.
 
-   .. method:: _bias_subtract(self, combinetype='median', sigma_clipping=True, clip_low=5, clip_high=5)
+
+   .. method:: _bias_subtract(self)
 
 
       Perform bias subtraction if bias frames are available.
 
 
-   .. method:: _dark_subtract(self, combinetype='median', sigma_clipping=True, clip_low=5, clip_high=5)
+   .. method:: _dark_subtract(self)
 
 
       Perform dark subtraction if dark frames are available
@@ -139,7 +143,7 @@ Module Contents
           Disk location to be written to. Default is at where the Python
           process/subprocess is execuated.
       overwrite: tuple
-          Default is False. 
+          Default is False.
 
 
    .. method:: inspect(self, log=True, renderer='default', jsonstring=False)
@@ -158,8 +162,8 @@ Module Contents
           set to True to return json string that can be rendered by Plot.ly
           in any support language
 
-      Return
-      ------
+      Returns
+      -------
       json string if jsonstring is True, otherwise only an image is displayed
 
 
@@ -170,7 +174,12 @@ Module Contents
 
 
 
-.. py:class:: TwoDSpec(img, Saxis=1, spatial_mask=(1, ), spec_mask=(1, ), flip=False, cr=True, cr_sigma=5.0, rn=None, gain=None, seeing=None, exptime=None, silence=False)
+.. py:class:: TwoDSpec(data, header=None, saxis=1, spatial_mask=(1, ), spec_mask=(1, ), flip=False, cr=False, cr_sigma=5.0, rn=None, gain=None, seeing=None, exptime=None, silence=False)
+
+   This is a class for processing a 2D spectral image, the read noise,
+   detector gain, seeing and exposure time will be automatically extracted
+   from the FITS header if it conforms with the IAUFWG FITS standard.
+
 
    Currently, there is no automated way to decide if a flip is needed.
 
@@ -183,7 +192,7 @@ Module Contents
 
    If the 2D spectrum is
    +--------+--------+-------+-------+
-   |  blue  |   red  | Saxis |  flip |
+   |  blue  |   red  | saxis |  flip |
    +--------+--------+-------+-------+
    |  left  |  right |   1   | False |
    |  right |  left  |   1   |  True |
@@ -199,46 +208,96 @@ Module Contents
 
    Parameters
    ----------
-   img: 2D numpy array (M x N)
-       2D spectral image
-   Saxis: int, optional
+   data: 2D numpy array (M x N) OR astropy.io.fits object
+       2D spectral image in either format
+   header: FITS header
+       THIS WILL OVERRIDE the header from the astropy.io.fits object
+   saxis: int
        Spectral direction, 0 for vertical, 1 for horizontal.
        (Default is 1)
-   spatial_mask: 1D numpy array (N), optional
+   spatial_mask: 1D numpy array (N)
        Mask in the spatial direction, can be the indices of the pixels
        to be included (size <N) or a 1D numpy array of True/False (size N)
        (Default is (1,) i.e. keep everything)
-   spec_mask: 1D numpy array (M), optional
+   spec_mask: 1D numpy array (M)
        Mask in the spectral direction, can be the indices of the pixels
        to be included (size <M) or a 1D numpy array of True/False (size M)
        (Default is (1,) i.e. keep everything)
-   flip: tuple, optional
+   flip: tuple
        If the frame has to be left-right flipped, set to True.
        (Deafult is False)
-   cr: tuple, optional
+   cr: tuple
        Set to True to apply cosmic ray rejection by sigma clipping with
        astroscrappy if available, otherwise a 2D median filter of size 5
        would be used. (default is True)
-   cr_sigma: float, optional
+   cr_sigma: float
        Cosmic ray sigma clipping limit (Deafult is 5.0)
-   rn: float, optional
+   rn: float
        Readnoise of the detector, not important if noise estimation is
        not needed.
        (Deafult is None, which will be replaced with 1.0)
-   gain: float, optional
+   gain: float
        Gain of the detector, not important if noise estimation is
        not needed.
        (Deafult is None, which will be replaced with 1.0)
-   seeing: float, optional
+   seeing: float
        Seeing in unit of arcsec, use as the first guess of the line
        spread function of the spectra.
        (Deafult is None, which will be replaced with 1.0)
-   exptime: float, optional
+   exptime: float
        Esposure time for the observation, not important if absolute flux
        calibration is not needed.
        (Deafult is None, which will be replaced with 1.0)
-   silence: tuple, optional
+   silence: tuple
        Set to True to suppress all verbose output.
+
+   .. method:: _set_default_rn_keyword(self, keyword_list)
+
+
+      Change the default read noise keyword list.
+
+
+   .. method:: _set_default_gain_keyword(self, keyword_list)
+
+
+      Change the default gain keyword list.
+
+
+   .. method:: _set_default_seeing_keyword(self, keyword_list)
+
+
+      Change the default seeing keyword list.
+
+
+   .. method:: _set_default_exptime_keyword(self, keyword_list)
+
+
+      Change the default exposure time keyword list.
+
+
+   .. method:: _append_rn_keyword(self, keyword_list)
+
+
+      Append to the existing read noise keyword list.
+
+
+   .. method:: _append_gain_keyword(self, keyword_list)
+
+
+      Append to the existing gain keyword list.
+
+
+   .. method:: _append_seeing_keyword(self, keyword_list)
+
+
+      Append to the existing seeing keyword list.
+
+
+   .. method:: _append_exptime_keyword(self, keyword_list)
+
+
+      Append to the existing exptime keyword list.
+
 
    .. method:: _gaus(self, x, a, b, x0, sigma)
 
@@ -286,13 +345,14 @@ Module Contents
       peaks_y :
           Array or float of the pixel values of the detected peaks
       heights_y :
-          Array or float of the integrated counts at the peaks 
+          Array or float of the integrated counts at the peaks
 
 
-   .. method:: _optimal_signal(self, pix, xslice, sky, mu, sigma, display, renderer, jsonstring)
+   .. method:: _optimal_signal(self, pix, xslice, sky, mu, sigma)
 
 
-      Iterate to get optimal signal, for internal use only
+      Iterate to get the optimal signal. Following the algorithm on
+      Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).
 
       Parameters
       ----------
@@ -306,6 +366,73 @@ Module Contents
           The center of the Gaussian
       sigma: float
           The width of the Gaussian
+
+      Returns
+      -------
+      signal: float
+          The optimal signal.
+      noise: float
+          The noise associated with the optimal signal.
+
+
+   .. method:: ap_trace(self, nspec=1, nwindow=25, spec_sep=5, resample_factor=10, rescale=False, scaling_min=0.975, scaling_max=1.025, scaling_step=0.005, percentile=5, tol=3, display=False, renderer='default', jsonstring=False)
+
+
+      Aperture tracing by first using cross-correlation then the peaks are
+      fitting with a polynomial with an order of floor(nwindow, 10) with a
+      minimum order of 1. Nothing is returned unless jsonstring of the
+      plotly graph is set to be returned.
+
+      Each spectral slice is convolved with the adjacent one in the spectral
+      direction. Basic tests show that the geometrical distortion from one
+      end to the other in the spectral direction is small. With LT/SPRAT, the
+      linear distortion is less than 0.5%, thus, even provided as an option,
+      the rescale option is set to False by default. Given how unlikely a
+      geometrical distortion correction is needed, higher order correction
+      options are not provided.
+
+      A rough estimation on the background level is done by taking the
+      n-th percentile percentile of the slice, a rough guess can improve the
+      cross-correlation process significantly due to low dynamic range in a
+      typical spectral image. The removing of the "background" can massively
+      improve the contrast between the peaks and the relative background,
+      hence the correlation method is more likely to yield a true positive.
+
+      The trace(s), i.e. the spatial positions of the spectra (Y-axis),
+      found will be stored as the properties of the TwoDSpec object as a
+      1D numpy array, of length N, which is the size of the spectrum after
+      applying the spec_mask. The line spread function is stored in
+      trace_sigma, by fitting a gaussian on the shift-corrected stack of the
+      spectral slices. Given the scaling was found to be small, reporting
+      a single value of the averaged gaussian sigma is sufficient as the
+      first guess to be used by the aperture extraction function.
+
+      Parameters
+      ----------
+      nspec: int
+          Number of spectra to be extracted.
+      nwindow: int
+          Number of spectral slices to be produced for cross-correlation.
+      spec_sep: int
+          Minimum separation between sky lines.
+      resample_factor: int
+          Number of times the collapsed 1D slices in the spatial directions
+          are to be upsampled.
+      rescale: tuple
+          Fit for the linear scaling factor between adjacent slices.
+      scaling_min: float
+          Minimum scaling factor to be fitted.
+      scaling_max: float
+          Maximum scaling factor to be fitted.
+      scaling_step: float
+          Steps of the scaling factor.
+      percentile: float
+          The percentile of the flux to be used as the estimate of the
+          background sky level to the first order. [ADU]
+      tol: float
+          Maximum allowed shift between neighbouring slices, this value is
+          referring to native pixel size without the application of the
+          resampling or rescaling. [pix]
       display: tuple
           Set to True to display disgnostic plot.
       renderer: string
@@ -316,145 +443,78 @@ Module Contents
 
       Returns
       -------
-      signal: float
-          The optimal signal. 
-      noise: float
-          The noise associated with the optimal signal.
+      json string if jsonstring is True, otherwise only an image is displayed
 
 
-   .. method:: ap_trace(self, nspec=1, nwindow=25, spec_sep=5, resample_factor=10, rescale=False, scaling_min=0.975, scaling_max=1.025, scaling_step=0.005, p_bg=5, tol=3, display=False, renderer='default', jsonstring=False)
+   .. method:: ap_trace_quick(self, nspec=1, nwindow=25, recenter=False, prevtrace=(0, ), fittype='spline', order=3, bigbox=8, display=False, renderer='default', jsonstring=False)
 
 
-      trace: 1-d numpy array (N)
-          The spatial positions (Y axis) corresponding to the center of the
-          trace for every wavelength (X axis), as returned from ap_trace
-      trace_sigma: float, or 1-d array (1 or N)
-          Tophat extraction: Float is accepted but will be rounded to an int,
-                              which gives the constant aperture size on either
-                              side of the trace to extract.
-          Optimal extraction: Float or 1-d array of the same size as the trace.
-                              If a float is supplied, a fixed standard deviation
-                              will be used to construct the gaussian weight
-                              function along the entire spectrum.
+      This only works for bright spectra with good wavelength coverage.
+
+      It works by splitting the image in nwindow bins in the wavelength
+      direction, then a Gaussian is fitted for each bin to determine the
+      spatial position of the trace. Finally, a cubic spline is computed
+      for these spatial positions as a function of the spectral position.
+
+      Nothing is returned unless jsonstring of the plotly graph is set to be
+      returned. The trace and trace_sigma are stored as properties of the
+      TwoDSpec object.
 
       Parameters
       ----------
-      nspec: int, optional
-
-      nwindow: int, optional
-
-      spec_sep: int, optional
-
-      resample_factor: int, optional
-
-      rescale: tuple, optional
-
-      scaling_min: float, optional
-
-      scaling_max: float, optional
-
-      scaling_step: float, optional
-
-      p_bg: float, optional
-
-      tol: float, optional
-
-      display: tuple, optional
-          Set to True to display disgnostic plot.
-      renderer: string, optional
-          plotly renderer options.
-      jsonstring: tuple, optional
-          set to True to return json string that can be rendered by Plotly
-          in any support language.
-
-
-   .. method:: ap_trace_quick(self, nspec=1, nsteps=20, recenter=False, prevtrace=(0, ), fittype='spline', order=3, bigbox=8, display=False, renderer='default', jsonstring=False)
-
-
-      Trace the spectrum aperture in an image. It only works for bright
-      spectra with good wavelength coverage.
-
-      It works by chopping image up in bins along the wavelength direction,
-      fits a Gaussian for each bin to determine the spatial center of the
-      trace. Finally, draws a cubic spline through the bins.
-
-      Parameters
-      ----------
-      nspec: int, optional
+      nspec: int
           Number of spectra to be extracted. It does not guarantee returning
           the same number of spectra if fewer can be detected. (Default is 1)
-      nsteps: int, optional
+      nwindow: int
           Keyword, number of bins in X direction to chop image into. Use
           fewer bins if ap_trace is having difficulty, such as with faint
           targets (default is 20, minimum is 4)
-      recenter: bool, optional
+      recenter: bool
           Set to True to use previous trace, allow small shift in position
           along the spatial direction. Not doing anything if prevtrace is not
           supplied. (Default is False)
-      prevtrace: 1-d numpy array, optional
+      prevtrace: 1-d numpy array
           Provide first guess or refitting the center with different parameters.
-      fittype: string, optional
+      fittype: string
           Set to 'spline' or 'polynomial', using
           scipy.interpolate.UnivariateSpline and numpy.polyfit
-      order: string, optional
+      order: string
           Degree of the spline or polynomial. Spline must be <= 5.
           (default is k=3)
-      bigbox: float, optional
+      bigbox: float
           The number of sigma away from the main aperture to allow to trace
-      silence: tuple, optional
+      silence: tuple
           Set to disable warning/error messages. (Default is False)
-      display: tuple, optional
+      display: tuple
           Set to True to display disgnostic plot.
-      renderer: string, optional
+      renderer: string
           plotly renderer options.
-      jsonstring: tuple, optional
+      jsonstring: tuple
           set to True to return json string that can be rendered by Plotly
           in any support language.
-
-      Returns
-      -------
-      my: array (N, nspec)
-          The spatial (Y) positions of the trace, interpolated over the
-          entire wavelength (X) axis
-      y_sigma: array (N, nspec)
-          The sigma measured at the nsteps.
 
 
    .. method:: ap_extract(self, apwidth=7, skysep=3, skywidth=5, skydeg=1, optimal=True, display=False, renderer='default', jsonstring=False)
 
 
-      Extract the spectra using the traces, support aperture or optimal
+      Extract the spectra using the traces, support tophat or optimal
       extraction. The sky background is fitted in one dimention only. The
-      uncertainty at each pixel is also computed, but it is only meaningful
-      if correct gain, read noise and are provided.
+      uncertainty at each pixel is also computed, but the values are only
+      meaningful if correct gain and read noise are provided.
 
-      Parameters
-      ----------
-      apwidth: int, optional
-      skysep: int, optional
-          The separation in pixels from the aperture to the sky window.
-          (Default is 3)
-      skywidth: int, optional
-          The width in pixels of the sky windows on either side of the
-          aperture. (Default is 7)
-      skydeg: int, optional
-          The polynomial order to fit between the sky windows.
-          (Default is 0, i.e. constant flat sky level)
-      optimal: tuple, optional
-          Set optimal extraction. (Default is True)
-      silence: tuple, optional
-          Set to disable warning/error messages. (Default is False)
-      display: tuple, optional
-          Set to True to display disgnostic plot.
-      renderer: string, optional
-          plotly renderer options.
-      jsonstring: tuple, optional
-          set to True to return json string that can be rendered by Plotly
-          in any support language.
+      Tophat extraction: Float is accepted but will be rounded to an int,
+                          which gives the constant aperture size on either
+                          side of the trace to extract.
+      Optimal extraction: Float or 1-d array of the same size as the trace.
+                          If a float is supplied, a fixed standard deviation
+                          will be used to construct the gaussian weight
+                          function along the entire spectrum.
 
-      Returns
-      -------
-      onedspec: 1-d array
+      Nothing is returned unless jsonstring of the plotly graph is set to be
+      returned. The adu, skyadu and aduerr are stored as properties of the
+      TwoDSpec object.
+
+      adu: 1-d array
           The summed adu at each column about the trace. Note: is not
           sky subtracted!
       skyadu: 1-d array
@@ -463,89 +523,319 @@ Module Contents
       aduerr: 1-d array
           the uncertainties of the adu values
 
+      Parameters
+      ----------
+      apwidth: int
+          The size of the aperature (fixed value for tophat extraction) or
+          the sigma of the Gaussian (for the first iteration of optimal
+          extraction).
+      skysep: int
+          The separation in pixels from the aperture to the sky window.
+          (Default is 3)
+      skywidth: int
+          The width in pixels of the sky windows on either side of the
+          aperture. (Default is 7)
+      skydeg: int
+          The polynomial order to fit between the sky windows.
+          (Default is 0, i.e. constant flat sky level)
+      optimal: tuple
+          Set optimal extraction. (Default is True)
+      silence: tuple
+          Set to disable warning/error messages. (Default is False)
+      display: tuple
+          Set to True to display disgnostic plot.
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
 
 
 .. py:class:: WavelengthPolyFit(spec, arc)
 
-   arc: TwoDSpec object of the arc image
-   spec: TwoDSpec object of the science/standard image
+   This is a wrapper for using RASCAL to perform wavelength calibration,
+   which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
+   guarantees to provide something sensible or nothing at all. It will
+   require some fine-tuning when using the first time. The more GOOD
+   initial guesses provided, the faster the solution converges and with
+   better fit. Knowing the dispersion, wavelength ranges and one or two
+   known lines will significantly improve the fit. Conversely, wrong
+   values supplied by the user will siginificantly distort the solution
+   as any user supplied information will be treated as the ground truth.
+
+   Deatils of how RASCAL works should be referred to
+
+       https://rascal.readthedocs.io/en/latest/
+
+   Parameters
+   ----------
+   spec: TwoDSpec object
+       TwoDSpec of the science/standard image containing the trace(s).
+   arc: 2D numpy array
+       The image of the arc image.
 
    .. method:: find_arc_lines(self, percentile=20.0, distance=5.0, display=False, jsonstring=False, renderer='default')
 
 
-      pixelscale in unit of A/pix
+      This function applies the trace to the arc image then take median
+      average of the stripe before identifying the arc lines (peaks) with
+      scipy.signal.find_peaks(), where only the distance and the prominence
+      keywords are used. Distance is the minimum separation between peaks,
+      the default value is roughly twice the nyquist sampling rate (i.e.
+      pixel size is 2.3 times smaller than the object that is being resolved,
+      hence, the sepration between two clearly resolved peaks are ~5 pixels
+      apart). An crude estimate of the background can exclude random noise
+      which look like small peaks.
+
+      Parameters
+      ----------
+      percentile: float
+          The percentile of the flux to be used as the estimate of the
+          background sky level to the first order. [ADU]
+      distance: float
+          Minimum separation between peaks
+      display: tuple
+          Set to True to display disgnostic plot.
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      JSON strings if jsonstring is set to True
 
 
-   .. method:: calibrate(self, elements, sample_size=5, min_wave=3500.0, max_wave=8500.0, max_tries=5000, display=False, num_slopes=1000, range_tolerance=500, fit_tolerance=20.0, polydeg=5, top_n=20, candidate_thresh=15.0, ransac_thresh=1, xbins=50, ybins=50, brute_force=False, fittype='poly', mode='manual', progress=True, coeff=None)
+   .. method:: calibrate(self, elements=None, min_wave=3500.0, max_wave=8500.0, sample_size=5, max_tries=5000, top_n=20, nslopes=1000, range_tolerance=500.0, fit_tolerance=20.0, polydeg=5, candidate_thresh=15.0, ransac_thresh=1, xbins=50, ybins=50, brute_force=False, fittype='poly', mode='manual', progress=False, coeff=None, display=False)
 
 
-      thresh (A) :: the individual line fitting tolerance to accept as a valid fitting point
-      fit_tolerance (A) :: the RMS
+      A wrapper function to perform wavelength calibration with RASCAL.
+
+      As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
+      Hg and Th from NIST:
+
+          https://physics.nist.gov/PhysRefData/ASD/lines_form.html
+
+      If there is already a set of good coefficienes, use calibrate_pfit()
+      instead.
+
+      Parameters
+      ----------
+      elements: string or list of string
+          String or list of strings of Chemical symbol. Case insensitive.
+      min_wave: float
+          Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
+      max_wave: float
+          Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+      sample_size: int
+          Number of lines to be fitted in each loop.
+      max_tries: int
+          Number of trials of polynomial fitting.
+      top_n: int
+          Top ranked lines to be fitted.
+      nslopes: int
+          Number of lines to be used in Hough transform.
+      range_tolerance: float
+          Estimation of the error on the provided spectral range
+          e.g. 3000 - 5000 with tolerance 500 will search for
+          solutions that may satisfy 2500 - 5500
+      fit_tolerance: float
+          Maximum RMS allowed
+      polydeg: int
+          Degree of the polynomial
+      candidate_thresh: float
+          Threshold for considering a point to be an inlier during candidate
+          peak/line selection. Don't make this too small, it should allow
+          for the error between a linear and non-linear fit.
+      ransac_thresh: float
+          The distance criteria to be considered an inlier to a fit. This
+          should be close to the size of the expected residuals on the final
+          fit.
+      xbins: int
+          The number of bins in the pixel direction (in Hough space).
+      ybins : int
+          The number of bins in the wavelength direction (in Hough space).
+      brute_force: tuple
+          Set to try all possible combinations and choose the best fit as
+          the solution. This takes tens of minutes for tens of lines.
+      fittype: string
+          One of 'poly', 'legendre' or 'chebyshev'.
+      mode: string
+          Default to 'manual' to read take in user supplied sample_size,
+          max_tries, top_n and nslope, which are by default equivalent to
+          'normal' mode. Predefined modes are 'fast', 'normal' and 'slow':
+          fast:
+              sample_size = 3, max_tries = 1000, top_n = 20, nslope = 500
+          normal:
+              sample_size = 5, max_tries = 5000, top_n = 20, nslope = 1000
+          slow:
+              sample_size = 5, max_tries = 10000, top_n = 20, nslope = 2000
+      progress: tuple
+          Set to show the progress using tdqm (if imported).
+      pfit: list
+          List of the polynomial fit coefficients for the first guess.
+      display: tuple
+          Set to show diagnostic plot.
 
 
    .. method:: calibrate_pfit(self, elements, pfit, min_wave=3500.0, max_wave=8500.0, tolerance=10.0, display=False)
 
 
+      A wrapper function to fine tune wavelength calibration with RASCAL
+      when there is already a set of good coefficienes.
+
+      As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
+      Hg and Th from NIST:
+
+          https://physics.nist.gov/PhysRefData/ASD/lines_form.html
+
+      Parameters
+      ----------
+      elements: string or list of string
+          String or list of strings of Chemical symbol. Case insensitive.
+      pfit : list
+          List of polynomial fit coefficients
+      min_wave: float
+          Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
+      max_wave: float
+          Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+      tolerance : float
+          Absolute difference between fit and model.
+
 
 
 .. py:class:: StandardFlux(target, group, cutoff=0.4, ftype='flux', silence=False)
 
+   This class handles flux calibration by comparing the extracted and
+   wavelength-calibrated standard observation to the "ground truth"
+   from
+
+   https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstds
+   https://www.eso.org/sci/observing/tools/standards/spectra.html
+
+   See explanation notes at those links for details.
+
+   The list of targets and groups can be listed with
+   >>> from aspired.standard_list import list_all
+   >>> list_all()
+
+   The units of the data are
+       wavelength: A
+       flux:       ergs / cm / cm / s / A
+       mag:        mag (AB)
+
+   Parameters
+   ----------
+   target: string
+       Name of the standard star
+   group: string
+       Name of the group of standard star
+   cutoff: float
+       The threshold for the word similarity in the range of [0, 1].
+   ftype: string
+       'flux' or 'mag' (AB magnitude)
+   silence: tuple
+       Set to suppress all verbose warning.
+
    .. method:: _lookup_standard(self)
 
 
-      Check if the requested standard and library exist.
+      Check if the requested standard and library exist. Return the three
+      most similar words if the requested one does not exist. See
+
+          https://docs.python.org/3.7/library/difflib.html
 
 
    .. method:: load_standard(self, display=False, renderer='default', jsonstring=False)
 
 
       Read the standard flux/magnitude file. And return the wavelength and
-      flux/mag in units of
-
-      wavelength: A
-      flux:       ergs / cm / cm / s / A
-      mag:        mag (AB) 
+      flux/mag.
 
       Returns
       -------
-      display: tuple, optional
+      display: tuple
           Set to True to display disgnostic plot.
-      renderer: string, optional
+      renderer: string
           plotly renderer options.
-      jsonstring: tuple, optional
+      jsonstring: tuple
           set to True to return json string that can be rendered by Plotly
           in any support language.
+
+      Returns
+      -------
+      JSON strings if jsonstring is set to True
 
 
    .. method:: inspect_standard(self, renderer='default', jsonstring=False)
 
 
+      Display the standard star plot.
+
+      Parameters
+      ----------
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      JSON strings if jsonstring is set to True
+
 
 
 .. py:class:: OneDSpec(science, wave_cal, standard=None, wave_cal_std=None, flux_cal=None)
 
+   This class applies the wavelength calibrations and compute & apply the
+   flux calibration to the extracted 1D spectra. The standard TwoDSpec
+   object is not required for data reduction, but the flux calibrated
+   standard observation will not be available for diagnostic.
+
    Parameters
    ----------
    science: TwoDSpec object
-
+       The TwoDSpec object with the extracted science target
    wave_cal: WavelengthPolyFit object
-
-   standard: TwoDSpec object, optional
-
-   wave_cal_std: WavelengthPolyFit object, optional
-
-   flux_cal: StandardFlux object, optional (require wave_cal_std)
+       The WavelengthPolyFit object for the science target, flux will
+       not be calibrated if this is not provided.
+   standard: TwoDSpec object
+       The TwoDSpec object with the extracted standard target
+   wave_cal_std: WavelengthPolyFit object
+       The WavelengthPolyFit object for the standard target, flux will
+       not be calibrated if this is not provided.
+   flux_cal: StandardFlux object
+       The true mag/flux values.
 
    .. method:: _set_standard(self, standard)
 
 
-      Extract the required information from a TwoDSpec object
+      Extract the required information from the TwoDSpec object of the
+      standard.
+
+      Parameters
+      ----------
+      standard: TwoDSpec object
+          The TwoDSpec object with the extracted standard target
 
 
    .. method:: _set_wavecal(self, wave_cal, stype)
 
 
-      Extract the required information from a WavelengthPolyFit object
+      Extract the required information from a WavelengthPolyFit object, it
+      can be used to apply the polynomial coefficients for science, standard
+      or both.
+
+      Parameters
+      ----------
+      wave_cal: WavelengthPolyFit object
+          The WavelengthPolyFit object for the standard target, flux will
+          not be calibrated if this is not provided.
+      stype: string
+          'science', 'standard' or 'all' to indicate type
 
 
    .. method:: _set_fluxcal(self, flux_cal)
@@ -553,19 +843,35 @@ Module Contents
 
       Extract the required information from a StandardFlux object.
 
+      Parameters
+      ----------
+      flux_cal: StandardFlux object
+          The true mag/flux values.
+
 
    .. method:: apply_wavelength_calibration(self, stype)
 
 
-      Apply the wavelength calibration
+      Apply the wavelength calibration.
+
+      Parameters
+      ----------
+      stype: string
+          'science', 'standard' or 'all' to indicate type
 
 
-   .. method:: compute_sencurve(self, kind=3, smooth=False, slength=5, sorder=3, display=False, renderer='default', jsonstring=False)
+   .. method:: compute_sencurve(self, kind=3, smooth=False, slength=5, sorder=3, mask_range=[[6850, 7000], [7150, 7400], [7575, 7775]], display=False, renderer='default', jsonstring=False)
 
 
-      Get the standard flux or magnitude of the given target and group
-      based on the given array of wavelengths. Some standard libraries
-      contain the same target with slightly different values.
+      The sensitivity curve is computed by dividing the true values by the
+      wavelength calibrated standard spectrum, which is resampled with the
+      spectres.spectres(). The curve is then interpolated with a cubic spline
+      by default and is stored as a scipy interp1d object.
+
+      A Savitzky-Golay filter is available for smoothing before the
+      interpolation but it is not used by default.
+
+      6850 - 7000 A,  7150 - 7400 A and 7575 - 7775 A are masked by default.
 
       Parameters
       ----------
@@ -573,25 +879,27 @@ Module Contents
           interpolation kind
           >>> [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,
                ‘previous’, ‘next’]
-          (default is 'cubic')
       smooth: tuple
-          set to smooth the input ADU/flux/mag with scipy.signal.savgol_filter
-          (default is True)
+          set to smooth the input spectrum with scipy.signal.savgol_filter
       slength: int
           SG-filter window size
       sorder: int
           SG-filter polynomial order
-      display: tuple, optional
+      mask_range: None or list of list
+          Masking out regions not suitable for fitting the sensitivity curve.
+              None:         no mask
+              list of list: [[min1, max1], [min2, max2],...]
+      display: tuple
           Set to True to display disgnostic plot.
-      renderer: string, optional
+      renderer: string
           plotly renderer options.
-      jsonstring: tuple, optional
+      jsonstring: tuple
           set to True to return json string that can be rendered by Plotly
           in any support language.
 
       Returns
       -------
-      A scipy interp1d object.
+      JSON strings if jsonstring is set to True.
 
 
    .. method:: inspect_sencurve(self, renderer='default', jsonstring=False)
@@ -599,17 +907,52 @@ Module Contents
 
       Display the computed sensitivity curve.
 
+      Parameters
+      ----------
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      JSON strings if jsonstring is set to True.
+
 
    .. method:: apply_flux_calibration(self, stype='all')
 
 
-      Apply the computed sensitivity curve
+      Apply the computed sensitivity curve.
+
+      Parameters
+      ----------
+      stype: string
+          'science', 'standard' or 'all' to indicate type
 
 
    .. method:: inspect_reduced_spectrum(self, stype='all', wave_min=4000.0, wave_max=8000.0, renderer='default', jsonstring=False)
 
 
       Display the reduced spectra.
+
+      Parameters
+      ----------
+      stype: string
+          'science', 'standard' or 'all' to indicate type
+      wave_min: float
+          Minimum wavelength to display
+      wave_max: float
+          Maximum wavelength to display
+      renderer: string
+          plotly renderer options.
+      jsonstring: tuple
+          set to True to return json string that can be rendered by Plotly
+          in any support language.
+
+      Returns
+      -------
+      JSON strings if jsonstring is set to True.
 
 
 

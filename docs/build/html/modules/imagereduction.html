@@ -48,14 +48,14 @@ the only listed item. Set it as a ‘light’ frame.</p>
 <dl class="simple">
 <dt>filelistpath: string</dt><dd><p>file location, does not support URL</p>
 </dd>
-<dt>ftype: string, optional</dt><dd><p>one of csv, tsv and ascii. Default is csv.</p>
+<dt>ftype: string</dt><dd><p>one of csv, tsv and ascii. Default is csv.</p>
 </dd>
 <dt>Sxais: int, 0 or 1</dt><dd><p>OVERRIDE the SAXIS value in the FITS header, or to provide the
 SAXIS if it does not exist</p>
 </dd>
 <dt>saxis_keyword: string</dt><dd><p>HDU keyword for the spectral axis direction</p>
 </dd>
-<dt>combinetype_light: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+<dt>combinetype_light: string</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
 CCDproc.Combiner.median_combine(). All the frame types follow
 the same combinetype.</p>
 </dd>
@@ -71,7 +71,7 @@ one if the keyword does not exist</p>
 </dd>
 <dt>exptime_light_keyword: string</dt><dd><p>HDU keyword for the exposure time of the light frame</p>
 </dd>
-<dt>combinetype_dark: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+<dt>combinetype_dark: string</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
 CCDproc.Combiner.median_combine(). All the frame types follow
 the same combinetype.</p>
 </dd>
@@ -87,7 +87,7 @@ one if the keyword does not exist</p>
 </dd>
 <dt>exptime_dark_keyword: string</dt><dd><p>HDU keyword for the exposure time of the dark frame</p>
 </dd>
-<dt>combinetype_bias: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+<dt>combinetype_bias: string</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
 CCDproc.Combiner.median_combine(). All the frame types follow
 the same combinetype.</p>
 </dd>
@@ -98,7 +98,7 @@ numpy.ma.std method</p>
 </dd>
 <dt>clip_high_bias: float</dt><dd><p>upper threshold of the sigma clipping</p>
 </dd>
-<dt>combinetype_flat: string, optional</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
+<dt>combinetype_flat: string</dt><dd><p>average of median for CCDproc.Combiner.average_combine() and
 CCDproc.Combiner.median_combine(). All the frame types follow
 the same combinetype.</p>
 </dd>
@@ -109,21 +109,24 @@ numpy.ma.std method</p>
 </dd>
 <dt>clip_high_flat: float</dt><dd><p>upper threshold of the sigma clipping</p>
 </dd>
+<dt>silence: tuple</dt><dd><p>set to suppress all messages</p>
+</dd>
 </dl>
 <dl class="method">
 <dt id="aspired.aspired.ImageReduction._bias_subtract">
-<code class="sig-name descname">_bias_subtract</code><span class="sig-paren">(</span><em class="sig-param">combinetype='median'</em>, <em class="sig-param">sigma_clipping=True</em>, <em class="sig-param">clip_low=5</em>, <em class="sig-param">clip_high=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._bias_subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._bias_subtract" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_bias_subtract</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._bias_subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._bias_subtract" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform bias subtraction if bias frames are available.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.ImageReduction._check_files">
 <code class="sig-name descname">_check_files</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._check_files"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._check_files" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Go through the filelist provided and check if all files exist.</p>
+</dd></dl>
 
 <dl class="method">
 <dt id="aspired.aspired.ImageReduction._dark_subtract">
-<code class="sig-name descname">_dark_subtract</code><span class="sig-paren">(</span><em class="sig-param">combinetype='median'</em>, <em class="sig-param">sigma_clipping=True</em>, <em class="sig-param">clip_low=5</em>, <em class="sig-param">clip_high=5</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._dark_subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._dark_subtract" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">_dark_subtract</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#ImageReduction._dark_subtract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.ImageReduction._dark_subtract" title="Permalink to this definition">¶</a></dt>
 <dd><p>Perform dark subtraction if dark frames are available</p>
 </dd></dl>
 

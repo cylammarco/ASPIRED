@@ -38,22 +38,61 @@
 </div>
 <div class="section" id="basic-usage">
 <h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h1>
-<p>The bare minimum example code to to get a wavelength calibration:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>
+<p>The bare minimum example code to perform a complete spectral data reduction with both wavelength and flux calibrated:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">aspired</span> <span class="kn">import</span> <span class="n">aspired</span>
+
+<span class="c1"># Open the FITS file as a fits.hdu.image.PrimaryHDU</span>
+<span class="n">science</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;/path/to/science_FITS_file&#39;</span><span class="p">)</span>
+<span class="n">science2D</span> <span class="o">=</span> <span class="n">aspired</span><span class="o">.</span><span class="n">TwoDSpec</span><span class="p">(</span><span class="n">science</span><span class="p">)</span>
+<span class="n">aspired</span><span class="o">.</span><span class="n">ap_trace</span><span class="p">()</span>
+<span class="n">aspired</span><span class="o">.</span><span class="n">ap_extract</span><span class="p">()</span>
+
+<span class="n">standard</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;/path/to/standard_FITS_file&#39;</span><span class="p">)</span>
+<span class="n">standard2D</span> <span class="o">=</span> <span class="n">aspired</span><span class="o">.</span><span class="n">TwoDSpec</span><span class="p">(</span><span class="n">standard</span><span class="p">)</span>
+<span class="n">standard</span><span class="o">.</span><span class="n">ap_trace</span><span class="p">()</span>
+<span class="n">standard</span><span class="o">.</span><span class="n">ap_extract</span><span class="p">()</span>
+
+<span class="c1"># Load the standard flux</span>
+<span class="n">fluxcal</span> <span class="o">=</span> <span class="n">aspired</span><span class="o">.</span><span class="n">StandardFlux</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="s1">&#39;Name1&#39;</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="s1">&#39;Name2&#39;</span><span class="p">)</span>
+<span class="n">fluxcal</span><span class="o">.</span><span class="n">load_standard</span><span class="p">()</span>
+
+<span class="c1"># Wavelength calibration</span>
+<span class="n">wavecal_science</span> <span class="o">=</span> <span class="n">aspired</span><span class="o">.</span><span class="n">WavelengthPolyFit</span><span class="p">(</span><span class="n">science2D</span><span class="p">,</span> <span class="n">science_arc</span><span class="p">)</span>
+<span class="n">wavecal_science</span><span class="o">.</span><span class="n">find_arc_lines</span><span class="p">()</span>
+<span class="n">wavecal_science</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Chemical Symbol&quot;</span><span class="p">])</span>
+
+<span class="n">wavecal_standard</span> <span class="o">=</span> <span class="n">aspired</span><span class="o">.</span><span class="n">WavelengthPolyFit</span><span class="p">(</span><span class="n">standard2D</span><span class="p">,</span> <span class="n">standard_arc</span><span class="p">)</span>
+<span class="n">wavecal_standard</span><span class="o">.</span><span class="n">find_arc_lines</span><span class="p">()</span>
+<span class="n">wavecal_standard</span><span class="o">.</span><span class="n">calibrate</span><span class="p">(</span><span class="n">elements</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Chemical Symbol&quot;</span><span class="p">])</span>
+
+<span class="c1"># Applying flux and wavelength calibration</span>
+<span class="n">science_reduced</span> <span class="o">=</span> <span class="n">aspired</span><span class="o">.</span><span class="n">OneDSpec</span><span class="p">(</span>
+    <span class="n">science2D</span><span class="p">,</span>
+    <span class="n">wavecal_science</span><span class="p">,</span>
+    <span class="n">standard2D</span><span class="p">,</span>
+    <span class="n">wavecal_standard</span><span class="p">,</span>
+    <span class="n">fluxcal</span>
+<span class="p">)</span>
+<span class="n">science_reduced</span><span class="o">.</span><span class="n">apply_wavelength_calibration</span><span class="p">()</span>
+<span class="n">science_reduced</span><span class="o">.</span><span class="n">compute_sencurve</span><span class="p">()</span>
+<span class="n">science_reduced</span><span class="o">.</span><span class="n">inspect_reduced_spectrum</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>Some more complete examples are available in the <a class="reference internal" href="tutorials/quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a> tutorial.</p>
+<p>Some more complete examples are available in the tutorials.</p>
 </div>
 <div class="section" id="how-to-use-this-guide">
 <h1>How to Use This Guide<a class="headerlink" href="#how-to-use-this-guide" title="Permalink to this headline">¶</a></h1>
 <p>To start, you’re probably going to need to follow the <a class="reference internal" href="installation/pip.html#installation"><span class="std std-ref">pip</span></a> guide to
-get RASCAL installed on your computer.
+get ASPIRED installed on your computer.
 After you finish that, you can probably learn most of what you need from the
 tutorials listed below (you might want to start with
 <a class="reference internal" href="tutorials/quickstart.html#quickstart"><span class="std std-ref">Quickstart</span></a> and go from there).
 If you need more details about specific functionality, the User Guide below
 should have what you need.</p>
-<p>We welcome bug reports, patches, feature requests, and other comments via <a class="reference external" href="https://github.com/jveitchmichaelis/rascal/issues">the GitHub
+<p>We welcome bug reports, patches, feature requests, and other comments via <a class="reference external" href="https://github.com/cylammarco/ASPIRED/issues">the GitHub
 issue tracker</a>.</p>
 </div>
 <div class="section" id="user-guide">
@@ -129,7 +168,7 @@ issue tracker</a>.</p>
 <p>Copyright 2019-2020</p>
 <p>If you make use of ASPIRED in your work, please cite our paper
 (<a class="reference external" href="https://arxiv.org/abs/1912.05885">arXiv</a>,
-<a class="reference external" href="https://https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract">ADS</a>,
+<a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract">ADS</a>,
 <a class="reference external" href="https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/exportcitation">BibTeX</a>).</p>
 </div>
 <div class="section" id="indices-and-tables">

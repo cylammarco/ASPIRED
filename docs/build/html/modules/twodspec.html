@@ -36,8 +36,11 @@
 <h1>TwoDSpec<a class="headerlink" href="#twodspec" title="Permalink to this headline">¶</a></h1>
 <dl class="class">
 <dt id="aspired.aspired.TwoDSpec">
-<em class="property">class </em><code class="sig-prename descclassname">aspired.aspired.</code><code class="sig-name descname">TwoDSpec</code><span class="sig-paren">(</span><em class="sig-param">img</em>, <em class="sig-param">Saxis=1</em>, <em class="sig-param">spatial_mask=(1</em>, <em class="sig-param">)</em>, <em class="sig-param">spec_mask=(1</em>, <em class="sig-param">)</em>, <em class="sig-param">flip=False</em>, <em class="sig-param">cr=True</em>, <em class="sig-param">cr_sigma=5.0</em>, <em class="sig-param">rn=None</em>, <em class="sig-param">gain=None</em>, <em class="sig-param">seeing=None</em>, <em class="sig-param">exptime=None</em>, <em class="sig-param">silence=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec" title="Permalink to this definition">¶</a></dt>
-<dd><p>Currently, there is no automated way to decide if a flip is needed.</p>
+<em class="property">class </em><code class="sig-prename descclassname">aspired.aspired.</code><code class="sig-name descname">TwoDSpec</code><span class="sig-paren">(</span><em class="sig-param">data</em>, <em class="sig-param">header=None</em>, <em class="sig-param">saxis=1</em>, <em class="sig-param">spatial_mask=(1</em>, <em class="sig-param">)</em>, <em class="sig-param">spec_mask=(1</em>, <em class="sig-param">)</em>, <em class="sig-param">flip=False</em>, <em class="sig-param">cr=False</em>, <em class="sig-param">cr_sigma=5.0</em>, <em class="sig-param">rn=None</em>, <em class="sig-param">gain=None</em>, <em class="sig-param">seeing=None</em>, <em class="sig-param">exptime=None</em>, <em class="sig-param">silence=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a class for processing a 2D spectral image, the read noise,
+detector gain, seeing and exposure time will be automatically extracted
+from the FITS header if it conforms with the IAUFWG FITS standard.</p>
+<p>Currently, there is no automated way to decide if a flip is needed.</p>
 <p>The supplied file should contain 2 or 3 columns with the following
 structure:</p>
 <blockquote>
@@ -47,7 +50,7 @@ column 3: HDU number (default to 0 if not given)</p>
 </div></blockquote>
 <p>If the 2D spectrum is
 +——–+——–+——-+——-+
-|  blue  |   red  | Saxis |  flip |
+|  blue  |   red  | saxis |  flip |
 +——–+——–+——-+——-+
 |  left  |  right |   1   | False |
 |  right |  left  |   1   |  True |
@@ -60,47 +63,73 @@ the number of spectra visible to eye and pick the one required later.
 The default automated outputs is the brightest one, which is the
 most common case for images from a long-slit spectrograph.</p>
 <dl class="simple">
-<dt>img: 2D numpy array (M x N)</dt><dd><p>2D spectral image</p>
+<dt>data: 2D numpy array (M x N) OR astropy.io.fits object</dt><dd><p>2D spectral image in either format</p>
 </dd>
-<dt>Saxis: int, optional</dt><dd><p>Spectral direction, 0 for vertical, 1 for horizontal.
+<dt>header: FITS header</dt><dd><p>THIS WILL OVERRIDE the header from the astropy.io.fits object</p>
+</dd>
+<dt>saxis: int</dt><dd><p>Spectral direction, 0 for vertical, 1 for horizontal.
 (Default is 1)</p>
 </dd>
-<dt>spatial_mask: 1D numpy array (N), optional</dt><dd><p>Mask in the spatial direction, can be the indices of the pixels
+<dt>spatial_mask: 1D numpy array (N)</dt><dd><p>Mask in the spatial direction, can be the indices of the pixels
 to be included (size &lt;N) or a 1D numpy array of True/False (size N)
 (Default is (1,) i.e. keep everything)</p>
 </dd>
-<dt>spec_mask: 1D numpy array (M), optional</dt><dd><p>Mask in the spectral direction, can be the indices of the pixels
+<dt>spec_mask: 1D numpy array (M)</dt><dd><p>Mask in the spectral direction, can be the indices of the pixels
 to be included (size &lt;M) or a 1D numpy array of True/False (size M)
 (Default is (1,) i.e. keep everything)</p>
 </dd>
-<dt>flip: tuple, optional</dt><dd><p>If the frame has to be left-right flipped, set to True.
+<dt>flip: tuple</dt><dd><p>If the frame has to be left-right flipped, set to True.
 (Deafult is False)</p>
 </dd>
-<dt>cr: tuple, optional</dt><dd><p>Set to True to apply cosmic ray rejection by sigma clipping with
+<dt>cr: tuple</dt><dd><p>Set to True to apply cosmic ray rejection by sigma clipping with
 astroscrappy if available, otherwise a 2D median filter of size 5
 would be used. (default is True)</p>
 </dd>
-<dt>cr_sigma: float, optional</dt><dd><p>Cosmic ray sigma clipping limit (Deafult is 5.0)</p>
+<dt>cr_sigma: float</dt><dd><p>Cosmic ray sigma clipping limit (Deafult is 5.0)</p>
 </dd>
-<dt>rn: float, optional</dt><dd><p>Readnoise of the detector, not important if noise estimation is
+<dt>rn: float</dt><dd><p>Readnoise of the detector, not important if noise estimation is
 not needed.
 (Deafult is None, which will be replaced with 1.0)</p>
 </dd>
-<dt>gain: float, optional</dt><dd><p>Gain of the detector, not important if noise estimation is
+<dt>gain: float</dt><dd><p>Gain of the detector, not important if noise estimation is
 not needed.
 (Deafult is None, which will be replaced with 1.0)</p>
 </dd>
-<dt>seeing: float, optional</dt><dd><p>Seeing in unit of arcsec, use as the first guess of the line
+<dt>seeing: float</dt><dd><p>Seeing in unit of arcsec, use as the first guess of the line
 spread function of the spectra.
 (Deafult is None, which will be replaced with 1.0)</p>
 </dd>
-<dt>exptime: float, optional</dt><dd><p>Esposure time for the observation, not important if absolute flux
+<dt>exptime: float</dt><dd><p>Esposure time for the observation, not important if absolute flux
 calibration is not needed.
 (Deafult is None, which will be replaced with 1.0)</p>
 </dd>
-<dt>silence: tuple, optional</dt><dd><p>Set to True to suppress all verbose output.</p>
+<dt>silence: tuple</dt><dd><p>Set to True to suppress all verbose output.</p>
 </dd>
 </dl>
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec._append_exptime_keyword">
+<code class="sig-name descname">_append_exptime_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._append_exptime_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._append_exptime_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append to the existing exptime keyword list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec._append_gain_keyword">
+<code class="sig-name descname">_append_gain_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._append_gain_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._append_gain_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append to the existing gain keyword list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec._append_rn_keyword">
+<code class="sig-name descname">_append_rn_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._append_rn_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._append_rn_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append to the existing read noise keyword list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec._append_seeing_keyword">
+<code class="sig-name descname">_append_seeing_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._append_seeing_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._append_seeing_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Append to the existing seeing keyword list.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="aspired.aspired.TwoDSpec._gaus">
 <code class="sig-name descname">_gaus</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">a</em>, <em class="sig-param">b</em>, <em class="sig-param">x0</em>, <em class="sig-param">sigma</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._gaus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._gaus" title="Permalink to this definition">¶</a></dt>
@@ -146,8 +175,9 @@ in any support language.</p>
 
 <dl class="method">
 <dt id="aspired.aspired.TwoDSpec._optimal_signal">
-<code class="sig-name descname">_optimal_signal</code><span class="sig-paren">(</span><em class="sig-param">pix</em>, <em class="sig-param">xslice</em>, <em class="sig-param">sky</em>, <em class="sig-param">mu</em>, <em class="sig-param">sigma</em>, <em class="sig-param">display</em>, <em class="sig-param">renderer</em>, <em class="sig-param">jsonstring</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._optimal_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._optimal_signal" title="Permalink to this definition">¶</a></dt>
-<dd><p>Iterate to get optimal signal, for internal use only</p>
+<code class="sig-name descname">_optimal_signal</code><span class="sig-paren">(</span><em class="sig-param">pix</em>, <em class="sig-param">xslice</em>, <em class="sig-param">sky</em>, <em class="sig-param">mu</em>, <em class="sig-param">sigma</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._optimal_signal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._optimal_signal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Iterate to get the optimal signal. Following the algorithm on
+Horne, 1986, PASP, 98, 609 (1986PASP…98..609H).</p>
 <dl class="simple">
 <dt>pix: 1-d numpy array</dt><dd><p>pixel number along the spatial direction</p>
 </dd>
@@ -159,13 +189,6 @@ in any support language.</p>
 </dd>
 <dt>sigma: float</dt><dd><p>The width of the Gaussian</p>
 </dd>
-<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
-</dd>
-<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
-</dd>
-<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
-in any support language.</p>
-</dd>
 </dl>
 <dl class="simple">
 <dt>signal: float</dt><dd><p>The optimal signal.</p>
@@ -176,61 +199,37 @@ in any support language.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="aspired.aspired.TwoDSpec.ap_extract">
-<code class="sig-name descname">ap_extract</code><span class="sig-paren">(</span><em class="sig-param">apwidth=7</em>, <em class="sig-param">skysep=3</em>, <em class="sig-param">skywidth=5</em>, <em class="sig-param">skydeg=1</em>, <em class="sig-param">optimal=True</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec.ap_extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec.ap_extract" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extract the spectra using the traces, support aperture or optimal
-extraction. The sky background is fitted in one dimention only. The
-uncertainty at each pixel is also computed, but it is only meaningful
-if correct gain, read noise and are provided.</p>
-<p>apwidth: int, optional
-skysep: int, optional</p>
-<blockquote>
-<div><p>The separation in pixels from the aperture to the sky window.
-(Default is 3)</p>
-</div></blockquote>
-<dl class="simple">
-<dt>skywidth: int, optional</dt><dd><p>The width in pixels of the sky windows on either side of the
-aperture. (Default is 7)</p>
-</dd>
-<dt>skydeg: int, optional</dt><dd><p>The polynomial order to fit between the sky windows.
-(Default is 0, i.e. constant flat sky level)</p>
-</dd>
-<dt>optimal: tuple, optional</dt><dd><p>Set optimal extraction. (Default is True)</p>
-</dd>
-<dt>silence: tuple, optional</dt><dd><p>Set to disable warning/error messages. (Default is False)</p>
-</dd>
-<dt>display: tuple, optional</dt><dd><p>Set to True to display disgnostic plot.</p>
-</dd>
-<dt>renderer: string, optional</dt><dd><p>plotly renderer options.</p>
-</dd>
-<dt>jsonstring: tuple, optional</dt><dd><p>set to True to return json string that can be rendered by Plotly
-in any support language.</p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>onedspec: 1-d array</dt><dd><p>The summed adu at each column about the trace. Note: is not
-sky subtracted!</p>
-</dd>
-<dt>skyadu: 1-d array</dt><dd><p>The integrated sky values along each column, suitable for
-subtracting from the output of ap_extract</p>
-</dd>
-<dt>aduerr: 1-d array</dt><dd><p>the uncertainties of the adu values</p>
-</dd>
-</dl>
+<dt id="aspired.aspired.TwoDSpec._set_default_exptime_keyword">
+<code class="sig-name descname">_set_default_exptime_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._set_default_exptime_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._set_default_exptime_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the default exposure time keyword list.</p>
 </dd></dl>
 
 <dl class="method">
-<dt id="aspired.aspired.TwoDSpec.ap_trace">
-<code class="sig-name descname">ap_trace</code><span class="sig-paren">(</span><em class="sig-param">nspec=1</em>, <em class="sig-param">nwindow=25</em>, <em class="sig-param">spec_sep=5</em>, <em class="sig-param">resample_factor=10</em>, <em class="sig-param">rescale=False</em>, <em class="sig-param">scaling_min=0.975</em>, <em class="sig-param">scaling_max=1.025</em>, <em class="sig-param">scaling_step=0.005</em>, <em class="sig-param">p_bg=5</em>, <em class="sig-param">tol=3</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec.ap_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec.ap_trace" title="Permalink to this definition">¶</a></dt>
-<dd><blockquote>
-<div><blockquote>
-<div><p>trace: 1-d numpy array (N)</p>
-</div></blockquote>
-<p>The spatial positions (Y axis) corresponding to the center of the
-trace for every wavelength (X axis), as returned from ap_trace</p>
-</div></blockquote>
+<dt id="aspired.aspired.TwoDSpec._set_default_gain_keyword">
+<code class="sig-name descname">_set_default_gain_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._set_default_gain_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._set_default_gain_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the default gain keyword list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec._set_default_rn_keyword">
+<code class="sig-name descname">_set_default_rn_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._set_default_rn_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._set_default_rn_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the default read noise keyword list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec._set_default_seeing_keyword">
+<code class="sig-name descname">_set_default_seeing_keyword</code><span class="sig-paren">(</span><em class="sig-param">keyword_list</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec._set_default_seeing_keyword"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec._set_default_seeing_keyword" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change the default seeing keyword list.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec.ap_extract">
+<code class="sig-name descname">ap_extract</code><span class="sig-paren">(</span><em class="sig-param">apwidth=7</em>, <em class="sig-param">skysep=3</em>, <em class="sig-param">skywidth=5</em>, <em class="sig-param">skydeg=1</em>, <em class="sig-param">optimal=True</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec.ap_extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec.ap_extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extract the spectra using the traces, support tophat or optimal
+extraction. The sky background is fitted in one dimention only. The
+uncertainty at each pixel is also computed, but the values are only
+meaningful if correct gain and read noise are provided.</p>
 <dl class="simple">
-<dt>trace_sigma: float, or 1-d array (1 or N)</dt><dd><dl class="simple">
 <dt>Tophat extraction: Float is accepted but will be rounded to an int,</dt><dd><p>which gives the constant aperture size on either
 side of the trace to extract.</p>
 </dd>
@@ -239,74 +238,152 @@ will be used to construct the gaussian weight
 function along the entire spectrum.</p>
 </dd>
 </dl>
+<p>Nothing is returned unless jsonstring of the plotly graph is set to be
+returned. The adu, skyadu and aduerr are stored as properties of the
+TwoDSpec object.</p>
+<dl class="simple">
+<dt>adu: 1-d array</dt><dd><p>The summed adu at each column about the trace. Note: is not
+sky subtracted!</p>
+</dd>
+<dt>skyadu: 1-d array</dt><dd><p>The integrated sky values along each column, suitable for
+subtracting from the output of ap_extract</p>
+</dd>
+<dt>aduerr: 1-d array</dt><dd><p>the uncertainties of the adu values</p>
 </dd>
 </dl>
-<p>nspec: int, optional</p>
-<p>nwindow: int, optional</p>
-<p>spec_sep: int, optional</p>
-<p>resample_factor: int, optional</p>
-<p>rescale: tuple, optional</p>
-<p>scaling_min: float, optional</p>
-<p>scaling_max: float, optional</p>
-<p>scaling_step: float, optional</p>
-<p>p_bg: float, optional</p>
-<p>tol: float, optional</p>
 <dl class="simple">
-<dt>display: tuple, optional</dt><dd><p>Set to True to display disgnostic plot.</p>
+<dt>apwidth: int</dt><dd><p>The size of the aperature (fixed value for tophat extraction) or
+the sigma of the Gaussian (for the first iteration of optimal
+extraction).</p>
 </dd>
-<dt>renderer: string, optional</dt><dd><p>plotly renderer options.</p>
+<dt>skysep: int</dt><dd><p>The separation in pixels from the aperture to the sky window.
+(Default is 3)</p>
 </dd>
-<dt>jsonstring: tuple, optional</dt><dd><p>set to True to return json string that can be rendered by Plotly
+<dt>skywidth: int</dt><dd><p>The width in pixels of the sky windows on either side of the
+aperture. (Default is 7)</p>
+</dd>
+<dt>skydeg: int</dt><dd><p>The polynomial order to fit between the sky windows.
+(Default is 0, i.e. constant flat sky level)</p>
+</dd>
+<dt>optimal: tuple</dt><dd><p>Set optimal extraction. (Default is True)</p>
+</dd>
+<dt>silence: tuple</dt><dd><p>Set to disable warning/error messages. (Default is False)</p>
+</dd>
+<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
 in any support language.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="method">
-<dt id="aspired.aspired.TwoDSpec.ap_trace_quick">
-<code class="sig-name descname">ap_trace_quick</code><span class="sig-paren">(</span><em class="sig-param">nspec=1</em>, <em class="sig-param">nsteps=20</em>, <em class="sig-param">recenter=False</em>, <em class="sig-param">prevtrace=(0</em>, <em class="sig-param">)</em>, <em class="sig-param">fittype='spline'</em>, <em class="sig-param">order=3</em>, <em class="sig-param">bigbox=8</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec.ap_trace_quick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec.ap_trace_quick" title="Permalink to this definition">¶</a></dt>
-<dd><p>Trace the spectrum aperture in an image. It only works for bright
-spectra with good wavelength coverage.</p>
-<p>It works by chopping image up in bins along the wavelength direction,
-fits a Gaussian for each bin to determine the spatial center of the
-trace. Finally, draws a cubic spline through the bins.</p>
+<dt id="aspired.aspired.TwoDSpec.ap_trace">
+<code class="sig-name descname">ap_trace</code><span class="sig-paren">(</span><em class="sig-param">nspec=1</em>, <em class="sig-param">nwindow=25</em>, <em class="sig-param">spec_sep=5</em>, <em class="sig-param">resample_factor=10</em>, <em class="sig-param">rescale=False</em>, <em class="sig-param">scaling_min=0.975</em>, <em class="sig-param">scaling_max=1.025</em>, <em class="sig-param">scaling_step=0.005</em>, <em class="sig-param">percentile=5</em>, <em class="sig-param">tol=3</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec.ap_trace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec.ap_trace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aperture tracing by first using cross-correlation then the peaks are
+fitting with a polynomial with an order of floor(nwindow, 10) with a
+minimum order of 1. Nothing is returned unless jsonstring of the
+plotly graph is set to be returned.</p>
+<p>Each spectral slice is convolved with the adjacent one in the spectral
+direction. Basic tests show that the geometrical distortion from one
+end to the other in the spectral direction is small. With LT/SPRAT, the
+linear distortion is less than 0.5%, thus, even provided as an option,
+the rescale option is set to False by default. Given how unlikely a
+geometrical distortion correction is needed, higher order correction
+options are not provided.</p>
+<p>A rough estimation on the background level is done by taking the
+n-th percentile percentile of the slice, a rough guess can improve the
+cross-correlation process significantly due to low dynamic range in a
+typical spectral image. The removing of the “background” can massively
+improve the contrast between the peaks and the relative background,
+hence the correlation method is more likely to yield a true positive.</p>
+<p>The trace(s), i.e. the spatial positions of the spectra (Y-axis),
+found will be stored as the properties of the TwoDSpec object as a
+1D numpy array, of length N, which is the size of the spectrum after
+applying the spec_mask. The line spread function is stored in
+trace_sigma, by fitting a gaussian on the shift-corrected stack of the
+spectral slices. Given the scaling was found to be small, reporting
+a single value of the averaged gaussian sigma is sufficient as the
+first guess to be used by the aperture extraction function.</p>
 <dl class="simple">
-<dt>nspec: int, optional</dt><dd><p>Number of spectra to be extracted. It does not guarantee returning
-the same number of spectra if fewer can be detected. (Default is 1)</p>
+<dt>nspec: int</dt><dd><p>Number of spectra to be extracted.</p>
 </dd>
-<dt>nsteps: int, optional</dt><dd><p>Keyword, number of bins in X direction to chop image into. Use
-fewer bins if ap_trace is having difficulty, such as with faint
-targets (default is 20, minimum is 4)</p>
+<dt>nwindow: int</dt><dd><p>Number of spectral slices to be produced for cross-correlation.</p>
 </dd>
-<dt>recenter: bool, optional</dt><dd><p>Set to True to use previous trace, allow small shift in position
-along the spatial direction. Not doing anything if prevtrace is not
-supplied. (Default is False)</p>
+<dt>spec_sep: int</dt><dd><p>Minimum separation between sky lines.</p>
 </dd>
-<dt>prevtrace: 1-d numpy array, optional</dt><dd><p>Provide first guess or refitting the center with different parameters.</p>
+<dt>resample_factor: int</dt><dd><p>Number of times the collapsed 1D slices in the spatial directions
+are to be upsampled.</p>
 </dd>
-<dt>fittype: string, optional</dt><dd><p>Set to ‘spline’ or ‘polynomial’, using
-scipy.interpolate.UnivariateSpline and numpy.polyfit</p>
+<dt>rescale: tuple</dt><dd><p>Fit for the linear scaling factor between adjacent slices.</p>
 </dd>
-<dt>order: string, optional</dt><dd><p>Degree of the spline or polynomial. Spline must be &lt;= 5.
-(default is k=3)</p>
+<dt>scaling_min: float</dt><dd><p>Minimum scaling factor to be fitted.</p>
 </dd>
-<dt>bigbox: float, optional</dt><dd><p>The number of sigma away from the main aperture to allow to trace</p>
+<dt>scaling_max: float</dt><dd><p>Maximum scaling factor to be fitted.</p>
 </dd>
-<dt>silence: tuple, optional</dt><dd><p>Set to disable warning/error messages. (Default is False)</p>
+<dt>scaling_step: float</dt><dd><p>Steps of the scaling factor.</p>
 </dd>
-<dt>display: tuple, optional</dt><dd><p>Set to True to display disgnostic plot.</p>
+<dt>percentile: float</dt><dd><p>The percentile of the flux to be used as the estimate of the
+background sky level to the first order. [ADU]</p>
 </dd>
-<dt>renderer: string, optional</dt><dd><p>plotly renderer options.</p>
+<dt>tol: float</dt><dd><p>Maximum allowed shift between neighbouring slices, this value is
+referring to native pixel size without the application of the
+resampling or rescaling. [pix]</p>
 </dd>
-<dt>jsonstring: tuple, optional</dt><dd><p>set to True to return json string that can be rendered by Plotly
+<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
 in any support language.</p>
 </dd>
 </dl>
+<p>json string if jsonstring is True, otherwise only an image is displayed</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="aspired.aspired.TwoDSpec.ap_trace_quick">
+<code class="sig-name descname">ap_trace_quick</code><span class="sig-paren">(</span><em class="sig-param">nspec=1</em>, <em class="sig-param">nwindow=25</em>, <em class="sig-param">recenter=False</em>, <em class="sig-param">prevtrace=(0</em>, <em class="sig-param">)</em>, <em class="sig-param">fittype='spline'</em>, <em class="sig-param">order=3</em>, <em class="sig-param">bigbox=8</em>, <em class="sig-param">display=False</em>, <em class="sig-param">renderer='default'</em>, <em class="sig-param">jsonstring=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aspired/aspired.html#TwoDSpec.ap_trace_quick"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aspired.aspired.TwoDSpec.ap_trace_quick" title="Permalink to this definition">¶</a></dt>
+<dd><p>This only works for bright spectra with good wavelength coverage.</p>
+<p>It works by splitting the image in nwindow bins in the wavelength
+direction, then a Gaussian is fitted for each bin to determine the
+spatial position of the trace. Finally, a cubic spline is computed
+for these spatial positions as a function of the spectral position.</p>
+<p>Nothing is returned unless jsonstring of the plotly graph is set to be
+returned. The trace and trace_sigma are stored as properties of the
+TwoDSpec object.</p>
 <dl class="simple">
-<dt>my: array (N, nspec)</dt><dd><p>The spatial (Y) positions of the trace, interpolated over the
-entire wavelength (X) axis</p>
+<dt>nspec: int</dt><dd><p>Number of spectra to be extracted. It does not guarantee returning
+the same number of spectra if fewer can be detected. (Default is 1)</p>
 </dd>
-<dt>y_sigma: array (N, nspec)</dt><dd><p>The sigma measured at the nsteps.</p>
+<dt>nwindow: int</dt><dd><p>Keyword, number of bins in X direction to chop image into. Use
+fewer bins if ap_trace is having difficulty, such as with faint
+targets (default is 20, minimum is 4)</p>
+</dd>
+<dt>recenter: bool</dt><dd><p>Set to True to use previous trace, allow small shift in position
+along the spatial direction. Not doing anything if prevtrace is not
+supplied. (Default is False)</p>
+</dd>
+<dt>prevtrace: 1-d numpy array</dt><dd><p>Provide first guess or refitting the center with different parameters.</p>
+</dd>
+<dt>fittype: string</dt><dd><p>Set to ‘spline’ or ‘polynomial’, using
+scipy.interpolate.UnivariateSpline and numpy.polyfit</p>
+</dd>
+<dt>order: string</dt><dd><p>Degree of the spline or polynomial. Spline must be &lt;= 5.
+(default is k=3)</p>
+</dd>
+<dt>bigbox: float</dt><dd><p>The number of sigma away from the main aperture to allow to trace</p>
+</dd>
+<dt>silence: tuple</dt><dd><p>Set to disable warning/error messages. (Default is False)</p>
+</dd>
+<dt>display: tuple</dt><dd><p>Set to True to display disgnostic plot.</p>
+</dd>
+<dt>renderer: string</dt><dd><p>plotly renderer options.</p>
+</dd>
+<dt>jsonstring: tuple</dt><dd><p>set to True to return json string that can be rendered by Plotly
+in any support language.</p>
 </dd>
 </dl>
 </dd></dl>
