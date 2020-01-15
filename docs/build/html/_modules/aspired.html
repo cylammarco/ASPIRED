@@ -120,14 +120,14 @@
 <span class="sd">        ----------</span>
 <span class="sd">        filelistpath: string</span>
 <span class="sd">            file location, does not support URL</span>
-<span class="sd">        ftype: string, optional</span>
+<span class="sd">        ftype: string</span>
 <span class="sd">            one of csv, tsv and ascii. Default is csv.</span>
 <span class="sd">        Sxais: int, 0 or 1</span>
 <span class="sd">            OVERRIDE the SAXIS value in the FITS header, or to provide the</span>
 <span class="sd">            SAXIS if it does not exist</span>
 <span class="sd">        saxis_keyword: string</span>
 <span class="sd">            HDU keyword for the spectral axis direction</span>
-<span class="sd">        combinetype_light: string, optional</span>
+<span class="sd">        combinetype_light: string</span>
 <span class="sd">            average of median for CCDproc.Combiner.average_combine() and</span>
 <span class="sd">            CCDproc.Combiner.median_combine(). All the frame types follow</span>
 <span class="sd">            the same combinetype.</span>
@@ -143,7 +143,7 @@
 <span class="sd">            one if the keyword does not exist</span>
 <span class="sd">        exptime_light_keyword: string</span>
 <span class="sd">            HDU keyword for the exposure time of the light frame</span>
-<span class="sd">        combinetype_dark: string, optional</span>
+<span class="sd">        combinetype_dark: string</span>
 <span class="sd">            average of median for CCDproc.Combiner.average_combine() and</span>
 <span class="sd">            CCDproc.Combiner.median_combine(). All the frame types follow</span>
 <span class="sd">            the same combinetype.</span>
@@ -159,7 +159,7 @@
 <span class="sd">            one if the keyword does not exist</span>
 <span class="sd">        exptime_dark_keyword: string</span>
 <span class="sd">            HDU keyword for the exposure time of the dark frame</span>
-<span class="sd">        combinetype_bias: string, optional</span>
+<span class="sd">        combinetype_bias: string</span>
 <span class="sd">            average of median for CCDproc.Combiner.average_combine() and</span>
 <span class="sd">            CCDproc.Combiner.median_combine(). All the frame types follow</span>
 <span class="sd">            the same combinetype.</span>
@@ -170,7 +170,7 @@
 <span class="sd">            lower threshold of the sigma clipping</span>
 <span class="sd">        clip_high_bias: float</span>
 <span class="sd">            upper threshold of the sigma clipping</span>
-<span class="sd">        combinetype_flat: string, optional</span>
+<span class="sd">        combinetype_flat: string</span>
 <span class="sd">            average of median for CCDproc.Combiner.average_combine() and</span>
 <span class="sd">            CCDproc.Combiner.median_combine(). All the frame types follow</span>
 <span class="sd">            the same combinetype.</span>
@@ -181,6 +181,8 @@
 <span class="sd">            lower threshold of the sigma clipping</span>
 <span class="sd">        clip_high_flat: float</span>
 <span class="sd">            upper threshold of the sigma clipping</span>
+<span class="sd">        silence: tuple</span>
+<span class="sd">            set to suppress all messages</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">filelistpath</span> <span class="o">=</span> <span class="n">filelistpath</span>
@@ -290,8 +292,8 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">light</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">saxis_keyword</span><span class="p">])</span>
             <span class="k">except</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">silence</span><span class="p">:</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Saxis keyword &quot;&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis_keyword</span> <span class="o">+</span>
-                                  <span class="s1">&#39;&quot; is not in the header. Saxis is set to 1.&#39;</span><span class="p">)</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;saxis keyword &quot;&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis_keyword</span> <span class="o">+</span>
+                                  <span class="s1">&#39;&quot; is not in the header. saxis is set to 1.&#39;</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="o">=</span> <span class="n">saxis</span>
@@ -376,17 +378,17 @@
         <span class="k">del</span> <span class="n">arc_combiner</span>
 
 <div class="viewcode-block" id="ImageReduction._check_files"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.ImageReduction._check_files">[docs]</a>    <span class="k">def</span> <span class="nf">_check_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Go through the filelist provided and check if all files exist.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
         <span class="k">for</span> <span class="n">filepath</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">impath</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
                 <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;File &#39;</span> <span class="o">+</span> <span class="n">filepath</span> <span class="o">+</span> <span class="s1">&#39; does not exist.&#39;</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ImageReduction._bias_subtract"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.ImageReduction._bias_subtract">[docs]</a>    <span class="k">def</span> <span class="nf">_bias_subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                       <span class="n">combinetype</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span>
-                       <span class="n">sigma_clipping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                       <span class="n">clip_low</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                       <span class="n">clip_high</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<div class="viewcode-block" id="ImageReduction._bias_subtract"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.ImageReduction._bias_subtract">[docs]</a>    <span class="k">def</span> <span class="nf">_bias_subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Perform bias subtraction if bias frames are available.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -411,10 +413,8 @@
 
         <span class="c1"># Image combine by median or average</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinetype_bias</span> <span class="o">==</span> <span class="s1">&#39;median&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">biascombinetype</span> <span class="o">=</span> <span class="n">combinetype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias_master</span> <span class="o">=</span> <span class="n">bias_combiner</span><span class="o">.</span><span class="n">median_combine</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinetype_bias</span> <span class="o">==</span> <span class="s1">&#39;average&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">biascombinetype</span> <span class="o">=</span> <span class="n">combinetype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias_master</span> <span class="o">=</span> <span class="n">bias_combiner</span><span class="o">.</span><span class="n">average_combine</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bias_filename</span> <span class="o">=</span> <span class="p">[]</span>
@@ -427,11 +427,7 @@
         <span class="k">del</span> <span class="n">bias_CCDData</span>
         <span class="k">del</span> <span class="n">bias_combiner</span></div>
 
-<div class="viewcode-block" id="ImageReduction._dark_subtract"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.ImageReduction._dark_subtract">[docs]</a>    <span class="k">def</span> <span class="nf">_dark_subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                       <span class="n">combinetype</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">,</span>
-                       <span class="n">sigma_clipping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                       <span class="n">clip_low</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                       <span class="n">clip_high</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<div class="viewcode-block" id="ImageReduction._dark_subtract"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.ImageReduction._dark_subtract">[docs]</a>    <span class="k">def</span> <span class="nf">_dark_subtract</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Perform dark subtraction if dark frames are available</span>
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -464,11 +460,9 @@
                                          <span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">median</span><span class="p">)</span>
         <span class="c1"># Image combine by median or average</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinetype_dark</span> <span class="o">==</span> <span class="s1">&#39;median&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">darkcombinetype</span> <span class="o">=</span> <span class="n">combinetype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dark_master</span> <span class="o">=</span> <span class="n">dark_combiner</span><span class="o">.</span><span class="n">median_combine</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">exptime_dark</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">dark_time</span><span class="p">)</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinetype_dark</span> <span class="o">==</span> <span class="s1">&#39;average&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">darkcombinetype</span> <span class="o">=</span> <span class="n">combinetype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dark_master</span> <span class="o">=</span> <span class="n">dark_combiner</span><span class="o">.</span><span class="n">average_combine</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">exptime_dark</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dark_time</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -518,10 +512,8 @@
 
         <span class="c1"># Image combine by median or average</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinetype_flat</span> <span class="o">==</span> <span class="s1">&#39;median&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flatcombinetype</span> <span class="o">=</span> <span class="n">combinetype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flat_master</span> <span class="o">=</span> <span class="n">flat_combiner</span><span class="o">.</span><span class="n">median_combine</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">combinetype_flat</span> <span class="o">==</span> <span class="s1">&#39;average&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flatcombinetype</span> <span class="o">=</span> <span class="n">combinetype</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flat_master</span> <span class="o">=</span> <span class="n">flat_combiner</span><span class="o">.</span><span class="n">average_combine</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">flat_filename</span> <span class="o">=</span> <span class="p">[]</span>
@@ -563,7 +555,7 @@
                 <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;No flat frames. Field-flattening is not &#39;</span>
                               <span class="s1">&#39;performed.&#39;</span><span class="p">)</span>
 
-        <span class="c1"># rotate the frame by 90 degrees anti-clockwise if Saxis is 0</span>
+        <span class="c1"># rotate the frame by 90 degrees anti-clockwise if saxis is 0</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">light_master</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">light_master</span><span class="p">)</span>
 
@@ -580,7 +572,7 @@
 <span class="sd">            Disk location to be written to. Default is at where the Python</span>
 <span class="sd">            process/subprocess is execuated.</span>
 <span class="sd">        overwrite: tuple</span>
-<span class="sd">            Default is False. </span>
+<span class="sd">            Default is False.</span>
 
 <span class="sd">        &#39;&#39;&#39;</span>
 
@@ -620,30 +612,30 @@
                                   <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">filelistpath</span><span class="p">,</span>
                                   <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;File location of the frames used.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;LCOMTYPE&#39;</span><span class="p">,</span>
+            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;COMBTYPE&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">combinetype_light</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;Type of image combine of the light frames.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;LSIGCLIP&#39;</span><span class="p">,</span>
+            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;SIGCLIP&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_clipping_light</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;True if the light frames are sigma clipped.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;LCLIPLOW&#39;</span><span class="p">,</span>
+            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;CLIPLOW&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_low_light</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;Lower threshold of sigma clipping of the light frames.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;LCLIPHIG&#39;</span><span class="p">,</span>
+            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;CLIPHIG&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clip_high_light</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;Higher threshold of sigma clipping of the light frames.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;LXPOSURE&#39;</span><span class="p">,</span>
+            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;XPOSURE&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exptime_light</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;Average exposure time of the light frames.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;LKEYWORD&#39;</span><span class="p">,</span>
+            <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;KEYWORD&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exptime_light_keyword</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;Automatically identified exposure time keyword of the &#39;</span>
-                    <span class="s1">&#39;light frames.&#39;</span><span class="p">)</span>
+            <span class="s1">&#39;light frames.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
             <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;DCOMTYPE&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">combinetype_dark</span><span class="p">,</span>
@@ -668,7 +660,7 @@
             <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;DKEYWORD&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exptime_dark_keyword</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;Automatically identified exposure time keyword of the &#39;</span> <span class="o">+</span>
-                    <span class="s1">&#39;dark frames.&#39;</span><span class="p">)</span>
+            <span class="s1">&#39;dark frames.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fits_data</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
             <span class="n">keyword</span><span class="o">=</span><span class="s1">&#39;BCOMTYPE&#39;</span><span class="p">,</span>
             <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">combinetype_bias</span><span class="p">,</span>
@@ -720,8 +712,8 @@
 <span class="sd">            set to True to return json string that can be rendered by Plot.ly</span>
 <span class="sd">            in any support language</span>
 
-<span class="sd">        Return</span>
-<span class="sd">        ------</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
 <span class="sd">        json string if jsonstring is True, otherwise only an image is displayed</span>
 
 <span class="sd">        &#39;&#39;&#39;</span>
@@ -754,12 +746,13 @@
 
 <div class="viewcode-block" id="TwoDSpec"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec">[docs]</a><span class="k">class</span> <span class="nc">TwoDSpec</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">img</span><span class="p">,</span>
-                 <span class="n">Saxis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                 <span class="n">data</span><span class="p">,</span>
+                 <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">saxis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                  <span class="n">spatial_mask</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">),</span>
                  <span class="n">spec_mask</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="p">),</span>
                  <span class="n">flip</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                 <span class="n">cr</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">cr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">cr_sigma</span><span class="o">=</span><span class="mf">5.</span><span class="p">,</span>
                  <span class="n">rn</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">gain</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -767,6 +760,11 @@
                  <span class="n">exptime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">silence</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This is a class for processing a 2D spectral image, the read noise,</span>
+<span class="sd">        detector gain, seeing and exposure time will be automatically extracted</span>
+<span class="sd">        from the FITS header if it conforms with the IAUFWG FITS standard.</span>
+
+
 <span class="sd">        Currently, there is no automated way to decide if a flip is needed.</span>
 
 <span class="sd">        The supplied file should contain 2 or 3 columns with the following</span>
@@ -778,7 +776,7 @@
 
 <span class="sd">        If the 2D spectrum is</span>
 <span class="sd">        +--------+--------+-------+-------+</span>
-<span class="sd">        |  blue  |   red  | Saxis |  flip |</span>
+<span class="sd">        |  blue  |   red  | saxis |  flip |</span>
 <span class="sd">        +--------+--------+-------+-------+</span>
 <span class="sd">        |  left  |  right |   1   | False |</span>
 <span class="sd">        |  right |  left  |   1   |  True |</span>
@@ -794,50 +792,65 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        img: 2D numpy array (M x N)</span>
-<span class="sd">            2D spectral image</span>
-<span class="sd">        Saxis: int, optional</span>
+<span class="sd">        data: 2D numpy array (M x N) OR astropy.io.fits object</span>
+<span class="sd">            2D spectral image in either format</span>
+<span class="sd">        header: FITS header</span>
+<span class="sd">            THIS WILL OVERRIDE the header from the astropy.io.fits object</span>
+<span class="sd">        saxis: int</span>
 <span class="sd">            Spectral direction, 0 for vertical, 1 for horizontal.</span>
 <span class="sd">            (Default is 1)</span>
-<span class="sd">        spatial_mask: 1D numpy array (N), optional</span>
+<span class="sd">        spatial_mask: 1D numpy array (N)</span>
 <span class="sd">            Mask in the spatial direction, can be the indices of the pixels</span>
 <span class="sd">            to be included (size &lt;N) or a 1D numpy array of True/False (size N)</span>
 <span class="sd">            (Default is (1,) i.e. keep everything)</span>
-<span class="sd">        spec_mask: 1D numpy array (M), optional</span>
+<span class="sd">        spec_mask: 1D numpy array (M)</span>
 <span class="sd">            Mask in the spectral direction, can be the indices of the pixels</span>
 <span class="sd">            to be included (size &lt;M) or a 1D numpy array of True/False (size M)</span>
 <span class="sd">            (Default is (1,) i.e. keep everything)</span>
-<span class="sd">        flip: tuple, optional</span>
+<span class="sd">        flip: tuple</span>
 <span class="sd">            If the frame has to be left-right flipped, set to True.</span>
 <span class="sd">            (Deafult is False)</span>
-<span class="sd">        cr: tuple, optional</span>
+<span class="sd">        cr: tuple</span>
 <span class="sd">            Set to True to apply cosmic ray rejection by sigma clipping with</span>
 <span class="sd">            astroscrappy if available, otherwise a 2D median filter of size 5</span>
 <span class="sd">            would be used. (default is True)</span>
-<span class="sd">        cr_sigma: float, optional</span>
+<span class="sd">        cr_sigma: float</span>
 <span class="sd">            Cosmic ray sigma clipping limit (Deafult is 5.0)</span>
-<span class="sd">        rn: float, optional</span>
+<span class="sd">        rn: float</span>
 <span class="sd">            Readnoise of the detector, not important if noise estimation is</span>
 <span class="sd">            not needed.</span>
 <span class="sd">            (Deafult is None, which will be replaced with 1.0)</span>
-<span class="sd">        gain: float, optional</span>
+<span class="sd">        gain: float</span>
 <span class="sd">            Gain of the detector, not important if noise estimation is</span>
 <span class="sd">            not needed.</span>
 <span class="sd">            (Deafult is None, which will be replaced with 1.0)</span>
-<span class="sd">        seeing: float, optional</span>
+<span class="sd">        seeing: float</span>
 <span class="sd">            Seeing in unit of arcsec, use as the first guess of the line</span>
 <span class="sd">            spread function of the spectra.</span>
 <span class="sd">            (Deafult is None, which will be replaced with 1.0)</span>
-<span class="sd">        exptime: float, optional</span>
+<span class="sd">        exptime: float</span>
 <span class="sd">            Esposure time for the observation, not important if absolute flux</span>
 <span class="sd">            calibration is not needed.</span>
 <span class="sd">            (Deafult is None, which will be replaced with 1.0)</span>
-<span class="sd">        silence: tuple, optional</span>
+<span class="sd">        silence: tuple</span>
 <span class="sd">            Set to True to suppress all verbose output.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span> <span class="o">=</span> <span class="n">Saxis</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># If data provided is an numpy array</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">header</span>
+        <span class="c1"># If data is not an numpy array, it has to be an</span>
+        <span class="c1">#fits.hdu.image.PrimaryHDU object</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">hdu</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">):</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">header</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Please provide a numpy array or an&#39;</span> <span class="o">+</span>
+                      <span class="s1">&#39;astropy.io.fits.hdu.image.PrimaryHDU object.&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="o">=</span> <span class="n">saxis</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">Waxis</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">Waxis</span> <span class="o">=</span> <span class="mi">1</span>
@@ -845,25 +858,137 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">spec_mask</span> <span class="o">=</span> <span class="n">spec_mask</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flip</span> <span class="o">=</span> <span class="n">flip</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cr_sigma</span> <span class="o">=</span> <span class="n">cr_sigma</span>
-        <span class="k">if</span> <span class="n">rn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mf">1.</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rn</span> <span class="o">=</span> <span class="n">rn</span>
-        <span class="k">if</span> <span class="n">gain</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="mf">1.</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="n">gain</span>
-        <span class="k">if</span> <span class="n">seeing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">seeing</span> <span class="o">=</span> <span class="mf">1.</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">seeing</span> <span class="o">=</span> <span class="n">seeing</span>
-        <span class="k">if</span> <span class="n">exptime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exptime</span> <span class="o">=</span> <span class="mf">1.</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exptime</span> <span class="o">=</span> <span class="n">exptime</span>
 
-        
-        
+        <span class="c1"># Default values if not supplied or cannot be automatically identified</span>
+        <span class="c1"># from the header</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rn</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeing</span> <span class="o">=</span> <span class="mf">1.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exptime</span> <span class="o">=</span> <span class="mf">1.</span>
+
+        <span class="c1"># Default keywords to be searched in the order in the list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rn_keyword</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;RDNOISE&#39;</span><span class="p">,</span> <span class="s1">&#39;RNOISE&#39;</span><span class="p">,</span> <span class="s1">&#39;RN&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gain_keyword</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GAIN&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeing_keyword</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SEEING&#39;</span><span class="p">,</span> <span class="s1">&#39;L1SEEING&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exptime_keyword</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;XPOSURE&#39;</span><span class="p">,</span> <span class="s1">&#39;EXPTIME&#39;</span><span class="p">,</span> <span class="s1">&#39;EXPOSED&#39;</span><span class="p">,</span> <span class="s1">&#39;TELAPSED&#39;</span><span class="p">,</span> <span class="s1">&#39;ELAPSED&#39;</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Get the Read Noise</span>
+        <span class="k">if</span> <span class="n">rn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rn</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="c1"># use the supplied keyword</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rn</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">rn</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">rn</span><span class="p">):</span>
+                <span class="c1"># use the given rn value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">rn</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rn</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;rn has to be None, a numeric value or the &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;FITS header keyword, &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">rn</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; is &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;given. It is set to 0.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if None is given and header is provided, check if the read noise</span>
+            <span class="c1"># keyword exists in the default list.</span>
+            <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">rn_keyword_matched</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rn_keyword</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">rn_keyword_matched</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">rn</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">rn_keyword</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                        <span class="n">rn_keyword_matched</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Read Noise value cannot be identified. &#39;</span> <span class="o">+</span>
+                                  <span class="s1">&#39;It is set to 0.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Header is not provide. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;Read Noise value is not provided. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;It is set to 0.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get the Gain</span>
+        <span class="k">if</span> <span class="n">gain</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">gain</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="c1"># use the supplied keyword</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">gain</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">gain</span><span class="p">):</span>
+                <span class="c1"># use the given gain value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">gain</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Gain has to be None, a numeric value or the &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;FITS header keyword, &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">gain</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; is &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;given. It is set to 1.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if None is given and header is provided, check if the read noise</span>
+            <span class="c1"># keyword exists in the default list.</span>
+            <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">gain_keyword_matched</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gain_keyword</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">gain_keyword_matched</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">gain</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">gain_keyword</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                        <span class="n">gain_keyword_matched</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Gain value cannot be identified. &#39;</span> <span class="o">+</span>
+                                  <span class="s1">&#39;It is set to 1.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Header is not provide. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;Gain value is not provided. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;It is set to 1.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get the Seeing</span>
+        <span class="k">if</span> <span class="n">seeing</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seeing</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="c1"># use the supplied keyword</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seeing</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">seeing</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">gain</span><span class="p">):</span>
+                <span class="c1"># use the given gain value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seeing</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">seeing</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s1">&#39;Seeing has to be None, a numeric value or the &#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;FITS header keyword, &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">seeing</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; is &#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;given. It is set to 1.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if None is given and header is provided, check if the read noise</span>
+            <span class="c1"># keyword exists in the default list.</span>
+            <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">seeing_keyword_matched</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seeing_keyword</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">seeing_keyword_matched</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seeing</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">seeing_keyword</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                        <span class="n">seeing_keyword_matched</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Seeing value cannot be identified. &#39;</span> <span class="o">+</span>
+                                  <span class="s1">&#39;It is set to 1.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Header is not provide. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;Seeing value is not provided. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;It is set to 1.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Get the Exposure Time</span>
+        <span class="k">if</span> <span class="n">exptime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exptime</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="c1"># use the supplied keyword</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exptime</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="n">exptime</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">isfinite</span><span class="p">(</span><span class="n">gain</span><span class="p">):</span>
+                <span class="c1"># use the given gain value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exptime</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">exptime</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s1">&#39;Exposure Time has to be None, a numeric value or the &#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;FITS header keyword, &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">exptime</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; is &#39;</span> <span class="o">+</span>
+                    <span class="s1">&#39;given. It is set to 1.&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if None is given and header is provided, check if the read noise</span>
+            <span class="c1"># keyword exists in the default list.</span>
+            <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">exptime_keyword_matched</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exptime_keyword</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">exptime_keyword_matched</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">exptime</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">exptime_keyword</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                        <span class="n">exptime_keyword_matched</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]]]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="s1">&#39;Exposure Time value cannot be identified. &#39;</span> <span class="o">+</span>
+                        <span class="s1">&#39;It is set to 1.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;Header is not provide. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;Exposure Time value is not provided. &#39;</span> <span class="o">+</span>
+                              <span class="s1">&#39;It is set to 1.&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">silence</span> <span class="o">=</span> <span class="n">silence</span>
 
         <span class="c1"># cosmic ray rejection</span>
@@ -873,26 +998,28 @@
                                  <span class="n">readnoise</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rn</span><span class="p">,</span>
                                  <span class="n">gain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gain</span><span class="p">,</span>
                                  <span class="n">fsmode</span><span class="o">=</span><span class="s1">&#39;convolve&#39;</span><span class="p">,</span>
+                                 <span class="n">psfmodel</span><span class="o">=</span><span class="s1">&#39;gaussy&#39;</span><span class="p">,</span>
+                                 <span class="n">psfsize</span><span class="o">=</span><span class="mi">31</span><span class="p">,</span>
                                  <span class="n">psffwhm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seeing</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="c1"># the valid y-range of the chip (i.e. spatial direction)</span>
         <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_mask</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_mask</span><span class="p">]</span>
 
         <span class="c1"># the valid x-range of the chip (i.e. spectral direction)</span>
         <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">]</span>
 
         <span class="c1"># get the length in the spectral and spatial directions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">spec_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">img</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">Waxis</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">img</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span><span class="p">]</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">img</span><span class="p">)[</span><span class="bp">self</span><span class="o">.</span><span class="n">saxis</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">img</span> <span class="o">=</span> <span class="n">img</span>
@@ -903,6 +1030,38 @@
         <span class="c1"># set the 2D histogram z-limits</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">zmin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img</span><span class="p">),</span> <span class="mi">5</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">zmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanpercentile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img</span><span class="p">),</span> <span class="mi">95</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TwoDSpec._set_default_rn_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._set_default_rn_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_set_default_rn_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Change the default read noise keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rn_keyword</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._set_default_gain_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._set_default_gain_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_set_default_gain_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Change the default gain keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gain_keyword</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._set_default_seeing_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._set_default_seeing_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_set_default_seeing_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Change the default seeing keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeing_keyword</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._set_default_exptime_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._set_default_exptime_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_set_default_exptime_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Change the default exposure time keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exptime_keyword</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._append_rn_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._append_rn_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_append_rn_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Append to the existing read noise keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rn_keyword</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._append_gain_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._append_gain_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_append_gain_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Append to the existing gain keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gain_keyword</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._append_seeing_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._append_seeing_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_append_seeing_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Append to the existing seeing keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seeing_keyword</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TwoDSpec._append_exptime_keyword"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._append_exptime_keyword">[docs]</a>    <span class="k">def</span> <span class="nf">_append_exptime_keyword</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyword_list</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Append to the existing exptime keyword list.&#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exptime_keyword</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">keyword_list</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TwoDSpec._gaus"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._gaus">[docs]</a>    <span class="k">def</span> <span class="nf">_gaus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -924,7 +1083,6 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Array or float of same type as input (x).</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="n">a</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">sigma</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="n">b</span></div>
@@ -951,11 +1109,11 @@
 <span class="sd">        peaks_y :</span>
 <span class="sd">            Array or float of the pixel values of the detected peaks</span>
 <span class="sd">        heights_y :</span>
-<span class="sd">            Array or float of the integrated counts at the peaks </span>
-
+<span class="sd">            Array or float of the integrated counts at the peaks</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">ydata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec_size</span><span class="p">)</span>
-        <span class="n">ztot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span><span class="p">)</span>
+        <span class="n">ztot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">saxis</span><span class="p">)</span>
 
         <span class="c1"># get the height thershold</span>
         <span class="n">height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">ztot</span><span class="p">)</span> <span class="o">*</span> <span class="n">f_height</span>
@@ -975,7 +1133,7 @@
             <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">()</span>
 
             <span class="c1"># show the image on the left</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Saxis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">saxis</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span>
                     <span class="n">go</span><span class="o">.</span><span class="n">Heatmap</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">img</span><span class="p">),</span>
                                <span class="n">colorscale</span><span class="o">=</span><span class="s2">&quot;Viridis&quot;</span><span class="p">,</span>
@@ -1023,10 +1181,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">peak</span> <span class="o">=</span> <span class="n">peaks_y</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">peak_height</span> <span class="o">=</span> <span class="n">heights_y</span></div>
 
-<div class="viewcode-block" id="TwoDSpec._optimal_signal"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._optimal_signal">[docs]</a>    <span class="k">def</span> <span class="nf">_optimal_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">xslice</span><span class="p">,</span> <span class="n">sky</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">display</span><span class="p">,</span> <span class="n">renderer</span><span class="p">,</span>
-                        <span class="n">jsonstring</span><span class="p">):</span>
+<div class="viewcode-block" id="TwoDSpec._optimal_signal"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec._optimal_signal">[docs]</a>    <span class="k">def</span> <span class="nf">_optimal_signal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">xslice</span><span class="p">,</span> <span class="n">sky</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Iterate to get optimal signal, for internal use only</span>
+<span class="sd">        Iterate to get the optimal signal. Following the algorithm on</span>
+<span class="sd">        Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1040,21 +1198,13 @@
 <span class="sd">            The center of the Gaussian</span>
 <span class="sd">        sigma: float</span>
 <span class="sd">            The width of the Gaussian</span>
-<span class="sd">        display: tuple</span>
-<span class="sd">            Set to True to display disgnostic plot.</span>
-<span class="sd">        renderer: string</span>
-<span class="sd">            plotly renderer options.</span>
-<span class="sd">        jsonstring: tuple</span>
-<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
-<span class="sd">            in any support language.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        signal: float</span>
-<span class="sd">            The optimal signal. </span>
+<span class="sd">            The optimal signal.</span>
 <span class="sd">        noise: float</span>
 <span class="sd">            The noise associated with the optimal signal.</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># construct the Gaussian model</span>
@@ -1109,16 +1259,6 @@
         <span class="n">signal</span> <span class="o">=</span> <span class="n">signal1</span>
         <span class="n">noise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">variance1</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">display</span><span class="p">:</span>
-            <span class="n">fit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gaus</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="n">signal</span><span class="p">),</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">+</span> <span class="n">sky</span>
-            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="n">xslice</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="n">fit</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Pixel&#39;</span><span class="p">)</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Count&#39;</span><span class="p">)</span>
-            <span class="c1">#print(signal, variance)</span>
-            <span class="c1">#print(np.sum(xslice-sky_const))</span>
-
         <span class="k">return</span> <span class="n">signal</span><span class="p">,</span> <span class="n">noise</span></div>
 
 <div class="viewcode-block" id="TwoDSpec.ap_trace"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec.ap_trace">[docs]</a>    <span class="k">def</span> <span class="nf">ap_trace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -1130,54 +1270,78 @@
                  <span class="n">scaling_min</span><span class="o">=</span><span class="mf">0.975</span><span class="p">,</span>
                  <span class="n">scaling_max</span><span class="o">=</span><span class="mf">1.025</span><span class="p">,</span>
                  <span class="n">scaling_step</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
-                 <span class="n">p_bg</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                 <span class="n">percentile</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                  <span class="n">tol</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
                  <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span>
                  <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Aperture tracing by first using cross-correlation then the peaks are</span>
+<span class="sd">        fitting with a polynomial with an order of floor(nwindow, 10) with a</span>
+<span class="sd">        minimum order of 1. Nothing is returned unless jsonstring of the</span>
+<span class="sd">        plotly graph is set to be returned.</span>
 
-<span class="sd">                trace: 1-d numpy array (N)</span>
-<span class="sd">            The spatial positions (Y axis) corresponding to the center of the</span>
-<span class="sd">            trace for every wavelength (X axis), as returned from ap_trace</span>
-<span class="sd">        trace_sigma: float, or 1-d array (1 or N)</span>
-<span class="sd">            Tophat extraction: Float is accepted but will be rounded to an int,</span>
-<span class="sd">                                which gives the constant aperture size on either</span>
-<span class="sd">                                side of the trace to extract.</span>
-<span class="sd">            Optimal extraction: Float or 1-d array of the same size as the trace.</span>
-<span class="sd">                                If a float is supplied, a fixed standard deviation</span>
-<span class="sd">                                will be used to construct the gaussian weight</span>
-<span class="sd">                                function along the entire spectrum.</span>
+<span class="sd">        Each spectral slice is convolved with the adjacent one in the spectral</span>
+<span class="sd">        direction. Basic tests show that the geometrical distortion from one</span>
+<span class="sd">        end to the other in the spectral direction is small. With LT/SPRAT, the</span>
+<span class="sd">        linear distortion is less than 0.5%, thus, even provided as an option,</span>
+<span class="sd">        the rescale option is set to False by default. Given how unlikely a</span>
+<span class="sd">        geometrical distortion correction is needed, higher order correction</span>
+<span class="sd">        options are not provided.</span>
+
+<span class="sd">        A rough estimation on the background level is done by taking the</span>
+<span class="sd">        n-th percentile percentile of the slice, a rough guess can improve the</span>
+<span class="sd">        cross-correlation process significantly due to low dynamic range in a</span>
+<span class="sd">        typical spectral image. The removing of the &quot;background&quot; can massively</span>
+<span class="sd">        improve the contrast between the peaks and the relative background,</span>
+<span class="sd">        hence the correlation method is more likely to yield a true positive.</span>
+
+<span class="sd">        The trace(s), i.e. the spatial positions of the spectra (Y-axis),</span>
+<span class="sd">        found will be stored as the properties of the TwoDSpec object as a</span>
+<span class="sd">        1D numpy array, of length N, which is the size of the spectrum after</span>
+<span class="sd">        applying the spec_mask. The line spread function is stored in</span>
+<span class="sd">        trace_sigma, by fitting a gaussian on the shift-corrected stack of the</span>
+<span class="sd">        spectral slices. Given the scaling was found to be small, reporting</span>
+<span class="sd">        a single value of the averaged gaussian sigma is sufficient as the</span>
+<span class="sd">        first guess to be used by the aperture extraction function.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        nspec: int, optional</span>
-
-<span class="sd">        nwindow: int, optional</span>
-
-<span class="sd">        spec_sep: int, optional</span>
-
-<span class="sd">        resample_factor: int, optional</span>
-
-<span class="sd">        rescale: tuple, optional</span>
-
-<span class="sd">        scaling_min: float, optional</span>
-
-<span class="sd">        scaling_max: float, optional</span>
-
-<span class="sd">        scaling_step: float, optional</span>
-
-<span class="sd">        p_bg: float, optional</span>
-
-<span class="sd">        tol: float, optional</span>
-
-<span class="sd">        display: tuple, optional</span>
+<span class="sd">        nspec: int</span>
+<span class="sd">            Number of spectra to be extracted.</span>
+<span class="sd">        nwindow: int</span>
+<span class="sd">            Number of spectral slices to be produced for cross-correlation.</span>
+<span class="sd">        spec_sep: int</span>
+<span class="sd">            Minimum separation between sky lines.</span>
+<span class="sd">        resample_factor: int</span>
+<span class="sd">            Number of times the collapsed 1D slices in the spatial directions</span>
+<span class="sd">            are to be upsampled.</span>
+<span class="sd">        rescale: tuple</span>
+<span class="sd">            Fit for the linear scaling factor between adjacent slices.</span>
+<span class="sd">        scaling_min: float</span>
+<span class="sd">            Minimum scaling factor to be fitted.</span>
+<span class="sd">        scaling_max: float</span>
+<span class="sd">            Maximum scaling factor to be fitted.</span>
+<span class="sd">        scaling_step: float</span>
+<span class="sd">            Steps of the scaling factor.</span>
+<span class="sd">        percentile: float</span>
+<span class="sd">            The percentile of the flux to be used as the estimate of the</span>
+<span class="sd">            background sky level to the first order. [ADU]</span>
+<span class="sd">        tol: float</span>
+<span class="sd">            Maximum allowed shift between neighbouring slices, this value is</span>
+<span class="sd">            referring to native pixel size without the application of the</span>
+<span class="sd">            resampling or rescaling. [pix]</span>
+<span class="sd">        display: tuple</span>
 <span class="sd">            Set to True to display disgnostic plot.</span>
-<span class="sd">        renderer: string, optional</span>
+<span class="sd">        renderer: string</span>
 <span class="sd">            plotly renderer options.</span>
-<span class="sd">        jsonstring: tuple, optional</span>
+<span class="sd">        jsonstring: tuple</span>
 <span class="sd">            set to True to return json string that can be rendered by Plotly</span>
 <span class="sd">            in any support language.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        json string if jsonstring is True, otherwise only an image is displayed</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="c1"># Get the shape of the 2D spectrum and define upsampling ratio</span>
@@ -1199,9 +1363,9 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">scaling_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="c1"># estimate the 5-th percentile as the sky background level</span>
+        <span class="c1"># estimate the n-th percentile as the sky background level</span>
         <span class="n">lines_ref</span> <span class="o">=</span> <span class="n">lines_ref_init_resampled</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span>
-            <span class="n">lines_ref_init_resampled</span><span class="p">,</span> <span class="n">p_bg</span><span class="p">)</span>
+            <span class="n">lines_ref_init_resampled</span><span class="p">,</span> <span class="n">percentile</span><span class="p">)</span>
 
         <span class="n">shift_solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nwindow</span><span class="p">)</span>
         <span class="n">scale_solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nwindow</span><span class="p">)</span>
@@ -1215,7 +1379,7 @@
             <span class="c1"># smooth by taking the median</span>
             <span class="n">lines</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmedian</span><span class="p">(</span><span class="n">img_split</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">lines</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">nresample</span><span class="p">)</span>
-            <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">p_bg</span><span class="p">)</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">percentile</span><span class="p">)</span>
 
             <span class="c1"># cross-correlation values and indices</span>
             <span class="n">corr_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scaling_range</span><span class="p">))</span>
@@ -1282,7 +1446,6 @@
                           <span class="n">shift_solution</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span>
                               <span class="nb">int</span><span class="p">(</span><span class="n">nresample</span> <span class="o">*</span> <span class="n">scale_solution</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="o">/</span>
                               <span class="n">nresample</span><span class="p">)</span> <span class="o">/</span> <span class="n">resample_factor</span>
-            <span class="c1">#spec_val[:,i] = signal.resample(np.nanmedian(img_split[i], axis=0), int(nresample*scale_solution[i]))[(spec[:,i] * scale_solution[i]).astype(&#39;int&#39;)]</span>
 
         <span class="n">ap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="n">nwave</span><span class="p">))</span>
         <span class="n">ap_sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">),</span> <span class="n">nwave</span><span class="p">))</span>
@@ -1315,12 +1478,8 @@
                                    <span class="n">p0</span><span class="o">=</span><span class="n">pguess</span><span class="p">)</span>
             <span class="n">ap_sigma</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">popt</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nspec</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">ap</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trace_sigma</span> <span class="o">=</span> <span class="n">ap_sigma</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">ap</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trace_sigma</span> <span class="o">=</span> <span class="n">ap_sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace</span> <span class="o">=</span> <span class="n">ap</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trace_sigma</span> <span class="o">=</span> <span class="n">ap_sigma</span>
 
         <span class="c1"># Plot</span>
         <span class="k">if</span> <span class="n">display</span><span class="p">:</span>
@@ -1368,7 +1527,7 @@
 
 <div class="viewcode-block" id="TwoDSpec.ap_trace_quick"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.TwoDSpec.ap_trace_quick">[docs]</a>    <span class="k">def</span> <span class="nf">ap_trace_quick</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                        <span class="n">nspec</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                       <span class="n">nsteps</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                       <span class="n">nwindow</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
                        <span class="n">recenter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                        <span class="n">prevtrace</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">),</span>
                        <span class="n">fittype</span><span class="o">=</span><span class="s1">&#39;spline&#39;</span><span class="p">,</span>
@@ -1378,54 +1537,49 @@
                        <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span>
                        <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Trace the spectrum aperture in an image. It only works for bright</span>
-<span class="sd">        spectra with good wavelength coverage.</span>
+<span class="sd">        This only works for bright spectra with good wavelength coverage.</span>
 
-<span class="sd">        It works by chopping image up in bins along the wavelength direction,</span>
-<span class="sd">        fits a Gaussian for each bin to determine the spatial center of the</span>
-<span class="sd">        trace. Finally, draws a cubic spline through the bins.</span>
+<span class="sd">        It works by splitting the image in nwindow bins in the wavelength</span>
+<span class="sd">        direction, then a Gaussian is fitted for each bin to determine the</span>
+<span class="sd">        spatial position of the trace. Finally, a cubic spline is computed</span>
+<span class="sd">        for these spatial positions as a function of the spectral position.</span>
+
+<span class="sd">        Nothing is returned unless jsonstring of the plotly graph is set to be</span>
+<span class="sd">        returned. The trace and trace_sigma are stored as properties of the</span>
+<span class="sd">        TwoDSpec object.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        nspec: int, optional</span>
+<span class="sd">        nspec: int</span>
 <span class="sd">            Number of spectra to be extracted. It does not guarantee returning</span>
 <span class="sd">            the same number of spectra if fewer can be detected. (Default is 1)</span>
-<span class="sd">        nsteps: int, optional</span>
+<span class="sd">        nwindow: int</span>
 <span class="sd">            Keyword, number of bins in X direction to chop image into. Use</span>
 <span class="sd">            fewer bins if ap_trace is having difficulty, such as with faint</span>
 <span class="sd">            targets (default is 20, minimum is 4)</span>
-<span class="sd">        recenter: bool, optional</span>
+<span class="sd">        recenter: bool</span>
 <span class="sd">            Set to True to use previous trace, allow small shift in position</span>
 <span class="sd">            along the spatial direction. Not doing anything if prevtrace is not</span>
 <span class="sd">            supplied. (Default is False)</span>
-<span class="sd">        prevtrace: 1-d numpy array, optional</span>
+<span class="sd">        prevtrace: 1-d numpy array</span>
 <span class="sd">            Provide first guess or refitting the center with different parameters.</span>
-<span class="sd">        fittype: string, optional</span>
+<span class="sd">        fittype: string</span>
 <span class="sd">            Set to &#39;spline&#39; or &#39;polynomial&#39;, using</span>
 <span class="sd">            scipy.interpolate.UnivariateSpline and numpy.polyfit</span>
-<span class="sd">        order: string, optional</span>
+<span class="sd">        order: string</span>
 <span class="sd">            Degree of the spline or polynomial. Spline must be &lt;= 5.</span>
 <span class="sd">            (default is k=3)</span>
-<span class="sd">        bigbox: float, optional</span>
+<span class="sd">        bigbox: float</span>
 <span class="sd">            The number of sigma away from the main aperture to allow to trace</span>
-<span class="sd">        silence: tuple, optional</span>
+<span class="sd">        silence: tuple</span>
 <span class="sd">            Set to disable warning/error messages. (Default is False)</span>
-<span class="sd">        display: tuple, optional</span>
+<span class="sd">        display: tuple</span>
 <span class="sd">            Set to True to display disgnostic plot.</span>
-<span class="sd">        renderer: string, optional</span>
+<span class="sd">        renderer: string</span>
 <span class="sd">            plotly renderer options.</span>
-<span class="sd">        jsonstring: tuple, optional</span>
+<span class="sd">        jsonstring: tuple</span>
 <span class="sd">            set to True to return json string that can be rendered by Plotly</span>
 <span class="sd">            in any support language.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        my: array (N, nspec)</span>
-<span class="sd">            The spatial (Y) positions of the trace, interpolated over the</span>
-<span class="sd">            entire wavelength (X) axis</span>
-<span class="sd">        y_sigma: array (N, nspec)</span>
-<span class="sd">            The sigma measured at the nsteps.</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">nspec</span> <span class="o">=</span> <span class="n">nspec</span>
@@ -1706,38 +1860,24 @@
                    <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span>
                    <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Extract the spectra using the traces, support aperture or optimal</span>
+<span class="sd">        Extract the spectra using the traces, support tophat or optimal</span>
 <span class="sd">        extraction. The sky background is fitted in one dimention only. The</span>
-<span class="sd">        uncertainty at each pixel is also computed, but it is only meaningful</span>
-<span class="sd">        if correct gain, read noise and are provided.</span>
+<span class="sd">        uncertainty at each pixel is also computed, but the values are only</span>
+<span class="sd">        meaningful if correct gain and read noise are provided.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        apwidth: int, optional</span>
-<span class="sd">        skysep: int, optional</span>
-<span class="sd">            The separation in pixels from the aperture to the sky window.</span>
-<span class="sd">            (Default is 3)</span>
-<span class="sd">        skywidth: int, optional</span>
-<span class="sd">            The width in pixels of the sky windows on either side of the</span>
-<span class="sd">            aperture. (Default is 7)</span>
-<span class="sd">        skydeg: int, optional</span>
-<span class="sd">            The polynomial order to fit between the sky windows.</span>
-<span class="sd">            (Default is 0, i.e. constant flat sky level)</span>
-<span class="sd">        optimal: tuple, optional</span>
-<span class="sd">            Set optimal extraction. (Default is True)</span>
-<span class="sd">        silence: tuple, optional</span>
-<span class="sd">            Set to disable warning/error messages. (Default is False)</span>
-<span class="sd">        display: tuple, optional</span>
-<span class="sd">            Set to True to display disgnostic plot.</span>
-<span class="sd">        renderer: string, optional</span>
-<span class="sd">            plotly renderer options.</span>
-<span class="sd">        jsonstring: tuple, optional</span>
-<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
-<span class="sd">            in any support language.</span>
+<span class="sd">        Tophat extraction: Float is accepted but will be rounded to an int,</span>
+<span class="sd">                            which gives the constant aperture size on either</span>
+<span class="sd">                            side of the trace to extract.</span>
+<span class="sd">        Optimal extraction: Float or 1-d array of the same size as the trace.</span>
+<span class="sd">                            If a float is supplied, a fixed standard deviation</span>
+<span class="sd">                            will be used to construct the gaussian weight</span>
+<span class="sd">                            function along the entire spectrum.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        onedspec: 1-d array</span>
+<span class="sd">        Nothing is returned unless jsonstring of the plotly graph is set to be</span>
+<span class="sd">        returned. The adu, skyadu and aduerr are stored as properties of the</span>
+<span class="sd">        TwoDSpec object.</span>
+
+<span class="sd">        adu: 1-d array</span>
 <span class="sd">            The summed adu at each column about the trace. Note: is not</span>
 <span class="sd">            sky subtracted!</span>
 <span class="sd">        skyadu: 1-d array</span>
@@ -1745,6 +1885,33 @@
 <span class="sd">            subtracting from the output of ap_extract</span>
 <span class="sd">        aduerr: 1-d array</span>
 <span class="sd">            the uncertainties of the adu values</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        apwidth: int</span>
+<span class="sd">            The size of the aperature (fixed value for tophat extraction) or</span>
+<span class="sd">            the sigma of the Gaussian (for the first iteration of optimal</span>
+<span class="sd">            extraction).</span>
+<span class="sd">        skysep: int</span>
+<span class="sd">            The separation in pixels from the aperture to the sky window.</span>
+<span class="sd">            (Default is 3)</span>
+<span class="sd">        skywidth: int</span>
+<span class="sd">            The width in pixels of the sky windows on either side of the</span>
+<span class="sd">            aperture. (Default is 7)</span>
+<span class="sd">        skydeg: int</span>
+<span class="sd">            The polynomial order to fit between the sky windows.</span>
+<span class="sd">            (Default is 0, i.e. constant flat sky level)</span>
+<span class="sd">        optimal: tuple</span>
+<span class="sd">            Set optimal extraction. (Default is True)</span>
+<span class="sd">        silence: tuple</span>
+<span class="sd">            Set to disable warning/error messages. (Default is False)</span>
+<span class="sd">        display: tuple</span>
+<span class="sd">            Set to True to display disgnostic plot.</span>
+<span class="sd">        renderer: string</span>
+<span class="sd">            plotly renderer options.</span>
+<span class="sd">        jsonstring: tuple</span>
+<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
+<span class="sd">            in any support language.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">len_trace</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trace</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -1808,10 +1975,7 @@
                         <span class="n">xslice</span><span class="p">,</span>
                         <span class="n">sky</span><span class="p">,</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">trace</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">trace_sigma</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
-                        <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                        <span class="n">renderer</span><span class="o">=</span><span class="n">renderer</span><span class="p">,</span>
-                        <span class="n">jsonstring</span><span class="o">=</span><span class="n">jsonstring</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">trace_sigma</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="c1">#-- finally, compute the error in this pixel</span>
                     <span class="n">sigB</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>  <span class="c1"># stddev in the background data</span>
@@ -2006,9 +2170,26 @@
 <div class="viewcode-block" id="WavelengthPolyFit"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.WavelengthPolyFit">[docs]</a><span class="k">class</span> <span class="nc">WavelengthPolyFit</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">arc</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        arc: TwoDSpec object of the arc image</span>
-<span class="sd">        spec: TwoDSpec object of the science/standard image</span>
+<span class="sd">        This is a wrapper for using RASCAL to perform wavelength calibration,</span>
+<span class="sd">        which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This</span>
+<span class="sd">        guarantees to provide something sensible or nothing at all. It will</span>
+<span class="sd">        require some fine-tuning when using the first time. The more GOOD</span>
+<span class="sd">        initial guesses provided, the faster the solution converges and with</span>
+<span class="sd">        better fit. Knowing the dispersion, wavelength ranges and one or two</span>
+<span class="sd">        known lines will significantly improve the fit. Conversely, wrong</span>
+<span class="sd">        values supplied by the user will siginificantly distort the solution</span>
+<span class="sd">        as any user supplied information will be treated as the ground truth.</span>
 
+<span class="sd">        Deatils of how RASCAL works should be referred to</span>
+
+<span class="sd">            https://rascal.readthedocs.io/en/latest/</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        spec: TwoDSpec object</span>
+<span class="sd">            TwoDSpec of the science/standard image containing the trace(s).</span>
+<span class="sd">        arc: 2D numpy array</span>
+<span class="sd">            The image of the arc image.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">spec</span> <span class="o">=</span> <span class="n">spec</span>
@@ -2016,20 +2197,20 @@
 
         <span class="c1"># the valid y-range of the chip (i.e. spatial direction)</span>
         <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">spatial_mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">arc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">spatial_mask</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">arc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">spatial_mask</span><span class="p">]</span>
 
         <span class="c1"># the valid x-range of the chip (i.e. spectral direction)</span>
         <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">arc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arc</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">arc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">spec_mask</span><span class="p">]</span>
 
         <span class="c1"># get the length in the spectral and spatial directions</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">Saxis</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">saxis</span> <span class="ow">is</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">arc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arc</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spec</span><span class="o">.</span><span class="n">flip</span><span class="p">:</span>
@@ -2042,8 +2223,34 @@
                        <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                        <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        pixelscale in unit of A/pix</span>
+<span class="sd">        This function applies the trace to the arc image then take median</span>
+<span class="sd">        average of the stripe before identifying the arc lines (peaks) with</span>
+<span class="sd">        scipy.signal.find_peaks(), where only the distance and the prominence</span>
+<span class="sd">        keywords are used. Distance is the minimum separation between peaks,</span>
+<span class="sd">        the default value is roughly twice the nyquist sampling rate (i.e.</span>
+<span class="sd">        pixel size is 2.3 times smaller than the object that is being resolved,</span>
+<span class="sd">        hence, the sepration between two clearly resolved peaks are ~5 pixels</span>
+<span class="sd">        apart). An crude estimate of the background can exclude random noise</span>
+<span class="sd">        which look like small peaks.</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        percentile: float</span>
+<span class="sd">            The percentile of the flux to be used as the estimate of the</span>
+<span class="sd">            background sky level to the first order. [ADU]</span>
+<span class="sd">        distance: float</span>
+<span class="sd">            Minimum separation between peaks</span>
+<span class="sd">        display: tuple</span>
+<span class="sd">            Set to True to display disgnostic plot.</span>
+<span class="sd">        renderer: string</span>
+<span class="sd">            plotly renderer options.</span>
+<span class="sd">        jsonstring: tuple</span>
+<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
+<span class="sd">            in any support language.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        JSON strings if jsonstring is set to True</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">percentile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arc</span><span class="p">,</span> <span class="n">percentile</span><span class="p">)</span>
@@ -2058,6 +2265,7 @@
                                      <span class="n">distance</span><span class="o">=</span><span class="n">distance</span><span class="p">,</span>
                                      <span class="n">prominence</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
 
+        <span class="c1"># Fine ftuning</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">peaks</span> <span class="o">=</span> <span class="n">refine_peaks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">peaks</span><span class="p">,</span> <span class="n">window_width</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">display</span> <span class="o">&amp;</span> <span class="n">plotly_imported</span><span class="p">:</span>
@@ -2097,17 +2305,16 @@
                 <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">renderer</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WavelengthPolyFit.calibrate"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.WavelengthPolyFit.calibrate">[docs]</a>    <span class="k">def</span> <span class="nf">calibrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                  <span class="n">elements</span><span class="p">,</span>
-                  <span class="n">sample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                  <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">min_wave</span><span class="o">=</span><span class="mf">3500.</span><span class="p">,</span>
                   <span class="n">max_wave</span><span class="o">=</span><span class="mf">8500.</span><span class="p">,</span>
+                  <span class="n">sample_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                   <span class="n">max_tries</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
-                  <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                  <span class="n">num_slopes</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-                  <span class="n">range_tolerance</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+                  <span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+                  <span class="n">nslopes</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+                  <span class="n">range_tolerance</span><span class="o">=</span><span class="mf">500.</span><span class="p">,</span>
                   <span class="n">fit_tolerance</span><span class="o">=</span><span class="mf">20.</span><span class="p">,</span>
                   <span class="n">polydeg</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-                  <span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
                   <span class="n">candidate_thresh</span><span class="o">=</span><span class="mf">15.</span><span class="p">,</span>
                   <span class="n">ransac_thresh</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                   <span class="n">xbins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
@@ -2115,11 +2322,77 @@
                   <span class="n">brute_force</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                   <span class="n">fittype</span><span class="o">=</span><span class="s1">&#39;poly&#39;</span><span class="p">,</span>
                   <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">,</span>
-                  <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                  <span class="n">coeff</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                  <span class="n">progress</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                  <span class="n">coeff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                  <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        thresh (A) :: the individual line fitting tolerance to accept as a valid fitting point</span>
-<span class="sd">        fit_tolerance (A) :: the RMS</span>
+<span class="sd">        A wrapper function to perform wavelength calibration with RASCAL.</span>
+
+<span class="sd">        As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,</span>
+<span class="sd">        Hg and Th from NIST:</span>
+
+<span class="sd">            https://physics.nist.gov/PhysRefData/ASD/lines_form.html</span>
+
+<span class="sd">        If there is already a set of good coefficienes, use calibrate_pfit()</span>
+<span class="sd">        instead.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        elements: string or list of string</span>
+<span class="sd">            String or list of strings of Chemical symbol. Case insensitive.</span>
+<span class="sd">        min_wave: float</span>
+<span class="sd">            Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.</span>
+<span class="sd">        max_wave: float</span>
+<span class="sd">            Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.</span>
+<span class="sd">        sample_size: int</span>
+<span class="sd">            Number of lines to be fitted in each loop.</span>
+<span class="sd">        max_tries: int</span>
+<span class="sd">            Number of trials of polynomial fitting.</span>
+<span class="sd">        top_n: int</span>
+<span class="sd">            Top ranked lines to be fitted.</span>
+<span class="sd">        nslopes: int</span>
+<span class="sd">            Number of lines to be used in Hough transform.</span>
+<span class="sd">        range_tolerance: float</span>
+<span class="sd">            Estimation of the error on the provided spectral range</span>
+<span class="sd">            e.g. 3000 - 5000 with tolerance 500 will search for</span>
+<span class="sd">            solutions that may satisfy 2500 - 5500</span>
+<span class="sd">        fit_tolerance: float</span>
+<span class="sd">            Maximum RMS allowed</span>
+<span class="sd">        polydeg: int</span>
+<span class="sd">            Degree of the polynomial</span>
+<span class="sd">        candidate_thresh: float</span>
+<span class="sd">            Threshold for considering a point to be an inlier during candidate</span>
+<span class="sd">            peak/line selection. Don&#39;t make this too small, it should allow</span>
+<span class="sd">            for the error between a linear and non-linear fit.</span>
+<span class="sd">        ransac_thresh: float</span>
+<span class="sd">            The distance criteria to be considered an inlier to a fit. This</span>
+<span class="sd">            should be close to the size of the expected residuals on the final</span>
+<span class="sd">            fit.</span>
+<span class="sd">        xbins: int</span>
+<span class="sd">            The number of bins in the pixel direction (in Hough space).</span>
+<span class="sd">        ybins : int</span>
+<span class="sd">            The number of bins in the wavelength direction (in Hough space).</span>
+<span class="sd">        brute_force: tuple</span>
+<span class="sd">            Set to try all possible combinations and choose the best fit as</span>
+<span class="sd">            the solution. This takes tens of minutes for tens of lines.</span>
+<span class="sd">        fittype: string</span>
+<span class="sd">            One of &#39;poly&#39;, &#39;legendre&#39; or &#39;chebyshev&#39;.</span>
+<span class="sd">        mode: string</span>
+<span class="sd">            Default to &#39;manual&#39; to read take in user supplied sample_size,</span>
+<span class="sd">            max_tries, top_n and nslope, which are by default equivalent to</span>
+<span class="sd">            &#39;normal&#39; mode. Predefined modes are &#39;fast&#39;, &#39;normal&#39; and &#39;slow&#39;:</span>
+<span class="sd">            fast:</span>
+<span class="sd">                sample_size = 3, max_tries = 1000, top_n = 20, nslope = 500</span>
+<span class="sd">            normal:</span>
+<span class="sd">                sample_size = 5, max_tries = 5000, top_n = 20, nslope = 1000</span>
+<span class="sd">            slow:</span>
+<span class="sd">                sample_size = 5, max_tries = 10000, top_n = 20, nslope = 2000</span>
+<span class="sd">        progress: tuple</span>
+<span class="sd">            Set to show the progress using tdqm (if imported).</span>
+<span class="sd">        pfit: list</span>
+<span class="sd">            List of the polynomial fit coefficients for the first guess.</span>
+<span class="sd">        display: tuple</span>
+<span class="sd">            Set to show diagnostic plot.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">c</span> <span class="o">=</span> <span class="n">Calibrator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">,</span>
@@ -2140,16 +2413,17 @@
                               <span class="n">brute_force</span><span class="o">=</span><span class="n">brute_force</span><span class="p">,</span>
                               <span class="n">fittype</span><span class="o">=</span><span class="n">fittype</span><span class="p">)</span>
 
-        <span class="n">p</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
-                  <span class="n">max_tries</span><span class="o">=</span><span class="n">max_tries</span><span class="p">,</span>
-                  <span class="n">top_n</span><span class="o">=</span><span class="n">top_n</span><span class="p">,</span>
-                  <span class="n">n_slope</span><span class="o">=</span><span class="n">num_slopes</span><span class="p">,</span>
-                  <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
-                  <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
-                  <span class="n">coeff</span><span class="o">=</span><span class="n">coeff</span><span class="p">)</span>
+        <span class="n">pfit</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sample_size</span><span class="o">=</span><span class="n">sample_size</span><span class="p">,</span>
+                     <span class="n">max_tries</span><span class="o">=</span><span class="n">max_tries</span><span class="p">,</span>
+                     <span class="n">top_n</span><span class="o">=</span><span class="n">top_n</span><span class="p">,</span>
+                     <span class="n">n_slope</span><span class="o">=</span><span class="n">num_slopes</span><span class="p">,</span>
+                     <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+                     <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">,</span>
+                     <span class="n">pfit</span><span class="o">=</span><span class="n">pfit</span><span class="p">)</span>
 
-        <span class="n">pfit</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">match_peaks_to_atlas</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">pfit</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">match_peaks_to_atlas</span><span class="p">(</span><span class="n">pfit</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="c1"># Overwriting and fine tuning polynomial coefficients</span>
+        <span class="n">pfit</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">match_peaks_to_atlas</span><span class="p">(</span><span class="n">pfit</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">5.</span><span class="p">)</span>
+        <span class="n">pfit</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">match_peaks_to_atlas</span><span class="p">(</span><span class="n">pfit</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">pfit</span> <span class="o">=</span> <span class="n">pfit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pfit_type</span> <span class="o">=</span> <span class="s1">&#39;poly&#39;</span>
@@ -2168,6 +2442,28 @@
                        <span class="n">max_wave</span><span class="o">=</span><span class="mf">8500.</span><span class="p">,</span>
                        <span class="n">tolerance</span><span class="o">=</span><span class="mf">10.</span><span class="p">,</span>
                        <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        A wrapper function to fine tune wavelength calibration with RASCAL</span>
+<span class="sd">        when there is already a set of good coefficienes.</span>
+
+<span class="sd">        As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,</span>
+<span class="sd">        Hg and Th from NIST:</span>
+
+<span class="sd">            https://physics.nist.gov/PhysRefData/ASD/lines_form.html</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        elements: string or list of string</span>
+<span class="sd">            String or list of strings of Chemical symbol. Case insensitive.</span>
+<span class="sd">        pfit : list</span>
+<span class="sd">            List of polynomial fit coefficients</span>
+<span class="sd">        min_wave: float</span>
+<span class="sd">            Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.</span>
+<span class="sd">        max_wave: float</span>
+<span class="sd">            Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.</span>
+<span class="sd">        tolerance : float</span>
+<span class="sd">            Absolute difference between fit and model.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">c</span> <span class="o">=</span> <span class="n">Calibrator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peaks</span><span class="p">,</span>
                        <span class="n">min_wavelength</span><span class="o">=</span><span class="n">min_wave</span><span class="p">,</span>
@@ -2192,24 +2488,63 @@
 
 <div class="viewcode-block" id="StandardFlux"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.StandardFlux">[docs]</a><span class="k">class</span> <span class="nc">StandardFlux</span><span class="p">:</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">group</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">ftype</span><span class="o">=</span><span class="s1">&#39;flux&#39;</span><span class="p">,</span> <span class="n">silence</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class handles flux calibration by comparing the extracted and</span>
+<span class="sd">        wavelength-calibrated standard observation to the &quot;ground truth&quot;</span>
+<span class="sd">        from</span>
+
+<span class="sd">        https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstds</span>
+<span class="sd">        https://www.eso.org/sci/observing/tools/standards/spectra.html</span>
+
+<span class="sd">        See explanation notes at those links for details.</span>
+
+<span class="sd">        The list of targets and groups can be listed with</span>
+<span class="sd">        &gt;&gt;&gt; from aspired.standard_list import list_all</span>
+<span class="sd">        &gt;&gt;&gt; list_all()</span>
+
+<span class="sd">        The units of the data are</span>
+<span class="sd">            wavelength: A</span>
+<span class="sd">            flux:       ergs / cm / cm / s / A</span>
+<span class="sd">            mag:        mag (AB)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target: string</span>
+<span class="sd">            Name of the standard star</span>
+<span class="sd">        group: string</span>
+<span class="sd">            Name of the group of standard star</span>
+<span class="sd">        cutoff: float</span>
+<span class="sd">            The threshold for the word similarity in the range of [0, 1].</span>
+<span class="sd">        ftype: string</span>
+<span class="sd">            &#39;flux&#39; or &#39;mag&#39; (AB magnitude)</span>
+<span class="sd">        silence: tuple</span>
+<span class="sd">            Set to suppress all verbose warning.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="o">=</span> <span class="n">target</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">group</span> <span class="o">=</span> <span class="n">group</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">=</span> <span class="n">cutoff</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ftype</span> <span class="o">=</span> <span class="n">ftype</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">silence</span> <span class="o">=</span> <span class="n">silence</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_lookup_standard</span><span class="p">()</span>
 
 <div class="viewcode-block" id="StandardFlux._lookup_standard"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.StandardFlux._lookup_standard">[docs]</a>    <span class="k">def</span> <span class="nf">_lookup_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Check if the requested standard and library exist.</span>
+<span class="sd">        Check if the requested standard and library exist. Return the three</span>
+<span class="sd">        most similar words if the requested one does not exist. See</span>
 
+<span class="sd">            https://docs.python.org/3.7/library/difflib.html</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
+        <span class="c1"># Load the list of targets in the requested group</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">target_list</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group</span><span class="p">)</span>
         <span class="k">except</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Requested standard star library does not exist.&#39;</span><span class="p">)</span>
 
+        <span class="c1"># If the requested target is not in the target list, suggest the three</span>
+        <span class="c1"># closest match</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">target_list</span><span class="p">:</span>
             <span class="n">best_match</span> <span class="o">=</span> <span class="n">difflib</span><span class="o">.</span><span class="n">get_close_matches</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span>
                                                    <span class="n">target_list</span><span class="p">,</span>
@@ -2225,21 +2560,21 @@
                       <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Read the standard flux/magnitude file. And return the wavelength and</span>
-<span class="sd">        flux/mag in units of</span>
-
-<span class="sd">        wavelength: A</span>
-<span class="sd">        flux:       ergs / cm / cm / s / A</span>
-<span class="sd">        mag:        mag (AB) </span>
+<span class="sd">        flux/mag.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        display: tuple, optional</span>
+<span class="sd">        display: tuple</span>
 <span class="sd">            Set to True to display disgnostic plot.</span>
-<span class="sd">        renderer: string, optional</span>
+<span class="sd">        renderer: string</span>
 <span class="sd">            plotly renderer options.</span>
-<span class="sd">        jsonstring: tuple, optional</span>
+<span class="sd">        jsonstring: tuple</span>
 <span class="sd">            set to True to return json string that can be rendered by Plotly</span>
 <span class="sd">            in any support language.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        JSON strings if jsonstring is set to True</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">flux_multiplier</span> <span class="o">=</span> <span class="mf">1.</span>
@@ -2279,6 +2614,21 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">inspect_standard</span><span class="p">(</span><span class="n">renderer</span><span class="p">,</span> <span class="n">jsonstring</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="StandardFlux.inspect_standard"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.StandardFlux.inspect_standard">[docs]</a>    <span class="k">def</span> <span class="nf">inspect_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Display the standard star plot.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        renderer: string</span>
+<span class="sd">            plotly renderer options.</span>
+<span class="sd">        jsonstring: tuple</span>
+<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
+<span class="sd">            in any support language.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        JSON strings if jsonstring is set to True</span>
+<span class="sd">        &#39;&#39;&#39;</span>
         <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">()</span>
 
         <span class="c1"># show the image on the top</span>
@@ -2313,18 +2663,25 @@
                  <span class="n">wave_cal_std</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">flux_cal</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        This class applies the wavelength calibrations and compute &amp; apply the</span>
+<span class="sd">        flux calibration to the extracted 1D spectra. The standard TwoDSpec</span>
+<span class="sd">        object is not required for data reduction, but the flux calibrated</span>
+<span class="sd">        standard observation will not be available for diagnostic.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        science: TwoDSpec object</span>
-
+<span class="sd">            The TwoDSpec object with the extracted science target</span>
 <span class="sd">        wave_cal: WavelengthPolyFit object</span>
-
-<span class="sd">        standard: TwoDSpec object, optional</span>
-
-<span class="sd">        wave_cal_std: WavelengthPolyFit object, optional</span>
-
-<span class="sd">        flux_cal: StandardFlux object, optional (require wave_cal_std)</span>
-
+<span class="sd">            The WavelengthPolyFit object for the science target, flux will</span>
+<span class="sd">            not be calibrated if this is not provided.</span>
+<span class="sd">        standard: TwoDSpec object</span>
+<span class="sd">            The TwoDSpec object with the extracted standard target</span>
+<span class="sd">        wave_cal_std: WavelengthPolyFit object</span>
+<span class="sd">            The WavelengthPolyFit object for the standard target, flux will</span>
+<span class="sd">            not be calibrated if this is not provided.</span>
+<span class="sd">        flux_cal: StandardFlux object</span>
+<span class="sd">            The true mag/flux values.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -2371,7 +2728,13 @@
 
 <div class="viewcode-block" id="OneDSpec._set_standard"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.OneDSpec._set_standard">[docs]</a>    <span class="k">def</span> <span class="nf">_set_standard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">standard</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Extract the required information from a TwoDSpec object</span>
+<span class="sd">        Extract the required information from the TwoDSpec object of the</span>
+<span class="sd">        standard.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        standard: TwoDSpec object</span>
+<span class="sd">            The TwoDSpec object with the extracted standard target</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -2384,7 +2747,17 @@
 
 <div class="viewcode-block" id="OneDSpec._set_wavecal"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.OneDSpec._set_wavecal">[docs]</a>    <span class="k">def</span> <span class="nf">_set_wavecal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">wave_cal</span><span class="p">,</span> <span class="n">stype</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Extract the required information from a WavelengthPolyFit object</span>
+<span class="sd">        Extract the required information from a WavelengthPolyFit object, it</span>
+<span class="sd">        can be used to apply the polynomial coefficients for science, standard</span>
+<span class="sd">        or both.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        wave_cal: WavelengthPolyFit object</span>
+<span class="sd">            The WavelengthPolyFit object for the standard target, flux will</span>
+<span class="sd">            not be calibrated if this is not provided.</span>
+<span class="sd">        stype: string</span>
+<span class="sd">            &#39;science&#39;, &#39;standard&#39; or &#39;all&#39; to indicate type</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s1">&#39;science&#39;</span><span class="p">:</span>
@@ -2447,6 +2820,11 @@
 <div class="viewcode-block" id="OneDSpec._set_fluxcal"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.OneDSpec._set_fluxcal">[docs]</a>    <span class="k">def</span> <span class="nf">_set_fluxcal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux_cal</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Extract the required information from a StandardFlux object.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        flux_cal: StandardFlux object</span>
+<span class="sd">            The true mag/flux values.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -2459,7 +2837,12 @@
 
 <div class="viewcode-block" id="OneDSpec.apply_wavelength_calibration"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.OneDSpec.apply_wavelength_calibration">[docs]</a>    <span class="k">def</span> <span class="nf">apply_wavelength_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stype</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Apply the wavelength calibration</span>
+<span class="sd">        Apply the wavelength calibration.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stype: string</span>
+<span class="sd">            &#39;science&#39;, &#39;standard&#39; or &#39;all&#39; to indicate type</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s1">&#39;science&#39;</span><span class="p">:</span>
@@ -2488,13 +2871,20 @@
                          <span class="n">smooth</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                          <span class="n">slength</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
                          <span class="n">sorder</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                         <span class="n">mask_range</span><span class="o">=</span><span class="p">[[</span><span class="mi">6850</span><span class="p">,</span> <span class="mi">7000</span><span class="p">],</span> <span class="p">[</span><span class="mi">7150</span><span class="p">,</span> <span class="mi">7400</span><span class="p">],</span> <span class="p">[</span><span class="mi">7575</span><span class="p">,</span> <span class="mi">7775</span><span class="p">]],</span>
                          <span class="n">display</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                          <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span>
                          <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Get the standard flux or magnitude of the given target and group</span>
-<span class="sd">        based on the given array of wavelengths. Some standard libraries</span>
-<span class="sd">        contain the same target with slightly different values.</span>
+<span class="sd">        The sensitivity curve is computed by dividing the true values by the</span>
+<span class="sd">        wavelength calibrated standard spectrum, which is resampled with the</span>
+<span class="sd">        spectres.spectres(). The curve is then interpolated with a cubic spline</span>
+<span class="sd">        by default and is stored as a scipy interp1d object.</span>
+
+<span class="sd">        A Savitzky-Golay filter is available for smoothing before the</span>
+<span class="sd">        interpolation but it is not used by default.</span>
+
+<span class="sd">        6850 - 7000 A,  7150 - 7400 A and 7575 - 7775 A are masked by default.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2502,43 +2892,33 @@
 <span class="sd">            interpolation kind</span>
 <span class="sd">            &gt;&gt;&gt; [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,</span>
 <span class="sd">                 ‘previous’, ‘next’]</span>
-<span class="sd">            (default is &#39;cubic&#39;)</span>
 <span class="sd">        smooth: tuple</span>
-<span class="sd">            set to smooth the input ADU/flux/mag with scipy.signal.savgol_filter</span>
-<span class="sd">            (default is True)</span>
+<span class="sd">            set to smooth the input spectrum with scipy.signal.savgol_filter</span>
 <span class="sd">        slength: int</span>
 <span class="sd">            SG-filter window size</span>
 <span class="sd">        sorder: int</span>
 <span class="sd">            SG-filter polynomial order</span>
-<span class="sd">        display: tuple, optional</span>
+<span class="sd">        mask_range: None or list of list</span>
+<span class="sd">            Masking out regions not suitable for fitting the sensitivity curve.</span>
+<span class="sd">                None:         no mask</span>
+<span class="sd">                list of list: [[min1, max1], [min2, max2],...]</span>
+<span class="sd">        display: tuple</span>
 <span class="sd">            Set to True to display disgnostic plot.</span>
-<span class="sd">        renderer: string, optional</span>
+<span class="sd">        renderer: string</span>
 <span class="sd">            plotly renderer options.</span>
-<span class="sd">        jsonstring: tuple, optional</span>
+<span class="sd">        jsonstring: tuple</span>
 <span class="sd">            set to True to return json string that can be rendered by Plotly</span>
 <span class="sd">            in any support language.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        A scipy interp1d object.</span>
-
+<span class="sd">        JSON strings if jsonstring is set to True.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="c1"># Get the standard flux/magnitude</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slength</span> <span class="o">=</span> <span class="n">slength</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sorder</span> <span class="o">=</span> <span class="n">sorder</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">smooth</span> <span class="o">=</span> <span class="n">smooth</span>
-
-        <span class="c1"># Compute bin sizes such that the bin is roughly 10 A wide</span>
-        <span class="c1">#wave_range = self.wave_std[-1] - self.wave_std[0]</span>
-        <span class="c1">#bin_size = self.wave_std[1] - self.wave_std[0]</span>
-
-        <span class="c1"># Find the centres of the first and last bins such that</span>
-        <span class="c1"># the old and new spectra covers identical wavelength range</span>
-        <span class="c1">#wave_lhs = self.wave_std[0] - bin_size / 2.</span>
-        <span class="c1">#wave_rhs = self.wave_std[-1] + bin_size / 2.</span>
-        <span class="c1">#wave_obs = np.arange(wave_lhs, wave_rhs, bin_size)</span>
-        <span class="c1">#wave_std = self.wave_std</span>
 
         <span class="k">if</span> <span class="n">spectres_imported</span><span class="p">:</span>
             <span class="c1"># resampling both the observed and the database standard spectra</span>
@@ -2552,10 +2932,14 @@
                                          <span class="bp">self</span><span class="o">.</span><span class="n">fluxmag_std_true</span><span class="p">)(</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_obs</span><span class="p">)</span>
         <span class="c1"># Get the sensitivity curve</span>
         <span class="n">sensitivity</span> <span class="o">=</span> <span class="n">flux_std_true</span> <span class="o">/</span> <span class="n">flux_std</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">sensitivity</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">)</span> <span class="o">&amp;</span>
-                <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&lt;</span> <span class="mf">6850.</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&gt;</span> <span class="mf">7000.</span><span class="p">))</span> <span class="o">&amp;</span>
-                <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&lt;</span> <span class="mf">7150.</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&gt;</span> <span class="mf">7400.</span><span class="p">))</span> <span class="o">&amp;</span>
-                <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&lt;</span> <span class="mf">7575.</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&gt;</span> <span class="mf">7775.</span><span class="p">)))</span>
+
+        <span class="k">if</span> <span class="n">mask_range</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">sensitivity</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">sensitivity</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">sensitivity</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mask_range</span><span class="p">:</span>
+                <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span> <span class="o">&amp;</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">|</span>
+                               <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span> <span class="o">&gt;</span> <span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
 
         <span class="n">sensitivity</span> <span class="o">=</span> <span class="n">sensitivity</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
         <span class="n">wave_std</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wave_std_true</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
@@ -2582,6 +2966,18 @@
 <div class="viewcode-block" id="OneDSpec.inspect_sencurve"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.OneDSpec.inspect_sencurve">[docs]</a>    <span class="k">def</span> <span class="nf">inspect_sencurve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">renderer</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Display the computed sensitivity curve.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        renderer: string</span>
+<span class="sd">            plotly renderer options.</span>
+<span class="sd">        jsonstring: tuple</span>
+<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
+<span class="sd">            in any support language.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        JSON strings if jsonstring is set to True.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">()</span>
@@ -2643,7 +3039,12 @@
 
 <div class="viewcode-block" id="OneDSpec.apply_flux_calibration"><a class="viewcode-back" href="../autoapi/aspired/index.html#aspired.OneDSpec.apply_flux_calibration">[docs]</a>    <span class="k">def</span> <span class="nf">apply_flux_calibration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stype</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">        Apply the computed sensitivity curve</span>
+<span class="sd">        Apply the computed sensitivity curve.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stype: string</span>
+<span class="sd">            &#39;science&#39;, &#39;standard&#39; or &#39;all&#39; to indicate type</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s1">&#39;science&#39;</span><span class="p">:</span>
@@ -2677,6 +3078,24 @@
                                  <span class="n">jsonstring</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">        Display the reduced spectra.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        stype: string</span>
+<span class="sd">            &#39;science&#39;, &#39;standard&#39; or &#39;all&#39; to indicate type</span>
+<span class="sd">        wave_min: float</span>
+<span class="sd">            Minimum wavelength to display</span>
+<span class="sd">        wave_max: float</span>
+<span class="sd">            Maximum wavelength to display</span>
+<span class="sd">        renderer: string</span>
+<span class="sd">            plotly renderer options.</span>
+<span class="sd">        jsonstring: tuple</span>
+<span class="sd">            set to True to return json string that can be rendered by Plotly</span>
+<span class="sd">            in any support language.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        JSON strings if jsonstring is set to True.</span>
 <span class="sd">        &#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="n">stype</span> <span class="o">==</span> <span class="s1">&#39;science&#39;</span><span class="p">:</span>
@@ -2785,7 +3204,11 @@
                                                       <span class="n">bgcolor</span><span class="o">=</span><span class="s1">&#39;rgba(0,0,0,0)&#39;</span><span class="p">),</span>
                               <span class="n">height</span><span class="o">=</span><span class="mi">800</span><span class="p">)</span>
 
-            <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">renderer</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">jsonstring</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">renderer</span> <span class="o">==</span> <span class="s1">&#39;default&#39;</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fig</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">renderer</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">stype</span> <span class="o">==</span> <span class="s1">&#39;all&#39;</span><span class="p">:</span>
 
