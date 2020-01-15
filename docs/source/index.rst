@@ -16,16 +16,55 @@ Basic Usage
 The bare minimum example code to to get a wavelength calibration:
 
 .. code-block:: python
+    import sys
+    import numpy as np
+    from astropy.io import fits
+    from aspired import aspired
 
+    # Open the FITS file as a fits.hdu.image.PrimaryHDU
+    science = fits.open('/path/to/science_FITS_file')
+    science2D = aspired.TwoDSpec(science)
+    aspired.ap_trace()
+    aspired.ap_extract()
 
-Some more complete examples are available in the :ref:`quickstart` tutorial.
+    standard = fits.open('/path/to/standard_FITS_file')
+    standard2D = aspired.TwoDSpec(standard)
+    standard.ap_trace()
+    standard.ap_extract()
+
+    # Load the standard flux
+    fluxcal = aspired.StandardFlux(target='Name1', group='Name2')
+    fluxcal.load_standard()
+
+    # Wavelength calibration
+    wavecal_science = aspired.WavelengthPolyFit(science2D, science_arc)
+    wavecal_science.find_arc_lines()
+    wavecal_science.calibrate(elements=["Chemical Symbol"])
+
+    wavecal_standard = aspired.WavelengthPolyFit(standard2D, standard_arc)
+    wavecal_standard.find_arc_lines()
+    wavecal_standard.calibrate(elements=["Chemical Symbol"])
+
+    # Applying flux and wavelength calibration
+    science_reduced = aspired.OneDSpec(
+        science2D,
+        wavecal_science,
+        standard2D,
+        wavecal_standard,
+        fluxcal
+    )
+    science_reduced.apply_wavelength_calibration()
+    science_reduced.compute_sencurve()
+    science_reduced.inspect_reduced_spectrum()
+
+Some more complete examples are available in the tutorials.
 
 
 How to Use This Guide
 =====================
 
 To start, you're probably going to need to follow the :ref:`installation` guide to
-get RASCAL installed on your computer.
+get ASPIRED installed on your computer.
 After you finish that, you can probably learn most of what you need from the
 tutorials listed below (you might want to start with
 :ref:`quickstart` and go from there).
@@ -33,7 +72,7 @@ If you need more details about specific functionality, the User Guide below
 should have what you need.
 
 We welcome bug reports, patches, feature requests, and other comments via `the GitHub
-issue tracker <https://github.com/jveitchmichaelis/rascal/issues>`_.
+issue tracker <https://github.com/cylammarco/ASPIRED/issues>`_.
 
 
 User Guide
