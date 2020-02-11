@@ -1,8 +1,9 @@
-import difflib
 import os
 import sys
-from functools import partial
+import difflib
 import warnings
+from functools import partial
+from itertools import chain
 
 from astropy import units as u
 from astropy.io import fits
@@ -14,7 +15,7 @@ from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from scipy.optimize import minimize
-
+sys.path.insert(0, "/users/marcolam/git/rascal")
 from rascal.calibrator import Calibrator
 from rascal.util import load_calibration_lines
 from rascal.util import refine_peaks
@@ -43,6 +44,49 @@ except ImportError:
         'plotly is not present, diagnostic plots cannot be generated.')
 
 from aspired.standard_list import *
+
+# For toggling linear/log plots in Plotly
+linearlogmenu = list([
+    dict(
+        active=1,
+        buttons=list([
+            dict(label='Log Scale',
+                 method='update',
+                 args=[{
+                     'visible': [True, True]
+                 }, {
+                     'title': 'Log scale',
+                     'yaxis': {
+                         'type': 'log'
+                     }
+                 }]),
+            dict(label='Linear Scale',
+                 method='update',
+                 args=[{
+                     'visible': [True, False]
+                 }, {
+                     'title': 'Linear scale',
+                     'yaxis': {
+                         'type': 'linear'
+                     }
+                 }])
+        ]),
+    )
+])
+
+linearloglayout = dict(updatemenus=linearlogmenu, title='Log scale')
+
+
+def _check_files(paths):
+    '''
+    Go through the filelist provided and check if all files exist.
+    '''
+
+    for filepath in paths:
+        try:
+            os.path.isfile(filepath)
+        except:
+            ValueError('File ' + filepath + ' does not exist.')
 
 
 class ImageReduction:
@@ -98,7 +142,7 @@ class ImageReduction:
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_light: tuple
+        sigma_clipping_light: boolean
             perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_light: float
@@ -114,7 +158,7 @@ class ImageReduction:
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_dark: tuple
+        sigma_clipping_dark: boolean
             perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_dark: float
@@ -130,7 +174,7 @@ class ImageReduction:
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_bias: tuple
+        sigma_clipping_bias: boolean
             perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_bias: float
@@ -141,14 +185,14 @@ class ImageReduction:
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_flat: tuple
+        sigma_clipping_flat: boolean
             perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_flat: float
             lower threshold of the sigma clipping
         clip_high_flat: float
             upper threshold of the sigma clipping
-        silence: tuple
+        silence: boolean
             set to suppress all messages
         '''
 
@@ -243,7 +287,7 @@ class ImageReduction:
         assert (self.light_list.size > 0), 'There is no light frame.'
 
         # Check if all files exist
-        self._check_files()
+        _check_files(self.impath)
 
         # FITS keyword standard for the spectral direction, if FITS header
         # does not contain SAXIS, the image in assumed to have the spectra
@@ -343,17 +387,6 @@ class ImageReduction:
         # Free memory
         del arc_CCDData
         del arc_combiner
-
-    def _check_files(self):
-        '''
-        Go through the filelist provided and check if all files exist.
-        '''
-
-        for filepath in self.impath:
-            try:
-                os.path.isfile(filepath)
-            except:
-                ValueError('File ' + filepath + ' does not exist.')
 
     def _bias_subtract(self):
         '''
@@ -529,20 +562,6 @@ class ImageReduction:
         # Construct a FITS object of the reduced frame
         self.light_master = np.array((self.light_master))
 
-    def savefits(self, filepath='reduced_image.fits', overwrite=False):
-        '''
-        Save the reduced image to disk.
-
-        Parameters
-        ----------
-        filepath: String
-            Disk location to be written to. Default is at where the Python
-            process/subprocess is execuated.
-        overwrite: tuple
-            Default is False.
-
-        '''
-
         # Put the reduced data in FITS format with a primary header
         self.fits_data = fits.PrimaryHDU(self.light_master)
 
@@ -661,21 +680,39 @@ class ImageReduction:
             value=self.clip_high_flat,
             comment='Higher threshold of sigma clipping of the flat frames.')
 
+    def savefits(self, filepath='reduced_image.fits', overwrite=False):
+        '''
+        Save the reduced image to disk.
+
+        Parameters
+        ----------
+        filepath: String
+            Disk location to be written to. Default is at where the Python
+            process/subprocess is execuated.
+        overwrite: boolean
+            Default is False.
+
+        '''
+
         # Save file to disk
         self.fits_data.writeto(filepath, overwrite=overwrite)
 
-    def inspect(self, log=True, renderer='default', jsonstring=False):
+    def inspect(self,
+                log=True,
+                renderer='default',
+                jsonstring=False,
+                iframe=False):
         '''
         Display the reduced image with a supported plotly renderer or export
         as json strings.
 
         Parameters
         ----------
-        log: tuple
+        log: boolean
             Log the ADU count per second in the display. Default is True.
         renderer: string
             plotly renderer: jpg, png
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plot.ly
             in any support language
 
@@ -694,6 +731,8 @@ class ImageReduction:
                     data=go.Heatmap(z=self.light_master, colorscale="Viridis"))
             if jsonstring:
                 return fig.to_json()
+            if iframe:
+                pio.write_html(fig, 'reduced_image.html')
             if renderer == 'default':
                 fig.show()
             else:
@@ -730,7 +769,6 @@ class TwoDSpec:
         This is a class for processing a 2D spectral image, the read noise,
         detector gain, seeing and exposure time will be automatically extracted
         from the FITS header if it conforms with the IAUFWG FITS standard.
-
 
         Currently, there is no automated way to decide if a flip is needed.
 
@@ -774,10 +812,10 @@ class TwoDSpec:
             Mask in the spectral direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
             (Default is (1,) i.e. keep everything)
-        flip: tuple
+        flip: boolean
             If the frame has to be left-right flipped, set to True.
             (Deafult is False)
-        cr: tuple
+        cr: boolean
             Set to True to apply cosmic ray rejection by sigma clipping with
             astroscrappy if available, otherwise a 2D median filter of size 5
             would be used. (default is True)
@@ -799,7 +837,7 @@ class TwoDSpec:
             Esposure time for the observation, not important if absolute flux
             calibration is not needed.
             (Deafult is None, which will be replaced with 1.0)
-        silence: tuple
+        silence: boolean
             Set to True to suppress all verbose output.
         '''
 
@@ -807,20 +845,43 @@ class TwoDSpec:
         if isinstance(data, np.ndarray):
             img = data
             self.header = header
-        # If data is not an numpy array, it has to be an
-        #fits.hdu.image.PrimaryHDU object
+        # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(data, fits.hdu.image.PrimaryHDU):
             img = data.data
             self.header = data.header
+        # If it is an ImageReduction object
+        elif isinstance(data, ImageReduction):
+            img = data.fits_data.data
+            self.header = data.fits_data.header
+        # If a filepath is provided
+        elif isinstace(data, str):
+            # If HDU number is provided
+            if data[-1] == ']':
+                filepath, hdunum = data.split('[')
+                hdunum = hdunum[:-1]
+            # If not, assume the HDU idnex is 0
+            else:
+                filepath = data
+                hdunum = 0
+
+            # Check if file exists
+            _check_files(filepath)
+
+            # Load the file and dereference it afterwards
+            fitsfile_tmp = fits.open(filepath)[hdunum]
+            img = fitsfile_tmp.data
+            self.header = fitsfile_tmp.header
+            fitsfile_tmp = None
         else:
-            TypeError('Please provide a numpy array or an' +
-                      'astropy.io.fits.hdu.image.PrimaryHDU object.')
+            TypeError('Please provide a numpy array, an ' +
+                      'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
+                      'ImageReduction object.')
 
         self.saxis = saxis
         if self.saxis is 1:
-            self.Waxis = 0
+            self.waxis = 0
         else:
-            self.Waxis = 1
+            self.waxis = 1
         self.spatial_mask = spatial_mask
         self.spec_mask = spec_mask
         self.flip = flip
@@ -834,12 +895,11 @@ class TwoDSpec:
         self.exptime = 1.
 
         # Default keywords to be searched in the order in the list
-        self.rn_keyword = ['RDNOISE', 'RNOISE', 'RN']
-        self.gain_keyword = ['GAIN']
-        self.seeing_keyword = ['SEEING', 'L1SEEING']
-        self.exptime_keyword = [
-            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
-        ]
+        self._set_default_rn_keyword(['RDNOISE', 'RNOISE', 'RN'])
+        self._set_default_gain_keyword(['GAIN'])
+        self._set_default_seeing_keyword(['SEEING', 'L1SEEING'])
+        self._set_default_exptime_keyword(['XPOSURE', 'EXPTIME', 'EXPOSED',
+                                           'TELAPSED', 'ELAPSED'])
 
         # Get the Read Noise
         if rn is not None:
@@ -865,7 +925,7 @@ class TwoDSpec:
                     warnings.warn('Read Noise value cannot be identified. ' +
                                   'It is set to 0.')
             else:
-                warnings.warn('Header is not provide. ' +
+                warnings.warn('Header is not provided. ' +
                               'Read Noise value is not provided. ' +
                               'It is set to 0.')
 
@@ -984,12 +1044,14 @@ class TwoDSpec:
                 img = img[self.spec_mask]
 
         # get the length in the spectral and spatial directions
-        self.spec_size = np.shape(img)[self.Waxis]
+        self.spec_size = np.shape(img)[self.waxis]
         self.spatial_size = np.shape(img)[self.saxis]
         if self.saxis is 0:
             self.img = np.transpose(img)
+            img = None
         else:
             self.img = img
+            img = None
 
         if self.flip:
             self.img = np.flip(self.img)
@@ -999,36 +1061,129 @@ class TwoDSpec:
         self.zmax = np.nanpercentile(np.log10(self.img), 95)
 
     def _set_default_rn_keyword(self, keyword_list):
-        ''' Change the default read noise keyword list.'''
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
         self.rn_keyword = list(keyword_list)
 
     def _set_default_gain_keyword(self, keyword_list):
-        ''' Change the default gain keyword list.'''
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
         self.gain_keyword = list(keyword_list)
 
     def _set_default_seeing_keyword(self, keyword_list):
-        ''' Change the default seeing keyword list.'''
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
         self.seeing_keyword = list(keyword_list)
 
     def _set_default_exptime_keyword(self, keyword_list):
-        ''' Change the default exposure time keyword list.'''
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
         self.exptime_keyword = list(keyword_list)
 
-    def _append_rn_keyword(self, keyword_list):
-        ''' Append to the existing read noise keyword list.'''
-        self.rn_keyword += list(keyword_list)
+    def set_rn_keyword(self, keyword_list, append=False):
+        '''
+        Set the exptime keyword list.
 
-    def _append_gain_keyword(self, keyword_list):
-        ''' Append to the existing gain keyword list.'''
-        self.gain_keyword += list(keyword_list)
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
 
-    def _append_seeing_keyword(self, keyword_list):
-        ''' Append to the existing seeing keyword list.'''
-        self.seeing_keyword += list(keyword_list)
+        if append:
+            self.rn_keyword += list(keyword_list)
+        else:
+            self.rn_keyword = list(keyword_list)
 
-    def _append_exptime_keyword(self, keyword_list):
-        ''' Append to the existing exptime keyword list.'''
-        self.exptime_keyword += list(keyword_list)
+    def set_gain_keyword(self, keyword_list, append=False):
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
+        if append:
+            self.gain_keyword += list(keyword_list)
+        else:
+            self.gain_keyword = list(keyword_list)
+
+    def set_seeing_keyword(self, keyword_list, append=False):
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
+        if append:
+            self.seeing_keyword += list(keyword_list)
+        else:
+            self.seeing_keyword = list(keyword_list)
+
+    def set_exptime_keyword(self, keyword_list, append=False):
+        '''
+        Set the exptime keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        '''
+
+        if append:
+            self.exptime_keyword += list(keyword_list)
+        else:
+            self.exptime_keyword = list(keyword_list)
+
+    def set_header(self, header):
+        '''
+        Set/replace the header.
+
+        Parameters
+        ----------
+        header: astropy.io.fits.header.Header
+            FITS header from a single HDU.
+        '''
+
+        # If it is a fits.hdu.header.Header object
+        if isinstance(header, fits.header.Header):
+            self.header = data.header
+        else:
+            TypeError(
+                'Please provide an astropy.io.fits.header.Header object.')
 
     def _gaus(self, x, a, b, x0, sigma):
         """
@@ -1054,7 +1209,8 @@ class TwoDSpec:
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
-    def _identify_spectra(self, f_height, display, renderer, jsonstring):
+    def _identify_spectra(self, f_height, display, renderer, jsonstring,
+                          iframe):
         """
         Identify peaks assuming the spatial and spectral directions are
         aligned with the X and Y direction within a few degrees.
@@ -1063,11 +1219,11 @@ class TwoDSpec:
         ----------
         f_height: float
             The minimum intensity as a fraction of maximum height.
-        display: tuple
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -1140,6 +1296,8 @@ class TwoDSpec:
 
             if jsonstring:
                 return fig.to_json()
+            if iframe:
+                pio.write_html(fig, 'identify_spectra.html')
             if renderer == 'default':
                 fig.show()
             else:
@@ -1239,9 +1397,11 @@ class TwoDSpec:
                  scaling_step=0.005,
                  percentile=5,
                  tol=3,
+                 polydeg=None,
                  display=False,
                  renderer='default',
-                 jsonstring=False):
+                 jsonstring=False,
+                 iframe=False):
         '''
         Aperture tracing by first using cross-correlation then the peaks are
         fitting with a polynomial with an order of floor(nwindow, 10) with a
@@ -1283,7 +1443,7 @@ class TwoDSpec:
         resample_factor: int
             Number of times the collapsed 1D slices in the spatial directions
             are to be upsampled.
-        rescale: tuple
+        rescale: boolean
             Fit for the linear scaling factor between adjacent slices.
         scaling_min: float
             Minimum scaling factor to be fitted.
@@ -1298,11 +1458,13 @@ class TwoDSpec:
             Maximum allowed shift between neighbouring slices, this value is
             referring to native pixel size without the application of the
             resampling or rescaling. [pix]
-        display: tuple
+        polydeg: int
+            Degree of the polynomial fit of the trace
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -1320,8 +1482,9 @@ class TwoDSpec:
         # window size
         w_size = nwave // nwindow
         img_split = np.array_split(self.img, nwindow, axis=1)
+        start_window_idx = nwindow // 2
 
-        lines_ref_init = np.nanmedian(img_split[0], axis=1)
+        lines_ref_init = np.nanmedian(img_split[start_window_idx], axis=1)
         lines_ref_init_resampled = signal.resample(lines_ref_init, nresample)
 
         # linear scaling limits
@@ -1340,8 +1503,11 @@ class TwoDSpec:
         # maximum shift (SEMI-AMPLITUDE) from the neighbour (pixel)
         tol_len = int(tol * resample_factor)
 
+        spec_spatial = np.zeros(nresample)
+
         # Scipy correlate method
-        for i in range(nwindow):
+        for i in chain(range(start_window_idx, nwindow),
+                       range(start_window_idx - 1, -1, -1)):
 
             # smooth by taking the median
             lines = np.nanmedian(img_split[i], axis=1)
@@ -1373,42 +1539,53 @@ class TwoDSpec:
             shift_solution[i] = corr_idx[np.nanargmax(corr_val)]
             scale_solution[i] = scaling_range[np.nanargmax(corr_val)]
 
+            # Align the spatial profile before stacking
+            pix_resampled = np.arange(nresample) * resample_factor *\
+                nresample * scale_solution[i] / nresample - shift_solution[i]
+
+            spec_spatial += spectres(
+                np.arange(nresample) * resample_factor, pix_resampled, lines)
+
             # Update (increment) the reference line
             lines_ref = lines
 
         nscaled = (nresample * scale_solution).astype('int')
 
-        # Find the spectral position in the middle of the gram in the upsampled pixel location location
-        peaks = signal.find_peaks(signal.resample(
-            np.nanmedian(img_split[nwindow // 2], axis=1), nresample),
+        # Find the spectral position in the middle of the gram in the upsampled
+        # pixel location location
+        peaks = signal.find_peaks(spec_spatial,
                                   distance=spec_sep,
                                   prominence=1)
+
+        #print('spec_spatial = ' + str(spec_spatial) + ' of length ' + str(len(spec_spatial)))
+        #print('peaks = ' + str(peaks))
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
         self.nspec = min(len(peaks), nspec)
 
-        # Sort the positions by the prominences, and return to the original scale (i.e. with subpixel position)
+        # Sort the positions by the prominences, and return to the original
+        # scale (i.e. with subpixel position)
         spec_init = np.sort(peaks[0][np.argsort(-peaks[1]['prominences'])]
                             [:self.nspec]) / resample_factor
+        #print('spec_init = ' + str(spec_init))
 
         # Create array to populate the spectral locations
         spec = np.zeros((len(spec_init), len(img_split)))
-        #spec_val = np.zeros((len(spec_init), len(img_split)))
 
         # Populate the initial values
-        spec[:, nwindow // 2] = spec_init
+        spec[:, start_window_idx] = spec_init
 
-        # Pixel positions of the mid point of each data_split
+        # Pixel positions of the mid point of each data_split (spectral)
         spec_pix = np.arange(len(img_split)) * w_size + w_size / 2.
 
         # Looping through pixels larger than middle pixel
-        for i in range(nwindow // 2 + 1, len(img_split)):
+        for i in range(start_window_idx + 1, len(img_split)):
             spec[:, i] = (spec[:, i - 1] * resample_factor * nscaled[i] /
                           nresample - shift_solution[i]) / resample_factor
 
         # Looping through pixels smaller than middle pixel
-        for i in range(nwindow // 2 - 1, -1, -1):
+        for i in range(start_window_idx - 1, -1, -1):
             spec[:, i] = (spec[:, i + 1] * resample_factor +
                           shift_solution[i + 1]) / (
                               int(nresample * scale_solution[i + 1]) /
@@ -1417,33 +1594,33 @@ class TwoDSpec:
         ap = np.zeros((len(spec), nwave))
         ap_sigma = np.zeros((len(spec), nwave))
 
+        if polydeg is None:
+            polydeg = max(1, nwindow // 10)
+
         for i in range(len(spec)):
             # fit the trace
-            ap_p = np.polyfit(spec_pix, spec[i], max(1, nwindow // 10))
+            ap_p = np.polyfit(spec_pix, spec[i], polydeg)
             ap[i] = np.polyval(ap_p, np.arange(nwave))
 
-            # stacking up the slices to get a good guess of the LSF
-            for j, ap_idx in enumerate(ap[i][spec_pix.astype('int')]):
-                ap_slice = np.nanmedian(img_split[j], axis=1)
-                # Add 0.5 to allow proper rounding
-                start_idx = int(ap_idx - 20 + 0.5)
-                end_idx = start_idx + 20 + 20 + 1
-                if j == 0:
-                    ap_spatial = ap_slice[start_idx:end_idx]
-                else:
-                    ap_spatial += ap_slice[start_idx:end_idx]
+            # Get the centre of the upsampled spectrum
+            ap_centre_idx = ap[i][nwave // 2] * resample_factor
+
+            # Get the indices for the 10 pixels on the left and right of the
+            # spectrum, and apply the resampling factor.
+            start_idx = int(ap_centre_idx - 10 * resample_factor + 0.5)
+            end_idx = start_idx + 20 * resample_factor + 1
 
             # compute ONE sigma for each trace
             pguess = [
-                np.nanmax(ap_spatial),
-                np.nanpercentile(ap_spatial, 10), ap_idx, 3.
+                np.nanmax(spec_spatial[start_idx:end_idx]),
+                np.nanpercentile(spec_spatial, 10), ap_centre_idx, 3.
             ]
 
             popt, pcov = curve_fit(self._gaus,
                                    range(start_idx, end_idx),
-                                   ap_spatial,
+                                   spec_spatial[start_idx:end_idx],
                                    p0=pguess)
-            ap_sigma[i] = popt[3]
+            ap_sigma[i] = popt[3] / 10.
 
         self.trace = ap
         self.trace_sigma = ap_sigma
@@ -1487,6 +1664,8 @@ class TwoDSpec:
                               height=800)
             if jsonstring:
                 return fig.to_json()
+            if iframe:
+                pio.write_html(fig, 'ap_trace.html')
             if renderer == 'default':
                 fig.show()
             else:
@@ -1502,7 +1681,8 @@ class TwoDSpec:
                        bigbox=8,
                        display=False,
                        renderer='default',
-                       jsonstring=False):
+                       jsonstring=False,
+                       iframe=False):
         """
         This only works for bright spectra with good wavelength coverage.
 
@@ -1538,13 +1718,13 @@ class TwoDSpec:
             (default is k=3)
         bigbox: float
             The number of sigma away from the main aperture to allow to trace
-        silence: tuple
+        silence: boolean
             Set to disable warning/error messages. (Default is False)
-        display: tuple
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         """
@@ -1552,22 +1732,23 @@ class TwoDSpec:
         self.nspec = nspec
 
         if not self.silence:
-            print('Tracing Aperture using nsteps=' + str(nsteps))
+            print('Tracing Aperture using nwindow=' + str(nwindow))
 
         # the valid y-range of the chip (an array of int)
         ydata = np.arange(self.spec_size)
         ztot = np.sum(self.img, axis=1)
 
         # need at least 3 samples along the trace
-        if (nsteps < 3):
-            nsteps = 3
+        if (nwindow < 3):
+            nwindow = 3
 
         # detect peaks by summing in the spatial direction
         self._identify_spectra(0.01,
                                1,
                                display=False,
                                renderer=renderer,
-                               jsonstring=jsonstring)
+                               jsonstring=jsonstring,
+                               iframe=False)
 
         if display:
             # set a side-by-side subplot
@@ -1641,6 +1822,8 @@ class TwoDSpec:
 
                     if jsonstring:
                         return fig.to_json()
+                    if iframe:
+                        pio.write_html(fig, 'ap_trace_quick.html')
                     if renderer == 'default':
                         fig.show()
                     else:
@@ -1689,7 +1872,7 @@ class TwoDSpec:
                 yi = np.arange(self.spec_size)[ydata2]
 
                 # define the X-bin edges
-                xbins = np.linspace(0, self.spatial_size, nsteps)
+                xbins = np.linspace(0, self.spatial_size, nwindow)
                 ybins = np.zeros_like(xbins)
                 ybins_sigma = np.zeros_like(xbins)
 
@@ -1713,7 +1896,7 @@ class TwoDSpec:
                     except:
                         if not self.silence:
                             ValueError('Step ' + str(j + 1) + ' of ' +
-                                       str(nsteps) + ' of spectrum ' +
+                                       str(nwindow) + ' of spectrum ' +
                                        str(i + 1) + ' of ' + str(self.nspec) +
                                        ' cannot be fitted.')
                         break
@@ -1725,7 +1908,7 @@ class TwoDSpec:
                         popt = pgaus
                         if not self.silence:
                             ValueError(
-                                'Step ' + str(j + 1) + ' of ' + str(nsteps) +
+                                'Step ' + str(j + 1) + ' of ' + str(nwindow) +
                                 ' of spectrum ' + str(i + 1) + ' of ' +
                                 str(self.nspec) +
                                 ' has a poor fit. Initial guess is used instead.'
@@ -1812,6 +1995,8 @@ class TwoDSpec:
 
                 if jsonstring:
                     return fig.to_json()
+                if iframe:
+                    pio.write_html(fig, 'ap_trace_quick_' + str(j) + '.html')
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -1825,7 +2010,8 @@ class TwoDSpec:
                    optimal=True,
                    display=False,
                    renderer='default',
-                   jsonstring=False):
+                   jsonstring=False,
+                   iframe=False):
         """
         Extract the spectra using the traces, support tophat or optimal
         extraction. The sky background is fitted in one dimention only. The
@@ -1864,19 +2050,19 @@ class TwoDSpec:
             (Default is 3)
         skywidth: int
             The width in pixels of the sky windows on either side of the
-            aperture. (Default is 7)
+            aperture. Zero (0) means ignore sky subtraction. (Default is 7)
         skydeg: int
             The polynomial order to fit between the sky windows.
             (Default is 0, i.e. constant flat sky level)
-        optimal: tuple
+        optimal: boolean
             Set optimal extraction. (Default is True)
-        silence: tuple
+        silence: boolean
             Set to disable warning/error messages. (Default is False)
-        display: tuple
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         """
@@ -1927,6 +2113,8 @@ class TwoDSpec:
                     elif (skydeg == 0):
                         skyadu[j][i] = np.sum(
                             np.ones(apwidth * 2 + 1) * np.nanmean(z))
+                else:
+                    pfit = [0., 0.]
 
                 # if optimal extraction
                 if optimal:
@@ -1938,10 +2126,7 @@ class TwoDSpec:
                         sky = np.ones(len(pix)) * np.nanmean(z)
                     # Get the optimal signals
                     adu[j][i], aduerr[j][i] = self._optimal_signal(
-                        pix,
-                        xslice,
-                        sky,
-                        self.trace[j][i],
+                        pix, xslice, sky, self.trace[j][i],
                         self.trace_sigma[j][i])
                 else:
                     #-- finally, compute the error in this pixel
@@ -1972,7 +2157,7 @@ class TwoDSpec:
                         y=np.arange(
                             max(0, median_trace - widthdn - skysep - skywidth -
                                 1),
-                            min(median_trace + widthup + skysep + skywidth,
+                            min(median_trace + widthup + skysep + skywidth + 1,
                                 len(self.img[0]))),
                         z=img_display,
                         colorscale="Viridis",
@@ -2000,7 +2185,7 @@ class TwoDSpec:
                         showlegend=False))
 
                 # Lower red box on the image
-                if (itrace - widthdn >= 0):
+                if (itrace - widthdn >= 0) & (skywidth > 0):
                     fig.add_trace(
                         go.Scatter(
                             x=[0, len_trace, len_trace, 0, 0],
@@ -2028,7 +2213,7 @@ class TwoDSpec:
                             showlegend=False))
 
                 # Upper red box on the image
-                if (itrace + widthup <= self.spatial_size):
+                if (itrace + widthup <= self.spatial_size) & (skywidth > 0):
                     fig.add_trace(
                         go.Scatter(x=[0, len_trace, len_trace, 0, 0],
                                    y=[
@@ -2124,6 +2309,8 @@ class TwoDSpec:
                     height=800)
                 if jsonstring:
                     return fig.to_json()
+                if iframe:
+                    pio.write_html(fig, 'ap_extract_' + str(j) + '.html')
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -2160,7 +2347,20 @@ class WavelengthPolyFit:
         '''
 
         self.spec = spec
-        self.arc = arc
+
+        # If data provided is an numpy array
+        if isinstance(arc, np.ndarray):
+            self.arc = arc
+        # If it is a fits.hdu.image.PrimaryHDU object
+        elif isinstance(arc, fits.hdu.image.PrimaryHDU):
+            self.arc = arc.data
+        # If it is an ImageReduction object
+        elif isinstance(arc, ImageReduction):
+            self.arc = arc.arc_master
+        else:
+            TypeError('Please provide a numpy array, an ' +
+                      'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
+                      'ImageReduction object.')
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spec.spatial_mask) > 1):
@@ -2184,11 +2384,12 @@ class WavelengthPolyFit:
             self.arc = np.flip(self.arc)
 
     def find_arc_lines(self,
-                       percentile=20.,
+                       percentile=25.,
                        distance=5.,
                        display=False,
                        jsonstring=False,
-                       renderer='default'):
+                       renderer='default',
+                       iframe=False):
         '''
         This function applies the trace to the arc image then take median
         average of the stripe before identifying the arc lines (peaks) with
@@ -2207,11 +2408,11 @@ class WavelengthPolyFit:
             background sky level to the first order. [ADU]
         distance: float
             Minimum separation between peaks
-        display: tuple
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -2219,6 +2420,10 @@ class WavelengthPolyFit:
         -------
         JSON strings if jsonstring is set to True
         '''
+
+        self.arc_trace = None
+        self.spectrum = None
+        self.peaks = None
 
         p = np.percentile(self.arc, percentile)
         trace = int(np.mean(self.spec.trace))
@@ -2266,6 +2471,8 @@ class WavelengthPolyFit:
 
             if jsonstring:
                 return fig.to_json()
+            if iframe:
+                pio.write_html(fig, 'arc_lines.html')
             if renderer == 'default':
                 fig.show()
             else:
@@ -2276,22 +2483,23 @@ class WavelengthPolyFit:
                   min_wave=3500.,
                   max_wave=8500.,
                   sample_size=5,
-                  max_tries=5000,
-                  top_n=20,
-                  nslopes=1000,
+                  max_tries=10000,
+                  top_n=8,
+                  nslopes=2000,
                   range_tolerance=500.,
-                  fit_tolerance=20.,
-                  polydeg=5,
-                  candidate_thresh=15.,
-                  ransac_thresh=1,
-                  xbins=50,
-                  ybins=50,
+                  fit_tolerance=10.,
+                  polydeg=4,
+                  candidate_thresh=10.,
+                  ransac_thresh=2.,
+                  xbins=100,
+                  ybins=100,
                   brute_force=False,
                   fittype='poly',
                   mode='manual',
                   progress=False,
-                  coeff=None,
-                  display=False):
+                  pfit=None,
+                  display=False,
+                  savefig=None):
         '''
         A wrapper function to perform wavelength calibration with RASCAL.
 
@@ -2339,7 +2547,7 @@ class WavelengthPolyFit:
             The number of bins in the pixel direction (in Hough space).
         ybins : int
             The number of bins in the wavelength direction (in Hough space).
-        brute_force: tuple
+        brute_force: boolean
             Set to try all possible combinations and choose the best fit as
             the solution. This takes tens of minutes for tens of lines.
         fittype: string
@@ -2354,11 +2562,11 @@ class WavelengthPolyFit:
                 sample_size = 5, max_tries = 5000, top_n = 20, nslope = 1000
             slow:
                 sample_size = 5, max_tries = 10000, top_n = 20, nslope = 2000
-        progress: tuple
+        progress: boolean
             Set to show the progress using tdqm (if imported).
         pfit: list
             List of the polynomial fit coefficients for the first guess.
-        display: tuple
+        display: boolean
             Set to show diagnostic plot.
         '''
 
@@ -2369,7 +2577,7 @@ class WavelengthPolyFit:
 
         c.add_atlas(elements)
 
-        c.set_fit_constraints(num_slopes=num_slopes,
+        c.set_fit_constraints(num_slopes=nslopes,
                               range_tolerance=range_tolerance,
                               fit_tolerance=fit_tolerance,
                               polydeg=polydeg,
@@ -2383,14 +2591,14 @@ class WavelengthPolyFit:
         pfit = c.fit(sample_size=sample_size,
                      max_tries=max_tries,
                      top_n=top_n,
-                     n_slope=num_slopes,
+                     n_slope=nslopes,
                      mode=mode,
                      progress=progress,
-                     pfit=pfit)
+                     coeff=pfit)
 
         # Overwriting and fine tuning polynomial coefficients
+        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=10.)
         pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=5.)
-        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=1.)
 
         self.pfit = pfit
         self.pfit_type = 'poly'
@@ -2400,15 +2608,17 @@ class WavelengthPolyFit:
                        self.pfit,
                        plot_atlas=True,
                        log_spectrum=False,
-                       tolerance=0.5)
+                       tolerance=1.0,
+                       output_filename=savefig)
 
     def calibrate_pfit(self,
                        elements,
-                       pfit,
+                       pfit=None,
                        min_wave=3500.,
                        max_wave=8500.,
                        tolerance=10.,
-                       display=False):
+                       display=False,
+                       savefig=None):
         '''
         A wrapper function to fine tune wavelength calibration with RASCAL
         when there is already a set of good coefficienes.
@@ -2439,9 +2649,17 @@ class WavelengthPolyFit:
         c.add_atlas(elements=elements,
                     min_wavelength=min_wave,
                     max_wavelength=max_wave)
+
+        # If pfit is not provided, get estimate of pfit by running calibrate()
+        if pfit is None:
+            try:
+                pfit = self.pfit
+            except:
+                self.calibrate()
+                pfit = self.pfit
+
         pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=tolerance)
-        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=1)
-        pfit, _, _ = c.match_peaks_to_atlas(pfit, tolerance=0.5)
+
         self.pfit = pfit
         self.pfit_type = 'poly'
 
@@ -2450,7 +2668,8 @@ class WavelengthPolyFit:
                        self.pfit,
                        plot_atlas=True,
                        log_spectrum=False,
-                       tolerance=0.5)
+                       tolerance=0.5,
+                       output_filename=savefig)
 
 
 class StandardFlux:
@@ -2484,7 +2703,7 @@ class StandardFlux:
             The threshold for the word similarity in the range of [0, 1].
         ftype: string
             'flux' or 'mag' (AB magnitude)
-        silence: tuple
+        silence: boolean
             Set to suppress all verbose warning.
         '''
 
@@ -2524,18 +2743,19 @@ class StandardFlux:
     def load_standard(self,
                       display=False,
                       renderer='default',
-                      jsonstring=False):
+                      jsonstring=False,
+                      iframe=False):
         '''
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag.
 
         Returns
         -------
-        display: tuple
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -2578,9 +2798,12 @@ class StandardFlux:
         # Note that if the renderer does not generate any image (e.g. JSON)
         # nothing will be displayed
         if display & plotly_imported:
-            self.inspect_standard(renderer, jsonstring)
+            self.inspect_standard(renderer, jsonstring, iframe)
 
-    def inspect_standard(self, renderer='default', jsonstring=False):
+    def inspect_standard(self,
+                         renderer='default',
+                         jsonstring=False,
+                         iframe=False):
         '''
         Display the standard star plot.
 
@@ -2588,7 +2811,7 @@ class StandardFlux:
         ----------
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -2596,7 +2819,7 @@ class StandardFlux:
         -------
         JSON strings if jsonstring is set to True
         '''
-        fig = go.Figure()
+        fig = go.Figure(layout=linearloglayout)
 
         # show the image on the top
         fig.add_trace(
@@ -2616,10 +2839,16 @@ class StandardFlux:
 
         if jsonstring:
             return fig.to_json()
+        if iframe:
+            pio.write_html(fig, 'standard.html')
         if renderer == 'default':
             fig.show()
         else:
             fig.show(renderer)
+
+
+from matplotlib.pyplot import *
+ion()
 
 
 class OneDSpec:
@@ -2732,7 +2961,7 @@ class OneDSpec:
                 self.pfit_type = wave_cal.pfit_type
                 self.pfit = wave_cal.pfit
                 if self.pfit_type == 'poly':
-                    self.polyval = np.polyval
+                    self.polyval = np.polynomial.polynomial.polyval
                 elif self.pfit_type == 'legendre':
                     self.polyval = np.polynomial.legendre.legval
                 elif self.pfit_type == 'chebyshev':
@@ -2814,11 +3043,11 @@ class OneDSpec:
 
         if stype == 'science':
             pix = np.arange(len(self.adu[0]))
-            self.wave = self.polyval(self.pfit, pix)
+            self.wave = self.polyval(pix, self.pfit)
         elif stype == 'standard':
             if self.standard_imported:
                 pix_std = np.arange(len(self.adu_std))
-                self.wave_std = self.polyval(self.pfit_std, pix_std)
+                self.wave_std = self.polyval(pix_std, self.pfit_std)
             else:
                 raise AttributeError(
                     'The TwoDSpec of the standard '
@@ -2827,8 +3056,8 @@ class OneDSpec:
         elif stype == 'all':
             pix = np.arange(len(self.adu[0]))
             pix_std = np.arange(len(self.adu_std))
-            self.wave = self.polyval(self.pfit, pix)
-            self.wave_std = self.polyval(self.pfit_std, pix_std)
+            self.wave = self.polyval(pix, self.pfit)
+            self.wave_std = self.polyval(pix_std, self.pfit_std)
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
@@ -2841,7 +3070,8 @@ class OneDSpec:
                          mask_range=[[6850, 7000], [7150, 7400], [7575, 7775]],
                          display=False,
                          renderer='default',
-                         jsonstring=False):
+                         jsonstring=False,
+                         iframe=False):
         '''
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
@@ -2859,7 +3089,7 @@ class OneDSpec:
             interpolation kind
             >>> [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,
                  ‘previous’, ‘next’]
-        smooth: tuple
+        smooth: boolean
             set to smooth the input spectrum with scipy.signal.savgol_filter
         slength: int
             SG-filter window size
@@ -2869,11 +3099,11 @@ class OneDSpec:
             Masking out regions not suitable for fitting the sensitivity curve.
                 None:         no mask
                 list of list: [[min1, max1], [min2, max2],...]
-        display: tuple
+        display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -2928,9 +3158,12 @@ class OneDSpec:
 
         # Diagnostic plot
         if display & plotly_imported:
-            self.inspect_sencurve()
+            self.inspect_sencurve(renderer, jsonstring, iframe)
 
-    def inspect_sencurve(self, renderer='default', jsonstring=False):
+    def inspect_sencurve(self,
+                         renderer='default',
+                         jsonstring=False,
+                         iframe=False):
         '''
         Display the computed sensitivity curve.
 
@@ -2938,7 +3171,7 @@ class OneDSpec:
         ----------
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -2947,7 +3180,7 @@ class OneDSpec:
         JSON strings if jsonstring is set to True.
         '''
 
-        fig = go.Figure()
+        fig = go.Figure(layout=linearloglayout)
         # show the image on the top
         fig.add_trace(
             go.Scatter(x=self.wave_sen,
@@ -2999,6 +3232,8 @@ class OneDSpec:
                           height=800)
         if jsonstring:
             return fig.to_json()
+        if iframe:
+            pio.write_html(fig, 'senscurve.html')
         if renderer == 'default':
             fig.show()
         else:
@@ -3042,7 +3277,8 @@ class OneDSpec:
                                  wave_min=4000.,
                                  wave_max=8000.,
                                  renderer='default',
-                                 jsonstring=False):
+                                 jsonstring=False,
+                                 iframe=False):
         '''
         Display the reduced spectra.
 
@@ -3056,7 +3292,7 @@ class OneDSpec:
             Maximum wavelength to display
         renderer: string
             plotly renderer options.
-        jsonstring: tuple
+        jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
 
@@ -3069,31 +3305,57 @@ class OneDSpec:
             for j in range(self.nspec):
 
                 wave_mask = ((self.wave > wave_min) & (self.wave < wave_max))
-                flux_mask = (
-                    (self.flux[j] >
-                     np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
-                    (self.flux[j] <
-                     np.nanpercentile(self.flux[j][wave_mask], 95) * 1.5))
-                flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
-                flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
+                if self.standard_imported:
+                    flux_mask = (
+                        (self.flux[j] >
+                         np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
+                        (self.flux[j] <
+                         np.nanpercentile(self.flux[j][wave_mask], 95) * 1.5))
+                    flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
+                    flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
+                else:
+                    flux_mask = (
+                        (self.adu[j] >
+                         np.nanpercentile(self.adu[j][wave_mask], 5) / 1.5) &
+                        (self.adu[j] <
+                         np.nanpercentile(self.adu[j][wave_mask], 95) * 1.5))
+                    flux_min = np.log10(np.nanmin(self.adu[j][flux_mask]))
+                    flux_max = np.log10(np.nanmax(self.adu[j][flux_mask]))
 
-                fig = go.Figure()
+                fig = go.Figure(layout=linearloglayout)
                 # show the image on the top
-                fig.add_trace(
-                    go.Scatter(x=self.wave,
-                               y=self.flux[j],
-                               line=dict(color='royalblue'),
-                               name='Flux'))
-                fig.add_trace(
-                    go.Scatter(x=self.wave,
-                               y=self.fluxerr[j],
-                               line=dict(color='firebrick'),
-                               name='Flux Uncertainty'))
-                fig.add_trace(
-                    go.Scatter(x=self.wave,
-                               y=self.skyflux[j],
-                               line=dict(color='orange'),
-                               name='Sky Flux'))
+                if self.standard_imported:
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.flux[j],
+                                   line=dict(color='royalblue'),
+                                   name='Flux'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.fluxerr[j],
+                                   line=dict(color='firebrick'),
+                                   name='Flux Uncertainty'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.skyflux[j],
+                                   line=dict(color='orange'),
+                                   name='Sky Flux'))
+                else:
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.adu[j],
+                                   line=dict(color='royalblue'),
+                                   name='ADU'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.aduerr[j],
+                                   line=dict(color='firebrick'),
+                                   name='ADU Uncertainty'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.skyadu[j],
+                                   line=dict(color='orange'),
+                                   name='Sky ADU'))
                 fig.update_layout(autosize=True,
                                   hovermode='closest',
                                   showlegend=True,
@@ -3114,6 +3376,8 @@ class OneDSpec:
 
                 if jsonstring:
                     return fig.to_json()
+                if iframe:
+                    pio.write_html(fig, 'spectrum_' + str(j) + '.html')
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -3121,57 +3385,65 @@ class OneDSpec:
 
         elif stype == 'standard':
 
-            wave_std_mask = ((self.wave_std > wave_min) &
-                             (self.wave_std < wave_max))
-            flux_std_mask = (
-                (self.flux_std >
-                 np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
-                (self.flux_std <
-                 np.nanpercentile(self.flux_std[wave_std_mask], 95) * 1.5))
-            flux_std_min = np.log10(np.nanmin(self.flux_std[flux_std_mask]))
-            flux_std_max = np.log10(np.nanmax(self.flux_std[flux_std_mask]))
+            if not self.standard_imported:
+                warnings.warn('Standard observation is not provided.')
+            else:
+                wave_std_mask = ((self.wave_std > wave_min) &
+                                 (self.wave_std < wave_max))
+                flux_std_mask = (
+                    (self.flux_std >
+                     np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
+                    (self.flux_std <
+                     np.nanpercentile(self.flux_std[wave_std_mask], 95) * 1.5))
+                flux_std_min = np.log10(np.nanmin(
+                    self.flux_std[flux_std_mask]))
+                flux_std_max = np.log10(np.nanmax(
+                    self.flux_std[flux_std_mask]))
 
-            fig = go.Figure()
-            # show the image on the top
-            fig.add_trace(
-                go.Scatter(x=self.wave_std,
-                           y=self.flux_std,
-                           line=dict(color='royalblue'),
-                           name='Flux'))
-            fig.add_trace(
-                go.Scatter(x=self.wave_std,
-                           y=self.fluxerr_std,
-                           line=dict(color='orange'),
-                           name='Flux Uncertainty'))
-            fig.add_trace(
-                go.Scatter(x=self.wave_std,
-                           y=self.skyflux_std,
-                           line=dict(color='firebrick'),
-                           name='Sky Flux'))
-            fig.add_trace(
-                go.Scatter(x=self.wave_std_true,
-                           y=self.fluxmag_std_true,
-                           line=dict(color='black'),
-                           name='Standard'))
-            fig.update_layout(autosize=True,
-                              hovermode='closest',
-                              showlegend=True,
-                              xaxis=dict(title='Wavelength / A',
-                                         range=[wave_min, wave_max]),
-                              yaxis=dict(title='Flux',
-                                         range=[flux_std_min, flux_std_max],
-                                         type='log'),
-                              legend=go.layout.Legend(x=0,
-                                                      y=1,
-                                                      traceorder="normal",
-                                                      font=dict(
-                                                          family="sans-serif",
-                                                          size=12,
-                                                          color="black"),
-                                                      bgcolor='rgba(0,0,0,0)'),
-                              height=800)
+                fig = go.Figure(layout=linearloglayout)
+                # show the image on the top
+                fig.add_trace(
+                    go.Scatter(x=self.wave_std,
+                               y=self.flux_std,
+                               line=dict(color='royalblue'),
+                               name='Flux'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave_std,
+                               y=self.fluxerr_std,
+                               line=dict(color='orange'),
+                               name='Flux Uncertainty'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave_std,
+                               y=self.skyflux_std,
+                               line=dict(color='firebrick'),
+                               name='Sky Flux'))
+                fig.add_trace(
+                    go.Scatter(x=self.wave_std_true,
+                               y=self.fluxmag_std_true,
+                               line=dict(color='black'),
+                               name='Standard'))
+                fig.update_layout(
+                    autosize=True,
+                    hovermode='closest',
+                    showlegend=True,
+                    xaxis=dict(title='Wavelength / A',
+                               range=[wave_min, wave_max]),
+                    yaxis=dict(title='Flux',
+                               range=[flux_std_min, flux_std_max],
+                               type='log'),
+                    legend=go.layout.Legend(x=0,
+                                            y=1,
+                                            traceorder="normal",
+                                            font=dict(family="sans-serif",
+                                                      size=12,
+                                                      color="black"),
+                                            bgcolor='rgba(0,0,0,0)'),
+                    height=800)
 
-            if not jsonstring:
+                if jsonstring:
+                    return fig.to_json()
+                if iframe:
+                    pio.write_html(fig, 'spectrum_standard.html')
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -3182,31 +3454,57 @@ class OneDSpec:
             for j in range(self.nspec):
 
                 wave_mask = ((self.wave > wave_min) & (self.wave < wave_max))
-                flux_mask = (
-                    (self.flux[j] >
-                     np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
-                    (self.flux[j] <
-                     np.nanpercentile(self.flux[j][wave_mask], 95) * 1.5))
-                flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
-                flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
+                if self.standard_imported:
+                    flux_mask = (
+                        (self.flux[j] >
+                         np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
+                        (self.flux[j] <
+                         np.nanpercentile(self.flux[j][wave_mask], 95) * 1.5))
+                    flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
+                    flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
+                else:
+                    flux_mask = (
+                        (self.adu[j] >
+                         np.nanpercentile(self.adu[j][wave_mask], 5) / 1.5) &
+                        (self.adu[j] <
+                         np.nanpercentile(self.adu[j][wave_mask], 95) * 1.5))
+                    flux_min = np.log10(np.nanmin(self.adu[j][flux_mask]))
+                    flux_max = np.log10(np.nanmax(self.adu[j][flux_mask]))
 
-                fig = go.Figure()
+                fig = go.Figure(layout=linearloglayout)
                 # show the image on the top
-                fig.add_trace(
-                    go.Scatter(x=self.wave,
-                               y=self.flux[j],
-                               line=dict(color='royalblue'),
-                               name='Flux'))
-                fig.add_trace(
-                    go.Scatter(x=self.wave,
-                               y=self.fluxerr[j],
-                               line=dict(color='orange'),
-                               name='Flux Uncertainty'))
-                fig.add_trace(
-                    go.Scatter(x=self.wave,
-                               y=self.skyflux[j],
-                               line=dict(color='firebrick'),
-                               name='Sky Flux'))
+                if self.standard_imported:
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.flux[j],
+                                   line=dict(color='royalblue'),
+                                   name='Flux'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.fluxerr[j],
+                                   line=dict(color='firebrick'),
+                                   name='Flux Uncertainty'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.skyflux[j],
+                                   line=dict(color='orange'),
+                                   name='Sky Flux'))
+                else:
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.adu[j],
+                                   line=dict(color='royalblue'),
+                                   name='ADU'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.aduerr[j],
+                                   line=dict(color='firebrick'),
+                                   name='ADU Uncertainty'))
+                    fig.add_trace(
+                        go.Scatter(x=self.wave,
+                                   y=self.skyadu[j],
+                                   line=dict(color='orange'),
+                                   name='Sky ADU'))
                 fig.update_layout(autosize=True,
                                   hovermode='closest',
                                   showlegend=True,
@@ -3225,68 +3523,78 @@ class OneDSpec:
                                       bgcolor='rgba(0,0,0,0)'),
                                   height=800)
 
-                if not jsonstring:
-                    if renderer == 'default':
-                        fig.show()
-                    else:
-                        fig.show(renderer)
+                if jsonstring:
+                    return fig.to_json()
+                if iframe:
+                    pio.write_html(fig, 'spectrum_' + str(j) + '.html')
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
 
-            wave_std_mask = ((self.wave_std > wave_min) &
-                             (self.wave_std < wave_max))
-            flux_std_mask = (
-                (self.flux_std >
-                 np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
-                (self.flux_std <
-                 np.nanpercentile(self.flux_std[wave_std_mask], 95) * 1.5))
-            flux_std_min = np.log10(np.nanmin(self.flux_std[flux_std_mask]))
-            flux_std_max = np.log10(np.nanmax(self.flux_std[flux_std_mask]))
-
-            fig2 = go.Figure()
-            # show the image on the top
-            fig2.add_trace(
-                go.Scatter(x=self.wave_std,
-                           y=self.flux_std,
-                           line=dict(color='royalblue'),
-                           name='Flux'))
-            fig2.add_trace(
-                go.Scatter(x=self.wave_std,
-                           y=self.fluxerr_std,
-                           line=dict(color='orange'),
-                           name='Flux Uncertainty'))
-            fig2.add_trace(
-                go.Scatter(x=self.wave_std,
-                           y=self.skyflux_std,
-                           line=dict(color='firebrick'),
-                           name='Sky Flux'))
-            fig2.add_trace(
-                go.Scatter(x=self.wave_std_true,
-                           y=self.fluxmag_std_true,
-                           line=dict(color='black'),
-                           name='Standard'))
-            fig2.update_layout(autosize=True,
-                               hovermode='closest',
-                               showlegend=True,
-                               xaxis=dict(title='Wavelength / A',
-                                          range=[wave_min, wave_max]),
-                               yaxis=dict(title='Flux',
-                                          range=[flux_std_min, flux_std_max],
-                                          type='log'),
-                               legend=go.layout.Legend(
-                                   x=0,
-                                   y=1,
-                                   traceorder="normal",
-                                   font=dict(family="sans-serif",
-                                             size=12,
-                                             color="black"),
-                                   bgcolor='rgba(0,0,0,0)'),
-                               height=800)
-
-            if jsonstring:
-                return fig.to_json(), fig2.to_json()
-            if renderer == 'default':
-                fig2.show()
+            if not self.standard_imported:
+                warnings.warn('Standard observation is not provided.')
             else:
-                fig2.show(renderer)
+                wave_std_mask = ((self.wave_std > wave_min) &
+                                 (self.wave_std < wave_max))
+                flux_std_mask = (
+                    (self.flux_std >
+                     np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
+                    (self.flux_std <
+                     np.nanpercentile(self.flux_std[wave_std_mask], 95) * 1.5))
+                flux_std_min = np.log10(np.nanmin(
+                    self.flux_std[flux_std_mask]))
+                flux_std_max = np.log10(np.nanmax(
+                    self.flux_std[flux_std_mask]))
+
+                fig2 = go.Figure(layout=linearloglayout)
+                # show the image on the top
+                fig2.add_trace(
+                    go.Scatter(x=self.wave_std,
+                               y=self.flux_std,
+                               line=dict(color='royalblue'),
+                               name='Flux'))
+                fig2.add_trace(
+                    go.Scatter(x=self.wave_std,
+                               y=self.fluxerr_std,
+                               line=dict(color='orange'),
+                               name='Flux Uncertainty'))
+                fig2.add_trace(
+                    go.Scatter(x=self.wave_std,
+                               y=self.skyflux_std,
+                               line=dict(color='firebrick'),
+                               name='Sky Flux'))
+                fig2.add_trace(
+                    go.Scatter(x=self.wave_std_true,
+                               y=self.fluxmag_std_true,
+                               line=dict(color='black'),
+                               name='Standard'))
+                fig2.update_layout(
+                    autosize=True,
+                    hovermode='closest',
+                    showlegend=True,
+                    xaxis=dict(title='Wavelength / A',
+                               range=[wave_min, wave_max]),
+                    yaxis=dict(title='Flux',
+                               range=[flux_std_min, flux_std_max],
+                               type='log'),
+                    legend=go.layout.Legend(x=0,
+                                            y=1,
+                                            traceorder="normal",
+                                            font=dict(family="sans-serif",
+                                                      size=12,
+                                                      color="black"),
+                                            bgcolor='rgba(0,0,0,0)'),
+                    height=800)
+
+                if jsonstring:
+                    return fig.to_json()
+                if iframe:
+                    pio.write_html(fig, 'spectrum_standard.html')
+                if renderer == 'default':
+                    fig.show()
+                else:
+                    fig.show(renderer)
         else:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
