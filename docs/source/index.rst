@@ -17,8 +17,6 @@ The bare minimum example code to perform a complete spectral data reduction with
 
 .. code-block:: python
 
-    import sys
-    import numpy as np
     from astropy.io import fits
     from aspired import aspired
 
