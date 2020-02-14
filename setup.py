@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 setup_requires = ['numpy>=1.16', 'reproject==0.5']
 
 install_requires = [
-    'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'cython', 'plotly'
+    'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly'
 ]
 
 os.system('pip install git+https://github.com/cylammarco/SpectRes')

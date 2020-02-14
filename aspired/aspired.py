@@ -898,8 +898,8 @@ class TwoDSpec:
         self._set_default_rn_keyword(['RDNOISE', 'RNOISE', 'RN'])
         self._set_default_gain_keyword(['GAIN'])
         self._set_default_seeing_keyword(['SEEING', 'L1SEEING'])
-        self._set_default_exptime_keyword(['XPOSURE', 'EXPTIME', 'EXPOSED',
-                                           'TELAPSED', 'ELAPSED'])
+        self._set_default_exptime_keyword(
+            ['XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'])
 
         # Get the Read Noise
         if rn is not None:
@@ -1397,7 +1397,8 @@ class TwoDSpec:
                  scaling_step=0.005,
                  percentile=5,
                  tol=3,
-                 polydeg=None,
+                 polydeg=3,
+                 ap_faint=10,
                  display=False,
                  renderer='default',
                  jsonstring=False,
@@ -1437,7 +1438,8 @@ class TwoDSpec:
         nspec: int
             Number of spectra to be extracted.
         nwindow: int
-            Number of spectral slices to be produced for cross-correlation.
+            Number of spectral slices (subspectra) to be produced for
+            cross-correlation.
         spec_sep: int
             Minimum separation between sky lines.
         resample_factor: int
@@ -1459,7 +1461,11 @@ class TwoDSpec:
             referring to native pixel size without the application of the
             resampling or rescaling. [pix]
         polydeg: int
-            Degree of the polynomial fit of the trace
+            Degree of the polynomial fit of the trace.
+        ap_faint: float
+            The percentile threshold of ADU aperture to be used for fitting
+            the trace. Note that this percentile is of the ADU, not of the
+            number of subspectra.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
@@ -1547,7 +1553,10 @@ class TwoDSpec:
                 np.arange(nresample) * resample_factor, pix_resampled, lines)
 
             # Update (increment) the reference line
-            lines_ref = lines
+            if (i == nwindow - 1):
+                lines_ref = lines_ref_init_resampled
+            else:
+                lines_ref = lines
 
         nscaled = (nresample * scale_solution).astype('int')
 
@@ -1571,39 +1580,48 @@ class TwoDSpec:
         #print('spec_init = ' + str(spec_init))
 
         # Create array to populate the spectral locations
-        spec = np.zeros((len(spec_init), len(img_split)))
+        spec_idx = np.zeros((len(spec_init), len(img_split)))
 
         # Populate the initial values
-        spec[:, start_window_idx] = spec_init
+        spec_idx[:, start_window_idx] = spec_init
 
         # Pixel positions of the mid point of each data_split (spectral)
         spec_pix = np.arange(len(img_split)) * w_size + w_size / 2.
 
         # Looping through pixels larger than middle pixel
-        for i in range(start_window_idx + 1, len(img_split)):
-            spec[:, i] = (spec[:, i - 1] * resample_factor * nscaled[i] /
-                          nresample - shift_solution[i]) / resample_factor
+        for i in range(start_window_idx + 1, nwindow):
+            spec_idx[:, i] = (
+                spec_idx[:, i - 1] * resample_factor * nscaled[i] / nresample -
+                shift_solution[i]) / resample_factor
 
         # Looping through pixels smaller than middle pixel
         for i in range(start_window_idx - 1, -1, -1):
-            spec[:, i] = (spec[:, i + 1] * resample_factor +
-                          shift_solution[i + 1]) / (
-                              int(nresample * scale_solution[i + 1]) /
-                              nresample) / resample_factor
+            spec_idx[:, i] = (spec_idx[:, i + 1] * resample_factor -
+                              shift_solution[i + 1]) / (
+                                  int(nresample * scale_solution[i + 1]) /
+                                  nresample) / resample_factor
 
-        ap = np.zeros((len(spec), nwave))
-        ap_sigma = np.zeros((len(spec), nwave))
+        ap = np.zeros((len(spec_idx), nwave))
+        ap_sigma = np.zeros(len(spec_idx))
 
-        if polydeg is None:
-            polydeg = max(1, nwindow // 10)
+        for i in range(len(spec_idx)):
 
-        for i in range(len(spec)):
+            # Get the median of the subspectrum and then get the ADU at the
+            # centre of the aperture
+            ap_val = np.zeros(nwindow)
+            for j in range(nwindow):
+                idx = int(spec_idx[i][j] + 0.5)
+                ap_val[j] = np.nanmedian(img_split[j], axis=1)[idx]
+
+            # Mask out the faintest ap_faint percentile
+            mask = (ap_val > np.percentile(ap_val, ap_faint))
+
             # fit the trace
-            ap_p = np.polyfit(spec_pix, spec[i], polydeg)
+            ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(polydeg))
             ap[i] = np.polyval(ap_p, np.arange(nwave))
 
             # Get the centre of the upsampled spectrum
-            ap_centre_idx = ap[i][nwave // 2] * resample_factor
+            ap_centre_idx = ap[i][start_window_idx] * resample_factor
 
             # Get the indices for the 10 pixels on the left and right of the
             # spectrum, and apply the resampling factor.
@@ -1620,10 +1638,13 @@ class TwoDSpec:
                                    range(start_idx, end_idx),
                                    spec_spatial[start_idx:end_idx],
                                    p0=pguess)
-            ap_sigma[i] = popt[3] / 10.
+            ap_sigma[i] = popt[3] / resample_factor
 
         self.trace = ap
-        self.trace_sigma = ap_sigma
+        if len(ap_sigma) == 1:
+            self.trace_sigma = np.array([ap_sigma])
+        else:
+            self.trace_sigma = ap_sigma
 
         # Plot
         if display:
@@ -1638,19 +1659,20 @@ class TwoDSpec:
                            zmax=self.zmax,
                            colorscale="Viridis",
                            colorbar=dict(title='log(ADU)')))
-            for i in range(len(spec)):
+            for i in range(len(spec_idx)):
                 fig.add_trace(
                     go.Scatter(x=np.arange(nwave),
                                y=ap[i],
                                line=dict(color='black')))
                 fig.add_trace(
                     go.Scatter(x=spec_pix,
-                               y=spec[i],
+                               y=spec_idx[i],
                                mode='markers',
                                marker=dict(color='grey')))
             fig.add_trace(
-                go.Scatter(x=np.ones(len(spec)) * spec_pix[nwindow // 2],
-                           y=spec[:, nwindow // 2],
+                go.Scatter(x=np.ones(len(spec_idx)) *
+                           spec_pix[start_window_idx],
+                           y=spec_idx[:, start_window_idx],
                            mode='markers',
                            marker=dict(color='firebrick')))
             fig.update_layout(autosize=True,
@@ -1790,7 +1812,7 @@ class TwoDSpec:
                 my[i] = prevtrace
                 y_sigma[i] = np.ones(len(prevtrace)) * self.seeing
                 self.trace = my
-                self.trace_sigma = y_sigma
+                self.trace_sigma = np.array(y_sigma)
                 if display:
                     fig.add_trace(
                         go.Scatter(x=[min(ztot[ztot > 0]),
@@ -1974,7 +1996,7 @@ class TwoDSpec:
             #    my += min(spatial_mask)
 
             self.trace = my
-            self.trace_sigma = y_sigma
+            self.trace_sigma = np.array(y_sigma)
 
             if display:
                 fig.update_layout(autosize=True,
@@ -2001,6 +2023,65 @@ class TwoDSpec:
                     fig.show()
                 else:
                     fig.show(renderer)
+
+    def add_trace(self, trace, trace_sigma, x_pix=None):
+        '''
+        Add user-supplied trace. If the trace is of a different size to the
+        2D spectral image in the spectral direction, the trace will be
+        interpolated and extrapolated.
+
+        Parameters
+        ----------
+        trace: 1D numpy array of list of 1D numpy array
+            The spatial pixel value (can be sub-pixel) of the trace at each
+            spectral position.
+        trace_sigma: float or list of float or numpy array of float
+            Standard deviation of the Gaussian profile of a trace
+
+        '''
+
+        # If only one trace is provided
+        if np.shape(np.shape(trace))[0] == 1:
+            self.nspec = 1
+            if x_pix is None:
+                self.trace = [trace]
+            else:
+                self.trace = [
+                    np.interp1d(x_pix, trace)(np.arange(self.spec_size))
+                ]
+
+            if isinstance(trace_sigma, float):
+                self.trace_sigma = np.array(trace_sigma)
+            else:
+                TypeError('The trace_sigma has to be a float. A ' +\
+                          str(type(trace_sigma)) + ' is given.')
+
+        # If there are more than one trace
+        else:
+            self.nspec = np.shape(trace)[0]
+            if x_pix is None:
+                self.trace = np.array(trace)
+            elif len(x_pix) == 1:
+                x_pix = np.ones((self.nspec, len(x_pix))) * x_pix
+                self.trace = np.zeros((self.nspec, self.spec_size))
+                for i, (x, t) in enumerate(zip(x_pix, trace)):
+                    self.trace[i] = [
+                        np.interp1d(x, t)(np.arange(self.spec_size))
+                    ]
+            else:
+                ValueError(
+                    'x_pix should be of the same shape as trace or '
+                    'if all traces use the same x_pix, it should be the '
+                    'same length as a trace.')
+
+            # If all traces have the same line spread function
+            if isinstance(trace_sigma, float):
+                self.trace_sigma = np.ones(self.nspec) * trace_sigma
+            elif (len(trace_sigma) == self.nspec):
+                self.trace_sigma = np.array(trace_sigma)
+            else:
+                ValueError('The trace_sigma should be a single float or an '
+                           'array of a size of the number the of traces.')
 
     def ap_extract(self,
                    apwidth=7,
@@ -2127,7 +2208,7 @@ class TwoDSpec:
                     # Get the optimal signals
                     adu[j][i], aduerr[j][i] = self._optimal_signal(
                         pix, xslice, sky, self.trace[j][i],
-                        self.trace_sigma[j][i])
+                        self.trace_sigma[j])
                 else:
                     #-- finally, compute the error in this pixel
                     sigB = np.std(z)  # stddev in the background data
