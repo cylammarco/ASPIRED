@@ -6,8 +6,10 @@ from functools import partial
 from itertools import chain
 
 from astropy import units as u
+from astropy.stats import sigma_clip
 from astropy.io import fits
 from astropy.nddata import CCDData
+from astropy.table import Table
 from ccdproc import Combiner
 import numpy as np
 from scipy import signal
@@ -16,6 +18,7 @@ from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from scipy.optimize import minimize
 sys.path.insert(0, "/users/marcolam/git/rascal")
+sys.path.insert(0, "/users/marcolam/git/spectres")
 from rascal.calibrator import Calibrator
 from rascal.util import load_calibration_lines
 from rascal.util import refine_peaks
@@ -220,6 +223,8 @@ class ImageReduction:
         self.flat_master = None
         self.arc_master = None
         self.light_master = None
+
+        self.fits_data = None
 
         self.bias_filename = []
         self.dark_filename = []
@@ -820,6 +825,10 @@ class TwoDSpec:
             self.header = data.header
         # If it is an ImageReduction object
         elif isinstance(data, ImageReduction):
+            # If the data is not reduced, reduce it here. Error handling is
+            # done by the ImageReduction class
+            if data.fits_data is None:
+                data.reduce()
             img = data.fits_data.data
             self.header = data.fits_data.header
         # If a filepath is provided
@@ -874,7 +883,7 @@ class TwoDSpec:
         if rn is not None:
             if isinstance(rn, str):
                 # use the supplied keyword
-                self.rn = float(data.header[rn])
+                self.rn = float(self.header[rn])
             elif np.isfinite(rn):
                 # use the given rn value
                 self.rn = float(rn)
@@ -885,8 +894,8 @@ class TwoDSpec:
         else:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
-            if header is not None:
-                rn_keyword_matched = np.in1d(self.rn_keyword, header)
+            if self.header is not None:
+                rn_keyword_matched = np.in1d(self.rn_keyword, self.header)
                 if rn_keyword_matched.any():
                     self.rn = data.header[self.rn_keyword[np.where(
                         rn_keyword_matched)[0][0]]]
@@ -902,7 +911,7 @@ class TwoDSpec:
         if gain is not None:
             if isinstance(gain, str):
                 # use the supplied keyword
-                self.gain = float(data.header[gain])
+                self.gain = float(self.header[gain])
             elif np.isfinite(gain):
                 # use the given gain value
                 self.gain = float(gain)
@@ -913,10 +922,10 @@ class TwoDSpec:
         else:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
-            if header is not None:
-                gain_keyword_matched = np.in1d(self.gain_keyword, header)
+            if self.header is not None:
+                gain_keyword_matched = np.in1d(self.gain_keyword, self.header)
                 if gain_keyword_matched.any():
-                    self.gain = data.header[self.gain_keyword[np.where(
+                    self.gain = self.header[self.gain_keyword[np.where(
                         gain_keyword_matched)[0][0]]]
                 else:
                     warnings.warn('Gain value cannot be identified. ' +
@@ -942,10 +951,11 @@ class TwoDSpec:
         else:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
-            if header is not None:
-                seeing_keyword_matched = np.in1d(self.seeing_keyword, header)
+            if self.header is not None:
+                seeing_keyword_matched = np.in1d(self.seeing_keyword,
+                                                 self.header)
                 if seeing_keyword_matched.any():
-                    self.seeing = data.header[self.seeing_keyword[np.where(
+                    self.seeing = self.header[self.seeing_keyword[np.where(
                         seeing_keyword_matched)[0][0]]]
                 else:
                     warnings.warn('Seeing value cannot be identified. ' +
@@ -959,7 +969,7 @@ class TwoDSpec:
         if exptime is not None:
             if isinstance(exptime, str):
                 # use the supplied keyword
-                self.exptime = float(data.header[exptime])
+                self.exptime = float(self.header[exptime])
             elif isfinite(gain):
                 # use the given gain value
                 self.exptime = float(exptime)
@@ -971,10 +981,11 @@ class TwoDSpec:
         else:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
-            if header is not None:
-                exptime_keyword_matched = np.in1d(self.exptime_keyword, header)
+            if self.header is not None:
+                exptime_keyword_matched = np.in1d(self.exptime_keyword,
+                                                  self.header)
                 if exptime_keyword_matched.any():
-                    self.exptime = data.header[self.exptime_keyword[np.where(
+                    self.exptime = self.header[self.exptime_keyword[np.where(
                         exptime_keyword_matched)[0][0]]]
                 else:
                     warnings.warn(
@@ -1026,8 +1037,10 @@ class TwoDSpec:
             self.img = np.flip(self.img)
 
         # set the 2D histogram z-limits
-        self.zmin = np.nanpercentile(np.log10(self.img), 5)
-        self.zmax = np.nanpercentile(np.log10(self.img), 95)
+        img_log = np.log10(self.img)
+        img_log_finite = img_log[np.isfinite(img_log)]
+        self.zmin = np.nanpercentile(img_log_finite, 5)
+        self.zmax = np.nanpercentile(img_log_finite, 95)
 
     def _set_default_rn_keyword(self, keyword_list):
         '''
@@ -1317,7 +1330,7 @@ class TwoDSpec:
         variance_diff = 1
         i = 0
 
-        while ((signal_diff > 0.0001) or (variance_diff > 0.0001)):
+        while ((signal_diff > 1e-6) or (variance_diff > 1e-6)):
 
             signal0 = signal1
             var0 = var1
@@ -1336,12 +1349,14 @@ class TwoDSpec:
             var1 = self.rn + np.abs(P * signal1 + sky) / self.gain
             variance1 = 1. / np.nansum((P**2. / var1)[mask_cr])
 
-            signal_diff = (signal1 - signal0) / signal0
-            variance_diff = (variance1 - variance0) / variance0
+            signal_diff = abs((signal1 - signal0) / signal0)
+            variance_diff = abs((variance1 - variance0) / variance0)
 
             P = signal / signal1
             P[P < 0.] = 0.
             P /= np.nansum(P)
+
+            i += 1
 
             if i == 999:
                 print(
@@ -1515,11 +1530,11 @@ class TwoDSpec:
             scale_solution[i] = scaling_range[np.nanargmax(corr_val)]
 
             # Align the spatial profile before stacking
-            pix_resampled = np.arange(nresample) * resample_factor *\
-                nresample * scale_solution[i] / nresample - shift_solution[i]
+            pix_resampled = np.arange(
+                nresample) * scale_solution[i] - shift_solution[i]
 
-            spec_spatial += spectres(
-                np.arange(nresample) * resample_factor, pix_resampled, lines)
+            spec_spatial += spectres(np.arange(nresample), pix_resampled,
+                                     lines)
 
             # Update (increment) the reference line
             if (i == nwindow - 1):
@@ -1579,6 +1594,7 @@ class TwoDSpec:
             # centre of the aperture
             ap_val = np.zeros(nwindow)
             for j in range(nwindow):
+                # rounding
                 idx = int(spec_idx[i][j] + 0.5)
                 ap_val[j] = np.nanmedian(img_split[j], axis=1)[idx]
 
@@ -1615,10 +1631,8 @@ class TwoDSpec:
         # Plot
         if display:
 
-            # set a side-by-side subplot
             fig = go.Figure()
 
-            # show the image on the left
             fig.add_trace(
                 go.Heatmap(z=np.log10(self.img),
                            zmin=self.zmin,
@@ -1642,10 +1656,10 @@ class TwoDSpec:
                            mode='markers',
                            marker=dict(color='firebrick')))
             fig.update_layout(autosize=True,
-                              yaxis_title='SpectralDirection / pixel',
+                              yaxis_title='Spatial Direction / pixel',
                               xaxis=dict(zeroline=False,
                                          showgrid=False,
-                                         title='Spatial Direction / pixel'),
+                                         title='Spectral Direction / pixel'),
                               bargap=0,
                               hovermode='closest',
                               showlegend=False,
@@ -1966,12 +1980,12 @@ class TwoDSpec:
 
             if display:
                 fig.update_layout(autosize=True,
-                                  yaxis_title='Spatial Direction / pixel',
+                                  yaxis_title='Spectral Direction / pixel',
                                   xaxis=dict(
                                       zeroline=False,
                                       domain=[0, 0.5],
                                       showgrid=False,
-                                      title='Spectral Direction / pixel'),
+                                      title='Spatial Direction / pixel'),
                                   xaxis2=dict(zeroline=False,
                                               domain=[0.5, 1],
                                               showgrid=True,
@@ -2088,10 +2102,11 @@ class TwoDSpec:
 
         Parameters
         ----------
-        apwidth: int
-            The size of the aperature (fixed value for tophat extraction) or
-            the sigma of the Gaussian (for the first iteration of optimal
-            extraction).
+        apwidth: int (or list of int)
+            Half the size of the aperature (fixed value for tophat extraction).
+            If a list of two ints are provided, the first element is the
+            lower half of the aperture  and the second one is the upper half
+            (up and down refers to large and small pixel values)
         skysep: int
             The separation in pixels from the aperture to the sky window.
             (Default is 3)
@@ -2124,11 +2139,19 @@ class TwoDSpec:
             median_trace = int(np.median(self.trace[j]))
 
             for i, pos in enumerate(self.trace[j]):
-                itrace = int(round(pos))
+                itrace = int(pos)
+                pix_frac = pos - itrace
 
-                # first do the aperture adu
-                widthup = apwidth
-                widthdn = apwidth
+                if isinstance(apwidth, int):
+                    # first do the aperture adu
+                    widthdn = apwidth
+                    widthup = apwidth
+                elif len(apwidth) == 2:
+                    widthdn = apwidth[0]
+                    widthup = apwidth[1]
+                else:
+                    TypeError(
+                        'apwidth can only be an int or a list of two ints')
 
                 # fix width if trace is too close to the edge
                 if (itrace + widthup > self.spatial_size):
@@ -2138,7 +2161,8 @@ class TwoDSpec:
 
                 # simply add up the total adu around the trace +/- width
                 xslice = self.img[itrace - widthdn:itrace + widthup + 1, i]
-                adu_ap = np.sum(xslice)
+                adu_ap = np.sum(xslice) - pix_frac * xslice[0] - (
+                    1 - pix_frac) * xslice[-1]
 
                 if skywidth > 0:
                     # get the indexes of the sky regions
@@ -2154,12 +2178,15 @@ class TwoDSpec:
                         # fit a polynomial to the sky in this column
                         pfit = np.polyfit(y, z, skydeg)
                         # define the aperture in this column
-                        ap = np.arange(itrace - apwidth, itrace + apwidth + 1)
+                        ap = np.arange(itrace - widthdn, itrace + widthup + 1)
                         # evaluate the polynomial across the aperture, and sum
-                        skyadu[j][i] = np.sum(np.polyval(pfit, ap))
-                    elif (skydeg == 0):
+                        skyadu_slice = np.polyval(pfit, ap)
                         skyadu[j][i] = np.sum(
-                            np.ones(apwidth * 2 + 1) * np.nanmean(z))
+                            skyadu_slice) - pix_frac * skyadu_slice[0] - (
+                                1 - pix_frac) * skyadu_slice[-1]
+                    elif (skydeg == 0):
+                        skyadu[j][i] = (widthdn + widthup) * np.nanmean(z)
+
                 else:
                     pfit = [0., 0.]
 
@@ -2183,28 +2210,31 @@ class TwoDSpec:
 
                     # based on aperture phot err description by F. Masci, Caltech:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
-                    aduerr[j][i] = np.sqrt(
-                        np.sum((adu_ap - skyadu[j][i])) / self.gain +
-                        (nA + nA**2. / nB) * (sigB**2.))
+                    aduerr[j][i] = np.sqrt((adu_ap - skyadu[j][i]) /
+                                           self.gain + (nA + nA**2. / nB) *
+                                           (sigB**2.))
                     adu[j][i] = adu_ap - skyadu[j][i]
 
             if display:
+                min_trace = int(min(self.trace[j]) + 0.5)
+                max_trace = int(max(self.trace[j]) + 0.5)
 
                 fig = go.Figure()
+                # the 3 is the show a little bit outside the extraction regions
                 img_display = np.log10(
-                    self.
-                    img[max(0, median_trace - widthdn - skysep - skywidth -
-                            1):min(median_trace + widthup + skysep +
-                                   skywidth, len(self.img[0])), :])
+                    self.img[max(0, min_trace - widthdn - skysep - skywidth - 3
+                                 ):min(max_trace + widthup + skysep +
+                                       skywidth, len(self.img[0])) + 3, :])
 
                 # show the image on the top
+                # the 3 is the show a little bit outside the extraction regions
                 fig.add_trace(
                     go.Heatmap(
                         x=np.arange(len_trace),
                         y=np.arange(
-                            max(0, median_trace - widthdn - skysep - skywidth -
-                                1),
-                            min(median_trace + widthup + skysep + skywidth + 1,
+                            max(0,
+                                max_trace - widthdn - skysep - skywidth - 1 - 3),
+                            min(min_trace + widthup + skysep + skywidth + 1 + 3,
                                 len(self.img[0]))),
                         z=img_display,
                         colorscale="Viridis",
@@ -2216,67 +2246,62 @@ class TwoDSpec:
 
                 # Middle black box on the image
                 fig.add_trace(
-                    go.Scatter(
-                        x=[0, len_trace, len_trace, 0, 0],
-                        y=[
-                            median_trace - widthdn - 1,
-                            median_trace - widthdn - 1,
-                            median_trace - widthdn - 1 + (apwidth * 2 + 1),
-                            median_trace - widthdn - 1 + (apwidth * 2 + 1),
-                            median_trace - widthdn - 1
-                        ],
-                        xaxis='x',
-                        yaxis='y',
-                        mode='lines',
-                        line_color='black',
-                        showlegend=False))
+                    go.Scatter(x=list(
+                        np.concatenate(
+                            (np.arange(len_trace), np.arange(len_trace)[::-1],
+                             np.zeros(1)))),
+                               y=list(
+                                   np.concatenate(
+                                       (self.trace[j] - widthdn - 1,
+                                        self.trace[j][::-1] + widthup + 1,
+                                        np.ones(1) *
+                                        (self.trace[j][0] - widthdn - 1)))),
+                               xaxis='x',
+                               yaxis='y',
+                               mode='lines',
+                               line_color='black',
+                               showlegend=False))
 
                 # Lower red box on the image
+                lower_redbox_upper_bound = self.trace[j] - widthdn - skysep - 1
+                lower_redbox_lower_bound = self.trace[
+                    j][::-1] - widthdn - skysep - max(skywidth, (y1 - y0) - 1)
+
                 if (itrace - widthdn >= 0) & (skywidth > 0):
                     fig.add_trace(
-                        go.Scatter(
-                            x=[0, len_trace, len_trace, 0, 0],
-                            y=[
-                                max(
-                                    0, median_trace - widthdn - skysep -
-                                    (y1 - y0) - 1),
-                                max(
-                                    0, median_trace - widthdn - skysep -
-                                    (y1 - y0) - 1),
-                                max(
-                                    0, median_trace - widthdn - skysep -
-                                    (y1 - y0) - 1) + min(skywidth, (y1 - y0)),
-                                max(
-                                    0, median_trace - widthdn - skysep -
-                                    (y1 - y0) - 1) + min(skywidth, (y1 - y0)),
-                                max(
-                                    0, median_trace - widthdn - skysep -
-                                    (y1 - y0) - 1)
-                            ],
-                            line_color='red',
-                            xaxis='x',
-                            yaxis='y',
-                            mode='lines',
-                            showlegend=False))
+                        go.Scatter(x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                                   y=list(
+                                       np.concatenate(
+                                           (lower_redbox_upper_bound,
+                                            lower_redbox_lower_bound,
+                                            np.ones(1) *
+                                            lower_redbox_upper_bound[0]))),
+                                   line_color='red',
+                                   xaxis='x',
+                                   yaxis='y',
+                                   mode='lines',
+                                   showlegend=False))
 
                 # Upper red box on the image
+                upper_redbox_upper_bound = self.trace[
+                    j] + widthup + skysep + min(skywidth, (y3 - y2) + 1)
+                upper_redbox_lower_bound = self.trace[j][::-1] + widthup + skysep + 1
+
                 if (itrace + widthup <= self.spatial_size) & (skywidth > 0):
                     fig.add_trace(
-                        go.Scatter(x=[0, len_trace, len_trace, 0, 0],
-                                   y=[
-                                       min(median_trace + widthup + skysep,
-                                           len(self.img[0])),
-                                       min(median_trace + widthup + skysep,
-                                           len(self.img[0])),
-                                       min(median_trace + widthup + skysep,
-                                           len(self.img[0])) +
-                                       min(skywidth, (y3 - y2)),
-                                       min(median_trace + widthup + skysep,
-                                           len(self.img[0])) +
-                                       min(skywidth, (y3 - y2)),
-                                       min(median_trace + widthup + skysep,
-                                           len(self.img[0]))
-                                   ],
+                        go.Scatter(x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                                   y=list(
+                                       np.concatenate(
+                                           (upper_redbox_upper_bound,
+                                            upper_redbox_lower_bound,
+                                            np.ones(1) *
+                                            upper_redbox_upper_bound[0]))),
                                    xaxis='x',
                                    yaxis='y',
                                    mode='lines',
@@ -2324,9 +2349,19 @@ class TwoDSpec:
                                title='Spatial Direction / pixel'),
                     yaxis2=dict(
                         range=[
-                            min(np.nanmin(np.log10(adu[j])),
-                                np.nanmin(np.log10(aduerr[j])),
-                                np.nanmin(np.log10(skyadu[j])), 1),
+                            min(
+                                np.nanmin(
+                                    sigma_clip(np.log10(adu[j]),
+                                               sigma=5.,
+                                               masked=False)),
+                                np.nanmin(
+                                    sigma_clip(np.log10(aduerr[j]),
+                                               sigma=5.,
+                                               masked=False)),
+                                np.nanmin(
+                                    sigma_clip(np.log10(skyadu[j]),
+                                               sigma=5.,
+                                               masked=False)), 1),
                             max(np.nanmax(np.log10(adu[j])),
                                 np.nanmax(np.log10(skyadu[j])))
                         ],
@@ -2369,7 +2404,7 @@ class TwoDSpec:
 
 
 class WavelengthPolyFit():
-    def __init__(self, spec, arc, silence=False):
+    def __init__(self, spec, arc=None, silence=False):
         '''
         This is a wrapper for using RASCAL to perform wavelength calibration,
         which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
@@ -2388,31 +2423,13 @@ class WavelengthPolyFit():
         Parameters
         ----------
         spec: TwoDSpec object
-            TwoDSpec of the science/standard image containing the trace(s).
-        arc: 2D numpy array
+            TwoDSpec of the science/standard image containin the trace(s) and
+            trace_sigma(s).
+        arc: 2D numpy array, PrimaryHDU object or ImageReduction object
             The image of the arc image.
         '''
 
         self.spec = spec
-
-        # If data provided is an numpy array
-        if isinstance(arc, np.ndarray):
-            self.arc = arc
-        # If it is a fits.hdu.image.PrimaryHDU object
-        elif isinstance(arc, fits.hdu.image.PrimaryHDU):
-            self.arc = arc.data
-        # If it is an ImageReduction object
-        elif isinstance(arc, ImageReduction):
-            self.arc = arc.arc_master
-        # If manually calibration is intended
-        elif arc == 'manual':
-            self.arc = None
-            if not silence:
-                warnings.warn('Only add_pfit() can be used.')
-        else:
-            TypeError('Please provide a numpy array, an ' +
-                      'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
-                      'ImageReduction object.')
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spec.spatial_mask) > 1):
@@ -2435,6 +2452,30 @@ class WavelengthPolyFit():
         if self.spec.flip:
             self.arc = np.flip(self.arc)
 
+        elif isinstance(spec, np.ndarray):
+
+            self.spec.trace = spec[0]
+            self.spec.trace_sigma = spec[1]
+
+        # If data provided is an numpy array
+        if isinstance(arc, np.ndarray):
+            self.arc = arc
+        # If it is a fits.hdu.image.PrimaryHDU object
+        elif isinstance(arc, fits.hdu.image.PrimaryHDU):
+            self.arc = arc.data
+        # If it is an ImageReduction object
+        elif isinstance(arc, ImageReduction):
+            self.arc = arc.arc_master
+        # If manually calibration is intended
+        elif arc == None:
+            self.arc = None
+            if not silence:
+                warnings.warn('Only add_pfit() can be used.')
+        else:
+            TypeError('Please provide a numpy array, an ' +
+                      'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
+                      'ImageReduction object.')
+
     def find_arc_lines(self,
                        percentile=25.,
                        distance=5.,
@@ -2450,7 +2491,7 @@ class WavelengthPolyFit():
         the default value is roughly twice the nyquist sampling rate (i.e.
         pixel size is 2.3 times smaller than the object that is being resolved,
         hence, the sepration between two clearly resolved peaks are ~5 pixels
-        apart). An crude estimate of the background can exclude random noise
+        apart). A crude estimate of the background can exclude random noise
         which look like small peaks.
 
         Parameters
@@ -2489,7 +2530,8 @@ class WavelengthPolyFit():
 
             self.arc_trace.append(
                 self.arc[max(0, trace - width -
-                             1):min(trace + width, len(self.spec.img[0])), :])
+                             1):min(trace +
+                                    width, len(self.spec.trace[j])), :])
 
             self.spectrum[j] = np.median(self.arc_trace[j], axis=0)
 
@@ -2515,7 +2557,7 @@ class WavelengthPolyFit():
                 for i in self.peaks[j]:
                     fig[j].add_trace(
                         go.Scatter(x=[i, i],
-                                   y=[0, self.arc.shape[0]],
+                                   y=[trace - width - 1, trace + width],
                                    mode='lines',
                                    line=dict(color='firebrick', width=1)))
 
@@ -2540,28 +2582,28 @@ class WavelengthPolyFit():
                 else:
                     fig[j].show(renderer)
 
-    def calibrate(self,
-                  elements=None,
-                  min_wave=3500.,
-                  max_wave=8500.,
-                  sample_size=5,
-                  max_tries=10000,
-                  top_n=8,
-                  nslopes=5000,
-                  range_tolerance=500.,
-                  fit_tolerance=10.,
-                  polydeg=4,
-                  candidate_thresh=10.,
-                  ransac_thresh=1.,
-                  xbins=250,
-                  ybins=250,
-                  brute_force=False,
-                  fittype='poly',
-                  mode='manual',
-                  progress=False,
-                  pfit=None,
-                  display=False,
-                  savefig=None):
+    def fit(self,
+            elements=None,
+            min_wave=3500.,
+            max_wave=8500.,
+            sample_size=5,
+            max_tries=10000,
+            top_n=8,
+            nslopes=5000,
+            range_tolerance=500.,
+            fit_tolerance=10.,
+            polydeg=4,
+            candidate_thresh=10.,
+            ransac_thresh=1.,
+            xbins=250,
+            ybins=250,
+            brute_force=False,
+            fittype='poly',
+            mode='manual',
+            progress=False,
+            pfit=None,
+            display=False,
+            savefig=None):
         '''
         A wrapper function to perform wavelength calibration with RASCAL.
 
@@ -2634,6 +2676,9 @@ class WavelengthPolyFit():
 
         self.pfit = []
         self.pfit_type = []
+        self.rms = []
+        self.residual = []
+        self.peak_utilisation = []
 
         for j in range(self.nspec):
             c = Calibrator(self.peaks[j],
@@ -2653,16 +2698,20 @@ class WavelengthPolyFit():
                                   brute_force=brute_force,
                                   fittype=fittype)
 
-            pfit = c.fit(sample_size=sample_size,
-                         max_tries=max_tries,
-                         top_n=top_n,
-                         n_slope=nslopes,
-                         mode=mode,
-                         progress=progress,
-                         coeff=pfit)
+            pfit, rms, residual, peak_utilisation = c.fit(
+                sample_size=sample_size,
+                max_tries=max_tries,
+                top_n=top_n,
+                n_slope=nslopes,
+                mode=mode,
+                progress=progress,
+                coeff=pfit)
 
             self.pfit.append(pfit)
             self.pfit_type.append(fittype)
+            self.rms.append(rms)
+            self.residual.append(residual)
+            self.peak_utilisation.append(peak_utilisation)
 
             if display:
                 c.plot_fit(np.median(self.arc_trace[j], axis=0),
@@ -2672,13 +2721,13 @@ class WavelengthPolyFit():
                            tolerance=1.0,
                            output_filename=savefig)
 
-    def calibrate_pfit(self,
-                       elements,
-                       min_wave=3500.,
-                       max_wave=8500.,
-                       tolerance=10.,
-                       display=False,
-                       savefig=None):
+    def refine_fit(self,
+                   elements,
+                   min_wave=3500.,
+                   max_wave=8500.,
+                   tolerance=10.,
+                   display=False,
+                   savefig=None):
         '''
         A wrapper function to fine tune wavelength calibration with RASCAL
         when there is already a set of good coefficienes.
@@ -2703,6 +2752,8 @@ class WavelengthPolyFit():
         '''
 
         pfit_new = []
+        residual_new = []
+        peak_utilisation_new = []
 
         for j in range(self.nspec):
             c = Calibrator(self.peaks[j],
@@ -2712,10 +2763,12 @@ class WavelengthPolyFit():
                            plotting_library='plotly')
             c.add_atlas(elements=elements)
 
-            pfit, _, _ = c.match_peaks_to_atlas(self.pfit[j],
-                                                tolerance=tolerance)
+            pfit, _, _, residual, peak_utilisation = c.match_peaks_to_atlas(
+                self.pfit[j], tolerance=tolerance)
 
             pfit_new.append(pfit)
+            residual_new.append(residual)
+            peak_utilisation_new.append(peak_utilisation)
 
             if display:
                 c.plot_fit(np.median(self.arc_trace[j], axis=0),
@@ -2726,6 +2779,8 @@ class WavelengthPolyFit():
                            output_filename=savefig)
 
         self.pfit = pfit_new
+        self.residual = residual_new
+        self.peak_utilisation = peak_utilisation_new
 
     def add_pfit(self, pfit, pfit_type='poly'):
         '''
@@ -2741,7 +2796,7 @@ class WavelengthPolyFit():
         if isinstance(pfit, list):
             nspec = len(pfit)
         elif isinstance(pfit, np.ndarray):
-            if np.shape(np.shape(pfit)) == 1:
+            if np.shape(np.shape(pfit))[0] == 1:
                 nspec = 1
             else:
                 nspec = np.shape(pfit)[0]
@@ -3140,7 +3195,7 @@ class OneDSpec:
         # Can be multiple spectra in the science frame
         if stype in ['science', 'all']:
             pix = np.arange(len(self.adu[0]))
-            self.wave = np.zeros((self.nspec, len(self.adu[0])))
+            self.wave = np.array([None] * self.nspec, dtype='object')
             for i in range(self.nspec):
                 self.wave[i] = self.polyval[i](pix, self.pfit[i])
         # Only one spectrum in the standard frame
@@ -3213,12 +3268,19 @@ class OneDSpec:
 
         if spectres_imported:
             # resampling both the observed and the database standard spectra
-            # in unit of flux per second
-            flux_std = spectres(self.wave_std_true, self.wave_std,
-                                self.adu_std / self.exptime_std)
-            flux_std_true = self.fluxmag_std_true
+            # in unit of flux per second. The higher resolution spectrum is
+            # resampled to match the lower resolution one.
+            if min(np.ediff1d(self.wave_std)) < min(
+                    np.ediff1d(self.wave_std_true)):
+                flux_std = spectres(self.wave_std_true, self.wave_std,
+                                    self.adu_std)
+                flux_std_true = self.fluxmag_std_true
+            else:
+                flux_std = self.adu_std
+                flux_std_true = spectres(self.wave_std, self.wave_std_true,
+                                         self.fluxmag_std_true)
         else:
-            flux_std = flux_std / self.exptime_std
+            flux_std = self.adu_std
             flux_std_true = itp.interp1d(self.wave_std_true,
                                          self.fluxmag_std_true)(self.wave_std)
         # Get the sensitivity curve
@@ -3263,8 +3325,8 @@ class OneDSpec:
                                      kind=kind,
                                      fill_value='extrapolate')
 
-    def add_sencurve():
-        pass
+    def add_sencurve(self, sencurve):
+        self.sencurve = sencurve
 
     def inspect_sencurve(self,
                          renderer='default',
@@ -3372,9 +3434,15 @@ class OneDSpec:
         else:
             fig.show(renderer)
 
-    def apply_flux_calibration(self, stype='all'):
+    def apply_flux_calibration(self,
+                               stype='all',
+                               wave_start=None,
+                               wave_end=None,
+                               wave_bin=None):
         '''
-        Apply the computed sensitivity curve.
+        Apply the computed sensitivity curve. And resample the spectra to
+        match the highest resolution (the smallest wavelength bin) part of the
+        spectrum.
 
         Parameters
         ----------
@@ -3383,24 +3451,133 @@ class OneDSpec:
         '''
 
         if stype == 'science' or stype == 'all':
-            self.flux = np.zeros((self.nspec, len(self.adu[0])))
-            self.fluxerr = np.zeros((self.nspec, len(self.adu[0])))
-            self.skyflux = np.zeros((self.nspec, len(self.adu[0])))
+
+            self.wave_resampled = np.array([None] * self.nspec, dtype=object)
+
+            self.flux = np.array([None] * self.nspec, dtype=object)
+            self.fluxerr = np.array([None] * self.nspec, dtype=object)
+            self.skyflux = np.array([None] * self.nspec, dtype=object)
+
+            self.flux_raw = np.array([None] * self.nspec, dtype=object)
+            self.fluxerr_raw = np.array([None] * self.nspec, dtype=object)
+            self.skyflux_raw = np.array([None] * self.nspec, dtype=object)
+
+            self.wave_bin = np.zeros(self.nspec)
+            self.wave_start = np.zeros(self.nspec)
+            self.wave_end = np.zeros(self.nspec)
+
             for i in range(self.nspec):
-                self.flux[i] = 10.**self.sencurve(self.wave[i]) * self.adu[i]
-                self.fluxerr[i] = 10.**self.sencurve(
+
+                # compute the new equally-spaced wavelength array
+                if wave_bin is not None:
+                    self.wave_bin[i] = wave_bin
+                else:
+                    self.wave_bin[i] = np.median(np.ediff1d(self.wave[i]))
+
+                if wave_start is not None:
+                    self.wave_start[i] = wave_start
+                else:
+                    self.wave_start[i] = self.wave[i][0]
+
+                if wave_end is not None:
+                    self.wave_end[i] = wave_end
+                else:
+                    self.wave_end[i] = self.wave[i][-1]
+
+                new_wave = np.arange(self.wave_start[i], self.wave_end[i],
+                                     self.wave_bin[i])
+
+                # apply the flux calibration and resample
+                self.flux[i] = spectres(
+                    new_wave, self.wave[i],
+                    10.**self.sencurve(self.wave[i]) * self.adu[i])
+                self.fluxerr[i] = spectres(
+                    new_wave, self.wave[i],
+                    10.**self.sencurve(self.wave[i]) * self.aduerr[i])
+                self.skyflux[i] = spectres(
+                    new_wave, self.wave[i],
+                    10.**self.sencurve(self.wave[i]) * self.skyadu[i])
+
+                self.wave_resampled[i] = new_wave
+
+                self.flux_raw[i] = 10.**self.sencurve(
+                    self.wave[i]) * self.adu[i]
+                self.fluxerr_raw[i] = 10.**self.sencurve(
                     self.wave[i]) * self.aduerr[i]
-                self.skyflux[i] = 10.**self.sencurve(
+                self.skyflux_raw[i] = 10.**self.sencurve(
                     self.wave[i]) * self.skyadu[i]
+
         if stype == 'standard' or stype == 'all':
-            self.flux_std = 10.**self.sencurve(self.wave_std) * self.adu_std
-            self.fluxerr_std = 10.**self.sencurve(
+
+            # compute the new equally-spaced wavelength array
+            if wave_bin is not None:
+                self.wave_std_bin = wave_bin
+            else:
+                self.wave_std_bin = np.median(np.ediff1d(self.wave_std))
+
+            if wave_start is not None:
+                self.wave_std_start = wave_start
+            else:
+                self.wave_std_start = self.wave_std[0]
+
+            if wave_end is not None:
+                self.wave_std_end = wave_end
+            else:
+                self.wave_std_end = self.wave_std[-1]
+
+            new_wave_std = np.arange(self.wave_std_start, self.wave_std_end,
+                                     self.wave_std_bin)
+
+            # apply the flux calibration and resample
+            self.flux_std = spectres(
+                new_wave_std, self.wave_std,
+                10.**self.sencurve(self.wave_std) * self.adu_std)
+            self.fluxerr_std = spectres(
+                new_wave_std, self.wave_std,
+                10.**self.sencurve(self.wave_std) * self.aduerr_std)
+            self.skyflux_std = spectres(
+                new_wave_std, self.wave_std,
+                10.**self.sencurve(self.wave_std) * self.skyadu_std)
+
+            self.wave_std_resampled = new_wave_std
+
+            self.flux_std_raw = 10.**self.sencurve(
+                self.wave_std) * self.adu_std
+            self.fluxerr_std_raw = 10.**self.sencurve(
                 self.wave_std) * self.aduerr_std
-            self.skyflux_std = 10.**self.sencurve(
+            self.skyflux_std_raw = 10.**self.sencurve(
                 self.wave_std) * self.skyadu_std
+
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
+
+    def _create_fits(self, stype='all'):
+
+        if stype == 'science' or stype == 'all':
+
+            for i in ange(self.nspec):
+                hdu.header['LABEL'] = 'Flux'
+                hdu.header['CRPIX1'] = 1.00E+00
+                hdu.header['CDELT1'] = self.wave_std_bin[i]
+                hdu.header['CRVAL1'] = self.wave_std_start[i]
+                hdu.header['CTYPE1'] = 'Wavelength'
+                hdu.header['CUNIT1'] = 'Angstroms'
+                hdu.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+
+                #hdu.writeto('standard_calibrated.fits', overwrite=True)
+
+        if stype == 'standard' or stype == 'all':
+
+            hdu.header['LABEL'] = 'Flux'
+            hdu.header['CRPIX1'] = 1.00E+00
+            hdu.header['CDELT1'] = self.wave_std_bin
+            hdu.header['CRVAL1'] = self.wave_std_start
+            hdu.header['CTYPE1'] = 'Wavelength'
+            hdu.header['CUNIT1'] = 'Angstroms'
+            hdu.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+
+            #hdu.writeto('standard_calibrated.fits', overwrite=True)
 
     def inspect_reduced_spectrum(self,
                                  stype='all',
@@ -3435,8 +3612,8 @@ class OneDSpec:
             fig_sci = np.array([None] * self.nspec, dtype='object')
             for j in range(self.nspec):
 
-                wave_mask = ((self.wave[j] > wave_min) &
-                             (self.wave[j] < wave_max))
+                wave_mask = ((self.wave_resampled[j] > wave_min) &
+                             (self.wave_resampled[j] < wave_max))
                 if self.standard_imported:
                     flux_mask = (
                         (self.flux[j] >
@@ -3485,33 +3662,33 @@ class OneDSpec:
                 # show the image on the top
                 if self.standard_imported:
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave[j],
+                        go.Scatter(x=self.wave_resampled[j],
                                    y=self.flux[j],
                                    line=dict(color='royalblue'),
                                    name='Flux'))
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave[j],
+                        go.Scatter(x=self.wave_resampled[j],
                                    y=self.fluxerr[j],
                                    line=dict(color='firebrick'),
                                    name='Flux Uncertainty'))
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave[j],
+                        go.Scatter(x=self.wave_resampled[j],
                                    y=self.skyflux[j],
                                    line=dict(color='orange'),
                                    name='Sky Flux'))
                 else:
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave[j],
+                        go.Scatter(x=self.wave_resampled[j],
                                    y=self.adu[j],
                                    line=dict(color='royalblue'),
                                    name='ADU'))
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave[j],
+                        go.Scatter(x=self.wave_resampled[j],
                                    y=self.aduerr[j],
                                    line=dict(color='firebrick'),
                                    name='ADU Uncertainty'))
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave[j],
+                        go.Scatter(x=self.wave_resampled[j],
                                    y=self.skyadu[j],
                                    line=dict(color='orange'),
                                    name='Sky ADU'))
@@ -3547,8 +3724,8 @@ class OneDSpec:
             if not self.standard_imported:
                 warnings.warn('Standard observation is not provided.')
             else:
-                wave_std_mask = ((self.wave_std > wave_min) &
-                                 (self.wave_std < wave_max))
+                wave_std_mask = ((self.wave_std_resampled > wave_min) &
+                                 (self.wave_std_resampled < wave_max))
                 flux_std_mask = (
                     (self.flux_std >
                      np.nanpercentile(self.flux_std[wave_std_mask], 5) / 1.5) &
@@ -3589,17 +3766,17 @@ class OneDSpec:
                                                 title='Log scale'))
                 # show the image on the top
                 fig_std.add_trace(
-                    go.Scatter(x=self.wave_std,
+                    go.Scatter(x=self.wave_std_resampled,
                                y=self.flux_std,
                                line=dict(color='royalblue'),
                                name='Flux'))
                 fig_std.add_trace(
-                    go.Scatter(x=self.wave_std,
+                    go.Scatter(x=self.wave_std_resampled,
                                y=self.fluxerr_std,
                                line=dict(color='orange'),
                                name='Flux Uncertainty'))
                 fig_std.add_trace(
-                    go.Scatter(x=self.wave_std,
+                    go.Scatter(x=self.wave_std_resampled,
                                y=self.skyflux_std,
                                line=dict(color='firebrick'),
                                name='Sky Flux'))
@@ -3634,6 +3811,27 @@ class OneDSpec:
                     fig_std.show()
                 else:
                     fig_std.show(renderer)
+
+        #for i in range(self.nspec):
+        #    t = Table([self.wave[j], self.flux[j], self.fluxerr[j], self.skyflux[j]], names=())
+
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
+
+    def save_fits(self, filepath='reduced_spectrum.fits', overwrite=False):
+        '''
+        Save the reduced image to disk.
+
+        Parameters
+        ----------
+        filepath: String
+            Disk location to be written to. Default is at where the Python
+            process/subprocess is execuated.
+        overwrite: boolean
+            Default is False.
+
+        '''
+
+        # Save file to disk
+        self.fits_data.writeto(filepath, overwrite=overwrite)
