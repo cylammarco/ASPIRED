@@ -1218,7 +1218,7 @@ class TwoDSpec:
         """
 
         ydata = np.arange(self.spec_size)
-        ztot = np.nanmedian(self.img, axis=self.saxis)
+        ztot = np.nanmedian(self.img, axis=1)
 
         # get the height thershold
         height = np.nanmax(ztot) * f_height
@@ -1238,18 +1238,11 @@ class TwoDSpec:
             fig = go.Figure()
 
             # show the image on the left
-            if self.saxis == 1:
-                fig.add_trace(
-                    go.Heatmap(z=np.log10(self.img),
-                               colorscale="Viridis",
-                               xaxis='x',
-                               yaxis='y'))
-            else:
-                fig.add_trace(
-                    go.Heatmap(z=np.log10(np.transpose(self.img)),
-                               colorscale="Viridis",
-                               xaxis='x',
-                               yaxis='y'))
+            fig.add_trace(
+                go.Heatmap(z=np.log10(self.img),
+                           colorscale="Viridis",
+                           xaxis='x',
+                           yaxis='y'))
 
             # plot the integrated count and the detected peaks on the right
             fig.add_trace(
@@ -1548,20 +1541,17 @@ class TwoDSpec:
         # pixel location location
         peaks = signal.find_peaks(spec_spatial,
                                   distance=spec_sep,
-                                  prominence=1)
-
-        #print('spec_spatial = ' + str(spec_spatial) + ' of length ' + str(len(spec_spatial)))
-        #print('peaks = ' + str(peaks))
+                                  prominence=0)
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
-        self.nspec = min(len(peaks), nspec)
+        self.nspec = min(len(peaks[0]), nspec)
 
         # Sort the positions by the prominences, and return to the original
         # scale (i.e. with subpixel position)
         spec_init = np.sort(peaks[0][np.argsort(-peaks[1]['prominences'])]
                             [:self.nspec]) / resample_factor
-        #print('spec_init = ' + str(spec_init))
+
 
         # Create array to populate the spectral locations
         spec_idx = np.zeros((len(spec_init), len(img_split)))
@@ -2431,32 +2421,6 @@ class WavelengthPolyFit():
 
         self.spec = spec
 
-        # the valid y-range of the chip (i.e. spatial direction)
-        if (len(self.spec.spatial_mask) > 1):
-            if self.spec.saxis is 1:
-                self.arc = self.arc[self.spec.spatial_mask]
-            else:
-                self.arc = self.arc[:, self.spec.spatial_mask]
-
-        # the valid x-range of the chip (i.e. spectral direction)
-        if (len(self.spec.spec_mask) > 1):
-            if self.spec.saxis is 1:
-                self.arc = self.arc[:, self.spec.spec_mask]
-            else:
-                self.arc = self.arc[self.spec.spec_mask]
-
-        # get the length in the spectral and spatial directions
-        if self.spec.saxis is 0:
-            self.arc = np.transpose(self.arc)
-
-        if self.spec.flip:
-            self.arc = np.flip(self.arc)
-
-        elif isinstance(spec, np.ndarray):
-
-            self.spec.trace = spec[0]
-            self.spec.trace_sigma = spec[1]
-
         # If data provided is an numpy array
         if isinstance(arc, np.ndarray):
             self.arc = arc
@@ -2475,6 +2439,33 @@ class WavelengthPolyFit():
             TypeError('Please provide a numpy array, an ' +
                       'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
                       'ImageReduction object.')
+
+        if arc is not None:
+            # the valid y-range of the chip (i.e. spatial direction)
+            if (len(self.spec.spatial_mask) > 1):
+                if self.spec.saxis is 1:
+                    self.arc = self.arc[self.spec.spatial_mask]
+                else:
+                    self.arc = self.arc[:, self.spec.spatial_mask]
+
+            # the valid x-range of the chip (i.e. spectral direction)
+            if (len(self.spec.spec_mask) > 1):
+                if self.spec.saxis is 1:
+                    self.arc = self.arc[:, self.spec.spec_mask]
+                else:
+                    self.arc = self.arc[self.spec.spec_mask]
+
+            # get the length in the spectral and spatial directions
+            if self.spec.saxis is 0:
+                self.arc = np.transpose(self.arc)
+
+            if self.spec.flip:
+                self.arc = np.flip(self.arc)
+
+            elif isinstance(spec, np.ndarray):
+
+                self.spec.trace = spec[0]
+                self.spec.trace_sigma = spec[1]
 
     def find_arc_lines(self,
                        percentile=25.,
@@ -2593,7 +2584,7 @@ class WavelengthPolyFit():
             range_tolerance=500.,
             fit_tolerance=10.,
             polydeg=4,
-            candidate_thresh=10.,
+            candidate_thresh=20.,
             ransac_thresh=1.,
             xbins=250,
             ybins=250,
@@ -2727,6 +2718,7 @@ class WavelengthPolyFit():
                    max_wave=8500.,
                    tolerance=10.,
                    display=False,
+                   polydeg=None,
                    savefig=None):
         '''
         A wrapper function to fine tune wavelength calibration with RASCAL
@@ -2752,10 +2744,14 @@ class WavelengthPolyFit():
         '''
 
         pfit_new = []
+        rms_new = []
         residual_new = []
         peak_utilisation_new = []
 
         for j in range(self.nspec):
+            if polydeg is None:
+                polydeg = len(self.pfit[j]) - 1
+
             c = Calibrator(self.peaks[j],
                            min_wavelength=min_wave,
                            max_wavelength=max_wave,
@@ -2764,9 +2760,10 @@ class WavelengthPolyFit():
             c.add_atlas(elements=elements)
 
             pfit, _, _, residual, peak_utilisation = c.match_peaks_to_atlas(
-                self.pfit[j], tolerance=tolerance)
+                self.pfit[j], tolerance=tolerance, polydeg=polydeg)
 
             pfit_new.append(pfit)
+            rms_new.append(np.sqrt(np.mean(residual**2)))
             residual_new.append(residual)
             peak_utilisation_new.append(peak_utilisation)
 
@@ -2780,6 +2777,7 @@ class WavelengthPolyFit():
 
         self.pfit = pfit_new
         self.residual = residual_new
+        self.rms = rms_new
         self.peak_utilisation = peak_utilisation_new
 
     def add_pfit(self, pfit, pfit_type='poly'):
@@ -2793,22 +2791,14 @@ class WavelengthPolyFit():
         pfit_type: str
             One of 'poly', 'legendre' or 'chebyshev'.
         '''
-        if isinstance(pfit, list):
-            nspec = len(pfit)
-        elif isinstance(pfit, np.ndarray):
-            if np.shape(np.shape(pfit))[0] == 1:
-                nspec = 1
-            else:
-                nspec = np.shape(pfit)[0]
-        else:
-            TypeError('Please provide a numpy array or a list of 1D numpy '
-                      'array.')
 
-        self.pfit = pfit
+        if not isinstance(pfit, list):
+            self.pfit = [pfit]
+
         self.pfit_type = []
 
-        if len(pfit_type) != nspec:
-            for i in range(nspec):
+        if len(pfit_type) != self.nspec:
+            for i in range(self.nspec):
                 self.pfit_type.append(pfit_type)
             self.pfit_type = np.array(self.pfit_type)
         else:
@@ -3275,10 +3265,12 @@ class OneDSpec:
                 flux_std = spectres(self.wave_std_true, self.wave_std,
                                     self.adu_std)
                 flux_std_true = self.fluxmag_std_true
+                wave_std_true = self.wave_std_true
             else:
                 flux_std = self.adu_std
                 flux_std_true = spectres(self.wave_std, self.wave_std_true,
                                          self.fluxmag_std_true)
+                wave_std_true = self.wave_std
         else:
             flux_std = self.adu_std
             flux_std_true = itp.interp1d(self.wave_std_true,
@@ -3291,11 +3283,11 @@ class OneDSpec:
         else:
             mask = (np.isfinite(sensitivity) & (sensitivity > 0.))
             for m in mask_range:
-                mask = mask & ((self.wave_std_true < m[0]) |
-                               (self.wave_std_true > m[1]))
+                mask = mask & ((wave_std_true < m[0]) |
+                               (wave_std_true > m[1]))
 
         sensitivity = sensitivity[mask]
-        wave_std = self.wave_std_true[mask]
+        wave_std = wave_std_true[mask]
         flux_std = flux_std[mask]
 
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
@@ -3555,29 +3547,28 @@ class OneDSpec:
     def _create_fits(self, stype='all'):
 
         if stype == 'science' or stype == 'all':
-
-            for i in ange(self.nspec):
-                hdu.header['LABEL'] = 'Flux'
-                hdu.header['CRPIX1'] = 1.00E+00
-                hdu.header['CDELT1'] = self.wave_std_bin[i]
-                hdu.header['CRVAL1'] = self.wave_std_start[i]
-                hdu.header['CTYPE1'] = 'Wavelength'
-                hdu.header['CUNIT1'] = 'Angstroms'
-                hdu.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
-
-                #hdu.writeto('standard_calibrated.fits', overwrite=True)
+            self.science_data = np.array([None] * self.nspec, dtype='object')
+            for i in range(self.nspec):
+                fits_data = fits.PrimaryHDU(self.flux[i])
+                fits_data.header['LABEL'] = 'Flux'
+                fits_data.header['CRPIX1'] = 1.00E+00
+                fits_data.header['CDELT1'] = self.wave_bin[i]
+                fits_data.header['CRVAL1'] = self.wave_start[i]
+                fits_data.header['CTYPE1'] = 'Wavelength'
+                fits_data.header['CUNIT1'] = 'Angstroms'
+                fits_data.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                self.science_data[i] = fits_data
 
         if stype == 'standard' or stype == 'all':
-
-            hdu.header['LABEL'] = 'Flux'
-            hdu.header['CRPIX1'] = 1.00E+00
-            hdu.header['CDELT1'] = self.wave_std_bin
-            hdu.header['CRVAL1'] = self.wave_std_start
-            hdu.header['CTYPE1'] = 'Wavelength'
-            hdu.header['CUNIT1'] = 'Angstroms'
-            hdu.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
-
-            #hdu.writeto('standard_calibrated.fits', overwrite=True)
+            fits_data = fits.PrimaryHDU(self.flux_std)
+            fits_data.header['LABEL'] = 'Flux'
+            fits_data.header['CRPIX1'] = 1.00E+00
+            fits_data.header['CDELT1'] = self.wave_std_bin
+            fits_data.header['CRVAL1'] = self.wave_std_start
+            fits_data.header['CTYPE1'] = 'Wavelength'
+            fits_data.header['CUNIT1'] = 'Angstroms'
+            fits_data.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+            self.standard_data = fits_data
 
     def inspect_reduced_spectrum(self,
                                  stype='all',
@@ -3819,7 +3810,7 @@ class OneDSpec:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
 
-    def save_fits(self, filepath='reduced_spectrum.fits', overwrite=False):
+    def save_fits(self, filepath='reduced', stype='all', overwrite=False):
         '''
         Save the reduced image to disk.
 
@@ -3832,6 +3823,12 @@ class OneDSpec:
             Default is False.
 
         '''
+        self._create_fits(stype)
 
-        # Save file to disk
-        self.fits_data.writeto(filepath, overwrite=overwrite)
+        if stype in ['all', 'science']:
+            # Save file to disk
+            for i in range(self.nspec):
+                self.science_data[i].writeto(filepath + '_science_' + str(i) + '.fits', overwrite=overwrite)
+
+        if stype in ['all', 'standard']:
+            self.standard_data.writeto(filepath + '_standard_' + str(i) + '.fits', overwrite=overwrite)
