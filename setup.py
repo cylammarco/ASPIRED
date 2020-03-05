@@ -4,10 +4,8 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup_requires = ['numpy>=1.16', 'reproject==0.5']
-
 install_requires = [
-    'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly'
+    'numpy>=1.16', 'reproject==0.5', 'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly'
 ]
 
 os.system('pip install git+https://github.com/cylammarco/SpectRes')
@@ -26,6 +24,5 @@ setup(name=__packagename__,
       long_description=open('README.md').read(),
       zip_safe=False,
       include_package_data=True,
-      setup_requires=setup_requires,
       install_requires=install_requires,
-      python_requires='>3.6')
+      python_requires='>=3.6')
