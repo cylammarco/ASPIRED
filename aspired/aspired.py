@@ -17,8 +17,7 @@ from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from scipy.optimize import minimize
-sys.path.insert(0, "/users/marcolam/git/rascal")
-sys.path.insert(0, "/users/marcolam/git/spectres")
+
 from rascal.calibrator import Calibrator
 from rascal.util import load_calibration_lines
 from rascal.util import refine_peaks
@@ -287,12 +286,13 @@ class ImageReduction:
         # separate methods.
         light_CCDData = []
         light_time = []
+        self.light_header = []
 
         for i in range(self.light_list.size):
             # Open all the light frames
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
             light_CCDData.append(CCDData(light.data, unit=u.adu))
-
+            self.light_header.append(light.header)
             self.light_filename.append(self.light_list[i].split('/')[-1])
 
             # Get the exposure time for the light frames
@@ -537,7 +537,9 @@ class ImageReduction:
         self.light_master = np.array((self.light_master))
 
         # Put the reduced data in FITS format with a primary header
+        # Append header info to the *first* light frame header
         self.fits_data = fits.PrimaryHDU(self.light_master)
+        self.fits_data.header = self.light_header[0]
 
         # Add the names of all the light frames to header
         if len(self.light_filename) > 0:
@@ -875,7 +877,7 @@ class TwoDSpec:
         # Default keywords to be searched in the order in the list
         self._set_default_rn_keyword(['RDNOISE', 'RNOISE', 'RN'])
         self._set_default_gain_keyword(['GAIN'])
-        self._set_default_seeing_keyword(['SEEING', 'L1SEEING'])
+        self._set_default_seeing_keyword(['SEEING', 'L1SEEING', 'ESTSEE'])
         self._set_default_exptime_keyword(
             ['XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'])
 
@@ -1369,9 +1371,9 @@ class TwoDSpec:
                  spec_sep=5,
                  resample_factor=10,
                  rescale=False,
-                 scaling_min=0.975,
-                 scaling_max=1.025,
-                 scaling_step=0.005,
+                 scaling_min=0.995,
+                 scaling_max=1.005,
+                 scaling_step=0.001,
                  percentile=5,
                  tol=3,
                  polydeg=3,
@@ -1551,7 +1553,6 @@ class TwoDSpec:
         # scale (i.e. with subpixel position)
         spec_init = np.sort(peaks[0][np.argsort(-peaks[1]['prominences'])]
                             [:self.nspec]) / resample_factor
-
 
         # Create array to populate the spectral locations
         spec_idx = np.zeros((len(spec_init), len(img_split)))
@@ -2219,20 +2220,21 @@ class TwoDSpec:
                 # show the image on the top
                 # the 3 is the show a little bit outside the extraction regions
                 fig.add_trace(
-                    go.Heatmap(
-                        x=np.arange(len_trace),
-                        y=np.arange(
-                            max(0,
-                                max_trace - widthdn - skysep - skywidth - 1 - 3),
-                            min(min_trace + widthup + skysep + skywidth + 1 + 3,
-                                len(self.img[0]))),
-                        z=img_display,
-                        colorscale="Viridis",
-                        zmin=self.zmin,
-                        zmax=self.zmax,
-                        xaxis='x',
-                        yaxis='y',
-                        colorbar=dict(title='log(ADU)')))
+                    go.Heatmap(x=np.arange(len_trace),
+                               y=np.arange(
+                                   max(
+                                       0, max_trace - widthdn - skysep -
+                                       skywidth - 1 - 3),
+                                   min(
+                                       min_trace + widthup + skysep +
+                                       skywidth + 1 + 3, len(self.img[0]))),
+                               z=img_display,
+                               colorscale="Viridis",
+                               zmin=self.zmin,
+                               zmax=self.zmax,
+                               xaxis='x',
+                               yaxis='y',
+                               colorbar=dict(title='log(ADU)')))
 
                 # Middle black box on the image
                 fig.add_trace(
@@ -2278,7 +2280,8 @@ class TwoDSpec:
                 # Upper red box on the image
                 upper_redbox_upper_bound = self.trace[
                     j] + widthup + skysep + min(skywidth, (y3 - y2) + 1)
-                upper_redbox_lower_bound = self.trace[j][::-1] + widthup + skysep + 1
+                upper_redbox_lower_bound = self.trace[
+                    j][::-1] + widthup + skysep + 1
 
                 if (itrace + widthup <= self.spatial_size) & (skywidth > 0):
                     fig.add_trace(
@@ -3283,8 +3286,7 @@ class OneDSpec:
         else:
             mask = (np.isfinite(sensitivity) & (sensitivity > 0.))
             for m in mask_range:
-                mask = mask & ((wave_std_true < m[0]) |
-                               (wave_std_true > m[1]))
+                mask = mask & ((wave_std_true < m[0]) | (wave_std_true > m[1]))
 
         sensitivity = sensitivity[mask]
         wave_std = wave_std_true[mask]
@@ -3828,7 +3830,11 @@ class OneDSpec:
         if stype in ['all', 'science']:
             # Save file to disk
             for i in range(self.nspec):
-                self.science_data[i].writeto(filepath + '_science_' + str(i) + '.fits', overwrite=overwrite)
+                self.science_data[i].writeto(filepath + '_science_' + str(i) +
+                                             '.fits',
+                                             overwrite=overwrite)
 
         if stype in ['all', 'standard']:
-            self.standard_data.writeto(filepath + '_standard_' + str(i) + '.fits', overwrite=overwrite)
+            self.standard_data.writeto(filepath + '_standard_' + str(i) +
+                                       '.fits',
+                                       overwrite=overwrite)
