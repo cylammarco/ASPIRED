@@ -677,7 +677,8 @@ class ImageReduction:
                 log=True,
                 renderer='default',
                 jsonstring=False,
-                iframe=False):
+                iframe=False,
+                open_iframe=False):
         '''
         Display the reduced image with a supported plotly renderer or export
         as json strings.
@@ -708,7 +709,10 @@ class ImageReduction:
             if jsonstring:
                 return fig.to_json()
             if iframe:
-                pio.write_html(fig, 'reduced_image.html')
+                if open_iframe:
+                    pio.write_html(fig, 'reduced_image.html')
+                else:
+                    pio.write_html(fig, 'reduced_image.html', auto_open=False)
             if renderer == 'default':
                 fig.show()
             else:
@@ -1194,7 +1198,7 @@ class TwoDSpec:
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
     def _identify_spectra(self, f_height, display, renderer, jsonstring,
-                          iframe):
+                          iframe, open_iframe):
         """
         Identify peaks assuming the spatial and spectral directions are
         aligned with the X and Y direction within a few degrees.
@@ -1274,7 +1278,10 @@ class TwoDSpec:
             if jsonstring:
                 return fig.to_json()
             if iframe:
-                pio.write_html(fig, 'identify_spectra.html')
+                if open_iframe:
+                    pio.write_html(fig, 'identify_spectra.html')
+                else:
+                    pio.write_html(fig, 'identify_spectra.html', auto_open=False)
             if renderer == 'default':
                 fig.show()
             else:
@@ -1381,7 +1388,8 @@ class TwoDSpec:
                  display=False,
                  renderer='default',
                  jsonstring=False,
-                 iframe=False):
+                 iframe=False,
+                 open_iframe=False):
         '''
         Aperture tracing by first using cross-correlation then the peaks are
         fitting with a polynomial with an order of floor(nwindow, 10) with a
@@ -1658,7 +1666,10 @@ class TwoDSpec:
             if jsonstring:
                 return fig.to_json()
             if iframe:
-                pio.write_html(fig, 'ap_trace.html')
+                if open_iframe:
+                    pio.write_html(fig, 'ap_trace.html')
+                else:
+                    pio.write_html(fig, 'ap_trace.html', auto_open=False)
             if renderer == 'default':
                 fig.show()
             else:
@@ -1675,7 +1686,8 @@ class TwoDSpec:
                        display=False,
                        renderer='default',
                        jsonstring=False,
-                       iframe=False):
+                       iframe=False,
+                       open_iframe=False):
         """
         This only works for bright spectra with good wavelength coverage.
 
@@ -1737,7 +1749,6 @@ class TwoDSpec:
 
         # detect peaks by summing in the spatial direction
         self._identify_spectra(0.01,
-                               1,
                                display=False,
                                renderer=renderer,
                                jsonstring=jsonstring,
@@ -1816,7 +1827,10 @@ class TwoDSpec:
                     if jsonstring:
                         return fig.to_json()
                     if iframe:
-                        pio.write_html(fig, 'ap_trace_quick.html')
+                        if open_iframe:
+                            pio.write_html(fig, 'ap_trace_quick.html')
+                        else:
+                            pio.write_html(fig, 'ap_trace_quick.html', auto_open=False)
                     if renderer == 'default':
                         fig.show()
                     else:
@@ -1989,7 +2003,10 @@ class TwoDSpec:
                 if jsonstring:
                     return fig.to_json()
                 if iframe:
-                    pio.write_html(fig, 'ap_trace_quick_' + str(j) + '.html')
+                    if open_iframe:
+                        pio.write_html(fig, 'ap_trace_quick_' + str(j) + 'html')
+                    else:
+                        pio.write_html(fig, 'ap_trace_quick_' + str(j) + 'html', auto_open=False)
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -2063,7 +2080,8 @@ class TwoDSpec:
                    display=False,
                    renderer='default',
                    jsonstring=False,
-                   iframe=False):
+                   iframe=False,
+                   open_iframe=False):
         """
         Extract the spectra using the traces, support tophat or optimal
         extraction. The sky background is fitted in one dimention only. The
@@ -2385,7 +2403,10 @@ class TwoDSpec:
                 if jsonstring:
                     return fig.to_json()
                 if iframe:
-                    pio.write_html(fig, 'ap_extract_' + str(j) + '.html')
+                    if open_iframe:
+                        pio.write_html(fig, 'ap_extract_' + str(j) + 'html')
+                    else:
+                        pio.write_html(fig, 'ap_extract_' + str(j) + 'html', auto_open=False)
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -2423,6 +2444,7 @@ class WavelengthPolyFit():
         '''
 
         self.spec = spec
+        self.nspec = spec.nspec
 
         # If data provided is an numpy array
         if isinstance(arc, np.ndarray):
@@ -2476,7 +2498,8 @@ class WavelengthPolyFit():
                        display=False,
                        jsonstring=False,
                        renderer='default',
-                       iframe=False):
+                       iframe=False,
+                       open_iframe=False):
         '''
         This function applies the trace(s) to the arc image then take median
         average of the stripe before identifying the arc lines (peaks) with
@@ -2570,7 +2593,10 @@ class WavelengthPolyFit():
                 if jsonstring:
                     return fig[j].to_json()
                 if iframe:
-                    pio.write_html(fig[j], 'arc_lines_' + str(j) + '.html')
+                    if open_iframe:
+                        pio.write_html(fig[j], 'arc_lines_' + str(j) + 'html')
+                    else:
+                        pio.write_html(fig[j], 'arc_lines_' + str(j) + 'html', auto_open=False)
                 if renderer == 'default':
                     fig[j].show()
                 else:
@@ -2797,6 +2823,8 @@ class WavelengthPolyFit():
 
         if not isinstance(pfit, list):
             self.pfit = [pfit]
+        else:
+            self.pfit = pfit
 
         self.pfit_type = []
 
@@ -2880,7 +2908,8 @@ class StandardFlux:
                       display=False,
                       renderer='default',
                       jsonstring=False,
-                      iframe=False):
+                      iframe=False,
+                      open_iframe=False):
         '''
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag.
@@ -2939,7 +2968,8 @@ class StandardFlux:
     def inspect_standard(self,
                          renderer='default',
                          jsonstring=False,
-                         iframe=False):
+                         iframe=False,
+                         open_iframe=False):
         '''
         Display the standard star plot.
 
@@ -3003,7 +3033,10 @@ class StandardFlux:
         if jsonstring:
             return fig.to_json()
         if iframe:
-            pio.write_html(fig, 'standard.html')
+            if open_iframe:
+                pio.write_html(fig, 'standard.html')
+            else:
+                pio.write_html(fig, 'standard.html', auto_open=False)
         if renderer == 'default':
             fig.show()
         else:
@@ -3213,7 +3246,8 @@ class OneDSpec:
                          display=False,
                          renderer='default',
                          jsonstring=False,
-                         iframe=False):
+                         iframe=False,
+                         open_iframe=False):
         '''
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
@@ -3325,7 +3359,8 @@ class OneDSpec:
     def inspect_sencurve(self,
                          renderer='default',
                          jsonstring=False,
-                         iframe=False):
+                         iframe=False,
+                         open_iframe=False):
         '''
         Display the computed sensitivity curve.
 
@@ -3422,7 +3457,10 @@ class OneDSpec:
         if jsonstring:
             return fig.to_json()
         if iframe:
-            pio.write_html(fig, 'senscurve.html')
+            if open_iframe:
+                pio.write_html(fig, 'senscurve.html')
+            else:
+                pio.write_html(fig, 'senscurve.html', auto_open=False)
         if renderer == 'default':
             fig.show()
         else:
@@ -3578,7 +3616,8 @@ class OneDSpec:
                                  wave_max=8000.,
                                  renderer='default',
                                  jsonstring=False,
-                                 iframe=False):
+                                 iframe=False,
+                                 open_iframe=False):
         '''
         Display the reduced spectra.
 
@@ -3706,7 +3745,10 @@ class OneDSpec:
                 if jsonstring:
                     return fig_sci[j].to_json()
                 if iframe:
-                    pio.write_html(fig_sci[j], 'spectrum_' + str(j) + '.html')
+                    if open_iframe:
+                        pio.write_html(fig_sci[j], 'spectrum_' + str(j) + '.html')
+                    else:
+                        pio.write_html(fig_sci[j], 'spectrum_' + str(j) + '.html', auto_open=False)
                 if renderer == 'default':
                     fig_sci[j].show()
                 else:
@@ -3799,7 +3841,10 @@ class OneDSpec:
                 if jsonstring:
                     return fig_std.to_json()
                 if iframe:
-                    pio.write_html(fig_std, 'spectrum_standard.html')
+                    if open_iframe:
+                        pio.write_html(fig_std, 'spectrum_standard.html')
+                    else:
+                        pio.write_html(fig_std, 'spectrum_standard.html', auto_open=False)
                 if renderer == 'default':
                     fig_std.show()
                 else:
