@@ -62,7 +62,7 @@ def _check_files(paths):
 
 class ImageReduction:
     def __init__(self,
-                 filelistpath,
+                 filelist,
                  ftype='csv',
                  saxis=None,
                  saxis_keyword=None,
@@ -100,7 +100,7 @@ class ImageReduction:
 
         Parameters
         ----------
-        filelistpath: string
+        filelist: string
             file location, does not support URL
         ftype: string
             one of csv, tsv and ascii. Default is csv.
@@ -167,7 +167,7 @@ class ImageReduction:
             set to suppress all messages
         '''
 
-        self.filelistpath = filelistpath
+        self.filelist = filelist
         self.ftype = ftype
         if ftype == 'csv':
             self.delimiter = ','
@@ -233,12 +233,21 @@ class ImageReduction:
 
         # import file with first column as image type and second column as
         # file path
-        self.filelist = np.genfromtxt(self.filelistpath,
-                                      delimiter=self.delimiter,
-                                      dtype='str',
-                                      autostrip=True)
-        self.imtype = self.filelist[:, 0]
-        self.impath = self.filelist[:, 1]
+
+        if isinstance(self.filelist, str):
+            self.filelist = np.genfromtxt(self.filelist,
+                                          delimiter=self.delimiter,
+                                          dtype='str',
+                                          autostrip=True)
+            self.imtype = self.filelist[:, 0]
+            self.impath = self.filelist[:, 1]
+        elif isinstance(self.filelist, np.ndarray):
+            self.imtype = self.filelist[:, 0]
+            self.impath = self.filelist[:, 1]
+        else:
+            TypeError('Please provide a file path to the file list or '
+                      'a numpy array with 2 columns.')
+
         try:
             self.hdunum = self.filelist[:, 2].astype('int')
         except:
@@ -345,22 +354,23 @@ class ImageReduction:
                 warnings.warn('Light frame exposure time cannot be found. '
                               '1 second is used as the exposure time.')
 
-        # Combine the arcs
-        arc_CCDData = []
-        for i in range(self.arc_list.size):
-            # Open all the light frames
-            arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
-            arc_CCDData.append(CCDData(arc.data, unit=u.adu))
+        if len(self.arc_list) > 0:
+            # Combine the arcs
+            arc_CCDData = []
+            for i in range(self.arc_list.size):
+                # Open all the light frames
+                arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
+                arc_CCDData.append(CCDData(arc.data, unit=u.adu))
 
-            self.arc_filename.append(self.arc_list[i].split('/')[-1])
+                self.arc_filename.append(self.arc_list[i].split('/')[-1])
 
-        # combine the arc frames
-        arc_combiner = Combiner(arc_CCDData)
-        self.arc_master = arc_combiner.median_combine()
+            # combine the arc frames
+            arc_combiner = Combiner(arc_CCDData)
+            self.arc_master = arc_combiner.median_combine()
 
-        # Free memory
-        del arc_CCDData
-        del arc_combiner
+            # Free memory
+            del arc_CCDData
+            del arc_combiner
 
     def _bias_subtract(self):
         '''
@@ -570,9 +580,6 @@ class ImageReduction:
                                           comment='Flat frames')
 
         # Add all the other keywords
-        self.fits_data.header.set(keyword='FILELIST',
-                                  value=self.filelistpath,
-                                  comment='File location of the frames used.')
         self.fits_data.header.set(
             keyword='COMBTYPE',
             value=self.combinetype_light,
@@ -3644,9 +3651,9 @@ class OneDSpec:
             fig_sci = np.array([None] * self.nspec, dtype='object')
             for j in range(self.nspec):
 
-                wave_mask = ((self.wave_resampled[j] > wave_min) &
-                             (self.wave_resampled[j] < wave_max))
                 if self.standard_imported:
+                    wave_mask = ((self.wave_resampled[j] > wave_min) &
+                                 (self.wave_resampled[j] < wave_max))
                     flux_mask = (
                         (self.flux[j] >
                          np.nanpercentile(self.flux[j][wave_mask], 5) / 1.5) &
@@ -3655,6 +3662,8 @@ class OneDSpec:
                     flux_min = np.log10(np.nanmin(self.flux[j][flux_mask]))
                     flux_max = np.log10(np.nanmax(self.flux[j][flux_mask]))
                 else:
+                    wave_mask = ((self.wave[j] > wave_min) &
+                                 (self.wave[j] < wave_max))
                     flux_mask = (
                         (self.adu[j] >
                          np.nanpercentile(self.adu[j][wave_mask], 5) / 1.5) &
@@ -3710,17 +3719,17 @@ class OneDSpec:
                                    name='Sky Flux'))
                 else:
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave_resampled[j],
+                        go.Scatter(x=self.wave[j],
                                    y=self.adu[j],
                                    line=dict(color='royalblue'),
                                    name='ADU'))
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave_resampled[j],
+                        go.Scatter(x=self.wave[j],
                                    y=self.aduerr[j],
                                    line=dict(color='firebrick'),
                                    name='ADU Uncertainty'))
                     fig_sci[j].add_trace(
-                        go.Scatter(x=self.wave_resampled[j],
+                        go.Scatter(x=self.wave[j],
                                    y=self.skyadu[j],
                                    line=dict(color='orange'),
                                    name='Sky ADU'))
