@@ -1288,7 +1288,9 @@ class TwoDSpec:
                 if open_iframe:
                     pio.write_html(fig, 'identify_spectra.html')
                 else:
-                    pio.write_html(fig, 'identify_spectra.html', auto_open=False)
+                    pio.write_html(fig,
+                                   'identify_spectra.html',
+                                   auto_open=False)
             if renderer == 'default':
                 fig.show()
             else:
@@ -1505,6 +1507,9 @@ class TwoDSpec:
 
         spec_spatial = np.zeros(nresample)
 
+        pix_init = np.arange(nresample)
+        pix_resampled = pix_init
+
         # Scipy correlate method
         for i in chain(range(start_window_idx, nwindow),
                        range(start_window_idx - 1, -1, -1)):
@@ -1539,9 +1544,11 @@ class TwoDSpec:
             shift_solution[i] = corr_idx[np.nanargmax(corr_val)]
             scale_solution[i] = scaling_range[np.nanargmax(corr_val)]
 
+
             # Align the spatial profile before stacking
-            pix_resampled = np.arange(
-                nresample) * scale_solution[i] - shift_solution[i]
+            if i == (start_window_idx - 1):
+                pix_resampled = pix_init
+            pix_resampled = pix_resampled * scale_solution[i] + shift_solution[i]
 
             spec_spatial += spectres(np.arange(nresample), pix_resampled,
                                      lines)
@@ -1681,343 +1688,6 @@ class TwoDSpec:
                 fig.show()
             else:
                 fig.show(renderer)
-
-    def ap_trace_quick(self,
-                       nspec=1,
-                       nwindow=25,
-                       recenter=False,
-                       prevtrace=(0, ),
-                       fittype='spline',
-                       order=3,
-                       bigbox=8,
-                       display=False,
-                       renderer='default',
-                       jsonstring=False,
-                       iframe=False,
-                       open_iframe=False):
-        """
-        This only works for bright spectra with good wavelength coverage.
-
-        It works by splitting the image in nwindow bins in the wavelength
-        direction, then a Gaussian is fitted for each bin to determine the
-        spatial position of the trace. Finally, a cubic spline is computed
-        for these spatial positions as a function of the spectral position.
-
-        Nothing is returned unless jsonstring of the plotly graph is set to be
-        returned. The trace and trace_sigma are stored as properties of the
-        TwoDSpec object.
-
-        Parameters
-        ----------
-        nspec: int
-            Number of spectra to be extracted. It does not guarantee returning
-            the same number of spectra if fewer can be detected. (Default is 1)
-        nwindow: int
-            Keyword, number of bins in X direction to chop image into. Use
-            fewer bins if ap_trace is having difficulty, such as with faint
-            targets (default is 20, minimum is 4)
-        recenter: bool
-            Set to True to use previous trace, allow small shift in position
-            along the spatial direction. Not doing anything if prevtrace is not
-            supplied. (Default is False)
-        prevtrace: 1-d numpy array
-            Provide first guess or refitting the center with different parameters.
-        fittype: string
-            Set to 'spline' or 'polynomial', using
-            scipy.interpolate.UnivariateSpline and numpy.polyfit
-        order: string
-            Degree of the spline or polynomial. Spline must be <= 5.
-            (default is k=3)
-        bigbox: float
-            The number of sigma away from the main aperture to allow to trace
-        silence: boolean
-            Set to disable warning/error messages. (Default is False)
-        display: boolean
-            Set to True to display disgnostic plot.
-        renderer: string
-            plotly renderer options.
-        jsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
-            in any support language.
-        """
-
-        self.nspec = nspec
-
-        if not self.silence:
-            print('Tracing Aperture using nwindow=' + str(nwindow))
-
-        # the valid y-range of the chip (an array of int)
-        ydata = np.arange(self.spec_size)
-        ztot = np.sum(self.img, axis=1)
-
-        # need at least 3 samples along the trace
-        if (nwindow < 3):
-            nwindow = 3
-
-        # detect peaks by summing in the spatial direction
-        self._identify_spectra(0.01,
-                               display=False,
-                               renderer=renderer,
-                               jsonstring=jsonstring,
-                               iframe=False)
-
-        if display:
-            # set a side-by-side subplot
-            fig = go.Figure()
-
-            # show the image on the left
-            fig.add_trace(
-                go.Heatmap(z=np.log10(self.img),
-                           colorscale="Viridis",
-                           xaxis='x',
-                           yaxis='y',
-                           colorbar=dict(title='log(ADU)')))
-
-            # plot the integrated count and the detected peaks on the right
-            fig.add_trace(
-                go.Scatter(x=np.log10(ztot),
-                           y=ydata,
-                           line=dict(color='black'),
-                           xaxis='x2'))
-            fig.add_trace(
-                go.Scatter(x=np.log10(self.peak_height),
-                           y=self.peak,
-                           mode='markers',
-                           marker=dict(color='firebrick'),
-                           xaxis='x2'))
-
-        my = np.zeros((self.nspec, self.spatial_size))
-        y_sigma = np.zeros((self.nspec, self.spatial_size))
-
-        # trace each individual spetrum one by one
-        for i in range(self.nspec):
-
-            peak_guess = [
-                self.peak_height[i],
-                np.nanmedian(ztot), self.peak[i], 2.
-            ]
-
-            if (recenter is False) and (len(prevtrace) > 10):
-                my[i] = prevtrace
-                y_sigma[i] = np.ones(len(prevtrace)) * self.seeing
-                self.trace = my
-                self.trace_sigma = np.array(y_sigma)
-                if display:
-                    fig.add_trace(
-                        go.Scatter(x=[min(ztot[ztot > 0]),
-                                      max(ztot)],
-                                   y=[min(self.trace[i]),
-                                      max(self.trace[i])],
-                                   mode='lines',
-                                   xaxis='x1'))
-                    fig.add_trace(
-                        go.Scatter(x=np.arange(len(self.trace[i])),
-                                   y=self.trace[i],
-                                   mode='lines',
-                                   xaxis='x1'))
-                    fig.update_layout(autosize=True,
-                                      yaxis_title='Spatial Direction / pixel',
-                                      xaxis=dict(
-                                          zeroline=False,
-                                          domain=[0, 0.5],
-                                          showgrid=False,
-                                          title='Spectral Direction / pixel'),
-                                      xaxis2=dict(zeroline=False,
-                                                  domain=[0.5, 1],
-                                                  showgrid=True,
-                                                  title='Integrated Count'),
-                                      bargap=0,
-                                      hovermode='closest',
-                                      showlegend=False,
-                                      height=800)
-
-                    if jsonstring:
-                        return fig.to_json()
-                    if iframe:
-                        if open_iframe:
-                            pio.write_html(fig, 'ap_trace_quick.html')
-                        else:
-                            pio.write_html(fig, 'ap_trace_quick.html', auto_open=False)
-                    if renderer == 'default':
-                        fig.show()
-                    else:
-                        fig.show(renderer)
-
-                break
-
-            # use middle of previous trace as starting guess
-            elif (recenter is True) and (len(prevtrace) > 10):
-                peak_guess[2] = np.nanmedian(prevtrace)
-
-            else:
-                # fit a Gaussian to peak
-                try:
-                    pgaus, pcov = curve_fit(
-                        self._gaus,
-                        ydata[np.isfinite(ztot)],
-                        ztot[np.isfinite(ztot)],
-                        p0=peak_guess,
-                        bounds=((0., 0., peak_guess[2] - 10, 0.),
-                                (np.inf, np.inf, peak_guess[2] + 10, np.inf)))
-                    #print(pgaus, pcov)
-                except:
-                    if not self.silence:
-                        ValueError(
-                            'Spectrum ' + str(i + 1) + ' of ' +
-                            str(self.nspec) +
-                            ' is likely to be (1) too faint, (2) in a crowed'
-                            ' field, or (3) an extended source. Automated' +
-                            ' tracing is sub-optimal. Please (1) reduce nspec,'
-                            + ' (2) reduce n_steps, or (3) provide prevtrace.')
-
-                if display:
-                    fig.add_trace(
-                        go.Scatter(x=np.log10(
-                            self._gaus(ydata, pgaus[0], pgaus[1], pgaus[2],
-                                       pgaus[3])),
-                                   y=ydata,
-                                   mode='lines',
-                                   xaxis='x2'))
-
-                # only allow data within a box around this peak
-                ydata2 = ydata[np.where(
-                    (ydata >= pgaus[2] - pgaus[3] * bigbox)
-                    & (ydata <= pgaus[2] + pgaus[3] * bigbox))]
-                yi = np.arange(self.spec_size)[ydata2]
-
-                # define the X-bin edges
-                xbins = np.linspace(0, self.spatial_size, nwindow)
-                ybins = np.zeros_like(xbins)
-                ybins_sigma = np.zeros_like(xbins)
-
-                # loop through each bin
-                for j in range(0, len(xbins) - 1):
-                    # fit gaussian w/j each window
-                    zi = np.sum(self.img[ydata2,
-                                         int(np.floor(xbins[j])
-                                             ):int(np.ceil(xbins[j + 1]))],
-                                axis=1)
-                    # fit gaussian w/j each window
-                    if sum(zi) == 0:
-                        break
-                    else:
-                        pguess = [
-                            np.nanmax(zi),
-                            np.nanmedian(zi), yi[np.nanargmax(zi)], 2.
-                        ]
-                    try:
-                        popt, pcov = curve_fit(self._gaus, yi, zi, p0=pguess)
-                    except:
-                        if not self.silence:
-                            ValueError('Step ' + str(j + 1) + ' of ' +
-                                       str(nwindow) + ' of spectrum ' +
-                                       str(i + 1) + ' of ' + str(self.nspec) +
-                                       ' cannot be fitted.')
-                        break
-
-                    # if the peak is lower than background, sigma is too broad or
-                    # gaussian fits off chip, then use chip-integrated answer
-                    if ((popt[0] < 0) or (popt[3] < 0) or (popt[3] > 10)):
-                        ybins[j] = pgaus[2]
-                        popt = pgaus
-                        if not self.silence:
-                            ValueError(
-                                'Step ' + str(j + 1) + ' of ' + str(nwindow) +
-                                ' of spectrum ' + str(i + 1) + ' of ' +
-                                str(self.nspec) +
-                                ' has a poor fit. Initial guess is used instead.'
-                            )
-                    else:
-                        ybins[j] = popt[2]
-                        ybins_sigma[j] = popt[3]
-
-                # recenter the bin positions, trim the unused bin off in Y
-                mxbins = (xbins[:-1] + xbins[1:]) / 2.
-                mybins = ybins[:-1]
-                mx = np.arange(0, self.spatial_size)
-
-                if (fittype == 'spline'):
-                    # run a cubic spline thru the bins
-                    interpolated = itp.UnivariateSpline(mxbins,
-                                                        mybins,
-                                                        ext=0,
-                                                        k=order)
-                    # interpolate 1 position per column
-                    my[i] = interpolated(mx)
-
-                elif (fittype == 'polynomial'):
-                    # linear fit
-                    npfit = np.polyfit(mxbins, mybins, deg=order)
-                    # interpolate 1 position per column
-                    my[i] = np.polyval(npfit, mx)
-
-                else:
-                    if not self.silence:
-                        ValueError(
-                            'Unknown fitting type, please choose from ' +
-                            '(1) \'spline\'; or (2) \'polynomial\'.')
-
-                # get the uncertainties in the spatial direction along the spectrum
-                slope, intercept, r_value, p_value, std_err =\
-                        stats.linregress(mxbins, ybins_sigma[:-1])
-                y_sigma[i] = np.nanmedian(slope * mx + intercept)
-
-                if display:
-                    fig.add_trace(
-                        go.Scatter(x=mx, y=my[i], mode='lines', xaxis='x'))
-
-                if not self.silence:
-                    if np.sum(ybins_sigma) == 0:
-                        print(
-                            'Spectrum ' + str(i + 1) + ' of ' +
-                            str(self.nspec) +
-                            ' is likely to be (1) too faint, (2) in a crowed'
-                            ' field, or (3) an extended source. Automated' +
-                            ' tracing is sub-optimal. Please disable multi-source'
-                            +
-                            ' mode and (1) reduce nspec, or (2) reduce n_steps,'
-                            +
-                            '  or (3) provide prevtrace, or (4) all of above.')
-
-                    ValueError('Spectrum ' + str(i + 1) +
-                               ': Trace gaussian width = ' + str(ybins_sigma) +
-                               ' pixels')
-
-            # add the minimum pixel value from fmask before returning
-            #if len(spatial_mask)>1:
-            #    my += min(spatial_mask)
-
-            self.trace = my
-            self.trace_sigma = np.array(y_sigma)
-
-            if display:
-                fig.update_layout(autosize=True,
-                                  yaxis_title='Spectral Direction / pixel',
-                                  xaxis=dict(
-                                      zeroline=False,
-                                      domain=[0, 0.5],
-                                      showgrid=False,
-                                      title='Spatial Direction / pixel'),
-                                  xaxis2=dict(zeroline=False,
-                                              domain=[0.5, 1],
-                                              showgrid=True,
-                                              title='Integrated Count'),
-                                  bargap=0,
-                                  hovermode='closest',
-                                  showlegend=False,
-                                  height=800)
-
-                if jsonstring:
-                    return fig.to_json()
-                if iframe:
-                    if open_iframe:
-                        pio.write_html(fig, 'ap_trace_quick_' + str(j) + 'html')
-                    else:
-                        pio.write_html(fig, 'ap_trace_quick_' + str(j) + 'html', auto_open=False)
-                if renderer == 'default':
-                    fig.show()
-                else:
-                    fig.show(renderer)
 
     def add_trace(self, trace, trace_sigma, x_pix=None):
         '''
@@ -2236,7 +1906,7 @@ class TwoDSpec:
                 max_trace = int(max(self.trace[j]) + 0.5)
 
                 fig = go.Figure()
-                # the 3 is the show a little bit outside the extraction regions
+                # the 3 is to show a little bit outside the extraction regions
                 img_display = np.log10(
                     self.img[max(0, min_trace - widthdn - skysep - skywidth - 3
                                  ):min(max_trace + widthup + skysep +
@@ -2248,11 +1918,11 @@ class TwoDSpec:
                     go.Heatmap(x=np.arange(len_trace),
                                y=np.arange(
                                    max(
-                                       0, max_trace - widthdn - skysep -
-                                       skywidth - 1 - 3),
+                                       0, min_trace - widthdn - skysep -
+                                       skywidth - 3),
                                    min(
-                                       min_trace + widthup + skysep +
-                                       skywidth + 1 + 3, len(self.img[0]))),
+                                       max_trace + widthup + skysep +
+                                       skywidth + 3, len(self.img[0]))),
                                z=img_display,
                                colorscale="Viridis",
                                zmin=self.zmin,
@@ -2413,7 +2083,9 @@ class TwoDSpec:
                     if open_iframe:
                         pio.write_html(fig, 'ap_extract_' + str(j) + 'html')
                     else:
-                        pio.write_html(fig, 'ap_extract_' + str(j) + 'html', auto_open=False)
+                        pio.write_html(fig,
+                                       'ap_extract_' + str(j) + 'html',
+                                       auto_open=False)
                 if renderer == 'default':
                     fig.show()
                 else:
@@ -2603,7 +2275,9 @@ class WavelengthPolyFit():
                     if open_iframe:
                         pio.write_html(fig[j], 'arc_lines_' + str(j) + 'html')
                     else:
-                        pio.write_html(fig[j], 'arc_lines_' + str(j) + 'html', auto_open=False)
+                        pio.write_html(fig[j],
+                                       'arc_lines_' + str(j) + 'html',
+                                       auto_open=False)
                 if renderer == 'default':
                     fig[j].show()
                 else:
@@ -3755,9 +3429,12 @@ class OneDSpec:
                     return fig_sci[j].to_json()
                 if iframe:
                     if open_iframe:
-                        pio.write_html(fig_sci[j], 'spectrum_' + str(j) + '.html')
+                        pio.write_html(fig_sci[j],
+                                       'spectrum_' + str(j) + '.html')
                     else:
-                        pio.write_html(fig_sci[j], 'spectrum_' + str(j) + '.html', auto_open=False)
+                        pio.write_html(fig_sci[j],
+                                       'spectrum_' + str(j) + '.html',
+                                       auto_open=False)
                 if renderer == 'default':
                     fig_sci[j].show()
                 else:
@@ -3853,14 +3530,13 @@ class OneDSpec:
                     if open_iframe:
                         pio.write_html(fig_std, 'spectrum_standard.html')
                     else:
-                        pio.write_html(fig_std, 'spectrum_standard.html', auto_open=False)
+                        pio.write_html(fig_std,
+                                       'spectrum_standard.html',
+                                       auto_open=False)
                 if renderer == 'default':
                     fig_std.show()
                 else:
                     fig_std.show(renderer)
-
-        #for i in range(self.nspec):
-        #    t = Table([self.wave[j], self.flux[j], self.fluxerr[j], self.skyflux[j]], names=())
 
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
