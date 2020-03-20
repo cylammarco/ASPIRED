@@ -239,31 +239,71 @@ class ImageReduction:
                                           delimiter=self.delimiter,
                                           dtype='str',
                                           autostrip=True)
-            self.imtype = self.filelist[:, 0]
-            self.impath = self.filelist[:, 1]
+            if np.shape(np.shape(self.filelist))[0] == 2:
+                self.imtype = self.filelist[:, 0]
+                self.impath = self.filelist[:, 1]
+            elif np.shape(np.shape(self.filelist))[0] == 1:
+                self.imtype = self.filelist[0]
+                self.impath = self.filelist[1]
+            else:
+                raise TypeError('Please provide a text file with at least 2 columns.')
+
         elif isinstance(self.filelist, np.ndarray):
-            self.imtype = self.filelist[:, 0]
-            self.impath = self.filelist[:, 1]
+            if np.shape(np.shape(self.filelist))[0] == 2:
+                self.imtype = self.filelist[:, 0]
+                self.impath = self.filelist[:, 1]
+            elif np.shape(np.shape(self.filelist))[0] == 1:
+                self.imtype = self.filelist[0]
+                self.impath = self.filelist[1]
+            else:
+                raise TypeError('Please provide a numpy.ndarray with at least 2 columns.')
         else:
-            TypeError('Please provide a file path to the file list or '
-                      'a numpy array with 2 columns.')
+            raise TypeError('Please provide a file path to the file list or '
+                      'a numpy array with at least 2 columns.')
 
-        try:
-            self.hdunum = self.filelist[:, 2].astype('int')
-        except:
-            self.hdunum = np.zeros(len(self.impath)).astype('int')
+        if np.shape(np.shape(self.filelist))[0] == 2:
+            try:
+                self.hdunum = self.filelist[:, 2].astype('int')
+            except:
+                self.hdunum = np.zeros(len(self.impath)).astype('int')
+        elif np.shape(np.shape(self.filelist))[0] == 1:
+            try:
+                self.hdunum = self.filelist[2].astype('int')
+            except:
+                self.hdunum = 0
+        else:
+            raise TypeError('Please provide a file path to the file list or '
+                      'a numpy array with at least 2 columns.')
 
-        self.bias_list = self.impath[self.imtype == 'bias']
-        self.dark_list = self.impath[self.imtype == 'dark']
-        self.flat_list = self.impath[self.imtype == 'flat']
-        self.arc_list = self.impath[self.imtype == 'arc']
-        self.light_list = self.impath[self.imtype == 'light']
+        if np.shape(np.shape(self.filelist))[0] == 2:
+            self.bias_list = self.impath[self.imtype == 'bias']
+            self.dark_list = self.impath[self.imtype == 'dark']
+            self.flat_list = self.impath[self.imtype == 'flat']
+            self.arc_list = self.impath[self.imtype == 'arc']
+            self.light_list = self.impath[self.imtype == 'light']
 
-        self.bias_hdunum = self.hdunum[self.imtype == 'bias']
-        self.dark_hdunum = self.hdunum[self.imtype == 'dark']
-        self.flat_hdunum = self.hdunum[self.imtype == 'flat']
-        self.arc_hdunum = self.hdunum[self.imtype == 'arc']
-        self.light_hdunum = self.hdunum[self.imtype == 'light']
+            self.bias_hdunum = self.hdunum[self.imtype == 'bias']
+            self.dark_hdunum = self.hdunum[self.imtype == 'dark']
+            self.flat_hdunum = self.hdunum[self.imtype == 'flat']
+            self.arc_hdunum = self.hdunum[self.imtype == 'arc']
+            self.light_hdunum = self.hdunum[self.imtype == 'light']
+
+        if np.shape(np.shape(self.filelist))[0] == 1:
+            if self.imtype == 'light':
+                self.light_list = np.array([self.impath])
+                self.bias_list = np.array([])
+                self.dark_list = np.array([])
+                self.flat_list = np.array([])
+                self.arc_list = np.array([])
+
+                self.light_hdunum = np.array([self.hdunum])
+                self.bias_hdunum = np.array([])
+                self.dark_hdunum = np.array([])
+                self.flat_hdunum = np.array([])
+                self.arc_hdunum = np.array([])
+            else:
+                ValueError('You are only providing a single file, it has to '
+                    'be a light frame.')
 
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
@@ -845,7 +885,7 @@ class TwoDSpec:
             img = data.fits_data.data
             self.header = data.fits_data.header
         # If a filepath is provided
-        elif isinstace(data, str):
+        elif isinstance(data, str):
             # If HDU number is provided
             if data[-1] == ']':
                 filepath, hdunum = data.split('[')
@@ -864,7 +904,7 @@ class TwoDSpec:
             self.header = fitsfile_tmp.header
             fitsfile_tmp = None
         else:
-            TypeError('Please provide a numpy array, an ' +
+            raise TypeError('Please provide a numpy array, an ' +
                       'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
                       'ImageReduction object.')
 
@@ -1177,7 +1217,7 @@ class TwoDSpec:
         if isinstance(header, fits.header.Header):
             self.header = data.header
         else:
-            TypeError(
+            raise TypeError(
                 'Please provide an astropy.io.fits.header.Header object.')
 
     def _gaus(self, x, a, b, x0, sigma):
@@ -1718,7 +1758,7 @@ class TwoDSpec:
             if isinstance(trace_sigma, float):
                 self.trace_sigma = np.array(trace_sigma).reshape(-1)
             else:
-                TypeError('The trace_sigma has to be a float. A ' +\
+                raise TypeError('The trace_sigma has to be a float. A ' +\
                           str(type(trace_sigma)) + ' is given.')
 
         # If there are more than one trace
@@ -1734,7 +1774,7 @@ class TwoDSpec:
                         np.interp1d(x, t)(np.arange(self.spec_size))
                     ]
             else:
-                ValueError(
+                raise ValueError(
                     'x_pix should be of the same shape as trace or '
                     'if all traces use the same x_pix, it should be the '
                     'same length as a trace.')
@@ -1745,7 +1785,7 @@ class TwoDSpec:
             elif (len(trace_sigma) == self.nspec):
                 self.trace_sigma = np.array(trace_sigma)
             else:
-                ValueError('The trace_sigma should be a single float or an '
+                raise ValueError('The trace_sigma should be a single float or an '
                            'array of a size of the number the of traces.')
 
     def ap_extract(self,
@@ -1836,7 +1876,7 @@ class TwoDSpec:
                     widthdn = apwidth[0]
                     widthup = apwidth[1]
                 else:
-                    TypeError(
+                    raise TypeError(
                         'apwidth can only be an int or a list of two ints')
 
                 # fix width if trace is too close to the edge
@@ -2124,25 +2164,10 @@ class WavelengthPolyFit():
 
         self.spec = spec
         self.nspec = spec.nspec
+        self.silence = silence
 
         # If data provided is an numpy array
-        if isinstance(arc, np.ndarray):
-            self.arc = arc
-        # If it is a fits.hdu.image.PrimaryHDU object
-        elif isinstance(arc, fits.hdu.image.PrimaryHDU):
-            self.arc = arc.data
-        # If it is an ImageReduction object
-        elif isinstance(arc, ImageReduction):
-            self.arc = arc.arc_master
-        # If manually calibration is intended
-        elif arc == None:
-            self.arc = None
-            if not silence:
-                warnings.warn('Only add_pfit() can be used.')
-        else:
-            TypeError('Please provide a numpy array, an ' +
-                      'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
-                      'ImageReduction object.')
+        self.add_arc(arc)
 
         if arc is not None:
             # the valid y-range of the chip (i.e. spatial direction)
@@ -2170,6 +2195,28 @@ class WavelengthPolyFit():
 
                 self.spec.trace = spec[0]
                 self.spec.trace_sigma = spec[1]
+
+    def add_arc(self, arc):
+        # If data provided is an numpy array
+        if isinstance(arc, np.ndarray):
+            self.arc = arc
+        # If it is a fits.hdu.image.PrimaryHDU object
+        elif isinstance(arc, fits.hdu.image.PrimaryHDU):
+            self.arc = arc.data
+        # If it is an ImageReduction object
+        elif isinstance(arc, ImageReduction):
+            self.arc = arc.arc_master
+        # If manually calibration is intended
+        elif arc == None:
+            self.arc = None
+            if not self.silence:
+                warnings.warn('Arc is not present. Try providing the arc '
+                    'manually by using add_arc(). Otherwise, try manually '
+                    'provide a polynomial fit with add_pfit().')
+        else:
+            raise TypeError('Please provide a numpy array, an ' +
+                      'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
+                      'ImageReduction object.')
 
     def find_arc_lines(self,
                        percentile=25.,
@@ -2209,6 +2256,10 @@ class WavelengthPolyFit():
         -------
         JSON strings if jsonstring is set to True
         '''
+        if self.arc is None:
+            raise ValueError('arc is not provided. Please provide arc when creating '
+                'the WavelengthPolyFit object, or with add_arc() before '
+                'executing find_arc_lines().')
 
         trace_shape = np.shape(self.spec.trace)
         self.nspec = trace_shape[0]
