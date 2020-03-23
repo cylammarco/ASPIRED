@@ -59,7 +59,6 @@ def _check_files(paths):
         except:
             ValueError('File ' + filepath + ' does not exist.')
 
-
 class ImageReduction:
     def __init__(self,
                  filelist,
@@ -223,7 +222,7 @@ class ImageReduction:
         self.arc_master = None
         self.light_master = None
 
-        self.fits_data = None
+        self.image_fits = None
 
         self.bias_filename = []
         self.dark_filename = []
@@ -586,124 +585,126 @@ class ImageReduction:
         # Construct a FITS object of the reduced frame
         self.light_master = np.array((self.light_master))
 
-        # Put the reduced data in FITS format with a primary header
+    def _create_image_fits(self):
+        # Put the reduced data in FITS format with an image header
         # Append header info to the *first* light frame header
-        self.fits_data = fits.PrimaryHDU(self.light_master)
-        self.fits_data.header = self.light_header[0]
+        self.image_fits = fits.ImageHDU(self.light_master)
+
+        self.image_fits.header = self.light_header[0]
 
         # Add the names of all the light frames to header
         if len(self.light_filename) > 0:
             for i in range(len(self.light_filename)):
-                self.fits_data.header.set(keyword='light' + str(i + 1),
+                self.image_fits.header.set(keyword='light' + str(i + 1),
                                           value=self.light_filename[i],
                                           comment='Light frames')
 
         # Add the names of all the biad frames to header
         if len(self.bias_filename) > 0:
             for i in range(len(self.bias_filename)):
-                self.fits_data.header.set(keyword='bias' + str(i + 1),
+                self.image_fits.header.set(keyword='bias' + str(i + 1),
                                           value=self.bias_filename[i],
                                           comment='Bias frames')
 
         # Add the names of all the dark frames to header
         if len(self.dark_filename) > 0:
             for i in range(len(self.dark_filename)):
-                self.fits_data.header.set(keyword='dark' + str(i + 1),
+                self.image_fits.header.set(keyword='dark' + str(i + 1),
                                           value=self.dark_filename[i],
                                           comment='Dark frames')
 
         # Add the names of all the flat frames to header
         if len(self.flat_filename) > 0:
             for i in range(len(self.flat_filename)):
-                self.fits_data.header.set(keyword='flat' + str(i + 1),
+                self.image_fits.header.set(keyword='flat' + str(i + 1),
                                           value=self.flat_filename[i],
                                           comment='Flat frames')
 
         # Add all the other keywords
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='COMBTYPE',
             value=self.combinetype_light,
             comment='Type of image combine of the light frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='SIGCLIP',
             value=self.sigma_clipping_light,
             comment='True if the light frames are sigma clipped.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='CLIPLOW',
             value=self.clip_low_light,
             comment='Lower threshold of sigma clipping of the light frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='CLIPHIG',
             value=self.clip_high_light,
             comment='Higher threshold of sigma clipping of the light frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='XPOSURE',
             value=self.exptime_light,
             comment='Average exposure time of the light frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='KEYWORD',
             value=self.exptime_light_keyword,
             comment='Automatically identified exposure time keyword of the '
             'light frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='DCOMTYPE',
             value=self.combinetype_dark,
             comment='Type of image combine of the dark frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='DSIGCLIP',
             value=self.sigma_clipping_dark,
             comment='True if the dark frames are sigma clipped.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='DCLIPLOW',
             value=self.clip_low_dark,
             comment='Lower threshold of sigma clipping of the dark frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='DCLIPHIG',
             value=self.clip_high_dark,
             comment='Higher threshold of sigma clipping of the dark frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='DXPOSURE',
             value=self.exptime_dark,
             comment='Average exposure time of the dark frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='DKEYWORD',
             value=self.exptime_dark_keyword,
             comment='Automatically identified exposure time keyword of the ' +
             'dark frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='BCOMTYPE',
             value=self.combinetype_bias,
             comment='Type of image combine of the bias frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='BSIGCLIP',
             value=self.sigma_clipping_bias,
             comment='True if the dark frames are sigma clipped.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='BCLIPLOW',
             value=self.clip_low_bias,
             comment='Lower threshold of sigma clipping of the bias frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='BCLIPHIG',
             value=self.clip_high_bias,
             comment='Higher threshold of sigma clipping of the bias frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='FCOMTYPE',
             value=self.combinetype_flat,
             comment='Type of image combine of the flat frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='FSIGCLIP',
             value=self.sigma_clipping_flat,
             comment='True if the flat frames are sigma clipped.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='FCLIPLOW',
             value=self.clip_low_flat,
             comment='Lower threshold of sigma clipping of the flat frames.')
-        self.fits_data.header.set(
+        self.image_fits.header.set(
             keyword='FCLIPHIG',
             value=self.clip_high_flat,
             comment='Higher threshold of sigma clipping of the flat frames.')
 
-    def savefits(self, filepath='reduced_image.fits', overwrite=False):
+    def save_fits(self, filepath='reduced_image.fits', overwrite=False):
         '''
         Save the reduced image to disk.
 
@@ -717,8 +718,10 @@ class ImageReduction:
 
         '''
 
+        self._create_image_fits()
+        self.image_fits = fits.PrimaryHDU(self.image_fits)
         # Save file to disk
-        self.fits_data.writeto(filepath, overwrite=overwrite)
+        self.image_fits.writeto(filepath, overwrite=overwrite)
 
     def inspect(self,
                 log=True,
@@ -880,10 +883,10 @@ class TwoDSpec:
         elif isinstance(data, ImageReduction):
             # If the data is not reduced, reduce it here. Error handling is
             # done by the ImageReduction class
-            if data.fits_data is None:
-                data.reduce()
-            img = data.fits_data.data
-            self.header = data.fits_data.header
+            if data.image_fits is None:
+                data._create_image_fits()
+            img = data.image_fits.data
+            self.header = data.image_fits.header
         # If a filepath is provided
         elif isinstance(data, str):
             # If HDU number is provided
@@ -1339,7 +1342,7 @@ class TwoDSpec:
         self.peak = peaks_y
         self.peak_height = heights_y
 
-    def _optimal_signal(self, pix, xslice, sky, mu, sigma):
+    def _optimal_signal(self, pix, xslice, sky, mu, sigma, silence, tol=1e-4):
         """
         Iterate to get the optimal signal. Following the algorithm on
         Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).
@@ -1377,25 +1380,34 @@ class TwoDSpec:
         var1 = self.rn + np.abs(xslice) / self.gain
         variance1 = 1. / np.nansum(P**2. / var1)
 
+        sky_median = np.median(sky)
+
         signal_diff = 1
         variance_diff = 1
         i = 0
 
-        while ((signal_diff > 1e-6) or (variance_diff > 1e-6)):
+        mask = np.ones(len(P), dtype=bool)
+
+        while (signal_diff > tol) | (variance_diff > tol):
 
             signal0 = signal1
             var0 = var1
             variance0 = variance1
 
-            # cosmic ray mask, only start considering after the 2nd iteration
-            if i > 1:
-                mask_cr = ((signal - P * signal0)**2. <
-                           self.cr_sigma**2. * var0)
-            else:
-                mask_cr = True
+            mask_cr = mask.copy()
+
+            # cosmic ray mask, only start considering after the 1st iteration
+            # masking at most 2 pixels
+            if i > 0:
+                ratio = (self.cr_sigma**2. * var0)/(signal - P * signal0)**2.
+                comparison = np.sum(ratio > 1)
+                if comparison == 1:
+                    mask_cr[np.argmax(ratio)] = False
+                if comparison >= 2:
+                    mask_cr[np.argsort(ratio)[-2:]] = False
 
             # compute signal and noise
-            signal1 = np.nansum((P * (signal) / var0)[mask_cr]) / \
+            signal1 = np.nansum((P * signal / var0)[mask_cr]) / \
                 np.nansum((P**2. / var0)[mask_cr])
             var1 = self.rn + np.abs(P * signal1 + sky) / self.gain
             variance1 = 1. / np.nansum((P**2. / var1)[mask_cr])
@@ -1403,17 +1415,15 @@ class TwoDSpec:
             signal_diff = abs((signal1 - signal0) / signal0)
             variance_diff = abs((variance1 - variance0) / variance0)
 
-            P = signal / signal1
-            P[P < 0.] = 0.
-            P /= np.nansum(P)
-
             i += 1
 
-            if i == 999:
-                print(
-                    'Unable to obtain optimal signal, please try a longer ' +
-                    'iteration or revert to unit-weighted extraction. Values '
-                    + 'returned (if at all) are sub-optimal at best.')
+            if i == 99:
+                if not silence:
+                    print(
+                        'Unable to obtain optimal signal, please try a longer '
+                        'iteration, larger tolerance or revert to top-hat '
+                        'extraction. Value returned is sub-optimal '
+                        '(but can be close to optimal).')
                 break
 
         signal = signal1
@@ -1814,13 +1824,13 @@ class TwoDSpec:
                             function along the entire spectrum.
 
         Nothing is returned unless jsonstring of the plotly graph is set to be
-        returned. The adu, skyadu and aduerr are stored as properties of the
+        returned. The adu, adusky and aduerr are stored as properties of the
         TwoDSpec object.
 
         adu: 1-d array
             The summed adu at each column about the trace. Note: is not
             sky subtracted!
-        skyadu: 1-d array
+        adusky: 1-d array
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
         aduerr: 1-d array
@@ -1856,7 +1866,7 @@ class TwoDSpec:
         """
 
         len_trace = len(self.trace[0])
-        skyadu = np.zeros((self.nspec, len_trace))
+        adusky = np.zeros((self.nspec, len_trace))
         aduerr = np.zeros((self.nspec, len_trace))
         adu = np.zeros((self.nspec, len_trace))
 
@@ -1906,19 +1916,19 @@ class TwoDSpec:
                         # define the aperture in this column
                         ap = np.arange(itrace - widthdn, itrace + widthup + 1)
                         # evaluate the polynomial across the aperture, and sum
-                        skyadu_slice = np.polyval(pfit, ap)
-                        skyadu[j][i] = np.sum(
-                            skyadu_slice) - pix_frac * skyadu_slice[0] - (
-                                1 - pix_frac) * skyadu_slice[-1]
+                        adusky_slice = np.polyval(pfit, ap)
+                        adusky[j][i] = np.sum(
+                            adusky_slice) - pix_frac * adusky_slice[0] - (
+                                1 - pix_frac) * adusky_slice[-1]
                     elif (skydeg == 0):
-                        skyadu[j][i] = (widthdn + widthup) * np.nanmean(z)
+                        adusky[j][i] = (widthdn + widthup) * np.nanmean(z)
 
                 else:
                     pfit = [0., 0.]
 
                 # if optimal extraction
                 if optimal:
-                    pix = range(itrace - widthdn, itrace + widthup + 1)
+                    pix = np.arange(itrace - widthdn, itrace + widthup + 1)
                     # Fit the sky background
                     if (skydeg > 0):
                         sky = np.polyval(pfit, pix)
@@ -1927,7 +1937,7 @@ class TwoDSpec:
                     # Get the optimal signals
                     adu[j][i], aduerr[j][i] = self._optimal_signal(
                         pix, xslice, sky, self.trace[j][i],
-                        self.trace_sigma[j])
+                        self.trace_sigma[j], silence=self.silence)
                 else:
                     #-- finally, compute the error in this pixel
                     sigB = np.std(z)  # stddev in the background data
@@ -1936,10 +1946,10 @@ class TwoDSpec:
 
                     # based on aperture phot err description by F. Masci, Caltech:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
-                    aduerr[j][i] = np.sqrt((adu_ap - skyadu[j][i]) /
+                    aduerr[j][i] = np.sqrt((adu_ap - adusky[j][i]) /
                                            self.gain + (nA + nA**2. / nB) *
                                            (sigB**2.))
-                    adu[j][i] = adu_ap - skyadu[j][i]
+                    adu[j][i] = adu_ap - adusky[j][i]
 
             if display:
                 min_trace = int(min(self.trace[j]) + 0.5)
@@ -2047,7 +2057,7 @@ class TwoDSpec:
                 # extrated source, sky and uncertainty
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
-                               y=skyadu[j],
+                               y=adusky[j],
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='firebrick'),
@@ -2087,11 +2097,11 @@ class TwoDSpec:
                                                sigma=5.,
                                                masked=False)),
                                 np.nanmin(
-                                    sigma_clip(np.log10(skyadu[j]),
+                                    sigma_clip(np.log10(adusky[j]),
                                                sigma=5.,
                                                masked=False)), 1),
                             max(np.nanmax(np.log10(adu[j])),
-                                np.nanmax(np.log10(skyadu[j])))
+                                np.nanmax(np.log10(adusky[j])))
                         ],
                         zeroline=False,
                         domain=[0, 0.5],
@@ -2133,7 +2143,47 @@ class TwoDSpec:
 
         self.adu = adu
         self.aduerr = aduerr
-        self.skyadu = skyadu
+        self.adusky = adusky
+
+    def _create_trace_fits(self):
+        # Put the reduced data in FITS format with an image header
+        self.trace_fits = fits.ImageHDU(self.trace)
+
+    def _create_adu_fits(self):
+        # Put the reduced data in FITS format with an image header
+        self.adu_fits = fits.ImageHDU(self.adu)
+        self.aduerr_fits = fits.ImageHDU(self.aduerr)
+        self.skyaud_fits = fits.ImageHDU(self.adusky)
+
+    def save_fits(self, out_type='all', filepath='TwoDSpec.fits', overwrite=False):
+        '''
+        Save the reduced image to disk.
+
+        Parameters
+        ----------
+        filepath: String
+            Disk location to be written to. Default is at where the Python
+            process/subprocess is execuated.
+        overwrite: boolean
+            Default is False.
+
+        '''
+
+        if out_type in ['trace', 'all']:
+            self._create_trace_fits()
+            if out_type == 'trace':
+                hdu_output = fits.PrimaryHDU(self.trace_fits)
+
+        if out_type in ['adu', 'all']:
+            self._create_adu_fits()
+            self.adu_fits = fits.PrimaryHDU(self.adu_fits)
+            if out_type == 'adu':
+                hdu_output = fits.HDUList([self.adu_fits, self.aduerr_fits, self.adusky_fits])
+            else:
+                hdu_output = fits.HDUList([self.adu_fits, self.aduerr_fits, self.adusky_fits, self.trace_fits])
+
+        # Save file to disk
+        hdu_output.writeto(filepath, overwrite=overwrite)
 
 
 class WavelengthPolyFit():
@@ -2567,6 +2617,13 @@ class WavelengthPolyFit():
         else:
             self.pfit_type = pfit_type
 
+    def _create_wavecal_fits(self):
+        # Put the reduced data in FITS format with an image header
+        self.wavecal_fits = fits.ImageHDU(self.pfit)
+
+    def save_fits(self):
+        hdu_output = fits.PrimaryHDU(self.wavecal_fits)
+        hdu_output.writeto(filepath, overwrite=overwrite)
 
 class StandardFlux:
     def __init__(self, target, group, cutoff=0.4, ftype='flux', silence=False):
@@ -2807,7 +2864,7 @@ class OneDSpec:
         try:
             self.adu = science.adu
             self.aduerr = science.aduerr
-            self.skyadu = science.skyadu
+            self.adusky = science.adusky
             self.exptime = science.exptime
             self.nspec = science.nspec
         except:
@@ -2860,7 +2917,7 @@ class OneDSpec:
         try:
             self.adu_std = standard.adu[0]
             self.aduerr_std = standard.aduerr[0]
-            self.skyadu_std = standard.skyadu[0]
+            self.adusky_std = standard.adusky[0]
             self.exptime_std = standard.exptime
         except:
             raise TypeError('Please provide a valid TwoDSpec.')
@@ -2940,7 +2997,10 @@ class OneDSpec:
         except:
             raise TypeError('Please provide a valid StandardFlux.')
 
-    def apply_wavelength_calibration(self, stype):
+    def apply_wavelength_calibration(self, stype,
+                               wave_start=None,
+                               wave_end=None,
+                               wave_bin=None):
         '''
         Apply the wavelength calibration.
 
@@ -2952,15 +3012,88 @@ class OneDSpec:
 
         # Can be multiple spectra in the science frame
         if stype in ['science', 'all']:
+
             pix = np.arange(len(self.adu[0]))
             self.wave = np.array([None] * self.nspec, dtype='object')
+            self.wave_resampled = np.array([None] * self.nspec, dtype=object)
+
+            self.adu_wcal = np.array([None] * self.nspec, dtype=object)
+            self.aduerr_wcal = np.array([None] * self.nspec, dtype=object)
+            self.adusky_wcal = np.array([None] * self.nspec, dtype=object)
+
+            self.wave_bin = np.zeros(self.nspec)
+            self.wave_start = np.zeros(self.nspec)
+            self.wave_end = np.zeros(self.nspec)
+
             for i in range(self.nspec):
+
                 self.wave[i] = self.polyval[i](pix, self.pfit[i])
+
+                # compute the new equally-spaced wavelength array
+                if wave_bin is not None:
+                    self.wave_bin[i] = wave_bin
+                else:
+                    self.wave_bin[i] = np.median(np.ediff1d(self.wave[i]))
+
+                if wave_start is not None:
+                    self.wave_start[i] = wave_start
+                else:
+                    self.wave_start[i] = self.wave[i][0]
+
+                if wave_end is not None:
+                    self.wave_end[i] = wave_end
+                else:
+                    self.wave_end[i] = self.wave[i][-1]
+
+                new_wave = np.arange(self.wave_start[i], self.wave_end[i],
+                                     self.wave_bin[i])
+
+                # apply the flux calibration and resample
+                self.adu_wcal[i] = spectres(
+                    new_wave, self.wave[i], self.adu[i])
+                self.aduerr_wcal[i] = spectres(
+                    new_wave, self.wave[i], self.aduerr[i])
+                self.adusky_wcal[i] = spectres(
+                    new_wave, self.wave[i], self.adusky[i])
+
+                self.wave_resampled[i] = new_wave
+
         # Only one spectrum in the standard frame
         if stype in ['standard', 'all']:
+
             if self.standard_imported:
+
                 pix_std = np.arange(len(self.adu_std))
                 self.wave_std = self.polyval_std(pix_std, self.pfit_std)
+
+                # compute the new equally-spaced wavelength array
+                if wave_bin is not None:
+                    self.wave_std_bin = wave_bin
+                else:
+                    self.wave_std_bin = np.median(np.ediff1d(self.wave_std))
+
+                if wave_start is not None:
+                    self.wave_std_start = wave_start
+                else:
+                    self.wave_std_start = self.wave_std[0]
+
+                if wave_end is not None:
+                    self.wave_std_end = wave_end
+                else:
+                    self.wave_std_end = self.wave_std[-1]
+
+                new_wave_std = np.arange(self.wave_std_start, self.wave_std_end,
+                                         self.wave_std_bin)
+
+                # apply the flux calibration and resample
+                self.flux_std = spectres(
+                    new_wave_std, self.wave_std, self.adu_std)
+                self.fluxerr_std = spectres(
+                    new_wave_std, self.wave_std, self.aduerr_std)
+                self.skyflux_std = spectres(
+                    new_wave_std, self.wave_std, self.adusky_std)
+
+                self.wave_std_resampled = new_wave_std
             else:
                 raise AttributeError(
                     'The TwoDSpec of the standard observation is not '
@@ -2968,6 +3101,11 @@ class OneDSpec:
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
+
+        if stype not in ['science', 'standard', 'all']:
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             '(2) standard; or (3) all.')
+
 
     def compute_sencurve(self,
                          kind=3,
@@ -3199,10 +3337,7 @@ class OneDSpec:
             fig.show(renderer)
 
     def apply_flux_calibration(self,
-                               stype='all',
-                               wave_start=None,
-                               wave_end=None,
-                               wave_bin=None):
+                               stype='all'):
         '''
         Apply the computed sensitivity curve. And resample the spectra to
         match the highest resolution (the smallest wavelength bin) part of the
@@ -3216,8 +3351,6 @@ class OneDSpec:
 
         if stype == 'science' or stype == 'all':
 
-            self.wave_resampled = np.array([None] * self.nspec, dtype=object)
-
             self.flux = np.array([None] * self.nspec, dtype=object)
             self.fluxerr = np.array([None] * self.nspec, dtype=object)
             self.skyflux = np.array([None] * self.nspec, dtype=object)
@@ -3226,121 +3359,39 @@ class OneDSpec:
             self.fluxerr_raw = np.array([None] * self.nspec, dtype=object)
             self.skyflux_raw = np.array([None] * self.nspec, dtype=object)
 
-            self.wave_bin = np.zeros(self.nspec)
-            self.wave_start = np.zeros(self.nspec)
-            self.wave_end = np.zeros(self.nspec)
-
             for i in range(self.nspec):
 
-                # compute the new equally-spaced wavelength array
-                if wave_bin is not None:
-                    self.wave_bin[i] = wave_bin
-                else:
-                    self.wave_bin[i] = np.median(np.ediff1d(self.wave[i]))
-
-                if wave_start is not None:
-                    self.wave_start[i] = wave_start
-                else:
-                    self.wave_start[i] = self.wave[i][0]
-
-                if wave_end is not None:
-                    self.wave_end[i] = wave_end
-                else:
-                    self.wave_end[i] = self.wave[i][-1]
-
-                new_wave = np.arange(self.wave_start[i], self.wave_end[i],
-                                     self.wave_bin[i])
-
                 # apply the flux calibration and resample
+                sens_i = 10.**self.sencurve(self.wave[i])
                 self.flux[i] = spectres(
-                    new_wave, self.wave[i],
-                    10.**self.sencurve(self.wave[i]) * self.adu[i])
+                    self.wave_resampled[i], self.wave[i], sens_i * self.adu[i])
                 self.fluxerr[i] = spectres(
-                    new_wave, self.wave[i],
-                    10.**self.sencurve(self.wave[i]) * self.aduerr[i])
+                    self.wave_resampled[i], self.wave[i], sens_i * self.aduerr[i])
                 self.skyflux[i] = spectres(
-                    new_wave, self.wave[i],
-                    10.**self.sencurve(self.wave[i]) * self.skyadu[i])
+                    self.wave_resampled[i], self.wave[i], sens_i * self.adusky[i])
 
-                self.wave_resampled[i] = new_wave
-
-                self.flux_raw[i] = 10.**self.sencurve(
-                    self.wave[i]) * self.adu[i]
-                self.fluxerr_raw[i] = 10.**self.sencurve(
-                    self.wave[i]) * self.aduerr[i]
-                self.skyflux_raw[i] = 10.**self.sencurve(
-                    self.wave[i]) * self.skyadu[i]
+                self.flux_raw[i] = sens_i * self.adu[i]
+                self.fluxerr_raw[i] = sens_i * self.aduerr[i]
+                self.skyflux_raw[i] = sens_i * self.adusky[i]
 
         if stype == 'standard' or stype == 'all':
 
-            # compute the new equally-spaced wavelength array
-            if wave_bin is not None:
-                self.wave_std_bin = wave_bin
-            else:
-                self.wave_std_bin = np.median(np.ediff1d(self.wave_std))
-
-            if wave_start is not None:
-                self.wave_std_start = wave_start
-            else:
-                self.wave_std_start = self.wave_std[0]
-
-            if wave_end is not None:
-                self.wave_std_end = wave_end
-            else:
-                self.wave_std_end = self.wave_std[-1]
-
-            new_wave_std = np.arange(self.wave_std_start, self.wave_std_end,
-                                     self.wave_std_bin)
-
             # apply the flux calibration and resample
+            sens_std = 10.**self.sencurve(self.wave_std)
             self.flux_std = spectres(
-                new_wave_std, self.wave_std,
-                10.**self.sencurve(self.wave_std) * self.adu_std)
+                self.wave_std_resampled, self.wave_std, sens_std * self.adu_std)
             self.fluxerr_std = spectres(
-                new_wave_std, self.wave_std,
-                10.**self.sencurve(self.wave_std) * self.aduerr_std)
+                self.wave_std_resampled, self.wave_std, sens_std * self.aduerr_std)
             self.skyflux_std = spectres(
-                new_wave_std, self.wave_std,
-                10.**self.sencurve(self.wave_std) * self.skyadu_std)
+                self.wave_std_resampled, self.wave_std, sens_std * self.adusky_std)
 
-            self.wave_std_resampled = new_wave_std
-
-            self.flux_std_raw = 10.**self.sencurve(
-                self.wave_std) * self.adu_std
-            self.fluxerr_std_raw = 10.**self.sencurve(
-                self.wave_std) * self.aduerr_std
-            self.skyflux_std_raw = 10.**self.sencurve(
-                self.wave_std) * self.skyadu_std
+            self.flux_std_raw = sens_std * self.adu_std
+            self.fluxerr_std_raw = sens_std * self.aduerr_std
+            self.skyflux_std_raw = sens_std * self.adusky_std
 
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
-
-    def _create_fits(self, stype='all'):
-
-        if stype == 'science' or stype == 'all':
-            self.science_data = np.array([None] * self.nspec, dtype='object')
-            for i in range(self.nspec):
-                fits_data = fits.PrimaryHDU(self.flux[i])
-                fits_data.header['LABEL'] = 'Flux'
-                fits_data.header['CRPIX1'] = 1.00E+00
-                fits_data.header['CDELT1'] = self.wave_bin[i]
-                fits_data.header['CRVAL1'] = self.wave_start[i]
-                fits_data.header['CTYPE1'] = 'Wavelength'
-                fits_data.header['CUNIT1'] = 'Angstroms'
-                fits_data.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
-                self.science_data[i] = fits_data
-
-        if stype == 'standard' or stype == 'all':
-            fits_data = fits.PrimaryHDU(self.flux_std)
-            fits_data.header['LABEL'] = 'Flux'
-            fits_data.header['CRPIX1'] = 1.00E+00
-            fits_data.header['CDELT1'] = self.wave_std_bin
-            fits_data.header['CRVAL1'] = self.wave_std_start
-            fits_data.header['CTYPE1'] = 'Wavelength'
-            fits_data.header['CUNIT1'] = 'Angstroms'
-            fits_data.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
-            self.standard_data = fits_data
 
     def inspect_reduced_spectrum(self,
                                  stype='all',
@@ -3455,7 +3506,7 @@ class OneDSpec:
                                    name='ADU Uncertainty'))
                     fig_sci[j].add_trace(
                         go.Scatter(x=self.wave[j],
-                                   y=self.skyadu[j],
+                                   y=self.adusky[j],
                                    line=dict(color='orange'),
                                    name='Sky ADU'))
                 fig_sci[j].update_layout(
@@ -3593,7 +3644,43 @@ class OneDSpec:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
 
-    def save_fits(self, filepath='reduced', stype='all', overwrite=False):
+    def _create_adu_resampled_fits(self):
+        # Put the reduced data in FITS format with an image header
+        self.adu_wavecal_fits = fits.ImageHDU(self.adu)
+        self.aduerr_wavecal_fits = fits.ImageHDU(self.aduerr)
+        self.adusky_wavecal_fits = fits.ImageHDU(self.aduflux)
+
+    def save_fits(self):
+        hdu_output = fits.PrimaryHDU(self.wavecal_fits)
+        hdu_output.writeto(filepath, overwrite=overwrite)
+
+    def _create_fits(self, stype='all'):
+
+        if stype == 'science' or stype == 'all':
+            self.science_data = np.array([None] * self.nspec, dtype='object')
+            for i in range(self.nspec):
+                fits_data = fits.PrimaryHDU(self.flux[i])
+                fits_data.header['LABEL'] = 'Flux'
+                fits_data.header['CRPIX1'] = 1.00E+00
+                fits_data.header['CDELT1'] = self.wave_bin[i]
+                fits_data.header['CRVAL1'] = self.wave_start[i]
+                fits_data.header['CTYPE1'] = 'Wavelength'
+                fits_data.header['CUNIT1'] = 'Angstroms'
+                fits_data.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                self.science_data[i] = fits_data
+
+        if stype == 'standard' or stype == 'all':
+            fits_data = fits.PrimaryHDU(self.flux_std)
+            fits_data.header['LABEL'] = 'Flux'
+            fits_data.header['CRPIX1'] = 1.00E+00
+            fits_data.header['CDELT1'] = self.wave_std_bin
+            fits_data.header['CRVAL1'] = self.wave_std_start
+            fits_data.header['CTYPE1'] = 'Wavelength'
+            fits_data.header['CUNIT1'] = 'Angstroms'
+            fits_data.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+            self.standard_data = fits_data
+
+    def save_fits(self, filepath='reduced', fullpath=False, stype='all', overwrite=False):
         '''
         Save the reduced image to disk.
 
@@ -3611,11 +3698,17 @@ class OneDSpec:
         if stype in ['all', 'science']:
             # Save file to disk
             for i in range(self.nspec):
-                self.science_data[i].writeto(filepath + '_science_' + str(i) +
+                if fullpath:
+                    self.science_data[i].writeto(filepath, overwrite=overwrite)
+                else:
+                    self.science_data[i].writeto(filepath + '_science_' + str(i) +
                                              '.fits',
                                              overwrite=overwrite)
 
         if stype in ['all', 'standard']:
-            self.standard_data.writeto(filepath + '_standard_' + str(i) +
+            if fullpath:
+                self.standard_data.writeto(filepath, overwrite=overwrite)
+            else:
+                self.standard_data.writeto(filepath + '_standard_' + str(i) +
                                        '.fits',
                                        overwrite=overwrite)
