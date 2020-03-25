@@ -791,9 +791,9 @@ class TwoDSpec:
                  spatial_mask=(1, ),
                  spec_mask=(1, ),
                  flip=False,
-                 cr=False,
-                 cr_sigma=5.,
-                 rn=None,
+                 cosmicray=False,
+                 cosmicray_sigma=5.,
+                 readnoise=None,
                  gain=None,
                  seeing=None,
                  exptime=None,
@@ -848,13 +848,13 @@ class TwoDSpec:
         flip: boolean
             If the frame has to be left-right flipped, set to True.
             (Deafult is False)
-        cr: boolean
+        cosmicray: boolean
             Set to True to apply cosmic ray rejection by sigma clipping with
             astroscrappy if available, otherwise a 2D median filter of size 5
             would be used. (default is True)
-        cr_sigma: float
+        cosmicray_sigma: float
             Cosmic ray sigma clipping limit (Deafult is 5.0)
-        rn: float
+        readnoise: float
             Readnoise of the detector, not important if noise estimation is
             not needed.
             (Deafult is None, which will be replaced with 1.0)
@@ -923,42 +923,42 @@ class TwoDSpec:
         self.spatial_mask = spatial_mask
         self.spec_mask = spec_mask
         self.flip = flip
-        self.cr_sigma = cr_sigma
+        self.cosmicray_sigma = cosmicray_sigma
 
         # Default values if not supplied or cannot be automatically identified
         # from the header
-        self.rn = 0.
+        self.readnoise = 0.
         self.gain = 1.
         self.seeing = 1.
         self.exptime = 1.
 
         # Default keywords to be searched in the order in the list
-        self._set_default_rn_keyword(['RDNOISE', 'RNOISE', 'RN'])
+        self._set_default_readnoise_keyword(['RDNOISE', 'RNOISE', 'RN'])
         self._set_default_gain_keyword(['GAIN'])
         self._set_default_seeing_keyword(['SEEING', 'L1SEEING', 'ESTSEE'])
         self._set_default_exptime_keyword(
             ['XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'])
 
         # Get the Read Noise
-        if rn is not None:
-            if isinstance(rn, str):
+        if readnoise is not None:
+            if isinstance(readnoise, str):
                 # use the supplied keyword
-                self.rn = float(self.header[rn])
-            elif np.isfinite(rn):
-                # use the given rn value
-                self.rn = float(rn)
+                self.readnoise = float(self.header[readnoise])
+            elif np.isfinite(readnoise):
+                # use the given readnoise value
+                self.readnoise = float(readnoise)
             else:
-                warnings.warn('rn has to be None, a numeric value or the ' +
-                              'FITS header keyword, ' + str(rn) + ' is ' +
+                warnings.warn('readnoise has to be None, a numeric value or the ' +
+                              'FITS header keyword, ' + str(readnoise) + ' is ' +
                               'given. It is set to 0.')
         else:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                rn_keyword_matched = np.in1d(self.rn_keyword, self.header)
-                if rn_keyword_matched.any():
-                    self.rn = data.header[self.rn_keyword[np.where(
-                        rn_keyword_matched)[0][0]]]
+                readnoise_keyword_matched = np.in1d(self.readnoise_keyword, self.header)
+                if readnoise_keyword_matched.any():
+                    self.readnoise = data.header[self.readnoise_keyword[np.where(
+                        readnoise_keyword_matched)[0][0]]]
                 else:
                     warnings.warn('Read Noise value cannot be identified. ' +
                                   'It is set to 0.')
@@ -1060,10 +1060,10 @@ class TwoDSpec:
         self.silence = silence
 
         # cosmic ray rejection
-        if cr:
+        if cosmicray:
             img = detect_cosmics(img,
-                                 sigclip=self.cr_sigma,
-                                 readnoise=self.rn,
+                                 sigclip=self.cosmicray_sigma,
+                                 readnoise=self.readnoise,
                                  gain=self.gain,
                                  fsmode='convolve',
                                  psfmodel='gaussy',
@@ -1103,7 +1103,7 @@ class TwoDSpec:
         self.zmin = np.nanpercentile(img_log_finite, 5)
         self.zmax = np.nanpercentile(img_log_finite, 95)
 
-    def _set_default_rn_keyword(self, keyword_list):
+    def _set_default_readnoise_keyword(self, keyword_list):
         '''
         Set the exptime keyword list.
 
@@ -1113,7 +1113,7 @@ class TwoDSpec:
             List of keyword (string).
         '''
 
-        self.rn_keyword = list(keyword_list)
+        self.readnoise_keyword = list(keyword_list)
 
     def _set_default_gain_keyword(self, keyword_list):
         '''
@@ -1151,7 +1151,7 @@ class TwoDSpec:
 
         self.exptime_keyword = list(keyword_list)
 
-    def set_rn_keyword(self, keyword_list, append=False):
+    def set_readnoise_keyword(self, keyword_list, append=False):
         '''
         Set the exptime keyword list.
 
@@ -1162,9 +1162,9 @@ class TwoDSpec:
         '''
 
         if append:
-            self.rn_keyword += list(keyword_list)
+            self.readnoise_keyword += list(keyword_list)
         else:
-            self.rn_keyword = list(keyword_list)
+            self.readnoise_keyword = list(keyword_list)
 
     def set_gain_keyword(self, keyword_list, append=False):
         '''
@@ -1382,7 +1382,7 @@ class TwoDSpec:
         signal[signal < 0] = 0.
         # weight function and initial values
         signal1 = np.nansum(signal)
-        var1 = self.rn + np.abs(xslice) / self.gain
+        var1 = self.readnoise + np.abs(xslice) / self.gain
         variance1 = 1. / np.nansum(P**2. / var1)
 
         sky_median = np.median(sky)
@@ -1405,7 +1405,7 @@ class TwoDSpec:
             # cosmic ray mask, only start considering after the 1st iteration
             # masking at most 2 pixels
             if i > 0:
-                ratio = (self.cr_sigma**2. * var0) / (signal - P * signal0)**2.
+                ratio = (self.cosmicray_sigma**2. * var0) / (signal - P * signal0)**2.
                 comparison = np.sum(ratio > 1)
                 if comparison == 1:
                     mask_cr[np.argmax(ratio)] = False
@@ -1415,7 +1415,7 @@ class TwoDSpec:
             # compute signal and noise
             signal1 = np.nansum((P * signal / var0)[mask_cr]) / \
                 np.nansum((P**2. / var0)[mask_cr])
-            var1 = self.rn + np.abs(P * signal1 + sky) / self.gain
+            var1 = self.readnoise + np.abs(P * signal1 + sky) / self.gain
             variance1 = 1. / np.nansum((P[mask_cr]**2. / var1[mask_cr]))
 
             signal_diff = abs((signal1 - signal0) / signal0)
@@ -1935,12 +1935,10 @@ class TwoDSpec:
                     else:
                         sky = np.ones(len(pix)) * np.nanmean(z)
                     # Get the optimal signals
-                    adu[j][i], aduerr[j][i], suboptimal[j][i] = self._optimal_signal(
-                        pix,
-                        xslice,
-                        sky,
-                        self.trace[j][i],
-                        self.trace_sigma[j])
+                    adu[j][i], aduerr[j][i], suboptimal[j][
+                        i] = self._optimal_signal(pix, xslice, sky,
+                                                  self.trace[j][i],
+                                                  self.trace_sigma[j])
                 else:
                     #-- finally, compute the error in this pixel
                     sigB = np.std(z)  # stddev in the background data
@@ -1958,9 +1956,9 @@ class TwoDSpec:
             if np.sum(suboptimal[j]) / i > 0.333:
                 if not self.silence:
                     print(
-                    'Signal extracted is likely to be suboptimal, please try '
-                    'a longer iteration, larger tolerance or revert to '
-                    'top-hat extraction.')
+                        'Signal extracted is likely to be suboptimal, please try '
+                        'a longer iteration, larger tolerance or revert to '
+                        'top-hat extraction.')
 
             if display:
                 min_trace = int(min(self.trace[j]) + 0.5)
@@ -2201,8 +2199,21 @@ class TwoDSpec:
 
         # Save file to disk
         hdu_output.writeto(filepath, overwrite=overwrite)
+'''
+    def save_fits(self, filename="wavecal", overwrite=False):
+        self._create_wavecal_fits()
+        self.wavecal_hdulist[0] = fits.PrimaryHDU(self.wavecal_hdulist[0])
+
+        if filename[-5:] == '.fits':
+            filename = filename[:-5]
+        if filename[-4:] == '.fit':
+            filename = filename[:-4]
+
+        for j in range(self.nspec):
+            self.wavecal_hdulist.writeto(filename + '_' + str(j) + '.fits', overwrite=overwrite)
 
 
+'''
 class WavelengthPolyFit():
     def __init__(self, spec, arc=None, silence=False):
         '''
@@ -2639,11 +2650,21 @@ class WavelengthPolyFit():
 
     def _create_wavecal_fits(self):
         # Put the reduced data in FITS format with an image header
-        self.wavecal_fits = fits.ImageHDU(self.pfit)
+        self.wavecal_hdulist = np.array([None] * self.nspec, dtype='object')
+        for j in range(self.nspec):
+            self.wavecal_hdulist[j] = fits.ImageHDU(self.pfit)
 
-    def save_fits(self):
-        hdu_output = fits.PrimaryHDU(self.wavecal_fits)
-        hdu_output.writeto(filepath, overwrite=overwrite)
+    def save_fits(self, filename="wavecal", overwrite=False):
+        self._create_wavecal_fits()
+        self.wavecal_hdulist[0] = fits.PrimaryHDU(self.wavecal_hdulist[0])
+
+        if filename[-5:] == '.fits':
+            filename = filename[:-5]
+        if filename[-4:] == '.fit':
+            filename = filename[:-4]
+
+        for j in range(self.nspec):
+            self.wavecal_hdulist.writeto(filename + '_' + str(j) + '.fits', overwrite=overwrite)
 
 
 class StandardFlux:
@@ -2899,7 +2920,7 @@ class OneDSpec:
             raise TypeError('Please provide a WavelengthPolyFit.')
 
         if standard is not None:
-            self.stardard = standard
+            self.standard = standard
             self._set_standard(standard)
             self.standard_imported = True
         else:
@@ -3228,31 +3249,22 @@ class OneDSpec:
         if smooth:
             sens = signal.savgol_filter(sens, slength, sorder)
 
-        sens_itp = itp.interp1d(wave_std,
+        sensitivity_itp = itp.interp1d(wave_std,
                                 np.log10(sens),
                                 kind=kind,
                                 fill_value='extrapolate')
 
         self.sens = sens
-        self.sens_itp = sens_itp
+        self.sensitivity_itp = sensitivity_itp
         self.wave_sen = wave_std
         self.flux_sen = flux_std
 
         # Diagnostic plot
         if display & plotly_imported:
-            self.inspect_sens_itp(renderer, jsonstring, iframe)
+            self.inspect_sensitivity_itp(renderer, jsonstring, iframe)
 
-    def add_sensitivity(self, sens, wave_std, flux_std):
-        self.sens = sens
-        self.wave_sen = wave_std
-        self.flux_sen = flux_std
-        self.sens_itp = itp.interp1d(wave_std,
-                                     np.log10(sensitivity),
-                                     kind=kind,
-                                     fill_value='extrapolate')
-
-    def add_sens_itp(self, sens_itp):
-        self.sens_itp = sens_itp
+    def add_sensitivity_itp(self, sensitivity_itp):
+        self.sensitivity_itp = sensitivity_itp
 
     def inspect_sensitivity(self,
                             renderer='default',
@@ -3319,7 +3331,7 @@ class OneDSpec:
 
         fig.add_trace(
             go.Scatter(x=self.wave_sen,
-                       y=10.**self.sens_itp(self.wave_sen),
+                       y=10.**self.sensitivity_itp(self.wave_sen),
                        yaxis='y2',
                        line=dict(color='black', width=2),
                        name='Best-fit Sensitivity Curve'))
@@ -3392,7 +3404,7 @@ class OneDSpec:
             for i in range(self.nspec):
 
                 # apply the flux calibration and resample
-                self.sensitivity_raw[i] = 10.**self.sens_itp(self.wave[i])
+                self.sensitivity_raw[i] = 10.**self.sensitivity_itp(self.wave[i])
 
                 self.flux_raw[i] = self.sensitivity_raw[i] * self.adu[i]
                 self.fluxerr_raw[i] = self.sensitivity_raw[i] * self.aduerr[i]
@@ -3400,22 +3412,20 @@ class OneDSpec:
 
                 self.flux[i] = spectres(self.wave_resampled[i], self.wave[i],
                                         self.flux_raw[i])
-                self.fluxerr[i] = spectres(
-                    self.wave_resampled[i], self.wave[i],
-                    self.fluxerr_raw[i])
-                self.fluxsky[i] = spectres(
-                    self.wave_resampled[i], self.wave[i],
-                    self.fluxsky_raw[i])
+                self.fluxerr[i] = spectres(self.wave_resampled[i],
+                                           self.wave[i], self.fluxerr_raw[i])
+                self.fluxsky[i] = spectres(self.wave_resampled[i],
+                                           self.wave[i], self.fluxsky_raw[i])
 
                 # Only computed for diagnostic
-                self.sensitivity[i] = spectres(self.wave_resampled[i], self.wave[i],
-                                        self.sensitivity_raw[i])
-
+                self.sensitivity[i] = spectres(self.wave_resampled[i],
+                                               self.wave[i],
+                                               self.sensitivity_raw[i])
 
         if stype == 'standard' or stype == 'all':
 
             # apply the flux calibration and resample
-            self.sensitivity_std_raw = 10.**self.sens_itp(self.wave_std)
+            self.sensitivity_std_raw = 10.**self.sensitivity_itp(self.wave_std)
 
             self.flux_std_raw = self.sensitivity_std_raw * self.adu_std
             self.fluxerr_std_raw = self.sensitivity_std_raw * self.aduerr_std
@@ -3429,9 +3439,9 @@ class OneDSpec:
                                         self.fluxsky_std_raw)
 
             # Only computed for diagnostic
-            self.sensitivity_std = spectres(self.wave_std_resampled, self.wave_std,
-                                        self.sensitivity_std_raw)
-
+            self.sensitivity_std = spectres(self.wave_std_resampled,
+                                            self.wave_std,
+                                            self.sensitivity_std_raw)
 
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
@@ -3613,130 +3623,195 @@ class OneDSpec:
                 flux_std_min = np.log10(np.nanmin(self.adu_std[flux_std_mask]))
                 flux_std_max = np.log10(np.nanmax(self.adu_std[flux_std_mask]))
 
+            fig_std = go.Figure(layout=dict(updatemenus=list([
+                dict(
+                    active=0,
+                    buttons=list([
+                        dict(label='Log Scale',
+                             method='update',
+                             args=[{
+                                 'visible': [True, True]
+                             }, {
+                                 'title': 'Log scale',
+                                 'yaxis': {
+                                     'type': 'log'
+                                 }
+                             }]),
+                        dict(label='Linear Scale',
+                             method='update',
+                             args=[{
+                                 'visible': [True, False]
+                             }, {
+                                 'title': 'Linear scale',
+                                 'yaxis': {
+                                     'type': 'linear'
+                                 }
+                             }])
+                    ]),
+                )
+            ]),
+                                            title='Log scale'))
+            # show the image on the top
+            if (self.standard_imported & self.flux_imported):
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_resampled,
+                               y=self.flux_std,
+                               line=dict(color='royalblue'),
+                               name='Flux'))
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_resampled,
+                               y=self.fluxerr_std,
+                               line=dict(color='firebrick'),
+                               name='Flux Uncertainty'))
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_resampled,
+                               y=self.fluxsky_std,
+                               line=dict(color='orange'),
+                               name='Sky Flux'))
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_true,
+                               y=self.fluxmag_std_true,
+                               line=dict(color='black'),
+                               name='Standard'))
+            else:
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_resampled,
+                               y=self.adu_std,
+                               line=dict(color='royalblue'),
+                               name='ADU / s'))
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_resampled,
+                               y=self.aduerr_std,
+                               line=dict(color='firebrick'),
+                               name='ADU Uncertainty / s'))
+                fig_std.add_trace(
+                    go.Scatter(x=self.wave_std_resampled,
+                               y=self.adusky_std,
+                               line=dict(color='orange'),
+                               name='Sky ADU / s'))
 
-                fig_std = go.Figure(layout=dict(updatemenus=list([
-                    dict(
-                        active=0,
-                        buttons=list([
-                            dict(label='Log Scale',
-                                 method='update',
-                                 args=[{
-                                     'visible': [True, True]
-                                 }, {
-                                     'title': 'Log scale',
-                                     'yaxis': {
-                                         'type': 'log'
-                                     }
-                                 }]),
-                            dict(label='Linear Scale',
-                                 method='update',
-                                 args=[{
-                                     'visible': [True, False]
-                                 }, {
-                                     'title': 'Linear scale',
-                                     'yaxis': {
-                                         'type': 'linear'
-                                     }
-                                 }])
-                        ]),
-                    )
-                ]),
-                                                title='Log scale'))
-                # show the image on the top
-                if (self.standard_imported & self.flux_imported):
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_resampled,
-                                   y=self.flux_std,
-                                   line=dict(color='royalblue'),
-                                   name='Flux'))
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_resampled,
-                                   y=self.fluxerr_std,
-                                   line=dict(color='orange'),
-                                   name='Flux Uncertainty'))
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_resampled,
-                                   y=self.fluxsky_std,
-                                   line=dict(color='firebrick'),
-                                   name='Sky Flux'))
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_true,
-                                   y=self.fluxmag_std_true,
-                                   line=dict(color='black'),
-                                   name='Standard'))
+            fig_std.update_layout(
+                autosize=True,
+                hovermode='closest',
+                showlegend=True,
+                xaxis=dict(title='Wavelength / A',
+                           range=[wave_min, wave_max]),
+                yaxis=dict(title='Flux',
+                           range=[flux_std_min, flux_std_max],
+                           type='log'),
+                legend=go.layout.Legend(x=0,
+                                        y=1,
+                                        traceorder="normal",
+                                        font=dict(family="sans-serif",
+                                                  size=12,
+                                                  color="black"),
+                                        bgcolor='rgba(0,0,0,0)'),
+                height=800)
+
+            if jsonstring:
+                return fig_std.to_json()
+            if iframe:
+                if open_iframe:
+                    pio.write_html(fig_std, 'spectrum_standard.html')
                 else:
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_resampled,
-                                   y=self.adu_std,
-                                   line=dict(color='royalblue'),
-                                   name='ADU / s'))
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_resampled,
-                                   y=self.aduerr_std,
-                                   line=dict(color='orange'),
-                                   name='ADU Uncertainty / s'))
-                    fig_std.add_trace(
-                        go.Scatter(x=self.wave_std_resampled,
-                                   y=self.adusky_std,
-                                   line=dict(color='firebrick'),
-                                   name='Sky ADU / s'))
-
-                fig_std.update_layout(
-                    autosize=True,
-                    hovermode='closest',
-                    showlegend=True,
-                    xaxis=dict(title='Wavelength / A',
-                               range=[wave_min, wave_max]),
-                    yaxis=dict(title='Flux',
-                               range=[flux_std_min, flux_std_max],
-                               type='log'),
-                    legend=go.layout.Legend(x=0,
-                                            y=1,
-                                            traceorder="normal",
-                                            font=dict(family="sans-serif",
-                                                      size=12,
-                                                      color="black"),
-                                            bgcolor='rgba(0,0,0,0)'),
-                    height=800)
-
-                if jsonstring:
-                    return fig_std.to_json()
-                if iframe:
-                    if open_iframe:
-                        pio.write_html(fig_std, 'spectrum_standard.html')
-                    else:
-                        pio.write_html(fig_std,
-                                       'spectrum_standard.html',
-                                       auto_open=False)
-                if renderer == 'default':
-                    fig_std.show()
-                else:
-                    fig_std.show(renderer)
+                    pio.write_html(fig_std,
+                                   'spectrum_standard.html',
+                                   auto_open=False)
+            if renderer == 'default':
+                fig_std.show()
+            else:
+                fig_std.show(renderer)
 
         if stype not in ['science', 'standard', 'all']:
             raise ValueError('Unknown stype, please choose from (1) science; '
                              '(2) standard; or (3) all.')
 
-    def _create_adu_resampled_fits(self, stype):
-        # Put the reduced data in FITS format with an image header
-        self.adu_wavecal_fits = fits.ImageHDU(self.adu)
-        self.aduerr_wavecal_fits = fits.ImageHDU(self.aduerr)
-        self.adusky_wavecal_fits = fits.ImageHDU(self.adusky)
+    def _create_wavelength_fits(self, stype, resample):
+
+        if stype == 'science' or stype == 'all':
+            self.wavelength_hdulist = np.array([None] * self.nspec, dtype='object')
+            for i in range(self.nspec):
+                if resampled:
+                    self.wavelength_hdulist = fits.ImageHDU(self.wave_resampled[i])
+                else:
+                    self.wavelength_hdulist = fits.ImageHDU(self.wave[i])
+
+        if stype == 'standard' or stype == 'all':
+            if resampled:
+                self.wavelength_std_hdulist = [fits.ImageHDU(self.wave_std_resampled)]
+            else:
+                self.wavelength_std_hdulist = [fits.ImageHDU(self.wave_std)]
+
+    def _create_adu_fits(self, stype):
+        # Put the extracted data in FITS format with an image header
+        if stype == 'science' or stype == 'all':
+
+            self.science_adu_hdulist = np.array([None] * self.nspec, dtype='object')
+
+            for i in range(self.nspec):
+                # Note that wave_start is the centre of the starting bin
+                adu_wavecal_fits = fits.ImageHDU(self.adu[i])
+                aduerr_wavecal_fits = fits.ImageHDU(self.aduerr[i])
+                adusky_wavecal_fits = fits.ImageHDU(self.adusky[i])
+                sensitivity_fits = fits.ImageHDU(self.sensitivity[i])
+
+                self.science_adu_hdulist[i] = fits.HDUList([
+                    adu_wavecal_fits, aduerr_wavecal_fits,
+                    adusky_wavecal_fits, sensitivity_fits
+                ])
+
+        if stype == 'standard' or stype == 'all':
+
+            # Note that wave_start is the centre of the starting bin
+            adu_std_wavecal_fits = fits.ImageHDU(self.adu_std)
+            aduerr_std_wavecal_fits = fits.ImageHDU(self.aduerr_std)
+            adusky_std_wavecal_fits = fits.ImageHDU(self.adusky_std)
+            sensitivity_std_fits = fits.ImageHDU(self.sensitivity_std)
+
+            self.standard_adu_hdulist = fits.HDUList([
+                adu_std_wavecal_fits, aduerr_std_wavecal_fits,
+                adusky_std_wavecal_fits, sensitivity_std_fits
+            ])
 
     def _create_flux_fits(self, stype):
         # wavelengths are in the natively extracted bins
         # Put the reduced data in FITS format with an image header
-        self.flux_fits = fits.ImageHDU(self.flux_raw)
-        self.fluxerr_fits = fits.ImageHDU(self.fluxerr_raw)
-        self.fluxsky_fits = fits.ImageHDU(self.fluxsly_raw)
-        self.sensitivity_fits = fits.ImageHDU(self.sensitivity_raw)
+        if stype == 'science' or stype == 'all':
+
+            self.science_hdulist = np.array([None] * self.nspec, dtype='object')
+            for i in range(self.nspec):
+                # Note that wave_start is the centre of the starting bin
+                flux_wavecal_fits = fits.ImageHDU(self.flux_raw[i])
+                fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr_raw[i])
+                fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky_raw[i])
+
+                sensitivity_fits = fits.ImageHDU(self.sensitivity_raw[i])
+
+                self.science_hdulist[i] = fits.HDUList([
+                    flux_wavecal_fits, fluxerr_wavecal_fits,
+                    fluxsky_wavecal_fits, sensitivity_fits
+                ])
+
+        if stype == 'standard' or stype == 'all':
+
+            # Note that wave_start is the centre of the starting bin
+            flux_wavecal_fits = fits.ImageHDU(self.flux_std_raw)
+            fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr_std_raw)
+            fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky_std_raw)
+
+            sensitivity_fits = fits.ImageHDU(self.sensitivity_std_raw)
+
+            self.standard_hdulist = fits.HDUList([
+                flux_wavecal_fits, fluxerr_wavecal_fits, fluxsky_wavecal_fits,
+                sensitivity_fits
+            ])
 
     def _create_flux_resampled_fits(self, stype):
         # iraf splot readable format where wavelength are in equal-sized bins
         # Put the reduced data in FITS format with an image header
         if stype == 'science' or stype == 'all':
 
-            self.science_data = np.array([None] * self.nspec, dtype='object')
+            self.science_resampled_hdulist = np.array([None] * self.nspec, dtype='object')
             for i in range(self.nspec):
                 # Note that wave_start is the centre of the starting bin
                 flux_wavecal_fits = fits.ImageHDU(self.flux[i])
@@ -3766,11 +3841,12 @@ class OneDSpec:
                 fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
                 fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
 
-                wavelength_fits = fits.ImageHDU(self.wave_resampled[i])
-
                 sensitivity_fits = fits.ImageHDU(self.sensitivity[i])
 
-                self.science_data[i] = fits.HDUList([flux_wavecal_fits, fluxerr_wavecal_fits, fluxsky_wavecal_fits, wavelength_fits, sensitivity_fits])
+                self.science_resampled_hdulist[i] = fits.HDUList([
+                    flux_wavecal_fits, fluxerr_wavecal_fits,
+                    fluxsky_wavecal_fits, sensitivity_fits
+                ])
 
         if stype == 'standard' or stype == 'all':
 
@@ -3802,19 +3878,18 @@ class OneDSpec:
             fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
             fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
 
-            wavelength_fits = fits.ImageHDU(self.wave_resampled_std)
-
             sensitivity_fits = fits.ImageHDU(self.sensitivity_std)
 
-            self.standard_data = fits.HDUList([flux_wavecal_fits, fluxerr_wavecal_fits, fluxsky_wavecal_fits, wavelength_fits, sensitivity_fits])
+            self.standard_resampled_hdulist = fits.HDUList([
+                flux_wavecal_fits, fluxerr_wavecal_fits, fluxsky_wavecal_fits,
+                sensitivity_fits
+            ])
 
     def save_fits(self,
                   filepath='reduced',
-                  fullpath=False,
                   stype='science',
                   datacube='flux+fluxraw+wavecal',
                   overwrite=False):
-
         '''
         Save the reduced image to disk.
 
@@ -3836,11 +3911,11 @@ class OneDSpec:
             self.standard._create_trace_fits()
             self.standard._create_adu_fits()
 
-        self.wave_cal._create_wavecal_fits(stype)
+        self.wave_cal._create_wavecal_fits()
 
-        self.wave_cal_std._create_wavecal_fits(stype)
+        self.wave_cal_std._create_wavecal_fits()
 
-        self._create_adu_resampled_fits(stype)
+        self._create_adu_fits(stype)
 
         self._create_flux_fits(stype)
 
@@ -3849,17 +3924,10 @@ class OneDSpec:
         if stype in ['default', 'science']:
             # Save file to disk
             for i in range(self.nspec):
-                if fullpath:
-                    self.science_data[i].writeto(filepath, overwrite=overwrite)
-                else:
-                    self.science_data[i].writeto(filepath + '_science_' +
+                self.science_hdulist[i].writeto(filepath + '_science_' +
                                                  str(i) + '.fits',
                                                  overwrite=overwrite)
 
         if stype in ['default', 'standard']:
-            if fullpath:
-                self.standard_data.writeto(filepath, overwrite=overwrite)
-            else:
-                self.standard_data.writeto(filepath + '_standard_' + str(i) +
-                                           '.fits',
+            self.standard_hdulist.writeto(filepath + '_standard.fits',
                                            overwrite=overwrite)
