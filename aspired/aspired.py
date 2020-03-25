@@ -707,13 +707,16 @@ class ImageReduction:
             value=self.clip_high_flat,
             comment='Higher threshold of sigma clipping of the flat frames.')
 
-    def save_fits(self, filepath='reduced_image.fits', overwrite=False):
+    def save_fits(self,
+                  filename='reduced_image',
+                  extension='fits',
+                  overwrite=False):
         '''
         Save the reduced image to disk.
 
         Parameters
         ----------
-        filepath: String
+        filename: String
             Disk location to be written to. Default is at where the Python
             process/subprocess is execuated.
         overwrite: boolean
@@ -721,10 +724,16 @@ class ImageReduction:
 
         '''
 
+        if filename[-5:] == '.fits':
+            filename = filename[:-5]
+        if filename[-4:] == '.fit':
+            filename = filename[:-4]
+
         self._create_image_fits()
         self.image_fits = fits.PrimaryHDU(self.image_fits)
         # Save file to disk
-        self.image_fits.writeto(filepath, overwrite=overwrite)
+        self.image_fits.writeto(filename + '.' + extension,
+                                overwrite=overwrite)
 
     def inspect(self,
                 log=True,
@@ -948,17 +957,19 @@ class TwoDSpec:
                 # use the given readnoise value
                 self.readnoise = float(readnoise)
             else:
-                warnings.warn('readnoise has to be None, a numeric value or the ' +
-                              'FITS header keyword, ' + str(readnoise) + ' is ' +
-                              'given. It is set to 0.')
+                warnings.warn(
+                    'readnoise has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(readnoise) + ' is ' +
+                    'given. It is set to 0.')
         else:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                readnoise_keyword_matched = np.in1d(self.readnoise_keyword, self.header)
+                readnoise_keyword_matched = np.in1d(self.readnoise_keyword,
+                                                    self.header)
                 if readnoise_keyword_matched.any():
-                    self.readnoise = data.header[self.readnoise_keyword[np.where(
-                        readnoise_keyword_matched)[0][0]]]
+                    self.readnoise = data.header[self.readnoise_keyword[
+                        np.where(readnoise_keyword_matched)[0][0]]]
                 else:
                     warnings.warn('Read Noise value cannot be identified. ' +
                                   'It is set to 0.')
@@ -1405,7 +1416,8 @@ class TwoDSpec:
             # cosmic ray mask, only start considering after the 1st iteration
             # masking at most 2 pixels
             if i > 0:
-                ratio = (self.cosmicray_sigma**2. * var0) / (signal - P * signal0)**2.
+                ratio = (self.cosmicray_sigma**2. * var0) / (signal -
+                                                             P * signal0)**2.
                 comparison = np.sum(ratio > 1)
                 if comparison == 1:
                     mask_cr[np.argmax(ratio)] = False
@@ -2155,24 +2167,31 @@ class TwoDSpec:
 
     def _create_trace_fits(self):
         # Put the reduced data in FITS format with an image header
-        self.trace_fits = fits.ImageHDU(self.trace)
+        self.trace_hdulist = np.array([None] * self.nspec, dtype='object')
+        for j in range(self.nspec):
+            self.trace_hdulist[j] = fits.HDUList([fits.ImageHDU(self.trace)])
 
     def _create_adu_fits(self):
         # Put the reduced data in FITS format with an image header
-        self.adu_fits = fits.ImageHDU(self.adu)
-        self.aduerr_fits = fits.ImageHDU(self.aduerr)
-        self.skyaud_fits = fits.ImageHDU(self.adusky)
+        self.adu_hdulist = np.array([None] * self.nspec, dtype='object')
+        for j in range(self.nspec):
+            self.adu_hdulist[j] = fits.HDUList([
+                fits.ImageHDU(self.adu),
+                fits.ImageHDU(self.aduerr),
+                fits.ImageHDU(self.adusky)
+            ])
 
     def save_fits(self,
-                  out_type='all',
-                  filepath='TwoDSpec.fits',
+                  datacube='trace+adu',
+                  filename='TwoDSpec',
+                  extension='fits',
                   overwrite=False):
         '''
         Save the reduced image to disk.
 
         Parameters
         ----------
-        filepath: String
+        filename: String
             Disk location to be written to. Default is at where the Python
             process/subprocess is execuated.
         overwrite: boolean
@@ -2180,40 +2199,34 @@ class TwoDSpec:
 
         '''
 
-        if out_type in ['trace', 'all']:
-            self._create_trace_fits()
-            if out_type == 'trace':
-                hdu_output = fits.PrimaryHDU(self.trace_fits)
-
-        if out_type in ['adu', 'all']:
-            self._create_adu_fits()
-            self.adu_fits = fits.PrimaryHDU(self.adu_fits)
-            if out_type == 'adu':
-                hdu_output = fits.HDUList(
-                    [self.adu_fits, self.aduerr_fits, self.adusky_fits])
-            else:
-                hdu_output = fits.HDUList([
-                    self.adu_fits, self.aduerr_fits, self.adusky_fits,
-                    self.trace_fits
-                ])
-
-        # Save file to disk
-        hdu_output.writeto(filepath, overwrite=overwrite)
-'''
-    def save_fits(self, filename="wavecal", overwrite=False):
-        self._create_wavecal_fits()
-        self.wavecal_hdulist[0] = fits.PrimaryHDU(self.wavecal_hdulist[0])
-
         if filename[-5:] == '.fits':
             filename = filename[:-5]
         if filename[-4:] == '.fit':
             filename = filename[:-4]
 
         for j in range(self.nspec):
-            self.wavecal_hdulist.writeto(filename + '_' + str(j) + '.fits', overwrite=overwrite)
+
+            # Empty list for appending HDU lists
+            hdu_output = fits.HDUList()
+
+            if 'adu' in datacube:
+                self._create_adu_fits()
+                hdu_output += self.adu_hdulist[j]
+
+            if 'trace' in datacube:
+                self._create_trace_fits()
+                hdu_output += self.trace_hdulist[j]
+
+            # Convert the first HDU to PrimaryHDU
+            hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
+                                            hdu_output[0].header)
+            hdu_output.update_extend()
+
+            # Save file to disk
+            hdu_output.writeto(filepath + '_' + str(j) + '.' + extension,
+                               overwrite=overwrite)
 
 
-'''
 class WavelengthPolyFit():
     def __init__(self, spec, arc=None, silence=False):
         '''
@@ -2652,19 +2665,24 @@ class WavelengthPolyFit():
         # Put the reduced data in FITS format with an image header
         self.wavecal_hdulist = np.array([None] * self.nspec, dtype='object')
         for j in range(self.nspec):
-            self.wavecal_hdulist[j] = fits.ImageHDU(self.pfit)
+            self.wavecal_hdulist[j] = fits.HDUList([fits.ImageHDU(self.pfit)])
 
-    def save_fits(self, filename="wavecal", overwrite=False):
-        self._create_wavecal_fits()
-        self.wavecal_hdulist[0] = fits.PrimaryHDU(self.wavecal_hdulist[0])
+    def save_fits(self, filename="wavecal", extension='fits', overwrite=False):
 
         if filename[-5:] == '.fits':
             filename = filename[:-5]
         if filename[-4:] == '.fit':
             filename = filename[:-4]
 
+        self._create_wavecal_fits()
+        hdu_output = self.wavecal_hdulist.copy()
+        hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
+                                        hdu_output[0].header)
+
         for j in range(self.nspec):
-            self.wavecal_hdulist.writeto(filename + '_' + str(j) + '.fits', overwrite=overwrite)
+            self.hdu_output[j].writeto(filename + '_' + str(j) + '.' +
+                                       extension,
+                                       overwrite=overwrite)
 
 
 class StandardFlux:
@@ -3250,9 +3268,9 @@ class OneDSpec:
             sens = signal.savgol_filter(sens, slength, sorder)
 
         sensitivity_itp = itp.interp1d(wave_std,
-                                np.log10(sens),
-                                kind=kind,
-                                fill_value='extrapolate')
+                                       np.log10(sens),
+                                       kind=kind,
+                                       fill_value='extrapolate')
 
         self.sens = sens
         self.sensitivity_itp = sensitivity_itp
@@ -3404,7 +3422,8 @@ class OneDSpec:
             for i in range(self.nspec):
 
                 # apply the flux calibration and resample
-                self.sensitivity_raw[i] = 10.**self.sensitivity_itp(self.wave[i])
+                self.sensitivity_raw[i] = 10.**self.sensitivity_itp(
+                    self.wave[i])
 
                 self.flux_raw[i] = self.sensitivity_raw[i] * self.adu[i]
                 self.fluxerr_raw[i] = self.sensitivity_raw[i] * self.aduerr[i]
@@ -3694,8 +3713,7 @@ class OneDSpec:
                 autosize=True,
                 hovermode='closest',
                 showlegend=True,
-                xaxis=dict(title='Wavelength / A',
-                           range=[wave_min, wave_max]),
+                xaxis=dict(title='Wavelength / A', range=[wave_min, wave_max]),
                 yaxis=dict(title='Flux',
                            range=[flux_std_min, flux_std_max],
                            type='log'),
@@ -3729,56 +3747,30 @@ class OneDSpec:
     def _create_wavelength_fits(self, stype, resample):
 
         if stype == 'science' or stype == 'all':
-            self.wavelength_hdulist = np.array([None] * self.nspec, dtype='object')
+            self.wavelength_hdulist = np.array([None] * self.nspec,
+                                               dtype='object')
             for i in range(self.nspec):
                 if resampled:
-                    self.wavelength_hdulist = fits.ImageHDU(self.wave_resampled[i])
+                    self.wavelength_hdulist = fits.ImageHDU(
+                        self.wave_resampled[i])
                 else:
                     self.wavelength_hdulist = fits.ImageHDU(self.wave[i])
 
         if stype == 'standard' or stype == 'all':
             if resampled:
-                self.wavelength_std_hdulist = [fits.ImageHDU(self.wave_std_resampled)]
+                self.wavelength_std_hdulist = [
+                    fits.ImageHDU(self.wave_std_resampled)
+                ]
             else:
                 self.wavelength_std_hdulist = [fits.ImageHDU(self.wave_std)]
-
-    def _create_adu_fits(self, stype):
-        # Put the extracted data in FITS format with an image header
-        if stype == 'science' or stype == 'all':
-
-            self.science_adu_hdulist = np.array([None] * self.nspec, dtype='object')
-
-            for i in range(self.nspec):
-                # Note that wave_start is the centre of the starting bin
-                adu_wavecal_fits = fits.ImageHDU(self.adu[i])
-                aduerr_wavecal_fits = fits.ImageHDU(self.aduerr[i])
-                adusky_wavecal_fits = fits.ImageHDU(self.adusky[i])
-                sensitivity_fits = fits.ImageHDU(self.sensitivity[i])
-
-                self.science_adu_hdulist[i] = fits.HDUList([
-                    adu_wavecal_fits, aduerr_wavecal_fits,
-                    adusky_wavecal_fits, sensitivity_fits
-                ])
-
-        if stype == 'standard' or stype == 'all':
-
-            # Note that wave_start is the centre of the starting bin
-            adu_std_wavecal_fits = fits.ImageHDU(self.adu_std)
-            aduerr_std_wavecal_fits = fits.ImageHDU(self.aduerr_std)
-            adusky_std_wavecal_fits = fits.ImageHDU(self.adusky_std)
-            sensitivity_std_fits = fits.ImageHDU(self.sensitivity_std)
-
-            self.standard_adu_hdulist = fits.HDUList([
-                adu_std_wavecal_fits, aduerr_std_wavecal_fits,
-                adusky_std_wavecal_fits, sensitivity_std_fits
-            ])
 
     def _create_flux_fits(self, stype):
         # wavelengths are in the natively extracted bins
         # Put the reduced data in FITS format with an image header
         if stype == 'science' or stype == 'all':
 
-            self.science_hdulist = np.array([None] * self.nspec, dtype='object')
+            self.science_hdulist = np.array([None] * self.nspec,
+                                            dtype='object')
             for i in range(self.nspec):
                 # Note that wave_start is the centre of the starting bin
                 flux_wavecal_fits = fits.ImageHDU(self.flux_raw[i])
@@ -3811,7 +3803,8 @@ class OneDSpec:
         # Put the reduced data in FITS format with an image header
         if stype == 'science' or stype == 'all':
 
-            self.science_resampled_hdulist = np.array([None] * self.nspec, dtype='object')
+            self.science_resampled_hdulist = np.array([None] * self.nspec,
+                                                      dtype='object')
             for i in range(self.nspec):
                 # Note that wave_start is the centre of the starting bin
                 flux_wavecal_fits = fits.ImageHDU(self.flux[i])
@@ -3886,16 +3879,17 @@ class OneDSpec:
             ])
 
     def save_fits(self,
-                  filepath='reduced',
+                  filename='reduced',
+                  extension='fits',
                   stype='science',
-                  datacube='flux+fluxraw+wavecal',
+                  datacube='flux+wavecal+fluxraw',
                   overwrite=False):
         '''
         Save the reduced image to disk.
 
         Parameters
         ----------
-        filepath: String
+        filename: String
             Disk location to be written to. Default is at where the Python
             process/subprocess is execuated.
         overwrite: boolean
@@ -3903,31 +3897,76 @@ class OneDSpec:
 
         '''
 
-        if stype in ['science', 'all']:
-            self.science._create_trace_fits()
-            self.science._create_adu_fits()
+        if filename[-5:] == '.fits':
+            filename = filename[:-5]
+        if filename[-4:] == '.fit':
+            filename = filename[:-4]
 
-        if stype in ['standard', 'all']:
-            self.standard._create_trace_fits()
-            self.standard._create_adu_fits()
+        if 'science' in stype:
 
-        self.wave_cal._create_wavecal_fits()
+            for j in range(self.nspec):
 
-        self.wave_cal_std._create_wavecal_fits()
+                hdu_output = fits.HDUList()
 
-        self._create_adu_fits(stype)
+                if 'flux' in datacube:
+                    self._create_flux_resampled_fits('science')
+                    hdu_output += self.science_resampled_hdulist[j]
 
-        self._create_flux_fits(stype)
+                if 'wavecal' in datacube:
+                    self.wave_cal._create_wavecal_fits()
+                    hdu_output += self.wave_cal.wavecal_hdulist[j]
 
-        self._create_flux_resampled_fits(stype)
+                if 'fluxraw' in datacube:
+                    self._create_flux_fits('science')
+                    hdu_output += self.science_hdulist[j]
 
-        if stype in ['default', 'science']:
+                if 'trace' in datacube:
+                    self.science._create_trace_fits()
+                    hdu_output += self.science.trace_hdulist[j]
+
+                if 'adu' in datacube:
+                    self.science._create_adu_fits()
+                    hdu_output += self.science.adu_hdulist[j]
+
+            # Convert the first HDU to PrimaryHDU
+            hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
+                                            hdu_output[0].header)
+            hdu_output.update_extend()
+
             # Save file to disk
-            for i in range(self.nspec):
-                self.science_hdulist[i].writeto(filepath + '_science_' +
-                                                 str(i) + '.fits',
-                                                 overwrite=overwrite)
+            hdu_output.writeto(filename + '_science_' + str(j) + '.' +
+                               extension,
+                               overwrite=overwrite)
 
-        if stype in ['default', 'standard']:
-            self.standard_hdulist.writeto(filepath + '_standard.fits',
-                                           overwrite=overwrite)
+        if 'standard' in stype:
+
+            hdu_output = fits.HDUList()
+
+            if 'flux' in datacube:
+                self._create_flux_resampled_fits('standard')
+                hdu_output += self.standard_resampled_hdulist
+
+            if 'wavecal' in datacube:
+                self.wave_cal_std._create_wavecal_fits()
+                hdu_output += self.wave_cal_std.wavecal_std_hdulist
+
+            if 'fluxraw' in datacube:
+                self._create_flux_fits('standard')
+                hdu_output += self.standard_hdulist
+
+            if 'trace' in datacube:
+                self.standard._create_trace_fits()
+                hdu_output += self.standard.trace_hdulist
+
+            if 'adu' in datacube:
+                self.standard._create_adu_fits()
+                hdu_output += self.standard.adu_hdulist
+
+            # Convert the first HDU to PrimaryHDU
+            hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
+                                            hdu_output[0].header)
+            hdu_output.update_extend()
+
+            # Save file to disk
+            hdu_output.writeto(filename + '_standard.' + extension,
+                               overwrite=overwrite)
