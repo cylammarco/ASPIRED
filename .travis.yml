@@ -31,6 +31,7 @@ jobs:
 
 install:
   - pip3 install --upgrade pip
+  - pip3 install --upgrade pytest
   - python3 setup.py install
 
 script: pytest --disable-warnings -p no:warnings -Wignore test/test_aspired.py
