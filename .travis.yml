@@ -34,4 +34,4 @@ install:
   - pip3 install --upgrade pytest
   - python3 setup.py install
 
-script: pytest --disable-warnings -p no:warnings -W ignore test/test_aspired.py
+script: pytest --disable-warnings -p no:warnings test/test_aspired.py
