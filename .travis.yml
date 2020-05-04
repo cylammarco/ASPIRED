@@ -11,11 +11,14 @@ jobs:
       python: 3.7
       dist: xenial
     - os: osx
-      language: generic
-      python: 3.6
-    - os: osx
-      language: generic
-      python: 3.7
+      language: sh
+      env:
+        - TOXENV=py36
+        - HOMEBREW_NO_INSTALL_CLEANUP=1
+        - HOMEBREW_NO_ANALYTICS=1
+      addons:
+        homebrew:
+          packages: python3
 
 install:
   - python setup.py install
