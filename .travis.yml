@@ -1,5 +1,3 @@
-sudo: enabled
-
 language: python
 
 jobs:
@@ -24,16 +22,6 @@ jobs:
     - os: linux
       env: PYTHON_VERSION=3.8.2
       dist: xenial
-    # Ubuntu 2014
-    - os: linux
-      env: PYTHON_VERSION=3.6.10
-      dist: trusty
-    - os: linux
-      env: PYTHON_VERSION=3.7.7
-      dist: trusty
-    - os: linux
-      env: PYTHON_VERSION=3.8.2
-      dist: trusty
     # Catalina
     - os: osx
       language: generic
