@@ -48,14 +48,14 @@ jobs:
       osx_image: xcode6.4
 
 install:
-  - pip3 install --upgrade pip
-  - pip3 install pyenv
+  - pip install --upgrade pip
+  - pip install pyenv
   - export PATH=~/.pyenv/bin:$PATH
   - eval "$(pyenv init -)"
-  - pyenv install --skip-existing $PYTHON_VERSION
+  - pyenv install $PYTHON_VERSION
   - pyenv global $PYTHON_VERSION
   - pyenv shell $PYTHON_VERSION
-  - pip3 install --upgrade pip setuptools wheel py
-  - python3 setup.py install
+  - pip install --upgrade pip setuptools wheel py
+  - python setup.py install
 
 script: pytest --disable-warnings -p no:warnings test/test_aspired.py
