@@ -50,7 +50,9 @@ jobs:
 install:
   - unset PYENV_ROOT
   - curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
-  - export PATH="$HOME/.pyenv/bin:$PATH"
+  - export PYENV_ROOT="$HOME/.pyenv"
+  - export PATH="$PYENV_ROOT/bin:$PATH"
+  - eval "$(pyenv init -)"
   - pyenv install $PYTHON_VERSION
   - pyenv global $PYTHON_VERSION
   - pyenv shell $PYTHON_VERSION
