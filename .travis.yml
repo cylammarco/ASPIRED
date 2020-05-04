@@ -11,17 +11,11 @@ jobs:
       python: 3.7
       dist: xenial
     - os: osx
-      language: sh
-      env:
-        - PYTHON_VERSION=3.7
-        - TOXENV=py37
-        - HOMEBREW_NO_INSTALL_CLEANUP=1
-        - HOMEBREW_NO_ANALYTICS=1
-      addons:
-        homebrew:
-          packages: python3
+      language: generic
+      osx_image: xcode11.2
 
 install:
+  - pip3 install --upgrade pip
   - python3 setup.py install
 
 script: pytest --disable-warnings -p no:warnings -W test/test_aspired.py
