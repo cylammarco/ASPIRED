@@ -49,12 +49,13 @@ jobs:
 
 install:
   - pip3 install --upgrade pip
-  - pip3 install --egg --no-binary pyenv pyenv
+  - pip3 install --no-binary pyenv pyenv
   - export PATH=~/.pyenv/bin:$PATH
   - eval "$(pyenv init -)"
   - pyenv install --skip-existing $PYTHON_VERSION
   - pyenv global $PYTHON_VERSION
   - pyenv shell $PYTHON_VERSION
+  - pip3 install --upgrade pip setuptools wheel py
   - python3 setup.py install
 
 script: pytest --disable-warnings -p no:warnings test/test_aspired.py
