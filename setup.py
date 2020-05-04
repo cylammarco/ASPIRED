@@ -24,4 +24,4 @@ setup(name=__packagename__,
       zip_safe=False,
       include_package_data=True,
       install_requires=install_requires,
-      python_requires='>=3.6, <3.8')
+      python_requires='>=3.6')
