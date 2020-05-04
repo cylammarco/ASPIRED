@@ -5,33 +5,56 @@ language: python
 jobs:
   include:
     - os: linux
-      python: 3.6
+      env: PYTHON_VERSION=3.6
       dist: xenial
     - os: linux
-      python: 3.7
+      env: PYTHON_VERSION=3.7
       dist: xenial
     - os: linux
-      python: 3.6
+      env: PYTHON_VERSION=3.8
+      dist: xenial
+    - os: linux
+      env: PYTHON_VERSION=3.6
       dist: bionic
     - os: linux
-      python: 3.7
+      env: PYTHON_VERSION=3.7
+      dist: bionic
+    - os: linux
+      env: PYTHON_VERSION=3.8
       dist: bionic
     - os: osx
       language: generic
-      osx_image: xcode11
-    - os: osx
-      language: generic
-      osx_image: xcode11.1
-    - os: osx
-      language: generic
-      osx_image: xcode11.2
-    - os: osx
-      language: generic
+      env: PYTHON_VERSION=3.6
       osx_image: xcode11.3
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.7
+      osx_image: xcode10.3
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.8
+      osx_image: xcode9.4
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.6
+      osx_image: xcode8.3
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.7
+      osx_image: xcode7.3
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.8
+      osx_image: xcode6.4
 
 install:
   - pip3 install --upgrade pip
-  - pip3 install --upgrade pytest
+  - pip3 install --upgrade pyenv
+  - export PATH=~/.pyenv/bin:$PATH
+  - eval "$(pyenv init -)"
+  - pyenv install --skip-existing $PYTHON_VERSION
+  - pyenv global $PYTHON_VERSION
+  - pyenv shell $PYTHON_VERSION
   - python3 setup.py install
 
 script: pytest --disable-warnings -p no:warnings test/test_aspired.py
