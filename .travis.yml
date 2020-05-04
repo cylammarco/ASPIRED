@@ -48,10 +48,9 @@ jobs:
       osx_image: xcode6.4
 
 install:
-  - pip install --upgrade pip wheel
-  - pip install --no-binary pyenv pyenv
-  - export PATH=~/.pyenv/bin:$PATH
-  - eval "$(pyenv init -)"
+  - unset PYENV_ROOT
+  - curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+  - export PATH="$HOME/.pyenv/bin:$PATH"
   - pyenv install $PYTHON_VERSION
   - pyenv global $PYTHON_VERSION
   - pyenv shell $PYTHON_VERSION
