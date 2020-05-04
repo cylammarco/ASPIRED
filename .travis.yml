@@ -10,12 +10,27 @@ jobs:
     - os: linux
       python: 3.7
       dist: xenial
+    - os: linux
+      python: 3.6
+      dist: bionic
+    - os: linux
+      python: 3.7
+      dist: bionic
+    - os: osx
+      language: generic
+      osx_image: xcode11
+    - os: osx
+      language: generic
+      osx_image: xcode11.1
     - os: osx
       language: generic
       osx_image: xcode11.2
+    - os: osx
+      language: generic
+      osx_image: xcode11.3
 
 install:
   - pip3 install --upgrade pip
   - python3 setup.py install
 
-script: pytest --disable-warnings -p no:warnings -W test/test_aspired.py
+script: pytest --disable-warnings -p no:warnings -Wignore test/test_aspired.py
