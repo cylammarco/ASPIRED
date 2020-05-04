@@ -4,15 +4,7 @@ language: python
 
 jobs:
   include:
-    - os: linux
-      env: PYTHON_VERSION=3.6.10
-      dist: xenial
-    - os: linux
-      env: PYTHON_VERSION=3.7.7
-      dist: xenial
-    - os: linux
-      env: PYTHON_VERSION=3.8.2
-      dist: xenial
+    # Ubuntu 2018
     - os: linux
       env: PYTHON_VERSION=3.6.10
       dist: bionic
@@ -22,6 +14,27 @@ jobs:
     - os: linux
       env: PYTHON_VERSION=3.8.2
       dist: bionic
+    # Ubuntu 2016
+    - os: linux
+      env: PYTHON_VERSION=3.6.10
+      dist: xenial
+    - os: linux
+      env: PYTHON_VERSION=3.7.7
+      dist: xenial
+    - os: linux
+      env: PYTHON_VERSION=3.8.2
+      dist: xenial
+    # Ubuntu 2014
+    - os: linux
+      env: PYTHON_VERSION=3.6.10
+      dist: trusty
+    - os: linux
+      env: PYTHON_VERSION=3.7.7
+      dist: trusty
+    - os: linux
+      env: PYTHON_VERSION=3.8.2
+      dist: trusty
+    # Catalina
     - os: osx
       language: generic
       env: PYTHON_VERSION=3.6.10
@@ -34,6 +47,7 @@ jobs:
       language: generic
       env: PYTHON_VERSION=3.8.2
       osx_image: xcode11.3
+    # MoJave
     - os: osx
       language: generic
       env: PYTHON_VERSION=3.6.10
@@ -46,6 +60,32 @@ jobs:
       language: generic
       env: PYTHON_VERSION=3.8.2
       osx_image: xcode10.3
+    # High Sierra
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.6.10
+      osx_image: xcode9.4
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.7.7
+      osx_image: xcode9.4
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.8.2
+      osx_image: xcode9.4
+    # Sierra
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.6.10
+      osx_image: xcode8.3
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.7.7
+      osx_image: xcode8.3
+    - os: osx
+      language: generic
+      env: PYTHON_VERSION=3.8.2
+      osx_image: xcode8.3
 
 install:
   - unset PYENV_ROOT
