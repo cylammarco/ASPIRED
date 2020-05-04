@@ -5,18 +5,20 @@ from astropy.io import fits
 import plotly.io as pio
 pio.renderers.default = 'notebook+jpg'
 
-sys.path.insert(0,
-                os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+base_dir = os.path.dirname(__file__)
+abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
+
+sys.path.insert(0, abs_dir)
+
 from aspired import aspired
 
-
 def test_imagereduction():
-    science_frame = aspired.ImageReduction('examples/sprat_LHS6328.list',
+    science_frame = aspired.ImageReduction(os.path.join(abs_dir, 'examples/sprat_LHS6328.list'),
                                            silence=True)
     science_frame.reduce()
 
     properties_len = len(science_frame.__dict__)
-    assert properties_len == 53, 'There should be 53 properties. You have ' + str(
+    assert properties_len == 54, 'There should be 54 properties. You have ' + str(
         properties_len) + '.'
 
     # Check if files are loaded to the right place

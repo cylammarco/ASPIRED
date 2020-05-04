@@ -16,7 +16,7 @@ from scipy import signal
 from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
-from scipy.optimize import minimize
+from spectres import spectres
 
 from rascal.calibrator import Calibrator
 from rascal.util import load_calibration_lines
@@ -29,14 +29,6 @@ except ImportError:
         AstropyWarning('astroscrappy is not present, so ap_trace will clean ' +
                        'cosmic rays with a 2D-median filter of size 5.'))
     detect_cosmics = partial(signal.medfilt2d, kernel_size=5)
-try:
-    from spectres import spectres
-    spectres_imported = True
-except ImportError:
-    warnings.warn(
-        'spectres is not present, spectral resampling cannot be performed. '
-        'Flux calibration is suboptimal. Flux is not conserved.')
-    spectres_imported = False
 try:
     import plotly.graph_objects as go
     import plotly.io as pio
@@ -164,10 +156,16 @@ class ImageReduction:
         clip_high_flat: float
             upper threshold of the sigma clipping
         silence: boolean
-            set to suppress all messages
+            Set to True to suppress all verbose warnings.
         '''
 
-        self.filelist = filelist
+        if os.path.isabs(filelist):
+            self.filelist = filelist
+        else:
+            self.filelist = os.path.abspath(filelist)
+
+        self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
+
         self.ftype = ftype
         if ftype == 'csv':
             self.delimiter = ','
@@ -237,7 +235,7 @@ class ImageReduction:
         if isinstance(self.filelist, str):
             self.filelist = np.genfromtxt(self.filelist,
                                           delimiter=self.delimiter,
-                                          dtype='str',
+                                          dtype='object',
                                           autostrip=True)
             if np.shape(np.shape(self.filelist))[0] == 2:
                 self.imtype = self.filelist[:, 0]
@@ -262,6 +260,13 @@ class ImageReduction:
         else:
             raise TypeError('Please provide a file path to the file list or '
                             'a numpy array with at least 2 columns.')
+
+
+        for i, im in enumerate(self.impath):
+            if not os.path.isabs(im):
+                self.impath[i] = os.path.join(self.filelist_abspath, im.decode('utf-8'))
+
+        self.imtype = self.imtype.astype('str')
 
         if np.shape(np.shape(self.filelist))[0] == 2:
             try:
@@ -717,8 +722,10 @@ class ImageReduction:
         Parameters
         ----------
         filename: String
-            Disk location to be written to. Default is at where the Python
+            Disk location to be written to. Default is at where the
             process/subprocess is execuated.
+        extension: String
+            File extension without the dot.
         overwrite: boolean
             Default is False.
 
@@ -754,6 +761,11 @@ class ImageReduction:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plot.ly
             in any support language
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -880,7 +892,7 @@ class TwoDSpec:
             calibration is not needed.
             (Deafult is None, which will be replaced with 1.0)
         silence: boolean
-            Set to True to suppress all verbose output.
+            Set to True to suppress all verbose warnings.
         '''
 
         # If data provided is an numpy array
@@ -942,11 +954,12 @@ class TwoDSpec:
         self.exptime = 1.
 
         # Default keywords to be searched in the order in the list
-        self._set_default_readnoise_keyword(['RDNOISE', 'RNOISE', 'RN'])
-        self._set_default_gain_keyword(['GAIN'])
-        self._set_default_seeing_keyword(['SEEING', 'L1SEEING', 'ESTSEE'])
-        self._set_default_exptime_keyword(
-            ['XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'])
+        self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
+        self.gain_keyword = ['GAIN']
+        self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
+        self.exptime_keyword = [
+            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+        ]
 
         # Get the Read Noise
         if readnoise is not None:
@@ -1114,54 +1127,6 @@ class TwoDSpec:
         self.zmin = np.nanpercentile(img_log_finite, 5)
         self.zmax = np.nanpercentile(img_log_finite, 95)
 
-    def _set_default_readnoise_keyword(self, keyword_list):
-        '''
-        Set the exptime keyword list.
-
-        Parameters
-        ----------
-        keyword_list: list
-            List of keyword (string).
-        '''
-
-        self.readnoise_keyword = list(keyword_list)
-
-    def _set_default_gain_keyword(self, keyword_list):
-        '''
-        Set the exptime keyword list.
-
-        Parameters
-        ----------
-        keyword_list: list
-            List of keyword (string).
-        '''
-
-        self.gain_keyword = list(keyword_list)
-
-    def _set_default_seeing_keyword(self, keyword_list):
-        '''
-        Set the exptime keyword list.
-
-        Parameters
-        ----------
-        keyword_list: list
-            List of keyword (string).
-        '''
-
-        self.seeing_keyword = list(keyword_list)
-
-    def _set_default_exptime_keyword(self, keyword_list):
-        '''
-        Set the exptime keyword list.
-
-        Parameters
-        ----------
-        keyword_list: list
-            List of keyword (string).
-        '''
-
-        self.exptime_keyword = list(keyword_list)
-
     def set_readnoise_keyword(self, keyword_list, append=False):
         '''
         Set the exptime keyword list.
@@ -1280,6 +1245,11 @@ class TwoDSpec:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -1532,6 +1502,11 @@ class TwoDSpec:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -1613,8 +1588,10 @@ class TwoDSpec:
             pix_resampled = pix_resampled * scale_solution[i] + shift_solution[
                 i]
 
-            spec_spatial += spectres(np.arange(nresample), pix_resampled,
-                                     lines)
+            spec_spatial += spectres(np.arange(nresample),
+                                     pix_resampled,
+                                     lines,
+                                     verbose=False)
 
             # Update (increment) the reference line
             if (i == nwindow - 1):
@@ -1650,9 +1627,9 @@ class TwoDSpec:
 
         # Looping through pixels larger than middle pixel
         for i in range(start_window_idx + 1, nwindow):
-            spec_idx[:, i] = (
-                spec_idx[:, i - 1] * resample_factor * nscaled[i] / nresample -
-                shift_solution[i]) / resample_factor
+            spec_idx[:,
+                     i] = (spec_idx[:, i - 1] * resample_factor * nscaled[i] /
+                           nresample - shift_solution[i]) / resample_factor
 
         # Looping through pixels smaller than middle pixel
         for i in range(start_window_idx - 1, -1, -1):
@@ -1877,6 +1854,12 @@ class TwoDSpec:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
+
         """
 
         len_trace = len(self.trace[0])
@@ -1978,10 +1961,10 @@ class TwoDSpec:
 
                 fig = go.Figure()
                 # the 3 is to show a little bit outside the extraction regions
-                img_display = np.log10(
-                    self.img[max(0, min_trace - widthdn - skysep - skywidth - 3
-                                 ):min(max_trace + widthup + skysep +
-                                       skywidth, len(self.img[0])) + 3, :])
+                img_display = np.log10(self.img[
+                    max(0, min_trace - widthdn - skysep - skywidth -
+                        3):min(max_trace + widthup + skysep +
+                               skywidth, len(self.img[0])) + 3, :])
 
                 # show the image on the top
                 # the 3 is the show a little bit outside the extraction regions
@@ -2182,7 +2165,7 @@ class TwoDSpec:
             ])
 
     def save_fits(self,
-                  datacube='trace+adu',
+                  output='trace+adu',
                   filename='TwoDSpec',
                   extension='fits',
                   overwrite=False):
@@ -2191,9 +2174,20 @@ class TwoDSpec:
 
         Parameters
         ----------
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            adu: 3 HDUs
+                Flux, uncertainty and sky (bin width = per wavelength)
+            trace: 1 HDU
+                Pixel position of the trace in the spatial direction
         filename: String
-            Disk location to be written to. Default is at where the Python
+            Disk location to be written to. Default is at where the
             process/subprocess is execuated.
+        extension: String
+            File extension without the dot.
         overwrite: boolean
             Default is False.
 
@@ -2209,11 +2203,11 @@ class TwoDSpec:
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()
 
-            if 'adu' in datacube:
+            if 'adu' in output:
                 self._create_adu_fits()
                 hdu_output += self.adu_hdulist[j]
 
-            if 'trace' in datacube:
+            if 'trace' in output:
                 self._create_trace_fits()
                 hdu_output += self.trace_hdulist[j]
 
@@ -2251,6 +2245,8 @@ class WavelengthPolyFit():
             trace_sigma(s).
         arc: 2D numpy array, PrimaryHDU object or ImageReduction object
             The image of the arc image.
+        silence: boolean
+            Set to True to suppress all verbose warnings.
         '''
 
         self.spec = spec
@@ -2288,6 +2284,15 @@ class WavelengthPolyFit():
                 self.spec.trace_sigma = spec[1]
 
     def add_arc(self, arc):
+        '''
+        To add or replace an arc.
+
+        Parameters
+        ----------
+        arc: 2D numpy array, PrimaryHDU object or ImageReduction object
+            The image of the arc image.
+        '''
+
         # If data provided is an numpy array
         if isinstance(arc, np.ndarray):
             self.arc = arc
@@ -2344,6 +2349,11 @@ class WavelengthPolyFit():
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -2435,21 +2445,21 @@ class WavelengthPolyFit():
             sample_size=5,
             max_tries=10000,
             top_n=8,
-            nslopes=5000,
+            num_slope=5000,
+            polydeg=4,
             range_tolerance=500.,
             fit_tolerance=10.,
-            polydeg=4,
             candidate_thresh=20.,
             ransac_thresh=1.,
             xbins=250,
             ybins=250,
             brute_force=False,
             fittype='poly',
-            mode='manual',
             progress=False,
             pfit=None,
             display=False,
-            savefig=None):
+            savefig=False,
+            filename=None):
         '''
         A wrapper function to perform wavelength calibration with RASCAL.
 
@@ -2477,14 +2487,14 @@ class WavelengthPolyFit():
             Top ranked lines to be fitted.
         nslopes: int
             Number of lines to be used in Hough transform.
+        polydeg: int
+            Degree of the polynomial
         range_tolerance: float
             Estimation of the error on the provided spectral range
             e.g. 3000 - 5000 with tolerance 500 will search for
             solutions that may satisfy 2500 - 5500
         fit_tolerance: float
             Maximum RMS allowed
-        polydeg: int
-            Degree of the polynomial
         candidate_thresh: float
             Threshold for considering a point to be an inlier during candidate
             peak/line selection. Don't make this too small, it should allow
@@ -2502,22 +2512,18 @@ class WavelengthPolyFit():
             the solution. This takes tens of minutes for tens of lines.
         fittype: string
             One of 'poly', 'legendre' or 'chebyshev'.
-        mode: string
-            Default to 'manual' to read take in user supplied sample_size,
-            max_tries, top_n and nslope, which are by default equivalent to
-            'normal' mode. Predefined modes are 'fast', 'normal' and 'slow':
-            fast:
-                sample_size = 3, max_tries = 1000, top_n = 20, nslope = 500
-            normal:
-                sample_size = 5, max_tries = 5000, top_n = 20, nslope = 1000
-            slow:
-                sample_size = 5, max_tries = 10000, top_n = 20, nslope = 2000
         progress: boolean
             Set to show the progress using tdqm (if imported).
         pfit: list
             List of the polynomial fit coefficients for the first guess.
         display: boolean
             Set to show diagnostic plot.
+        savefig: string
+            Set to save figure.
+        filename: string
+            Filename of the figure. Only work if display and savefig are set
+            to True.
+
         '''
 
         self.pfit = []
@@ -2530,10 +2536,10 @@ class WavelengthPolyFit():
             c = Calibrator(self.peaks[j],
                            min_wavelength=min_wave,
                            max_wavelength=max_wave,
-                           num_pixels=len(self.spectrum[j]),
+                           num_pix=len(self.spectrum[j]),
                            plotting_library='plotly')
             c.add_atlas(elements)
-            c.set_fit_constraints(num_slopes=nslopes,
+            c.set_fit_constraints(num_slopes=num_slope,
                                   range_tolerance=range_tolerance,
                                   fit_tolerance=fit_tolerance,
                                   polydeg=polydeg,
@@ -2548,8 +2554,6 @@ class WavelengthPolyFit():
                 sample_size=sample_size,
                 max_tries=max_tries,
                 top_n=top_n,
-                n_slope=nslopes,
-                mode=mode,
                 progress=progress,
                 coeff=pfit)
 
@@ -2560,21 +2564,30 @@ class WavelengthPolyFit():
             self.peak_utilisation.append(peak_utilisation)
 
             if display:
-                c.plot_fit(np.median(self.arc_trace[j], axis=0),
-                           self.pfit[j],
-                           plot_atlas=True,
-                           log_spectrum=False,
-                           tolerance=1.0,
-                           output_filename=savefig)
+                if savefig:
+                    c.plot_fit(np.median(self.arc_trace[j], axis=0),
+                               self.pfit[j],
+                               plot_atlas=True,
+                               log_spectrum=False,
+                               tolerance=1.0,
+                               savefig=True,
+                               filename=filename)
+                else:
+                    c.plot_fit(np.median(self.arc_trace[j], axis=0),
+                               self.pfit[j],
+                               plot_atlas=True,
+                               log_spectrum=False,
+                               tolerance=1.0)
 
     def refine_fit(self,
                    elements,
                    min_wave=3500.,
                    max_wave=8500.,
                    tolerance=10.,
-                   display=False,
                    polydeg=None,
-                   savefig=None):
+                   display=False,
+                   savefig=False,
+                   filename=None):
         '''
         A wrapper function to fine tune wavelength calibration with RASCAL
         when there is already a set of good coefficienes.
@@ -2588,14 +2601,22 @@ class WavelengthPolyFit():
         ----------
         elements: string or list of string
             String or list of strings of Chemical symbol. Case insensitive.
-        pfit : list
-            List of polynomial fit coefficients
         min_wave: float
-            Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
+            Minimum wavelength of the spectrum, NOT of the arc.
         max_wave: float
-            Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+            Maximum wavelength of the spectrum, NOT of the arc.
         tolerance : float
             Absolute difference between fit and model.
+        polydeg: int
+            Degree of the polynomial
+        display: boolean
+            Set to show diagnostic plot.
+        savefig: string
+            Set to save figure.
+        filename: string
+            Filename of the figure. Only work if display and savefig are set
+            to True.
+
         '''
 
         pfit_new = []
@@ -2610,11 +2631,11 @@ class WavelengthPolyFit():
             c = Calibrator(self.peaks[j],
                            min_wavelength=min_wave,
                            max_wavelength=max_wave,
-                           num_pixels=len(self.spectrum[j]),
+                           num_pix=len(self.spectrum[j]),
                            plotting_library='plotly')
             c.add_atlas(elements=elements)
 
-            pfit, _, _, residual, peak_utilisation = c.match_peaks_to_atlas(
+            pfit, _, _, residual, peak_utilisation = c.refine_fit(
                 self.pfit[j], tolerance=tolerance, polydeg=polydeg)
 
             pfit_new.append(pfit)
@@ -2623,12 +2644,20 @@ class WavelengthPolyFit():
             peak_utilisation_new.append(peak_utilisation)
 
             if display:
-                c.plot_fit(np.median(self.arc_trace[j], axis=0),
-                           pfit_new[j],
-                           plot_atlas=True,
-                           log_spectrum=False,
-                           tolerance=1.0,
-                           output_filename=savefig)
+                if savefig:
+                    c.plot_fit(np.median(self.arc_trace[j], axis=0),
+                               self.pfit[j],
+                               plot_atlas=True,
+                               log_spectrum=False,
+                               tolerance=1.0,
+                               savefig=True,
+                               filename=filename)
+                else:
+                    c.plot_fit(np.median(self.arc_trace[j], axis=0),
+                               self.pfit[j],
+                               plot_atlas=True,
+                               log_spectrum=False,
+                               tolerance=1.0)
 
         self.pfit = pfit_new
         self.residual = residual_new
@@ -2645,6 +2674,7 @@ class WavelengthPolyFit():
             Coefficients of the polynomial fit.
         pfit_type: str
             One of 'poly', 'legendre' or 'chebyshev'.
+
         '''
 
         if not isinstance(pfit, list):
@@ -2662,12 +2692,26 @@ class WavelengthPolyFit():
             self.pfit_type = pfit_type
 
     def _create_wavecal_fits(self):
-        # Put the reduced data in FITS format with an image header
+        # Put the polynomial(s) in FITS format with an image header
         self.wavecal_hdulist = np.array([None] * self.nspec, dtype='object')
         for j in range(self.nspec):
             self.wavecal_hdulist[j] = fits.HDUList([fits.ImageHDU(self.pfit)])
 
     def save_fits(self, filename="wavecal", extension='fits', overwrite=False):
+        '''
+        Save the wavelength calibration polynomial coefficients.
+
+        Parameters
+        ----------
+        filename: String
+            Disk location to be written to. Default is at where the
+            process/subprocess is execuated.
+        extension: String
+            File extension without the dot.
+        overwrite: boolean
+            Default is False.
+
+        '''
 
         if filename[-5:] == '.fits':
             filename = filename[:-5]
@@ -2717,7 +2761,7 @@ class StandardFlux:
         ftype: string
             'flux' or 'mag' (AB magnitude)
         silence: boolean
-            Set to suppress all verbose warning.
+            Set to True to suppress all verbose warnings.
         '''
 
         self.target = target
@@ -2772,6 +2816,11 @@ class StandardFlux:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -2829,6 +2878,11 @@ class StandardFlux:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -2898,7 +2952,8 @@ class OneDSpec:
                  wave_cal,
                  standard=None,
                  wave_cal_std=None,
-                 flux_cal=None):
+                 flux_cal=None,
+                 silence=False):
         '''
         This class applies the wavelength calibrations and compute & apply the
         flux calibration to the extracted 1D spectra. The standard TwoDSpec
@@ -2919,6 +2974,8 @@ class OneDSpec:
             not be calibrated if this is not provided.
         flux_cal: StandardFlux object
             The true mag/flux values.
+        silence: boolean
+            Set to True to suppress all verbose warnings.
         '''
 
         try:
@@ -3000,10 +3057,12 @@ class OneDSpec:
             The WavelengthPolyFit object for the standard target, flux will
             not be calibrated if this is not provided.
         stype: string
-            'science', 'standard' or 'all' to indicate type
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
 
-        if stype in ['science', 'all']:
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
             try:
                 self.pfit_type = wave_cal.pfit_type
                 self.pfit = wave_cal.pfit
@@ -3021,7 +3080,8 @@ class OneDSpec:
                             '(3) chebyshev')
             except:
                 raise TypeError('Please provide a valid WavelengthPolyFit.')
-        if stype in ['standard', 'all']:
+
+        if 'standard' in stype_split:
             try:
                 self.pfit_type_std = wave_cal.pfit_type
                 self.pfit_std = wave_cal.pfit
@@ -3041,9 +3101,9 @@ class OneDSpec:
             except:
                 raise TypeError('Please provide a valid WavelengthPolyFit.')
 
-        if stype not in ['science', 'standard', 'all']:
+        if ('science' not in stype_split) and ('standard' not in stype_split):
             raise ValueError('Unknown stype, please choose from (1) science; '
-                             '(2) standard; or (3) all')
+                             'and/or (2) standard. use + as delimiter.')
 
     def _set_fluxcal(self, flux_cal):
         '''
@@ -3064,21 +3124,32 @@ class OneDSpec:
             raise TypeError('Please provide a valid StandardFlux.')
 
     def apply_wavelength_calibration(self,
-                                     stype,
+                                     stype='science+standard',
                                      wave_start=None,
                                      wave_end=None,
                                      wave_bin=None):
         '''
-        Apply the wavelength calibration.
+        Apply the wavelength calibration. Because the polynomial fit can run
+        away at the two ends, the default minimum and maximum are limited to
+        1,000 and 12,000 A, respectively. This can be overridden by providing
+        user's choice of wave_start and wave_end.
 
         Parameters
         ----------
         stype: string
-            'science', 'standard' or 'all' to indicate type
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        wave_start: float
+            Provide the minimum wavelength for resampling.
+        wave_end: float
+            Provide the maximum wavelength for resampling
+        wave_bin: float
+            Provide the resampling bin size
         '''
 
+        stype_split = stype.split('+')
+
         # Can be multiple spectra in the science frame
-        if stype in ['science', 'all']:
+        if 'science' in stype_split:
 
             pix = np.arange(len(self.adu[0]))
             self.wave = np.array([None] * self.nspec, dtype='object')
@@ -3116,17 +3187,23 @@ class OneDSpec:
                                      self.wave_bin[i])
 
                 # apply the flux calibration and resample
-                self.adu_wcal[i] = spectres(new_wave, self.wave[i],
-                                            self.adu[i])
-                self.aduerr_wcal[i] = spectres(new_wave, self.wave[i],
-                                               self.aduerr[i])
-                self.adusky_wcal[i] = spectres(new_wave, self.wave[i],
-                                               self.adusky[i])
+                self.adu_wcal[i] = spectres(new_wave,
+                                            self.wave[i],
+                                            self.adu[i],
+                                            verbose=False)
+                self.aduerr_wcal[i] = spectres(new_wave,
+                                               self.wave[i],
+                                               self.aduerr[i],
+                                               verbose=False)
+                self.adusky_wcal[i] = spectres(new_wave,
+                                               self.wave[i],
+                                               self.adusky[i],
+                                               verbose=False)
 
                 self.wave_resampled[i] = new_wave
 
         # Only one spectrum in the standard frame
-        if stype in ['standard', 'all']:
+        if 'standard' in stype_split:
 
             if self.standard_imported:
 
@@ -3153,25 +3230,28 @@ class OneDSpec:
                                          self.wave_std_end, self.wave_std_bin)
 
                 # apply the flux calibration and resample
-                self.flux_std = spectres(new_wave_std, self.wave_std,
-                                         self.adu_std)
-                self.fluxerr_std = spectres(new_wave_std, self.wave_std,
-                                            self.aduerr_std)
-                self.fluxsky_std = spectres(new_wave_std, self.wave_std,
-                                            self.adusky_std)
+                self.flux_std = spectres(new_wave_std,
+                                         self.wave_std,
+                                         self.adu_std,
+                                         verbose=False)
+                self.fluxerr_std = spectres(new_wave_std,
+                                            self.wave_std,
+                                            self.aduerr_std,
+                                            verbose=False)
+                self.fluxsky_std = spectres(new_wave_std,
+                                            self.wave_std,
+                                            self.adusky_std,
+                                            verbose=False)
 
                 self.wave_std_resampled = new_wave_std
             else:
                 raise AttributeError(
                     'The TwoDSpec of the standard observation is not '
                     'available. Flux calibration will not be performed.')
-        if stype not in ['science', 'standard', 'all']:
-            raise ValueError('Unknown stype, please choose from (1) science; '
-                             '(2) standard; or (3) all.')
 
-        if stype not in ['science', 'standard', 'all']:
+        if ('science' not in stype_split) and ('standard' not in stype_split):
             raise ValueError('Unknown stype, please choose from (1) science; '
-                             '(2) standard; or (3) all.')
+                             'and/or (2) standard. use + as delimiter.')
 
     def compute_sensitivity(self,
                             kind=3,
@@ -3219,6 +3299,11 @@ class OneDSpec:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -3230,25 +3315,25 @@ class OneDSpec:
         self.sorder = sorder
         self.smooth = smooth
 
-        if spectres_imported:
-            # resampling both the observed and the database standard spectra
-            # in unit of flux per second. The higher resolution spectrum is
-            # resampled to match the lower resolution one.
-            if min(np.ediff1d(self.wave_std)) < min(
-                    np.ediff1d(self.wave_std_true)):
-                flux_std = spectres(self.wave_std_true, self.wave_std,
-                                    self.adu_std)
-                flux_std_true = self.fluxmag_std_true
-                wave_std_true = self.wave_std_true
-            else:
-                flux_std = self.adu_std
-                flux_std_true = spectres(self.wave_std, self.wave_std_true,
-                                         self.fluxmag_std_true)
-                wave_std_true = self.wave_std
+        # resampling both the observed and the database standard spectra
+        # in unit of flux per second. The higher resolution spectrum is
+        # resampled to match the lower resolution one.
+        if min(np.ediff1d(self.wave_std)) < min(np.ediff1d(
+                self.wave_std_true)):
+            flux_std = spectres(self.wave_std_true,
+                                self.wave_std,
+                                self.adu_std,
+                                verbose=False)
+            flux_std_true = self.fluxmag_std_true
+            wave_std_true = self.wave_std_true
         else:
             flux_std = self.adu_std
-            flux_std_true = itp.interp1d(self.wave_std_true,
-                                         self.fluxmag_std_true)(self.wave_std)
+            flux_std_true = spectres(self.wave_std,
+                                     self.wave_std_true,
+                                     self.fluxmag_std_true,
+                                     verbose=False)
+            wave_std_true = self.wave_std
+
         # Get the sensitivity curve
         sens = flux_std_true / flux_std
 
@@ -3299,6 +3384,11 @@ class OneDSpec:
         jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
@@ -3394,7 +3484,7 @@ class OneDSpec:
         else:
             fig.show(renderer)
 
-    def apply_flux_calibration(self, stype='all'):
+    def apply_flux_calibration(self, stype='science+standard'):
         '''
         Apply the computed sensitivity curve. And resample the spectra to
         match the highest resolution (the smallest wavelength bin) part of the
@@ -3403,10 +3493,13 @@ class OneDSpec:
         Parameters
         ----------
         stype: string
-            'science', 'standard' or 'all' to indicate type
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
 
-        if stype == 'science' or stype == 'all':
+        stype_split = stype.split('+')
+
+        # Can be multiple spectra in the science frame
+        if 'science' in stype_split:
 
             self.flux = np.array([None] * self.nspec, dtype=object)
             self.fluxerr = np.array([None] * self.nspec, dtype=object)
@@ -3429,19 +3522,26 @@ class OneDSpec:
                 self.fluxerr_raw[i] = self.sensitivity_raw[i] * self.aduerr[i]
                 self.fluxsky_raw[i] = self.sensitivity_raw[i] * self.adusky[i]
 
-                self.flux[i] = spectres(self.wave_resampled[i], self.wave[i],
-                                        self.flux_raw[i])
+                self.flux[i] = spectres(self.wave_resampled[i],
+                                        self.wave[i],
+                                        self.flux_raw[i],
+                                        verbose=False)
                 self.fluxerr[i] = spectres(self.wave_resampled[i],
-                                           self.wave[i], self.fluxerr_raw[i])
+                                           self.wave[i],
+                                           self.fluxerr_raw[i],
+                                           verbose=False)
                 self.fluxsky[i] = spectres(self.wave_resampled[i],
-                                           self.wave[i], self.fluxsky_raw[i])
+                                           self.wave[i],
+                                           self.fluxsky_raw[i],
+                                           verbose=False)
 
                 # Only computed for diagnostic
                 self.sensitivity[i] = spectres(self.wave_resampled[i],
                                                self.wave[i],
-                                               self.sensitivity_raw[i])
+                                               self.sensitivity_raw[i],
+                                               verbose=False)
 
-        if stype == 'standard' or stype == 'all':
+        if 'standard' in stype_split:
 
             # apply the flux calibration and resample
             self.sensitivity_std_raw = 10.**self.sensitivity_itp(self.wave_std)
@@ -3450,24 +3550,31 @@ class OneDSpec:
             self.fluxerr_std_raw = self.sensitivity_std_raw * self.aduerr_std
             self.fluxsky_std_raw = self.sensitivity_std_raw * self.adusky_std
 
-            self.flux_std = spectres(self.wave_std_resampled, self.wave_std,
-                                     self.flux_std_raw)
-            self.fluxerr_std = spectres(self.wave_std_resampled, self.wave_std,
-                                        self.fluxerr_std_raw)
-            self.fluxsky_std = spectres(self.wave_std_resampled, self.wave_std,
-                                        self.fluxsky_std_raw)
+            self.flux_std = spectres(self.wave_std_resampled,
+                                     self.wave_std,
+                                     self.flux_std_raw,
+                                     verbose=False)
+            self.fluxerr_std = spectres(self.wave_std_resampled,
+                                        self.wave_std,
+                                        self.fluxerr_std_raw,
+                                        verbose=False)
+            self.fluxsky_std = spectres(self.wave_std_resampled,
+                                        self.wave_std,
+                                        self.fluxsky_std_raw,
+                                        verbose=False)
 
             # Only computed for diagnostic
             self.sensitivity_std = spectres(self.wave_std_resampled,
                                             self.wave_std,
-                                            self.sensitivity_std_raw)
+                                            self.sensitivity_std_raw,
+                                            verbose=False)
 
-        if stype not in ['science', 'standard', 'all']:
+        if ('science' not in stype_split) and ('standard' not in stype_split):
             raise ValueError('Unknown stype, please choose from (1) science; '
-                             '(2) standard; or (3) all.')
+                             'and/or (2) standard. use + as delimiter.')
 
     def inspect_reduced_spectrum(self,
-                                 stype='all',
+                                 stype='science+standard',
                                  wave_min=4000.,
                                  wave_max=8000.,
                                  renderer='default',
@@ -3480,23 +3587,30 @@ class OneDSpec:
         Parameters
         ----------
         stype: string
-            'science', 'standard' or 'all' to indicate type
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         wave_min: float
             Minimum wavelength to display
         wave_max: float
             Maximum wavelength to display
         renderer: string
-            plotly renderer options.
+            Plotly renderer options.
         jsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
+            Set to True to return json string that can be rendered by Plotly
             in any support language.
+        iframe: boolean
+            Save as an iframe, can work concurrently with other renderer
+            apart from exporting jsonstring.
+        open_iframe: boolean
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
         JSON strings if jsonstring is set to True.
         '''
 
-        if stype in ['science', 'all']:
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
             fig_sci = np.array([None] * self.nspec, dtype='object')
             for j in range(self.nspec):
 
@@ -3616,7 +3730,7 @@ class OneDSpec:
                 else:
                     fig_sci[j].show(renderer)
 
-        if stype in ['standard', 'all']:
+        if 'standard' in stype_split:
 
             if (self.standard_imported & self.flux_imported):
                 wave_std_mask = ((self.wave_std_resampled > wave_min) &
@@ -3740,13 +3854,28 @@ class OneDSpec:
             else:
                 fig_std.show(renderer)
 
-        if stype not in ['science', 'standard', 'all']:
+        if ('science' not in stype_split) and ('standard' not in stype_split):
             raise ValueError('Unknown stype, please choose from (1) science; '
-                             '(2) standard; or (3) all.')
+                             'and/or (2) standard. use + as delimiter.')
 
     def _create_wavelength_fits(self, stype, resample):
+        '''
+        Create HDU list of the reuqested list(s) of wavelength of the spectra.
 
-        if stype == 'science' or stype == 'all':
+        Parameters
+        ----------
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        resample: boolean
+            set to True to return the array of wavelengths in fixed intervals
+            of wavelength; False to return the array of wavelengths at the
+            native pixel sampling.
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
             self.wavelength_hdulist = np.array([None] * self.nspec,
                                                dtype='object')
             for i in range(self.nspec):
@@ -3756,7 +3885,7 @@ class OneDSpec:
                 else:
                     self.wavelength_hdulist = fits.ImageHDU(self.wave[i])
 
-        if stype == 'standard' or stype == 'all':
+        if 'standard' in stype_split:
             if resampled:
                 self.wavelength_std_hdulist = [
                     fits.ImageHDU(self.wave_std_resampled)
@@ -3764,10 +3893,27 @@ class OneDSpec:
             else:
                 self.wavelength_std_hdulist = [fits.ImageHDU(self.wave_std)]
 
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
+
     def _create_flux_fits(self, stype):
+        '''
+        Create HDU list of the reuqested list(s) of spectra, uncertainty and
+        sky as a function of wavelength at the native pixel sampling.
+
+        Parameters
+        ----------
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
         # wavelengths are in the natively extracted bins
         # Put the reduced data in FITS format with an image header
-        if stype == 'science' or stype == 'all':
+        if 'science' in stype_split:
 
             self.science_hdulist = np.array([None] * self.nspec,
                                             dtype='object')
@@ -3784,7 +3930,7 @@ class OneDSpec:
                     fluxsky_wavecal_fits, sensitivity_fits
                 ])
 
-        if stype == 'standard' or stype == 'all':
+        if 'standard' in stype_split:
 
             # Note that wave_start is the centre of the starting bin
             flux_wavecal_fits = fits.ImageHDU(self.flux_std_raw)
@@ -3798,10 +3944,28 @@ class OneDSpec:
                 sensitivity_fits
             ])
 
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
+
     def _create_flux_resampled_fits(self, stype):
+        '''
+        Create HDU list of the reuqested list(s) of spectra, uncertainty and
+        sky as a function of wavelength at fixed interval. This can be
+        directely plotted with iraf/splot.
+
+        Parameters
+        ----------
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
         # iraf splot readable format where wavelength are in equal-sized bins
         # Put the reduced data in FITS format with an image header
-        if stype == 'science' or stype == 'all':
+        if 'science' in stype_split:
 
             self.science_resampled_hdulist = np.array([None] * self.nspec,
                                                       dtype='object')
@@ -3841,7 +4005,7 @@ class OneDSpec:
                     fluxsky_wavecal_fits, sensitivity_fits
                 ])
 
-        if stype == 'standard' or stype == 'all':
+        if 'standard' in stype_split:
 
             # Note that wave_start is the centre of the starting bin
             flux_wavecal_fits = fits.ImageHDU(self.flux_std)
@@ -3878,53 +4042,89 @@ class OneDSpec:
                 sensitivity_fits
             ])
 
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
+
     def save_fits(self,
+                  stype='science',
+                  output='flux+wavecal+fluxraw+trace+adu',
                   filename='reduced',
                   extension='fits',
-                  stype='science',
-                  datacube='flux+wavecal+fluxraw',
                   overwrite=False):
         '''
-        Save the reduced image to disk.
+        Save the reduced data to disk, with a choice of any combination of the
+        5 sets of data, see below the 'output' parameters for details.
 
         Parameters
         ----------
+        stype: String
+            Spectral type: science or standard
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            flux: 3 HDUs
+                Flux, uncertainty and sky (bin width = per wavelength)
+            wavecal: 1 HDU
+                Polynomial coefficients for wavelength calibration
+            fluxraw: 3 HDUs
+                Flux, uncertainty and sky (bin width = per pixel)
+            trace: 1 HDU
+                Pixel position of the trace in the spatial direction
+            adu: 3 HDUs
+                ADU, uncertainty and sky (bin width = per pixel)
         filename: String
-            Disk location to be written to. Default is at where the Python
+            Disk location to be written to. Default is at where the
             process/subprocess is execuated.
+        extension: String
+            File extension without the dot.
         overwrite: boolean
             Default is False.
 
         '''
 
+        # Fix the names and extensions
         if filename[-5:] == '.fits':
             filename = filename[:-5]
         if filename[-4:] == '.fit':
             filename = filename[:-4]
 
-        if 'science' in stype:
+        if extension[0] == '.':
+            extension = extension[1:]
+
+        if extension == '':
+            extension = 'fits'
+
+        # Split the string into strings
+        output_split = output.split('+')
+        stype_split = stype.split('+')
+
+        # Prepare multiple extension HDU
+        hdu_output = fits.HDUList()
+
+        if 'science' in stype_split:
 
             for j in range(self.nspec):
 
-                hdu_output = fits.HDUList()
-
-                if 'flux' in datacube:
+                if 'flux' in output_split:
                     self._create_flux_resampled_fits('science')
                     hdu_output += self.science_resampled_hdulist[j]
 
-                if 'wavecal' in datacube:
+                if 'wavecal' in output_split:
                     self.wave_cal._create_wavecal_fits()
                     hdu_output += self.wave_cal.wavecal_hdulist[j]
 
-                if 'fluxraw' in datacube:
+                if 'fluxraw' in output_split:
                     self._create_flux_fits('science')
                     hdu_output += self.science_hdulist[j]
 
-                if 'trace' in datacube:
+                if 'trace' in output_split:
                     self.science._create_trace_fits()
                     hdu_output += self.science.trace_hdulist[j]
 
-                if 'adu' in datacube:
+                if 'adu' in output_split:
                     self.science._create_adu_fits()
                     hdu_output += self.science.adu_hdulist[j]
 
@@ -3938,27 +4138,25 @@ class OneDSpec:
                                extension,
                                overwrite=overwrite)
 
-        if 'standard' in stype:
+        if 'standard' in stype_split:
 
-            hdu_output = fits.HDUList()
-
-            if 'flux' in datacube:
+            if 'flux' in output_split:
                 self._create_flux_resampled_fits('standard')
                 hdu_output += self.standard_resampled_hdulist
 
-            if 'wavecal' in datacube:
+            if 'wavecal' in output_split:
                 self.wave_cal_std._create_wavecal_fits()
                 hdu_output += self.wave_cal_std.wavecal_std_hdulist
 
-            if 'fluxraw' in datacube:
+            if 'fluxraw' in output_split:
                 self._create_flux_fits('standard')
                 hdu_output += self.standard_hdulist
 
-            if 'trace' in datacube:
+            if 'trace' in output_split:
                 self.standard._create_trace_fits()
                 hdu_output += self.standard.trace_hdulist
 
-            if 'adu' in datacube:
+            if 'adu' in output_split:
                 self.standard._create_adu_fits()
                 hdu_output += self.standard.adu_hdulist
 
@@ -3970,3 +4168,7 @@ class OneDSpec:
             # Save file to disk
             hdu_output.writeto(filename + '_standard.' + extension,
                                overwrite=overwrite)
+
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
