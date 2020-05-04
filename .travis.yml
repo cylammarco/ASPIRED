@@ -59,4 +59,4 @@ install:
   - pip install --upgrade pip setuptools wheel py
   - python setup.py install
 
-script: pytest --disable-warnings -p no:warnings test/test_aspired.py
+script: python -m pytest --disable-warnings -p no:warnings test/test_aspired.py
