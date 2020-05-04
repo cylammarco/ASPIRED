@@ -5,10 +5,9 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-    'numpy>=1.16', 'reproject==0.5', 'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly'
+    'numpy>=1.16', 'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly', 'spectres'
 ]
 
-os.system('pip install git+https://github.com/cylammarco/SpectRes')
 os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git@dev')
 
 __packagename__ = "aspired"
@@ -25,4 +24,4 @@ setup(name=__packagename__,
       zip_safe=False,
       include_package_data=True,
       install_requires=install_requires,
-      python_requires='>=3.6')
+      python_requires='>=3.6, <3.8')
