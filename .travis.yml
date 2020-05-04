@@ -21,6 +21,6 @@ jobs:
           packages: python3
 
 install:
-  - python setup.py install
+  - python3 setup.py install
 
 script: pytest --disable-warnings -p no:warnings -W test/test_aspired.py
