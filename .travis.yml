@@ -49,7 +49,7 @@ jobs:
 
 install:
   - pip install --upgrade pip wheel
-  - pip install --no-binary pyenv
+  - pip install --no-binary pyenv pyenv
   - export PATH=~/.pyenv/bin:$PATH
   - eval "$(pyenv init -)"
   - pyenv install $PYTHON_VERSION
