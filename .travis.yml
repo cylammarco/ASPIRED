@@ -13,7 +13,8 @@ jobs:
     - os: osx
       language: sh
       env:
-        - TOXENV=py36
+        - PYTHON_VERSION=3.7
+        - TOXENV=py37
         - HOMEBREW_NO_INSTALL_CLEANUP=1
         - HOMEBREW_NO_ANALYTICS=1
       addons:
