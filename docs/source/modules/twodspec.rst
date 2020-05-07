@@ -1,5 +1,5 @@
 TwoDSpec
 ========
 
-.. autoclass:: aspired.aspired.TwoDSpec
+.. autoclass:: aspired.spectral_reduction.TwoDSpec
     :members:

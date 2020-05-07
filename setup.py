@@ -5,7 +5,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 install_requires = [
-    'numpy>=1.16', 'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly', 'spectres'
+    'numpy>=1.16', 'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly',
+    'spectres'
 ]
 
 os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git@dev')

@@ -31,8 +31,9 @@ release = __version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc',
-    'sphinx.ext.autosectionlabel', 'sphinx.ext.coverage', 'autoapi.extension'
+    'sphinx.ext.autodoc', 'sphinx.ext.autosectionlabel', 'sphinx.ext.coverage',
+    'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode',
+    'autoapi.extension'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -43,15 +44,28 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
+# The suffix of source filenames.
+source_suffix = '.rst'
+
+# The encoding of source files.
+source_encoding = 'utf-8-sig'
+
 # Produce API reference automatically for every public and private methods
-autoapi_dirs = ['../../aspired']
 autodoc_default_options = {
     'members': None,
     'undoc-members': None,
     'private-members': None
 }
-autoclass_content = 'both'
+apidoc_args = [
+    '--force',         # Overwrite existing files
+    '--no-toc',        # Don't create a table of contents file
+    '--output-dir=.',  # Directory to place all output
+]
+
+autoapi_dirs = ['../../aspired']
 autoapi_python_class_content = 'both'
+
+autoclass_content = 'both'
 
 # -- Options for HTML output -------------------------------------------------
 
