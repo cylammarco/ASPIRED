@@ -16,20 +16,6 @@ The ``ap_trace`` works by dividing the 2D spectrum into subspectra, and then eac
 
 5. While the spatial spectra are being cross-correlatd. They are aligned and stacked for peak finding and gaussian fitting. Peak finding is performed with ``scipy.signal.find_peaks()`` and returned the list of peaks sorted by their ``prominence``. Only centroiding has to be accurate at this stage, so a gaussian function is sufficient. The standard deviation of the gaussian is only served as a first guess of the profile when performing optimal extraction; it would not be used in the case of top-hat extraction.
 
-
-Quick
------
-
-The ``ap_trace_quick`` works by directly taking the median of a 2D spectrum along the sptial direction to get the spatial spectrum. ``scipy.signal.find_peaks()`` is used to idetify peaks and rank them by ``height``s. Gaussian profile is then fitted for the strongest ``nspec`` peaks. This profile is used as a first guess to fit a gaussian for in each of the ``nwindow`` subspectra. The centroids of these gaussians are then fitted . This quick method only works well for an image with spectra aligned well with respect to the x-y plane of the detector, and for some distinctly bright spectra, e.g. a standard star.
-
-1. An internal function ``_identify_spectra`` is called to find the peaks and returns the list of peaks sorted by their heights.
-
-2. The input 2D spectrum is divided into ``nwindow`` subspectra.
-
-3. Each subspectrum is summed along the spectral direction to obtain the *spatial spectrum*, which is fitted with a gaussian function to get the initial guess of spatial location(s) of the spectrum/a.
-
-4. The peaks are then fitted with ``scipy.interpolate.UnivariateSpline()`` or ``numpy.polyfit()``, depending on user input, to get the trace of the spectrum/a.
-
 Manual
 ------
 
