@@ -9,7 +9,7 @@ The extraction loops over each pixel (x) position along the spectral direction. 
 
 Optimal
 -------
-A Gaussian profile is used as the first iteration of the optimal extraction. Then at each step of the iteration, the new weighted model and data are compared until the difference is less than 0.01%. Detailed descriptions can be found in Horne 1986.
+A Gaussian profile is used for optimal extraction. Then at each step of the iteration, the new weighted model and data are compared until the difference is less than 0.01%. Detailed descriptions can be found in Horne 1986.
 
 Flat-Relative Optimal
 ---------------------

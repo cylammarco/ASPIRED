@@ -3,65 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-ASPIRED documentation!
-======================
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-Basic Usage
-===========
 
-The bare minimum example code to perform a complete spectral data reduction with both wavelength and flux calibrated:
-
-.. code-block:: python
-
-    from astropy.io import fits
-    from aspired import aspired
-
-    # Open the FITS file as a fits.hdu.image.PrimaryHDU
-    science = fits.open('/path/to/science_FITS_file')
-    science2D = aspired.TwoDSpec(science)
-    aspired.ap_trace()
-    aspired.ap_extract()
-
-    standard = fits.open('/path/to/standard_FITS_file')
-    standard2D = aspired.TwoDSpec(standard)
-    standard.ap_trace()
-    standard.ap_extract()
-
-    # Load the standard flux
-    fluxcal = aspired.StandardFlux(target='Name1', group='Name2')
-    fluxcal.load_standard()
-
-    # Wavelength calibration
-    wavecal_science = aspired.WavelengthPolyFit(science2D, science_arc)
-    wavecal_science.find_arc_lines()
-    wavecal_science.calibrate(elements=["Chemical Symbol"])
-
-    wavecal_standard = aspired.WavelengthPolyFit(standard2D, standard_arc)
-    wavecal_standard.find_arc_lines()
-    wavecal_standard.calibrate(elements=["Chemical Symbol"])
-
-    # Applying flux and wavelength calibration
-    science_reduced = aspired.OneDSpec(
-        science2D,
-        wavecal_science,
-        standard2D,
-        wavecal_standard,
-        fluxcal
-    )
-    science_reduced.apply_wavelength_calibration()
-    science_reduced.compute_sencurve()
-    science_reduced.inspect_reduced_spectrum()
-
-
-Some more complete examples are available in the tutorials.
-
-
-How to Use This Guide
-=====================
+How to Use The ASPIRED Documentation
+====================================
 
 To start, you're probably going to need to follow the :ref:`installation` guide to
 get ASPIRED installed on your computer.
@@ -99,8 +47,8 @@ User Guide
    :caption: Tutorials
 
    tutorials/quickstart
-   tutorials/lt-sprat
-   tutorials/wht-isis
+   tutorials/ltsprat
+   tutorials/whtisis
 
 .. toctree::
    :maxdepth: 2
@@ -113,10 +61,60 @@ User Guide
    modules/standardflux
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: API
 
    autoapi/index
+
+
+Basic Usage
+===========
+
+The bare minimum example code to perform a complete spectral data reduction with both wavelength and flux calibrated:
+
+.. code-block:: python
+
+    from astropy.io import fits
+    from aspired import aspired
+
+    # Open the FITS file as a fits.hdu.image.PrimaryHDU
+    science = fits.open('/path/to/science_FITS_file')
+    science2D = aspired.TwoDSpec(science)
+    science2D.ap_trace()
+    science2D.ap_extract()
+
+    standard = fits.open('/path/to/standard_FITS_file')
+    standard2D = aspired.TwoDSpec(standard)
+    standard2D.ap_trace()
+    standard2D.ap_extract()
+
+    # Load the standard flux
+    fluxcal = aspired.StandardFlux(target='Name1', group='Name2')
+    fluxcal.load_standard()
+
+    # Wavelength calibration
+    wavecal_science = aspired.WavelengthPolyFit(science2D, science_arc)
+    wavecal_science.find_arc_lines()
+    wavecal_science.fit(elements=["Chemical Symbol"])
+
+    wavecal_standard = aspired.WavelengthPolyFit(standard2D, standard_arc)
+    wavecal_standard.find_arc_lines()
+    wavecal_standard.fit(elements=["Chemical Symbol"])
+
+    # Applying flux and wavelength calibration
+    science_reduced = aspired.OneDSpec(
+        science2D,
+        wavecal_science,
+        standard2D,
+        wavecal_standard,
+        fluxcal
+    )
+    science_reduced.apply_wavelength_calibration()
+    science_reduced.compute_sencurve()
+    science_reduced.inspect_reduced_spectrum()
+
+
+Some more complete examples are available in the tutorials.
 
 
 License & Attribution
