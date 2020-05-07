@@ -3,11 +3,6 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
 How to Use The ASPIRED Documentation
 ====================================
 
@@ -75,34 +70,34 @@ The bare minimum example code to perform a complete spectral data reduction with
 .. code-block:: python
 
     from astropy.io import fits
-    from aspired import aspired
+    from aspired import spectral_reduction
 
     # Open the FITS file as a fits.hdu.image.PrimaryHDU
     science = fits.open('/path/to/science_FITS_file')
-    science2D = aspired.TwoDSpec(science)
+    science2D = spectral_reduction.TwoDSpec(science)
     science2D.ap_trace()
     science2D.ap_extract()
 
     standard = fits.open('/path/to/standard_FITS_file')
-    standard2D = aspired.TwoDSpec(standard)
+    standard2D = spectral_reduction.TwoDSpec(standard)
     standard2D.ap_trace()
     standard2D.ap_extract()
 
     # Load the standard flux
-    fluxcal = aspired.StandardFlux(target='Name1', group='Name2')
+    fluxcal = spectral_reduction.StandardFlux(target='Name1', group='Name2')
     fluxcal.load_standard()
 
     # Wavelength calibration
-    wavecal_science = aspired.WavelengthPolyFit(science2D, science_arc)
+    wavecal_science = spectral_reduction.WavelengthPolyFit(science2D, science_arc)
     wavecal_science.find_arc_lines()
     wavecal_science.fit(elements=["Chemical Symbol"])
 
-    wavecal_standard = aspired.WavelengthPolyFit(standard2D, standard_arc)
+    wavecal_standard = spectral_reduction.WavelengthPolyFit(standard2D, standard_arc)
     wavecal_standard.find_arc_lines()
     wavecal_standard.fit(elements=["Chemical Symbol"])
 
     # Applying flux and wavelength calibration
-    science_reduced = aspired.OneDSpec(
+    science_reduced = spectral_reduction.OneDSpec(
         science2D,
         wavecal_science,
         standard2D,

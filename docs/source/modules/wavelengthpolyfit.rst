@@ -1,5 +1,5 @@
 WavelengthPolyFit
 =================
 
-.. autoclass:: aspired.aspired.WavelengthPolyFit
+.. autoclass:: aspired.spectral_reduction.WavelengthPolyFit
     :members:

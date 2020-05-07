@@ -5,6 +5,26 @@ Quickstart with default setting
 
 Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
 
+0.  Import all the required libraries:
+
+    .. code-block:: python
+
+      import sys
+      import numpy as np
+      from astropy.io import fits
+      from aspired import image_reduction
+      from aspired import spectral_reduction
+      import plotly.io as pio
+
+      # If using jupyter notebook
+      pio.renderers.default = 'notebook'
+
+      # If you want to display it in your default browser
+      pio.renderers.default = 'browser'
+
+      # If you want the image
+      pio.renderers.default = 'png'
+
 1.  In order to perform image reduction, users have to provide a file list of
     the spectra to be reduced. Alternatively, a fits.hdu.image.PrimaryHDU
     object can be supplied For the science spectral image, the file list is
@@ -18,7 +38,7 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
 
     .. code-block:: python
 
-      science_frame = aspired.ImageReduction('examples/sprat_LHS6328.list')
+      science_frame = image_reduction.ImageReduction('examples/sprat_LHS6328.list')
       science_frame.reduce()
       science_frame.inspect()
 
@@ -34,14 +54,22 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
 
     .. code-block:: python
 
-      standard_frame = aspired.ImageReduction('examples/sprat_Hiltner102.list')
+      standard_frame = image_reduction.ImageReduction('examples/sprat_Hiltner102.list')
       standard_frame.reduce()
       standard_frame.inspect()
 
     .. raw:: html
       :file: ../_static/2_standard_reduced.html
 
-2.  To trace the respective brightest spectrum in the science and standard
+2.  With the image reduced, we can start performing spectral reduction,
+    starting from the 2D spectrum:
+
+    .. code-block:: python
+
+      science2D = spectral_reduction.TwoDSpec(science_frame)
+      standard2D = spectral_reduction.TwoDSpec(standard_frame)
+
+3.  To trace the respective brightest spectrum in the science and standard
     frames, run
 
     .. code-block:: python
@@ -55,7 +83,7 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     .. raw:: html
       :file: ../_static/4_standard_traced.html
 
-3.  And then extract the spectra from the traces by using the ap_extract()
+4.  And then extract the spectra from the traces by using the ap_extract()
     method. The science spectrum is optimally extracted with an aperture with
     the default size of 7 pixel on each side of the trace, the sky is measured
     by fitting a, by default, first order polynomial to the sky region of
@@ -74,25 +102,25 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     .. raw:: html
       :file: ../_static/6_standard_extracted.html
 
-4.  Next step is the perform the flux calibration, which requires comparing the
+5.  Next step is the perform the flux calibration, which requires comparing the
     spectrum of the standard to the literature values. To do this, first we need
     to load the literature template from the built-in library, which contains
     all the iraf and ESO standards.
 
     .. code-block:: python
 
-      fluxcal = aspired.StandardFlux(target='hiltner102', group='irafirs')
+      fluxcal = spectral_reduction.StandardFlux(target='hiltner102', group='irafirs')
       fluxcal.load_standard()
       fluxcal.inspect_standard()
 
     .. raw:: html
       :file: ../_static/7_standard.html
 
-5.  Finding arc lines and perform wavelength calibration for each trace
+6.  Finding arc lines and perform wavelength calibration for each trace
 
     .. code-block:: python
 
-      wavecal_science = aspired.WavelengthPolyFit(science2D, science_arc)
+      wavecal_science = spectral_reduction.WavelengthPolyFit(science2D, science_arc)
       wavecal_science.find_arc_lines(display=True)
       wavecal_science.fit(elements=["Xe"])
       wavecal_science.refine_fit(elements=["Xe"], tolerance=5, display=True)
@@ -103,12 +131,12 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     .. raw:: html
       :file: ../_static/9_standard_arc.html
 
-6.  Collect all the calibrations to apply the wavelength calibration and then
+7.  Collect all the calibrations to apply the wavelength calibration and then
     compute and apply the sensitivity curve to all the spectra
 
     .. code-block:: python
 
-      science_reduced = aspired.OneDSpec(
+      science_reduced = spectral_reduction.OneDSpec(
           science2D,
           wavecal_science,
           standard2D,
@@ -117,17 +145,17 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
       science_reduced.apply_wavelength_calibration('science+standard')
       science_reduced.compute_sensitivity(display=True)
 
-  .. raw:: html
-    :file: ../_static/10_sensitivity_curve.html
+    .. raw:: html
+      :file: ../_static/10_sensitivity_curve.html
 
-7.  Generate the reduced spectra.
+8.  Generate the reduced spectra.
 
     .. code-block:: python
 
       science_reduced.inspect_reduced_spectrum('science+standard', display=True)
 
-  .. raw:: html
-    :file: ../_static/11_science_spectrum.html
+    .. raw:: html
+      :file: ../_static/11_science_spectrum.html
 
-  .. raw:: html
-    :file: ../_static/12_standard_spectrum.html
+    .. raw:: html
+      :file: ../_static/12_standard_spectrum.html

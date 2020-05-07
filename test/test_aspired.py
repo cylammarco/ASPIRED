@@ -10,11 +10,14 @@ abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
 sys.path.insert(0, abs_dir)
 
-from aspired import aspired
+from aspired import image_reduction
+from aspired import spectral_reduction
+
 
 def test_imagereduction():
-    science_frame = aspired.ImageReduction(os.path.join(abs_dir, 'examples/sprat_LHS6328.list'),
-                                           silence=True)
+    science_frame = image_reduction.ImageReduction(os.path.join(
+        abs_dir, 'examples/sprat_LHS6328.list'),
+                                                   silence=True)
     science_frame.reduce()
 
     properties_len = len(science_frame.__dict__)
@@ -79,10 +82,10 @@ def test_spectral_extraction():
     spec_mask = np.arange(10, 90)
     spatial_mask = np.arange(15, 85)
 
-    # initialise the two aspired.TwoDSpec()
-    dummy_twodspec = aspired.TwoDSpec(dummy_data,
-                                      spatial_mask=spatial_mask,
-                                      spec_mask=spec_mask)
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(dummy_data,
+                                                 spatial_mask=spatial_mask,
+                                                 spec_mask=spec_mask)
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the spatial_mask
     dummy_twodspec.ap_trace(ap_faint=0)
@@ -93,4 +96,5 @@ def test_spectral_extraction():
     # Optimal extracting spectrum by summing over the aperture along the trace
     dummy_twodspec.ap_extract(apwidth=5, optimal=False)
     adu = np.mean(dummy_twodspec.adu)
-    assert np.round(adu).astype('int') == 47, 'Extracted ADU is ' + str(adu) + ' but it should be 19.'
+    assert np.round(adu).astype(
+        'int') == 47, 'Extracted ADU is ' + str(adu) + ' but it should be 19.'
