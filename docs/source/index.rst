@@ -46,20 +46,25 @@ User Guide
    tutorials/whtisis
 
 .. toctree::
-   :maxdepth: 2
-   :caption: List of Modules
+   :maxdepth: 1
+   :caption: Image Reduction API
 
    modules/imagereduction
-   modules/twodspec
-   modules/onedspec
-   modules/wavelengthpolyfit
-   modules/standardflux
 
 .. toctree::
-   :maxdepth: 2
-   :caption: API
+   :maxdepth: 1
+   :caption: Spectral Reduction API
 
-   autoapi/index
+   modules/twodspec
+   modules/standardflux
+   modules/wavelengthpolyfit
+   modules/onedspec
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Standard List API
+
+   modules/standardlist
 
 
 Basic Usage
