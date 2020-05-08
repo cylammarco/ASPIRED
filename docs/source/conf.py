@@ -32,8 +32,7 @@ release = __version__
 # ones.
 extensions = [
     'sphinx.ext.autodoc', 'sphinx.ext.autosectionlabel', 'sphinx.ext.coverage',
-    'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode',
-    'autoapi.extension'
+    'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -62,8 +61,6 @@ apidoc_args = [
     '--output-dir=.',  # Directory to place all output
 ]
 
-autoapi_dirs = ['../../aspired']
-autoapi_python_class_content = 'both'
 
 autoclass_content = 'both'
 
