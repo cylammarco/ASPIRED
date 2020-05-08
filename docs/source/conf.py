@@ -50,17 +50,11 @@ source_suffix = '.rst'
 source_encoding = 'utf-8-sig'
 
 # Produce API reference automatically for every public and private methods
-autodoc_default_options = {
-    'members': None,
-    'undoc-members': None,
-    'private-members': None
-}
 apidoc_args = [
     '--force',         # Overwrite existing files
     '--no-toc',        # Don't create a table of contents file
     '--output-dir=.',  # Directory to place all output
 ]
-
 
 autoclass_content = 'both'
 
