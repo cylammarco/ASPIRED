@@ -10,8 +10,6 @@ from ccdproc import Combiner
 from plotly import graph_objects as go
 from plotly import io as pio
 
-from .util import *
-
 
 class ImageReduction:
     def __init__(self,
@@ -275,9 +273,6 @@ class ImageReduction:
 
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
-
-        # Check if all files exist
-        check_files(self.impath)
 
         # FITS keyword standard for the spectral direction, if FITS header
         # does not contain SAXIS, the image in assumed to have the spectra

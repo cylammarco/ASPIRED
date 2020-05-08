@@ -21,7 +21,6 @@ from spectres import spectres
 
 from .image_reduction import ImageReduction
 from .standard_list import *
-from .util import *
 
 
 class TwoDSpec:
@@ -141,9 +140,6 @@ class TwoDSpec:
             else:
                 filepath = data
                 hdunum = 0
-
-            # Check if file exists
-            check_files(filepath)
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
