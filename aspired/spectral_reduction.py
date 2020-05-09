@@ -48,17 +48,21 @@ class TwoDSpec:
         The supplied file should contain 2 or 3 columns with the following
         structure:
 
-            column 1: one of bias, dark, flat or light
-            column 2: file location
-            column 3: HDU number (default to 0 if not given)
+        | column 1: one of bias, dark, flat or light
+        | column 2: file location
+        | column 3: HDU number (default to 0 if not given)
 
         If the 2D spectrum is
+
         +--------+--------+-------+-------+
         |  blue  |   red  | saxis |  flip |
-        +--------+--------+-------+-------+
+        +========+========+=======+=======+
         |  left  |  right |   1   | False |
+        +--------+--------+-------+-------+
         |  right |  left  |   1   |  True |
+        +--------+--------+-------+-------+
         |   top  | bottom |   0   | False |
+        +--------+--------+-------+-------+
         | bottom |   top  |   0   |  True |
         +--------+--------+-------+-------+
 
@@ -1023,8 +1027,8 @@ class TwoDSpec:
         meaningful if correct gain and read noise are provided.
 
         Tophat extraction: Float is accepted but will be rounded to an int,
-                            which gives the constant aperture size on either
-                            side of the trace to extract.
+                           which gives the constant aperture size on either
+                           side of the trace to extract.
         Optimal extraction: Float or 1-d array of the same size as the trace.
                             If a float is supplied, a fixed standard deviation
                             will be used to construct the gaussian weight
@@ -1958,13 +1962,15 @@ class StandardFlux:
         See explanation notes at those links for details.
 
         The list of targets and groups can be listed with
-        >>> from aspired.standard_list import list_all
-        >>> list_all()
+
+        | >>> from aspired.standard_list import list_all
+        | >>> list_all()
 
         The units of the data are
-            wavelength: A
-            flux:       ergs / cm / cm / s / A
-            mag:        mag (AB)
+
+        | wavelength: A
+        | flux:       ergs / cm / cm / s / A
+        | mag:        mag (AB)
 
         Parameters
         ----------
@@ -2495,9 +2501,8 @@ class OneDSpec:
         Parameters
         ----------
         kind: string or integer [1,2,3,4,5 only]
-            interpolation kind
-            >>> [‘linear’, ‘nearest’, ‘zero’, ‘slinear’, ‘quadratic’, ‘cubic’,
-            ‘previous’, ‘next’]
+            interpolation kind is one of [‘linear’, ‘nearest’, ‘zero’,
+             ‘slinear’, ‘quadratic’, ‘cubic’, ‘previous’, ‘next’]
         smooth: boolean
             set to smooth the input spectrum with scipy.signal.savgol_filter
         slength: int
@@ -2506,8 +2511,8 @@ class OneDSpec:
             SG-filter polynomial order
         mask_range: None or list of list
             Masking out regions not suitable for fitting the sensitivity curve.
-            None: no mask
-            list of list: [[min1, max1], [min2, max2],...]
+            None for no mask. List of list has the pattern
+            [[min1, max1], [min2, max2],...]
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
