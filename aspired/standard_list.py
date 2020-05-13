@@ -1,12 +1,13 @@
 library_list = [
-    'esoctio', 'esohst', 'ing', 'esooke', 'esowd', 'esoxshooter', 'irafbb',
-    'irafkpno', 'irafctio', 'irafctionew', 'irafctionewblue', 'irafctionewred',
-    'irafiids', 'irafirs', 'irafoke', 'irafred', 'iraf16', 'iraf16blue',
-    'iraf16red', 'iraf50', 'iraf50red', 'irafhayes'
+    'esoctiostan', 'esohststan', 'esookestan', 'esowdstan', 'esoxshooter',
+    'ing_oke', 'ing_sto', 'ing_og', 'ing_mas', 'ing_fg', 'irafblackbody',
+    'irafbstdscal', 'irafctiocal', 'irafctionewcal', 'irafiidscal',
+    'irafirscal', 'irafoke1990', 'irafredcal', 'irafspec16cal',
+    'irafspec50cal', 'irafspechayescal'
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/hamuystandards.html
-esoctio = [
+esoctiostan = [
     'cd32d9927', 'cd_34d241', 'eg21', 'eg274', 'feige110', 'feige56',
     'hilt600', 'hr1544', 'hr3454', 'hr4468', 'hr4963', 'hr5501', 'hr718',
     'hr7596', 'hr7950', 'hr8634', 'hr9087', 'ltt1020', 'ltt1788', 'ltt2415',
@@ -15,7 +16,7 @@ esoctio = [
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/hststandards.html
-esohst = [
+esohststan = [
     'agk81d226', 'bd28d4211', 'bd33d2642', 'bd75d325', 'bpm16274', 'feige110',
     'feige34', 'g191b2b', 'g93_48', 'gd108', 'gd50', 'grw70d5824', 'hd49798',
     'hd60753', 'hd93521', 'hr153', 'hr1996', 'hr4554', 'hr5191', 'hr7001',
@@ -23,7 +24,7 @@ esohst = [
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/okestandards_rev.html
-esooke = [
+esookestan = [
     'bd25d4655', 'bd28d4211', 'bd33d2642', 'bd75d325', 'feige110', 'feige34',
     'feige66', 'feige67', 'g138_31', 'g158_100', 'g191b2b', 'g193_74', 'g24_9',
     'g60_54', 'gd108', 'gd248', 'gd50', 'grw70d5824', 'hd93521', 'hz21', 'hz4',
@@ -31,7 +32,7 @@ esooke = [
 ]
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/wdstandards.html
-esowd = [
+esowdstan = [
     'agk81d226_005', 'alpha_lyr_004', 'bd_25d4655_002', 'bd_28d4211_005',
     'bd_33d2642_004', 'bd_75d325_005', 'feige110_005', 'feige34_005',
     'feige66_002', 'feige67_002', 'g93_48_004', 'gd108_005', 'gd50_004',
@@ -44,34 +45,44 @@ esowd = [
 esoxshooter = ['EG274', 'Feige110', 'GD153', 'GD71', 'LTT3218', 'LTT7987']
 
 # http://www.ing.iac.es/Astronomy/observing/manuals/html_manuals/tech_notes/tn065-100/workflux.html
-ing = [
-    'g158_100', 'hiltner102', 'l870_2', 'feige15'
-    'pg0205_134', 'PG0216_032', 'feige24', 'feige25', 'hd19445', 'pg0310_149',
-    'gd50', 'sa95_42', 'hz4', 'lb1240', 'lb227', 'hz2', '40erib', 'hz7',
-    'hz15', 'hz14', 'g191_b2b', 'g99_37', 'hiltner600', 'he3', 'l745_46a',
-    'g193_74', 'bd75_325', 'bd08_2015', 'pg0823_546', 'lds235b', 'pg0846_249',
-    'g47_18', 'pg0934_554', 'pg1939_262', 'sa29-130', 'hd84937', 'gd108',
-    'feige34', 'hd93521', 'l970_30', 'ton573', 'pg1121_145', 'ross627', 'eg81',
-    'gd140', 'feige56', 'hz21', 'hz29', 'feige66', 'feige67', 'g60-54', 'hz43',
-    'hz44', 'wolf485', 'grw70_5824', 'feige92', 'feige98', 'bd26_2606',
-    'gd190', 'pg1545_035', 'bd33_2642', 'g138_31', 'ross640', 'pg1708_602',
-    'kopff27', 'grw70_8247', 'bd25_3941', 'bd40_4032', 'hd192281', 'g24_9',
-    'cygob2_9', 'wolf1346', 'grw73_8031', 'lds749b', 'l1363_3', 'l930_80',
-    'bd28_4211', 'bd25_4655', 'bd17_4708', 'ngc7293', 'hd217086', 'g157_34',
-    'ltt9491', 'feige110', 'gd248', 'l1512_34'
+ing_oke = [
+    'bd254', 'bd28', 'bd33', 'bd75', 'erib', 'f110', 'f24', 'f34', 'f66',
+    'f67', 'g138', 'g158', 'g191new', 'g191old', 'g193', 'g24', 'g47', 'g60',
+    'g99', 'gd108', 'gd140', 'gd190', 'gd248', 'gd50', 'grw705new',
+    'grw705old', 'grw708', 'grw73', 'hd935', 'he3', 'hz14', 'hz2', 'hz21',
+    'hz29', 'hz43', 'hz44new', 'hz44old', 'hz4new', 'hz4old', 'hz7', 'l1363',
+    'l1512', 'l745', 'l870', 'l930', 'l970', 'lb1240', 'lb227', 'lds235',
+    'lds749', 'ltt', 'ngc', 'r627', 'r640', 'sa29', 'sa95', 't573', 'w1346',
+    'w485'
 ]
+
+ing_sto = [
+    'bd08', 'bd253', 'bd28', 'bd33', 'bd40', 'f110', 'f15', 'f25', 'f34',
+    'f56', 'f92', 'f98', 'h102', 'h600', 'hz15', 'k27'
+]
+
+ing_og = ['bd17', 'bd26', 'hd194', 'hd849']
+
+ing_mas = [
+    'bd28', 'cyg', 'eg81', 'f110', 'f34', 'f66', 'f67', 'g191', 'gd140',
+    'h600', 'hd192', 'hd217', 'hz14', 'hz44', 'pg0205', 'pg0216', 'pg0310',
+    'pg0823', 'pg0846', 'pg0934', 'pg0939', 'pg1121', 'pg1545', 'pg1708',
+    'w1346'
+]
+
+ing_fg = ['g138', 'g158', 'g24', 'gd248']
 
 # The following iraf standards refer to:
 # https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstds
-irafbb = ['U', 'B', 'V', 'R', 'I', 'J', 'H', 'K', 'L', 'Lprime', 'M']
+irafblackbody = ['U', 'B', 'V', 'R', 'I', 'J', 'H', 'K', 'L', 'Lprime', 'M']
 
-irafkpno = [
+irafbstdscal = [
     'hr718', 'hr3454', 'hr3982', 'hr4468', 'hr4534', 'hr5191', 'hr5511',
     'hr7001', 'hr7596', 'hr7950', 'hr8634', 'hr9087', 'hr15318', 'hr74280',
     'hr100889', 'hr188350', 'hr198001', 'hr214923', 'hr224926'
 ]
 
-irafctio = [
+irafctiocal = [
     'bd8', 'bd25', 'bd73632', 'cd32', 'eg11', 'eg21', 'eg26', 'eg31', 'eg54',
     'eg63', 'eg76', 'eg79', 'eg99', 'eg139', 'eg149', 'eg158', 'eg248',
     'eg274', 'f15', 'f25', 'f56', 'f98', 'f110', 'feige15', 'feige25',
@@ -82,7 +93,7 @@ irafctio = [
     'ltt4099', 'ltt8702', 'rose627', 'w1346', 'w485a', 'wolf1346', 'wolf485a'
 ]
 
-irafctionew = [
+irafctionewcal = [
     'cd32', 'eg21', 'eg274', 'f56', 'f110', 'h600', 'l377', 'l745', 'l1020',
     'l1788', 'l2415', 'l2511', 'l3218', 'l3864', 'l4364', 'l4816', 'l6248',
     'l7379', 'l7987', 'l9239', 'l9491', 'cd32blue', 'eg21blue', 'eg274blue',
@@ -95,7 +106,7 @@ irafctionew = [
     'l7379red', 'l7987red', 'l9239red', 'l9491red'
 ]
 
-irafiids = [
+irafiidscal = [
     '40erib', 'amcvn', 'bd7781', 'bd73632', 'bd82015', 'bd253941', 'bd284211',
     'bd332642', 'bd404032', 'eg11', 'eg20', 'eg26', 'eg28', 'eg29', 'eg31',
     'eg33', 'eg39', 'eg42', 'eg50', 'eg54', 'eg63', 'eg67', 'eg71', 'eg76',
@@ -113,7 +124,7 @@ irafiids = [
     'wolf1346', 'wolf485a'
 ]
 
-irafirs = [
+irafirscal = [
     'bd082015', 'bd174708', 'bd253941', 'bd262606', 'bd284211', 'bd332642',
     'bd404032', 'eg50', 'eg71', 'eg139', 'eg158', 'eg247', 'feige15',
     'feige25', 'feige34', 'feige56', 'feige92', 'feige98', 'feige110',
@@ -122,13 +133,13 @@ irafirs = [
     'he3', 'hiltner102', 'hiltner600', 'hr7001', 'hz44', 'kopff27', 'wolf1346'
 ]
 
-irafoke = [
+irafoke1990 = [
     'bd75325', 'bd284211', 'feige34', 'feige67', 'feige110', 'g249', 'g13831',
     'g191b2b', 'g19374', 'gd108', 'gd248', 'hz21', 'ltt9491', 'eg71', 'eg158',
     'eg247'
 ]
 
-irafred = [
+irafredcal = [
     '40erib', 'amcvn', 'bd7781', 'bd73632', 'bd174708', 'bd262606', 'eg20',
     'eg33', 'eg50', 'eg54', 'eg63', 'eg67', 'eg76', 'eg79', 'eg91', 'eg98',
     'eg99', 'eg102', 'eg119', 'eg129', 'eg139', 'eg144', 'eg145', 'eg148',
@@ -141,7 +152,7 @@ irafred = [
     'sa29130', 'sao131065', 'wolf1346', 'wolf485a'
 ]
 
-iraf16 = [
+irafspec16cal = [
     'hd15318', 'hd30739', 'hd74280', 'hd100889', 'hd114330', 'hd129956',
     'hd188350', 'hd198001', 'hd214923', 'hd224926', 'hr718', 'hr1544',
     'hr3454', 'hr4468', 'hr4963', 'hr5501', 'hr7596', 'hr7950', 'hr8634',
@@ -156,7 +167,7 @@ iraf16 = [
     'hr8634red', 'hr9087red'
 ]
 
-iraf50 = [
+irafspec50cal = [
     'bd284211', 'cygob2no9', 'eg20', 'eg42', 'eg71', 'eg81', 'eg139', 'eg158',
     'eg247', 'feige34', 'feige66', 'feige67', 'feige110', 'g191b2b', 'gd140',
     'hd192281', 'hd217086', 'hilt600', 'hz14', 'hz44', 'pg0205134',
@@ -164,85 +175,10 @@ iraf50 = [
     'pg0939262', 'pg1121145', 'pg1545035', 'pg1708602', 'wolf1346'
 ]
 
-irafhayes = [
+irafspechayescal = [
     'bd284211', 'cygob2no9', 'eg42', 'eg71', 'eg81', 'eg139', 'eg158', 'eg247',
     'feige34', 'feige66', 'feige67', 'feige110', 'g191b2b', 'gd140',
     'hd192281', 'hd217086', 'hilt600', 'hz14', 'hz44', 'pg0205134',
     'pg0216032', 'pg0310149', 'pg0823546', 'pg0846249', 'pg0934554',
     'pg0939262', 'pg1121145', 'pg1545035', 'pg1708602', 'wolf1346'
 ]
-
-
-def list_all():
-    '''
-    List all the built-in Spectrophotometric Standards
-
-    '''
-
-    print('CTIO Spectrophotometric Standards')
-    print('group: esoctio')
-    print(esoctio)
-    print('')
-    print('HST Spectrophotometric Standards')
-    print('group: esohst')
-    print(esohst)
-    print('')
-    print('Oke Spectrophotometric Standards')
-    print('group: esooke')
-    print(esooke)
-    print('')
-    print('WD Spectrophotometric Standards')
-    print('group: esowd')
-    print(esowd)
-    print('')
-    print('Xshooter Spectrophotometric Standards')
-    print('group: esoxshooter')
-    print(esoxshooter)
-    print('')
-    print('ING TN65 & 100 Spectrophotometric Standards')
-    print('group: ing')
-    print(ing)
-    print('')
-    print('iraf Blackbody Flux Distribution')
-    print('group: irafbb')
-    print(irafbb)
-    print('')
-    print('iraf KPNO IRS Spectrophotometric Standards')
-    print('group: irafkpno')
-    print(irafkpno)
-    print('')
-    print('iraf CTIO Spectrophotometric Standards (1983, 1984)')
-    print('group: irafctio')
-    print(irafctio)
-    print('')
-    print('iraf CTIO Spectrophotometric Standards (1992, 1994)')
-    print('group: irafctionew')
-    print(irafctionew)
-    print('')
-    print('iraf KPNO IIDS Spectrophotometric Standards')
-    print('group: irafiids')
-    print(irafiids)
-    print('')
-    print('iraf KPNO IRS Spectrophotometric Standards')
-    print('group: irafirs')
-    print(irafirs)
-    print('')
-    print('iraf Oke Spectrophotometric Standards (HST Table IV)')
-    print('group: irafoke')
-    print(irafoke)
-    print('')
-    print('iraf Extended KPNO IRS/IIDS Spectrophotometric Standards (Red)')
-    print('group: irafred')
-    print(irafred)
-    print('')
-    print('iraf Hamuy Spectrophotometric Standards (1992)')
-    print('group: iraf16')
-    print(iraf16)
-    print('')
-    print('iraf KPNO Spectrophotometric Standards (1988)')
-    print('group: iraf50')
-    print(iraf50)
-    print('')
-    print('iraf KPNO Hayes Spectrophotometric Standards (1988)')
-    print('group: irafhayes')
-    print(irafhayes)
