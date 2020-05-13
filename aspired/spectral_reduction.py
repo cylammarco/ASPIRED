@@ -1,6 +1,7 @@
+import difflib
+import json
 import os
 import sys
-import difflib
 import warnings
 from itertools import chain
 
@@ -20,8 +21,8 @@ from scipy.optimize import curve_fit
 from spectres import spectres
 
 from .image_reduction import ImageReduction
-from .standard_list import *
 
+base_dir = os.path.dirname(__file__)
 
 class TwoDSpec:
     def __init__(self,
@@ -157,7 +158,7 @@ class TwoDSpec:
                 'ImageReduction object.')
 
         self.saxis = saxis
-        if self.saxis is 1:
+        if self.saxis == 1:
             self.waxis = 0
         else:
             self.waxis = 1
@@ -316,14 +317,14 @@ class TwoDSpec:
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spatial_mask) > 1):
-            if self.saxis is 1:
+            if self.saxis == 1:
                 img = img[self.spatial_mask]
             else:
                 img = img[:, self.spatial_mask]
 
         # the valid x-range of the chip (i.e. spectral direction)
         if (len(self.spec_mask) > 1):
-            if self.saxis is 1:
+            if self.saxis == 1:
                 img = img[:, self.spec_mask]
             else:
                 img = img[self.spec_mask]
@@ -331,7 +332,7 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(img)[self.waxis]
         self.spatial_size = np.shape(img)[self.saxis]
-        if self.saxis is 0:
+        if self.saxis == 0:
             self.img = np.transpose(img)
             img = None
         else:
@@ -1479,20 +1480,20 @@ class WavelengthPolyFit():
         if arc is not None:
             # the valid y-range of the chip (i.e. spatial direction)
             if (len(self.spec.spatial_mask) > 1):
-                if self.spec.saxis is 1:
+                if self.spec.saxis == 1:
                     self.arc = self.arc[self.spec.spatial_mask]
                 else:
                     self.arc = self.arc[:, self.spec.spatial_mask]
 
             # the valid x-range of the chip (i.e. spectral direction)
             if (len(self.spec.spec_mask) > 1):
-                if self.spec.saxis is 1:
+                if self.spec.saxis == 1:
                     self.arc = self.arc[:, self.spec.spec_mask]
                 else:
                     self.arc = self.arc[self.spec.spec_mask]
 
             # get the length in the spectral and spatial directions
-            if self.spec.saxis is 0:
+            if self.spec.saxis == 0:
                 self.arc = np.transpose(self.arc)
 
             if self.spec.flip:
@@ -1950,7 +1951,7 @@ class WavelengthPolyFit():
 
 
 class StandardFlux:
-    def __init__(self, target, group, cutoff=0.4, ftype='flux', silence=False):
+    def __init__(self, silence=False):
         '''
         This class handles flux calibration by comparing the extracted and
         wavelength-calibrated standard observation to the "ground truth"
@@ -1963,38 +1964,136 @@ class StandardFlux:
 
         The list of targets and groups can be listed with
 
-        | >>> from aspired.standard_list import list_all
-        | >>> list_all()
-
-        The units of the data are
-
-        | wavelength: A
-        | flux:       ergs / cm / cm / s / A
-        | mag:        mag (AB)
+        list_all()
 
         Parameters
         ----------
-        target: string
-            Name of the standard star
-        group: string
-            Name of the group of standard star
-        cutoff: float
-            The threshold for the word similarity in the range of [0, 1].
-        ftype: string
-            'flux' or 'mag' (AB magnitude)
         silence: boolean
             Set to True to suppress all verbose warnings.
         '''
 
-        self.target = target
-        self.group = group
-        self.cutoff = cutoff
-        self.ftype = ftype
         self.silence = silence
 
-        self._lookup_standard()
+        self._load_standard_dictionary()
 
-    def _lookup_standard(self):
+    def _load_standard_dictionary(self):
+        '''
+        Load the dictionaries
+        '''
+
+        self.lib_to_uname = json.load(open(os.path.join(base_dir, 'standards/lib_to_uname.json')))
+        self.uname_to_lib = json.load(open(os.path.join(base_dir, 'standards/uname_to_lib.json')))
+
+    def _get_eso_standard(self):
+
+        folder = self.group
+
+        # first letter of the file name
+        if self.ftype == 'flux':
+            filename = 'f'
+        else:
+            filename = 'm'
+
+        # the rest of the file name
+        filename += self.target
+
+        # the extension
+        filename += '.dat'
+
+        filepath = os.path.join(base_dir, 'standards', folder, filename)
+
+        f = np.loadtxt(filepath)
+
+        self.wave_std = f[:, 0]
+        self.fluxmag_std = f[:, 1]
+
+        if self.ftype == 'flux':
+            if self.group != 'esoxshooter':
+                self.fluxmag_std *= 1e-16
+
+    def _get_ing_standard(self):
+
+        folder = self.group.split("_")[0]
+
+        # the first part of the file name
+        filename = self.target
+        extension = self.group.split('_')[-1]
+
+        # last letter (or nothing) of the file name
+        if self.ftype == 'flux':
+            # .mas only contain magnitude files
+            if extension == 'mas':
+                filename += 'a'
+            if ((filename == 'g24') or
+                (filename == 'g157')) and (extension == '.fg'):
+                filename += 'a'
+            if (filename == 'h102') and (extension == '.sto'):
+                filename += 'a'
+        else:
+            filename += 'a'
+
+        # the extension
+        filename += '.' + extension
+
+        filepath = os.path.join(base_dir, 'standards', folder, filename)
+
+        f = open(filepath)
+        wave = []
+        fluxmag = []
+        for line in f.readlines():
+            if line[0] in ['*', 'S']:
+                if line.startswith('SET .Z.UNITS = '):
+                    # remove all special characters and white spaces
+                    unit = ''.join(e for e in line.split('"')[1].lower()
+                                   if e.isalnum())
+            else:
+                l = line.strip().strip(':').split(' ')
+                wave.append(l[0])
+                fluxmag.append(l[1])
+
+        f.close()
+
+        self.wave_std = np.array(wave).astype('float')
+        self.fluxmag_std = np.array(fluxmag).astype('float')
+
+        if self.ftype == 'flux':
+            # Trap the ones without flux files
+            if ((extension == 'mas')
+                    | (((filename == 'g24') or (filename == 'g157')) and
+                       (extension == '.fg'))
+                    | ((filename == 'h102') and (extension == '.sto'))):
+                self.fluxmag_std = 10.**(
+                    -(self.fluxmag_std / 2.5)
+                ) * 3630.780548 / 3.33564095e4 / self.wave_std**2
+
+            # convert milli-Jy into F_lambda
+            if unit == 'mjy':
+                self.fluxmag_std * 1e-3 * 3.33564095e4 * self.wave_std**2
+
+            # convert micro-Jy into F_lambda
+            if unit == 'microjanskys':
+                self.fluxmag_std * 1e-6 * 3.33564095e4 * self.wave_std**2
+
+    def _get_iraf_standard(self):
+        # iraf is always in AB magnitude
+
+        folder = self.group
+
+        # file name and extension
+        filename = self.target + '.dat'
+
+        filepath = os.path.join(base_dir, 'standards', folder, filename)
+
+        f = np.loadtxt(filepath, skiprows=1)
+
+        self.wave_std = f[:, 0]
+        self.fluxmag_std = f[:, 1]
+        if self.ftype == 'flux':
+            # Convert from AB mag to flux
+            self.fluxmag_std = 10.**(-(self.fluxmag_std / 2.5)
+                                 ) * 3630.780548 / 3.33564095e4 / self.wave_std**2
+
+    def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
         Check if the requested standard and library exist. Return the three
         most similar words if the requested one does not exist. See
@@ -2004,22 +2103,25 @@ class StandardFlux:
 
         # Load the list of targets in the requested group
         try:
-            target_list = eval(self.group)
+            libraries = self.uname_to_lib[target]
+            return libraries
         except:
-            raise ValueError('Requested standard star library does not exist.')
-
-        # If the requested target is not in the target list, suggest the three
-        # closest match
-        if self.target not in target_list:
-            best_match = difflib.get_close_matches(self.target,
-                                                   target_list,
-                                                   cutoff=self.cutoff)
-            raise ValueError(
-                'Requested standard star is not in the library.', '',
-                'The requrested spectrophotometric library contains: ',
-                target_list, '', 'Are you looking for these: ', best_match)
+            # If the requested target is not in any library, suggest the
+            # closest match
+            target_list = difflib.get_close_matches(target,
+                                                    list(self.uname_to_lib.keys()),
+                                                    cutoff=cutoff)
+            if not self.silence:
+                warnings.warn(
+                    'Requested standard star cannot be found, a list of ' +
+                    'the closest matching names are returned.')
+            return target_list
 
     def load_standard(self,
+                      target,
+                      group=None,
+                      ftype='flux',
+                      cutoff=0.4,
                       display=False,
                       renderer='default',
                       jsonstring=False,
@@ -2027,10 +2129,23 @@ class StandardFlux:
                       open_iframe=False):
         '''
         Read the standard flux/magnitude file. And return the wavelength and
-        flux/mag.
+        flux/mag. The units of the data are always in
+
+        | wavelength: A
+        | flux:       ergs / cm / cm / s / A
+        | mag:        mag (AB)
+
 
         Returns
         -------
+        target: string
+            Name of the standard star
+        group: string
+            Name of the group of standard star
+        ftype: string
+            'flux' or 'mag'
+        cutoff: float
+            The threshold for the word similarity in the range of [0, 1].
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
@@ -2049,36 +2164,36 @@ class StandardFlux:
         JSON strings if jsonstring is set to True
         '''
 
-        flux_multiplier = 1.
-        if self.group[:4] == 'iraf':
-            target_name = self.target + '.dat'
+        self.target = target
+        self.ftype = ftype
+        self.cutoff = cutoff
+
+        libraries = self.lookup_standard_libraries(self.target)
+
+        if group in libraries:
+            # If the group is specified and can be found in the library
+            self.group = group
         else:
-            if self.ftype == 'flux':
-                target_name = 'f' + self.target + '.dat'
-                if self.group != 'xshooter':
-                    flux_multiplier = 1e-16
-            elif self.ftype == 'mag':
-                target_name = 'm' + self.target + '.dat'
+            # If not, use the first one returned from lookup. If nothing can be
+            # found, the error should have been trapped in the lookup function.
+            self.group = libraries[0]
+            if group is None:
+                # Use the default library order
+                if not self.silence:
+                    print('Standard library is not given, ' + self.group +
+                          ' is used by default.')
             else:
-                raise ValueError('The type has to be \'flux\' of \'mag\'.')
+                print('The requested library does not exist, ' + self.group +
+                      ' is used because it has the closest matching name.')
 
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        filepath = os.path.join(dir_path, 'standards',
-                                str(self.group) + 'stan', target_name)
+        if self.group.startswith('iraf'):
+            self._get_iraf_standard()
 
-        if self.group[:4] == 'iraf':
-            f = np.loadtxt(filepath, skiprows=1)
-        else:
-            f = np.loadtxt(filepath)
+        if self.group.startswith('ing'):
+            self._get_ing_standard()
 
-        wave = f[:, 0]
-        if (self.group[:4] == 'iraf') & (self.ftype == 'flux'):
-            fluxmag = 10.**(-(f[:, 1] / 2.5)) * 3630.780548 / 3.34e4 / wave**2
-        else:
-            fluxmag = f[:, 1] * flux_multiplier
-
-        self.wave_std = wave
-        self.fluxmag_std = fluxmag
+        if self.group.startswith('eso'):
+            self._get_eso_standard()
 
         # Note that if the renderer does not generate any image (e.g. JSON)
         # nothing will be displayed
