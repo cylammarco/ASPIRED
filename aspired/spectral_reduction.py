@@ -24,6 +24,7 @@ from .image_reduction import ImageReduction
 
 base_dir = os.path.dirname(__file__)
 
+
 class TwoDSpec:
     def __init__(self,
                  data,
@@ -1962,7 +1963,7 @@ class StandardFlux:
 
         See explanation notes at those links for details.
 
-        The list of targets and groups can be listed with
+        The list of targets and libraries can be listed with
 
         list_all()
 
@@ -1981,12 +1982,14 @@ class StandardFlux:
         Load the dictionaries
         '''
 
-        self.lib_to_uname = json.load(open(os.path.join(base_dir, 'standards/lib_to_uname.json')))
-        self.uname_to_lib = json.load(open(os.path.join(base_dir, 'standards/uname_to_lib.json')))
+        self.lib_to_uname = json.load(
+            open(os.path.join(base_dir, 'standards/lib_to_uname.json')))
+        self.uname_to_lib = json.load(
+            open(os.path.join(base_dir, 'standards/uname_to_lib.json')))
 
     def _get_eso_standard(self):
 
-        folder = self.group
+        folder = self.library
 
         # first letter of the file name
         if self.ftype == 'flux':
@@ -2008,16 +2011,16 @@ class StandardFlux:
         self.fluxmag_std = f[:, 1]
 
         if self.ftype == 'flux':
-            if self.group != 'esoxshooter':
+            if self.library != 'esoxshooter':
                 self.fluxmag_std *= 1e-16
 
     def _get_ing_standard(self):
 
-        folder = self.group.split("_")[0]
+        folder = self.library.split("_")[0]
 
         # the first part of the file name
         filename = self.target
-        extension = self.group.split('_')[-1]
+        extension = self.library.split('_')[-1]
 
         # last letter (or nothing) of the file name
         if self.ftype == 'flux':
@@ -2025,9 +2028,9 @@ class StandardFlux:
             if extension == 'mas':
                 filename += 'a'
             if ((filename == 'g24') or
-                (filename == 'g157')) and (extension == '.fg'):
+                (filename == 'g157')) and (extension == 'fg'):
                 filename += 'a'
-            if (filename == 'h102') and (extension == '.sto'):
+            if (filename == 'h102') and (extension == 'sto'):
                 filename += 'a'
         else:
             filename += 'a'
@@ -2047,21 +2050,18 @@ class StandardFlux:
                     unit = ''.join(e for e in line.split('"')[1].lower()
                                    if e.isalnum())
             else:
-                l = line.strip().strip(':').split(' ')
+                l = line.strip().strip(':').split()
                 wave.append(l[0])
                 fluxmag.append(l[1])
 
         f.close()
-
         self.wave_std = np.array(wave).astype('float')
         self.fluxmag_std = np.array(fluxmag).astype('float')
 
         if self.ftype == 'flux':
             # Trap the ones without flux files
-            if ((extension == 'mas')
-                    | (((filename == 'g24') or (filename == 'g157')) and
-                       (extension == '.fg'))
-                    | ((filename == 'h102') and (extension == '.sto'))):
+            if ((extension == 'mas') | (filename == 'g24a.fg') |
+                (filename == 'g157a.fg') | (filename == 'h102a.sto')):
                 self.fluxmag_std = 10.**(
                     -(self.fluxmag_std / 2.5)
                 ) * 3630.780548 / 3.33564095e4 / self.wave_std**2
@@ -2077,7 +2077,7 @@ class StandardFlux:
     def _get_iraf_standard(self):
         # iraf is always in AB magnitude
 
-        folder = self.group
+        folder = self.library
 
         # file name and extension
         filename = self.target + '.dat'
@@ -2090,8 +2090,9 @@ class StandardFlux:
         self.fluxmag_std = f[:, 1]
         if self.ftype == 'flux':
             # Convert from AB mag to flux
-            self.fluxmag_std = 10.**(-(self.fluxmag_std / 2.5)
-                                 ) * 3630.780548 / 3.33564095e4 / self.wave_std**2
+            self.fluxmag_std = 10.**(
+                -(self.fluxmag_std / 2.5)
+            ) * 3630.780548 / 3.33564095e4 / self.wave_std**2
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
@@ -2101,25 +2102,34 @@ class StandardFlux:
             https://docs.python.org/3.7/library/difflib.html
         '''
 
-        # Load the list of targets in the requested group
+        # Load the list of targets in the requested library
         try:
             libraries = self.uname_to_lib[target]
-            return libraries
+            return libraries, True
+
         except:
             # If the requested target is not in any library, suggest the
-            # closest match
-            target_list = difflib.get_close_matches(target,
-                                                    list(self.uname_to_lib.keys()),
-                                                    cutoff=cutoff)
-            if not self.silence:
-                warnings.warn(
-                    'Requested standard star cannot be found, a list of ' +
-                    'the closest matching names are returned.')
-            return target_list
+            # closest match, Top 5 are returned.
+            # difflib uses Gestalt pattern matching.
+            target_list = difflib.get_close_matches(
+                target, list(self.uname_to_lib.keys()), n=5, cutoff=cutoff)
+            if len(target_list) > 0:
+
+                if not self.silence:
+                    warnings.warn(
+                        'Requested standard star cannot be found, a list of ' +
+                        'the closest matching names are returned.')
+                return target_list, False
+
+            else:
+
+                raise ValueError(
+                    'Please check the name of your standard star, nothing '
+                    'share a similarity above ' + str(cutoff) + '.')
 
     def load_standard(self,
                       target,
-                      group=None,
+                      library=None,
                       ftype='flux',
                       cutoff=0.4,
                       display=False,
@@ -2140,8 +2150,8 @@ class StandardFlux:
         -------
         target: string
             Name of the standard star
-        group: string
-            Name of the group of standard star
+        library: string
+            Name of the library of standard star
         ftype: string
             'flux' or 'mag'
         cutoff: float
@@ -2168,37 +2178,43 @@ class StandardFlux:
         self.ftype = ftype
         self.cutoff = cutoff
 
-        libraries = self.lookup_standard_libraries(self.target)
+        libraries, success = self.lookup_standard_libraries(self.target)
 
-        if group in libraries:
-            # If the group is specified and can be found in the library
-            self.group = group
+        if success:
+            if library in libraries:
+                self.library = library
+            else:
+                self.library = libraries[0]
+                warnings.warn(
+                    'The request standard star cannot be found in the given '
+                    'library, using ' + self.library + ' instead.')
         else:
-            # If not, use the first one returned from lookup. If nothing can be
-            # found, the error should have been trapped in the lookup function.
-            self.group = libraries[0]
-            if group is None:
+            # If not, search again with the first one returned from lookup.
+            libraries, _ = self.lookup_standard_libraries(libraries[0])
+            self.library = libraries[0]
+            print('The requested library does not exist, ' + self.library +
+                  ' is used because it has the closest matching name.')
+
+        if not self.silence:
+            if library is None:
                 # Use the default library order
                 if not self.silence:
-                    print('Standard library is not given, ' + self.group +
-                          ' is used by default.')
-            else:
-                print('The requested library does not exist, ' + self.group +
-                      ' is used because it has the closest matching name.')
+                    print('Standard library is not given, ' + self.library +
+                          ' is used.')
 
-        if self.group.startswith('iraf'):
+        if self.library.startswith('iraf'):
             self._get_iraf_standard()
 
-        if self.group.startswith('ing'):
+        if self.library.startswith('ing'):
             self._get_ing_standard()
 
-        if self.group.startswith('eso'):
+        if self.library.startswith('eso'):
             self._get_eso_standard()
 
         # Note that if the renderer does not generate any image (e.g. JSON)
         # nothing will be displayed
         if display:
-            self.inspect_standard(renderer, jsonstring, iframe)
+            self.inspect_standard(renderer, jsonstring, iframe, open_iframe)
 
     def inspect_standard(self,
                          renderer='default',
@@ -2262,7 +2278,7 @@ class StandardFlux:
 
         fig.update_layout(
             autosize=True,
-            title=self.group + ': ' + self.target + ' ' + self.ftype,
+            title=self.library + ': ' + self.target + ' ' + self.ftype,
             xaxis_title=r'$\text{Wavelength / A}$',
             yaxis_title=
             r'$\text{Flux / ergs cm}^{-2} \text{s}^{-1} \text{A}^{-1}$',
@@ -2453,7 +2469,7 @@ class OneDSpec:
         '''
 
         try:
-            self.group = flux_cal.group
+            self.library = flux_cal.library
             self.target = flux_cal.target
             self.wave_std_true = flux_cal.wave_std
             self.fluxmag_std_true = flux_cal.fluxmag_std
@@ -2596,7 +2612,8 @@ class OneDSpec:
                             slength=5,
                             sorder=3,
                             mask_range=[[6850, 6960], [7150, 7400],
-                                        [7575, 7700]],
+                                        [7575, 7700], [8925, 9050],
+                                        [9265, 9750]],
                             display=False,
                             renderer='default',
                             jsonstring=False,
@@ -2654,7 +2671,7 @@ class OneDSpec:
         # resampling both the observed and the database standard spectra
         # in unit of flux per second. The higher resolution spectrum is
         # resampled to match the lower resolution one.
-        if min(np.ediff1d(self.wave_std)) < min(np.ediff1d(
+        if np.median(np.ediff1d(self.wave_std)) < np.median(np.ediff1d(
                 self.wave_std_true)):
             flux_std = spectres(self.wave_std_true,
                                 self.wave_std,
@@ -2672,11 +2689,14 @@ class OneDSpec:
 
         # Get the sensitivity curve
         sens = flux_std_true / flux_std
+        print(flux_std_true)
+        print(flux_std)
+        print(sens)
 
         if mask_range is None:
-            mask = (np.isfinite(sens) & (sens > 0.))
+            mask = np.isfinite(sens)
         else:
-            mask = (np.isfinite(sens) & (sens > 0.))
+            mask = np.isfinite(sens)
             for m in mask_range:
                 mask = mask & ((wave_std_true < m[0]) | (wave_std_true > m[1]))
 
@@ -2700,7 +2720,7 @@ class OneDSpec:
 
         # Diagnostic plot
         if display:
-            self.inspect_sensitivity_itp(renderer, jsonstring, iframe)
+            self.inspect_sensitivity(renderer, jsonstring, iframe, open_iframe)
 
     def add_sensitivity_itp(self, sensitivity_itp):
         self.sensitivity_itp = sensitivity_itp
@@ -2782,11 +2802,11 @@ class OneDSpec:
 
         if self.smooth:
             fig.update_layout(title='SG(' + str(self.slength) + ', ' +
-                              str(self.sorder) + ')-Smoothed ' + self.group +
+                              str(self.sorder) + ')-Smoothed ' + self.library +
                               ': ' + self.target,
                               yaxis_title='Smoothed ADU / s')
         else:
-            fig.update_layout(title=self.group + ': ' + self.target,
+            fig.update_layout(title=self.library + ': ' + self.target,
                               yaxis_title='ADU / s')
 
         fig.update_layout(autosize=True,

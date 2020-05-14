@@ -4,9 +4,10 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+setup_requires = ['numpy>=1.16']
+
 install_requires = [
-    'numpy>=1.16', 'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly',
-    'spectres'
+    'scipy', 'astropy', 'ccdproc', 'astroscrappy', 'plotly', 'spectres'
 ]
 
 os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git@dev')
@@ -24,5 +25,6 @@ setup(name=__packagename__,
       long_description=open('README.md').read(),
       zip_safe=False,
       include_package_data=True,
+      setup_requires=setup_requires,
       install_requires=install_requires,
       python_requires='>=3.6')
