@@ -1,5 +1,12 @@
-from standard_list import *
 import json
+import os
+import sys
+
+base_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(base_dir, '..'))
+
+from standard_list import *
+
 '''
 ignore for now
 (1) a dictionary to match names to unique names (the search is one-to-one)
@@ -29,9 +36,9 @@ library_rank = {
     'irafspechayescal': 15,
     'irafctiocal': 16,
     'irafredcal': 17,
-    'irafiidscal': 18,
-    'irafbstdscal': 19,
-    'irafirscal': 20,
+    'irafirscal': 18,
+    'irafiidscal': 19,
+    'irafbstdscal': 20,
     'irafblackbody': 21
 }
 
