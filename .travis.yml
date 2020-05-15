@@ -87,8 +87,14 @@ jobs:
       language: generic
       env: PYTHON_VERSION=3.8.2
       osx_image: xcode8
+  # Some upstream bug as of 2020-05-15
+  allow_failures:
+    - os: osx
+      osx_image: xcode9.2
+    - os: osx
+      osx_image: xcode8
 
-install:
+before_install:
   - unset PYENV_ROOT
   - curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
   - export PYENV_ROOT="$HOME/.pyenv"
@@ -98,6 +104,8 @@ install:
   - pyenv global $PYTHON_VERSION
   - pyenv shell $PYTHON_VERSION
   - pip install --upgrade pip setuptools wheel py
+
+install:
   - python setup.py install
 
 script: python -m pytest --disable-warnings -p no:warnings test/test_aspired.py
