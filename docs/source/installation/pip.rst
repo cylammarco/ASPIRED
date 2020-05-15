@@ -1,10 +1,14 @@
 .. _installation:
 
-pip from PyPI
+
+Make sure your pip is linked to python 3.6+, you may need to use pip3 instead.
+
+PyPI
 =============
 
-Install with pip by `pip install aspired`. ASPIRED only supports Python 3.6,
-3.7 and 3.8.
+Install with pip by
+
+`pip install aspired`
 
 Github
 ======

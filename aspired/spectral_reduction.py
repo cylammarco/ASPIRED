@@ -15,7 +15,6 @@ from rascal.util import refine_peaks
 from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import signal
-from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from spectres import spectres
