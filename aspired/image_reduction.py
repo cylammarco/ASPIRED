@@ -544,7 +544,7 @@ class ImageReduction:
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:
-            self.light_master = np.rot(self.light_master)
+            self.light_master = np.rot90(self.light_master)
 
         # Construct a FITS object of the reduced frame
         self.light_master = np.array((self.light_master))
