@@ -17,20 +17,20 @@ We are to cover as many use cases as possible. If you would like to apply some r
 ### Spectrum - full reduction
 2. Dataset with science and standard field-flattened images and the respective arc image.
 
-### Spectrum - flux calibrated
-3. Dataset with science field-flattened image and the arc image only.
+### Spectrum - ADU spectrum extraction only
+3. Dataset with science field-flattened image only.
 
-### Spectrum - not wavelength and flux calibrated
-4. Dataset with science field-flattened image only.
+### Spectrum - wavelength calibration only
+4. Dataset with science field-flattened image and the arc image only.
 
 ### Spectrum - other cases for full or partial reduction
 5. User supplied trace(s).
 6. [Enhancement required] User supplied wavelength calibration polynomial coefficients.
 7. [Not started] User supplied line list.
 8. [Not started] User supplied pixel-to-wavelength mapping (not fitted).
-9. [Enhancement required] User supplied sensitivity curve (wavelength).
-10. [Not started] User supplied wavelength calibrated standard.
-11. [Not started] Flux calibration for user supplied wavelength calibrated science and standard spectra.
+9. User supplied sensitivity curve (wavelength).
+10. User supplied wavelength calibrated standard.
+11. Flux calibration for user supplied wavelength calibrated science and standard spectra.
 
 ### Output
 12. Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
@@ -40,12 +40,12 @@ We are to cover as many use cases as possible. If you would like to apply some r
 * python >= 3.6
 * numpy
 * scipy
-* astropy
-* ccdproc
-* astroscrappy
-* plotly
-* spectres
-* rascal
+* [astropy](https://github.com/astropy/astropy)
+* [astroscrappy](https://github.com/astropy/astroscrappy)
+* [ccdproc](https://github.com/astropy/ccdproc)
+* [plotly](https://github.com/plotly/plotly.py)
+* [rascal](https://github.com/jveitchmichaelis/rascal)
+* [spectres](https://github.com/ACCarnall/SpectRes)
 
 ## Installation
 Instructions can be found [here](https://aspired.readthedocs.io/en/latest/installation/pip.html).
@@ -58,6 +58,8 @@ The [quickstart guide](https://aspired.readthedocs.io/en/latest/tutorials/quicks
 
 ## Contributing Code/Documentation
 If you are interested in contributing code to the project, thank you! For those unfamiliar with the process of contributing to an open-source project, you may want to read through Github’s own short informational section on how to submit a [contribution](https://opensource.guide/how-to-contribute/#how-to-submit-a-contribution) or send me a message.
+
+Style -- as long as it passes PEP8, it's fine. We suggest you to use yapf default setting. What is not covered is the imports, we cluster imports into three groups in this order: Python built-in libraries, third party imports, and then local application imports. `import` goes before `from`, and then follow alphabatical order.
 
 ## Funding bodies
 1. European Union’s Horizon 2020 research and innovation programme (grant agreement No. 730890)
