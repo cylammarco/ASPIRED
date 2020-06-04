@@ -297,11 +297,12 @@ class TwoDSpec:
                         'Exposure Time value cannot be identified. ' +
                         'It is set to 1.')
             else:
+
                 warnings.warn('Header is not provide. ' +
                               'Exposure Time value is not provided. ' +
                               'It is set to 1.')
 
-        img /= self.exptime
+        img = img / self.exptime
         self.silence = silence
 
         # cosmic ray rejection
@@ -970,7 +971,8 @@ class TwoDSpec:
             self.nspec = 1
             self.trace = [trace]
 
-            if isinstance(trace_sigma, float):
+            if isinstance(trace_sigma, float) or isinstance(
+                    trace_sigma, np.ndarray):
                 self.trace_sigma = np.array(trace_sigma).reshape(-1)
             else:
                 raise TypeError('The trace_sigma has to be a float. A ' +\
@@ -1355,17 +1357,33 @@ class TwoDSpec:
         self.aduerr = aduerr
         self.adusky = adusky
 
-    def _create_trace_fits(self):
+    def _create_trace_fits(self, individual):
         # Put the reduced data in FITS format with an image header
         self.trace_hdulist = np.array([None] * self.nspec, dtype='object')
-        for i in range(self.nspec):
-            self.trace_hdulist[i] = fits.HDUList([fits.ImageHDU(self.trace)])
+        if individual:
+            for i in range(self.nspec):
+                self.trace_hdulist[i] = fits.HDUList([
+                    fits.ImageHDU(self.trace[i]),
+                    fits.ImageHDU(np.array(self.trace_sigma[i], ndmin=1))
+                ])
+        else:
+            self.trace_hdulist = fits.HDUList([
+                fits.ImageHDU(self.trace),
+                fits.ImageHDU(np.array(self.trace_sigma, ndmin=1))
+            ])
 
-    def _create_adu_fits(self):
+    def _create_adu_fits(self, individual):
         # Put the reduced data in FITS format with an image header
         self.adu_hdulist = np.array([None] * self.nspec, dtype='object')
-        for i in range(self.nspec):
-            self.adu_hdulist[i] = fits.HDUList([
+        if individual:
+            for i in range(self.nspec):
+                self.adu_hdulist[i] = fits.HDUList([
+                    fits.ImageHDU(self.adu[i]),
+                    fits.ImageHDU(self.aduerr[i]),
+                    fits.ImageHDU(self.adusky[i])
+                ])
+        else:
+            self.adu_hdulist = fits.HDUList([
                 fits.ImageHDU(self.adu),
                 fits.ImageHDU(self.aduerr),
                 fits.ImageHDU(self.adusky)
@@ -1373,7 +1391,8 @@ class TwoDSpec:
 
     def save_fits(self,
                   output='trace+adu',
-                  filename='TwoDSpec',
+                  filename='TwoDSpecExtracted',
+                  individual=False,
                   extension='fits',
                   overwrite=False):
         '''
@@ -1388,11 +1407,14 @@ class TwoDSpec:
 
             adu: 3 HDUs
                 Flux, uncertainty and sky (bin width = per wavelength)
-            trace: 1 HDU
+            trace: 2 HDU
                 Pixel position of the trace in the spatial direction
+                and the best fit gaussian line spread function sigma
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
+        individual: boolean
+            Set to True to save each trace as a separate FITS file
         extension: String
             File extension without the dot.
         overwrite: boolean
@@ -1400,23 +1422,41 @@ class TwoDSpec:
 
         '''
 
-        if filename[-5:] == '.fits':
-            filename = filename[:-5]
-        if filename[-4:] == '.fit':
-            filename = filename[:-4]
+        filename = os.path.splitext(filename)[0]
 
-        for i in range(self.nspec):
+        if 'adu' in output:
+            self._create_adu_fits(individual)
 
-            # Empty list for appending HDU lists
+        if 'trace' in output:
+            self._create_trace_fits(individual)
+
+        # Save each trace as a separate FITS file
+        if individual:
+            for i in range(self.nspec):
+
+                # Empty list for appending HDU lists
+                hdu_output = fits.HDUList()
+                if 'adu' in output:
+                    hdu_output.extend(self.adu_hdulist[i])
+
+                if 'trace' in output:
+                    hdu_output.extend(self.trace_hdulist[i])
+
+                # Convert the first HDU to PrimaryHDU
+                hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
+                                                hdu_output[0].header)
+                hdu_output.update_extend()
+
+                # Save file to disk
+                hdu_output.writeto(filename + '_' + str(i) + '.' + extension,
+                                   overwrite=overwrite)
+        else:
             hdu_output = fits.HDUList()
-
             if 'adu' in output:
-                self._create_adu_fits()
-                hdu_output += self.adu_hdulist[i]
+                hdu_output.extend(self.adu_hdulist)
 
             if 'trace' in output:
-                self._create_trace_fits()
-                hdu_output += self.trace_hdulist[i]
+                hdu_output.extend(self.trace_hdulist)
 
             # Convert the first HDU to PrimaryHDU
             hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
@@ -1424,8 +1464,7 @@ class TwoDSpec:
             hdu_output.update_extend()
 
             # Save file to disk
-            hdu_output.writeto(filepath + '_' + str(i) + '.' + extension,
-                               overwrite=overwrite)
+            hdu_output.writeto(filename + '.' + extension, overwrite=overwrite)
 
 
 class WavelengthCalibration():
@@ -1528,30 +1567,32 @@ class WavelengthCalibration():
 
     def add_spec(self, adu, aduerr=None, adusky=None):
 
-        if not isinstance(adu, list):
+        if not np.shape(np.shape(adu))[0] == 2:
             self.adu = [adu]
         else:
             self.adu = adu
 
         if aduerr is not None:
-            if not isinstance(aduerr, list):
+            if not np.shape(np.shape(aduerr))[0] == 2:
                 aduerr = [aduerr]
             assert len(aduerr) == len(self.adu), ('There should be the same '
                                                   'number of aduerr and adu.')
             assert len(aduerr[0]) == len(
                 self.adu[0]), ('The length of each '
                                'aduerr and adu should be the same.')
-            self.aduerr = aduerr
+
+        self.aduerr = aduerr
 
         if adusky is not None:
-            if not isinstance(adusky, list):
+            if not np.shape(np.shape(adusky))[0] == 2:
                 adusky = [adusky]
             assert len(adusky) == len(self.adu), ('There should be the same '
                                                   'number of adusky and adu.')
             assert len(adusky[0]) == len(
                 self.adu[0]), ('The length of each '
                                'aduerr and adu should be the same.')
-            self.adusky = adusky
+
+        self.adusky = adusky
 
     def add_trace(self, trace, trace_sigma, trace_pix=None):
         '''
@@ -1573,12 +1614,11 @@ class WavelengthCalibration():
             [0,1,2,...90, 100,101,...190, 200,201,...290]
         '''
 
-        self.pixel_mapping_itp = np.array([None] * self.nspec, dtype='object')
-
         # If only one trace is provided
         if np.shape(np.shape(trace))[0] == 1:
             self.nspec = 1
             self.trace = [trace]
+            self.pixel_mapping_itp = np.array([None] * self.nspec, dtype='object')
 
             if trace_pix is None:
                 # assume continuous pixel, which is the case for a single CCD
@@ -1589,8 +1629,15 @@ class WavelengthCalibration():
             else:
                 raise ValueError(
                     'trace_pix has to be the same length as the trace.')
+            self.pixel_mapping_itp[0] = itp.interp1d(np.arange(
+                len(self.trace[0])),
+                                                     self.trace_pix[0],
+                                                     kind='cubic',
+                                                     fill_value='extrapolate')
 
             if isinstance(trace_sigma, float):
+                self.trace_sigma = np.array(trace_sigma).reshape(-1)
+            elif isinstance(trace_sigma, np.ndarray) and len(trace_sigma) == 1:
                 self.trace_sigma = np.array(trace_sigma).reshape(-1)
             else:
                 raise TypeError('The trace_sigma has to be a float. ' +\
@@ -1600,22 +1647,31 @@ class WavelengthCalibration():
         else:
             self.nspec = np.shape(trace)[0]
             self.trace = np.array(trace)
+            self.pixel_mapping_itp = np.array([None] * self.nspec,
+                                              dtype='object')
 
             if trace_pix is None:
                 # assume continuous pixel, which is the case for a single CCD
                 self.trace_pix = np.zeros_like(trace)
                 for i in range(self.nspec):
                     self.trace_pix[i] = np.arange(len(self.trace[i]))
+                    self.pixel_mapping_itp[i] = itp.interp1d(
+                        np.arange(len(self.trace_pix[i])),
+                        self.trace_pix[i],
+                        kind='cubic',
+                        fill_value='extrapolate')
             elif len(trace_pix[0]) == len(self.trace[0]):
                 self.trace_pix = trace_pix
+                for i in range(self.nspec):
+                    self.trace_pix[i] = np.arange(len(self.trace[i]))
+                    self.pixel_mapping_itp[i] = itp.interp1d(
+                        np.arange(len(self.trace_pix[i])),
+                        self.trace_pix[i],
+                        kind='cubic',
+                        fill_value='extrapolate')
             else:
                 raise ValueError(
                     'trace_pix should be of the same shape as trace.')
-            self.pixel_mapping_itp[i] = itp.interp1d(np.arange(
-                len(self.trace_pix[i])),
-                                                     self.trace_pix[i],
-                                                     kind='cubic',
-                                                     fill_value='extrapolate')
 
             # If all traces have the same line spread function
             if isinstance(trace_sigma, float):
@@ -1916,7 +1972,7 @@ class WavelengthCalibration():
                 'spectrum(a) by using add_arc_spec() or generate from '
                 'extract_arc_spec() before executing find_arc_lines().')
 
-        p = np.percentile(self.arc, percentile)
+        p = np.nanpercentile(self.arc, percentile)
 
         self.peaks_raw = []
         self.peaks = []
@@ -2289,14 +2345,16 @@ class WavelengthCalibration():
                                         self.wave[i],
                                         self.adu[i],
                                         verbose=False)
-            self.aduerr_wcal[i] = spectres(new_wave,
-                                           self.wave[i],
-                                           self.aduerr[i],
-                                           verbose=False)
-            self.adusky_wcal[i] = spectres(new_wave,
-                                           self.wave[i],
-                                           self.adusky[i],
-                                           verbose=False)
+            if self.aduerr is not None:
+                self.aduerr_wcal[i] = spectres(new_wave,
+                                               self.wave[i],
+                                               self.aduerr[i],
+                                               verbose=False)
+            if self.adusky is not None:
+                self.adusky_wcal[i] = spectres(new_wave,
+                                               self.wave[i],
+                                               self.adusky[i],
+                                               verbose=False)
 
             self.wave_resampled[i] = new_wave
 
@@ -2699,40 +2757,44 @@ class FluxCalibration(StandardLibrary):
         self.flux_science_calibrated = False
         self.flux_standard_calibrated = False
 
-    def add_spec(self, wave, adu, aduerr=None, adusky=None, stype='standard'):
+    def add_wavelength(self, wave):
 
         if stype == 'standard':
             self.wave_std = wave
 
-            assert len(adu) == len(self.wave_std), ('adu and wave should '
-                                                    'have the same length')
-            self.adu_std = adu
-
-            if aduerr is not None:
-                assert len(aduerr) == len(
-                    self.wave_std), ('aduerr and wave '
-                                     'should have the same length')
-                self.aduerr_std = aduerr
-
-            if adusky is not None:
-                assert len(adusky) == len(
-                    self.wave_std), ('adusky and wave '
-                                     'should have the same length')
-                self.adusky_std = adusky
-
         elif stype == 'science':
-            if not isinstance(wave, list):
+            if not np.shape(np.shape(wave))[0] == 2:
                 self.wave = [wave]
             else:
                 self.wave = wave
 
-            if not isinstance(adu, list):
+    def add_spec(self, adu, aduerr=None, adusky=None, stype='standard'):
+
+        if stype == 'standard':
+
+            self.adu_std = adu
+
+            if aduerr is not None:
+                self.aduerr_std = aduerr
+                assert len(aduerr_std) == len(
+                    self.adu_std), ('The length of each aduerr_std and '
+                                    'adu_std should be the same.')
+
+            if adusky is not None:
+                self.adusky_std = adusky
+                assert len(adudky_std[0]) == len(
+                    self.adu_std[0]), ('The length of each adudky_std and'
+                                       'adu_std should be the same.')
+
+        elif stype == 'science':
+
+            if not np.shape(np.shape(adu))[0] == 2:
                 self.adu = [adu]
             else:
                 self.adu = adu
 
             if aduerr is not None:
-                if not isinstance(aduerr, list):
+                if not np.shape(np.shape(aduerr))[0] == 2:
                     aduerr = [aduerr]
                 assert len(aduerr) == len(
                     self.adu), ('There should be the same '
@@ -2740,18 +2802,18 @@ class FluxCalibration(StandardLibrary):
                 assert len(aduerr[0]) == len(
                     self.adu[0]), ('The length of each '
                                    'aduerr and adu should be the same.')
-                self.aduerr = aduerr
+            self.aduerr = aduerr
 
             if adusky is not None:
-                if not isinstance(adusky, list):
+                if not np.shape(np.shape(adusky))[0] == 2:
                     adusky = [adusky]
                 assert len(adusky) == len(
                     self.adu), ('There should be the same '
                                 'number of adusky and adu.')
                 assert len(adusky[0]) == len(
                     self.adu[0]), ('The length of each '
-                                   'aduerr and adu should be the same.')
-                self.adusky = adusky
+                                   'adudky and adu should be the same.')
+            self.adusky = adusky
 
         else:
             if stype not in ['science', 'standard']:
@@ -3266,32 +3328,36 @@ class FluxCalibration(StandardLibrary):
                                    y=self.flux[i],
                                    line=dict(color='royalblue'),
                                    name='Flux'))
-                    fig_sci[i].add_trace(
-                        go.Scatter(x=self.wave_resampled[i],
-                                   y=self.fluxerr[i],
-                                   line=dict(color='firebrick'),
-                                   name='Flux Uncertainty'))
-                    fig_sci[i].add_trace(
-                        go.Scatter(x=self.wave_resampled[i],
-                                   y=self.fluxsky[i],
-                                   line=dict(color='orange'),
-                                   name='Sky Flux'))
+                    if self.fluxerr is not None:
+                        fig_sci[i].add_trace(
+                            go.Scatter(x=self.wave_resampled[i],
+                                       y=self.fluxerr[i],
+                                       line=dict(color='firebrick'),
+                                       name='Flux Uncertainty'))
+                    if self.fluxsky is not None:
+                        fig_sci[i].add_trace(
+                            go.Scatter(x=self.wave_resampled[i],
+                                       y=self.fluxsky[i],
+                                       line=dict(color='orange'),
+                                       name='Sky Flux'))
                 else:
                     fig_sci[i].add_trace(
                         go.Scatter(x=self.wave[i],
                                    y=self.adu[i],
                                    line=dict(color='royalblue'),
                                    name='ADU / s'))
-                    fig_sci[i].add_trace(
-                        go.Scatter(x=self.wave[i],
-                                   y=self.aduerr[i],
-                                   line=dict(color='firebrick'),
-                                   name='ADU Uncertainty / s'))
-                    fig_sci[i].add_trace(
-                        go.Scatter(x=self.wave[i],
-                                   y=self.adusky[i],
-                                   line=dict(color='orange'),
-                                   name='Sky ADU / s'))
+                    if self.aduerr is not None:
+                        fig_sci[i].add_trace(
+                            go.Scatter(x=self.wave[i],
+                                       y=self.aduerr[i],
+                                       line=dict(color='firebrick'),
+                                       name='ADU Uncertainty / s'))
+                    if self.adusky is not None:
+                        fig_sci[i].add_trace(
+                            go.Scatter(x=self.wave[i],
+                                       y=self.adusky[i],
+                                       line=dict(color='orange'),
+                                       name='Sky ADU / s'))
                 fig_sci[i].update_layout(
                     autosize=True,
                     hovermode='closest',
@@ -3522,20 +3588,20 @@ class OneDSpec():
         self.fluxcal.add_wavecal(wavecal, stype)
         '''
 
-    def add_spec(self, wave, adu, aduerr=None, adusky=None, stype='standard'):
+    def add_wavelength(self, wave):
+        self.fluxcal.add_spec(wave, stype)
 
-        self.fluxcal.add_spec(wave, adu, aduerr, adusky, stype)
+    def add_spec(self, adu, aduerr=None, adusky=None, stype='standard'):
+
+        self.fluxcal.add_spec(adu, aduerr, adusky, stype)
 
         if stype == 'science':
-            self.wavecal_science.add_spec(wave, adu, aduerr, adusky)
+            self.wavecal_science.add_spec(adu, aduerr, adusky)
 
         if stype == 'standard':
-            self.wavecal_standard.add_spec(wave, adu, aduerr, adusky)
+            self.wavecal_standard.add_spec(adu, aduerr, adusky)
 
-    def add_twodspec(self,
-                     twodspec,
-                     trace_pix=None,
-                     stype='standard'):
+    def add_twodspec(self, twodspec, trace_pix=None, stype='standard'):
         '''
         Extract the required information from the TwoDSpec object of the
         standard.
