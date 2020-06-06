@@ -1559,7 +1559,7 @@ class WavelengthCalibration():
             self.arc = arc
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
-                data, fits.hdu.image.ImageHDU):
+                arc, fits.hdu.image.ImageHDU):
             self.arc = arc.data
         # If it is an ImageReduction object
         elif isinstance(arc, ImageReduction):
@@ -1574,8 +1574,10 @@ class WavelengthCalibration():
 
         if not np.shape(np.shape(adu))[0] == 2:
             self.adu = [adu]
+            self.nspec = np.shape(np.shape(adu))[0]
         else:
             self.adu = adu
+            self.nspec = np.shape(adu)[0]
 
         if aduerr is not None:
             if not np.shape(np.shape(aduerr))[0] == 2:
@@ -1768,31 +1770,31 @@ class WavelengthCalibration():
         # get the length in the spectral and spatial directions
         self.nspec = int(np.shape(twodspec.trace)[0])
 
-        self.trace = np.zeros((self.nspec, len(twodspec.trace[0])))
-        self.trace_sigma = self.trace.copy()
-        self.trace_pix = self.trace.copy()
+        self.trace = []
+        self.trace_sigma = []
+        self.trace_pix = []
         self.pixel_mapping_itp = np.array([None] * self.nspec, dtype='object')
 
-        self.adu = np.zeros((self.nspec, len(twodspec.adu[0])))
+        self.adu = []
         self.aduerr = self.adu.copy()
         self.adusky = self.adu.copy()
 
         for i in range(self.nspec):
-            self.trace[i] = twodspec.trace[i]
-            self.trace_sigma[i] = np.ones(len(
-                self.trace[i])) * twodspec.trace_sigma[i]
+            self.trace.append(twodspec.trace[i])
+            self.trace_sigma.append(
+                np.ones(len(self.trace[i])) * twodspec.trace_sigma[i])
             if trace_pix is not None:
-                self.trace_pix[i] = trace_pix[i]
+                self.trace_pix.append(trace_pix[i])
             else:
-                self.trace_pix[i] = np.arange(len(self.trace[i]))
+                self.trace_pix.append(np.arange(len(self.trace[i])))
             self.pixel_mapping_itp[i] = itp.interp1d(np.arange(
                 len(self.trace_pix[i])),
                                                      self.trace_pix[i],
                                                      kind='cubic',
                                                      fill_value='extrapolate')
-            self.adu[i] = twodspec.adu[i]
-            self.aduerr[i] = twodspec.aduerr[i]
-            self.adusky[i] = twodspec.adusky[i]
+            self.adu.append(twodspec.adu[i])
+            self.aduerr.append(twodspec.aduerr[i])
+            self.adusky.append(twodspec.adusky[i])
 
     def apply_twodspec_mask(self):
 
@@ -2311,60 +2313,60 @@ class WavelengthCalibration():
             Provide the resampling bin size
         '''
 
-        self.wave = np.array([None] * self.nspec, dtype='object')
-        self.wave_resampled = np.array([None] * self.nspec, dtype=object)
+        self.wave = []
+        self.wave_resampled = []
 
-        self.wave_bin = np.zeros(self.nspec)
-        self.wave_start = np.zeros(self.nspec)
-        self.wave_end = np.zeros(self.nspec)
+        self.wave_bin = []
+        self.wave_start = []
+        self.wave_end = []
 
-        self.adu_wcal = np.array([None] * self.nspec, dtype='object')
-        self.aduerr_wcal = np.array([None] * self.nspec, dtype='object')
-        self.adusky_wcal = np.array([None] * self.nspec, dtype='object')
+        self.adu_wcal = []
+        self.aduerr_wcal = []
+        self.adusky_wcal = []
 
         for i in range(self.nspec):
 
             # Adjust for pixel shift dur to chip gaps, map to itself
             # if it was not defined in WavelengthCalibration
-            self.wave[i] = self.polyval[i](self.trace_pix[i],
-                                           self.polyfit_coeff[i])
+            self.wave.append(self.polyval[i](self.trace_pix[i],
+                                             self.polyfit_coeff[i]))
 
             # compute the new equally-spaced wavelength array
             if wave_bin is not None:
-                self.wave_bin[i] = wave_bin
+                self.wave_bin.append(wave_bin)
             else:
-                self.wave_bin[i] = np.median(np.ediff1d(self.wave[i]))
+                self.wave_bin.append(np.median(np.ediff1d(self.wave[i])))
 
             if wave_start is not None:
-                self.wave_start[i] = wave_start
+                self.wave_start.append(wave_start)
             else:
-                self.wave_start[i] = self.wave[i][0]
+                self.wave_start.append(self.wave[i][0])
 
             if wave_end is not None:
-                self.wave_end[i] = wave_end
+                self.wave_end.append(wave_end)
             else:
-                self.wave_end[i] = self.wave[i][-1]
+                self.wave_end.append(self.wave[i][-1])
 
             new_wave = np.arange(self.wave_start[i], self.wave_end[i],
                                  self.wave_bin[i])
 
             # apply the flux calibration and resample
-            self.adu_wcal[i] = spectres(new_wave,
-                                        self.wave[i],
-                                        self.adu[i],
-                                        verbose=False)
+            self.adu_wcal.append(
+                spectres(new_wave, self.wave[i], self.adu[i], verbose=False))
             if self.aduerr is not None:
-                self.aduerr_wcal[i] = spectres(new_wave,
-                                               self.wave[i],
-                                               self.aduerr[i],
-                                               verbose=False)
+                self.aduerr_wcal.append(
+                    spectres(new_wave,
+                             self.wave[i],
+                             self.aduerr[i],
+                             verbose=False))
             if self.adusky is not None:
-                self.adusky_wcal[i] = spectres(new_wave,
-                                               self.wave[i],
-                                               self.adusky[i],
-                                               verbose=False)
+                self.adusky_wcal.append(
+                    spectres(new_wave,
+                             self.wave[i],
+                             self.adusky[i],
+                             verbose=False))
 
-            self.wave_resampled[i] = new_wave
+            self.wave_resampled.append(new_wave)
 
     def _create_adu_fits(self, stype, individual):
 
@@ -2437,7 +2439,7 @@ class WavelengthCalibration():
 
         if (self.arcspec is None) and (self.polyfit_coeff is None):
             raise ValueError('Neither arcspec is extracted nor wavelength is '
-                        'calibrated.')
+                             'calibrated.')
 
         if 'arcspec' in output_split:
             if self.arcspec is None:
@@ -2851,26 +2853,48 @@ class FluxCalibration(StandardLibrary):
         self.flux_science_calibrated = False
         self.flux_standard_calibrated = False
         self.adu = None
+        self.aduerr = None
+        self.adusky = None
         self.flux = None
+        self.fluxerr = None
+        self.fluxsky = None
         self.flux_raw = None
+        self.fluxerr_raw = None
+        self.fluxsky_raw = None
+        self.adu_standard = None
+        self.aduerr_standard = None
+        self.adusky_standard = None
+        self.flux_standard = None
+        self.fluxerr_standard = None
+        self.fluxsky_standard = None
+        self.fluxmag_standard_true = None
+        self.flux_standard_raw = None
+        self.fluxerr_standard_raw = None
+        self.fluxsky_standard_raw = None
 
     def add_wavelength(self, wave, stype):
 
         if stype == 'standard':
             self.wave_standard = wave
             self.wave_standard_resampled = wave
+            self.wave_standard_bin = wave[1] - wave[0]
+            self.wave_standard_start = wave[0]
 
         elif stype == 'science':
             if np.shape(wave) == np.shape(self.adu):
                 self.wave = wave
                 self.wave_resampled = wave
-            elif (np.shape(np.shape(wave))[0] == 1) and (np.shape(self.adu)
+                self.wave_bin = wave[0][0] - wave[0][1]
+                self.wave_start = wave[0][0]
+            elif (np.shape(np.shape(wave))[0] == 1) and (np.shape(self.adu[0])
                                                          == (np.shape(wave))):
                 self.wave = [wave]
                 self.wave_resampled = [wave]
+                self.wave_bin = wave[1] - wave[0]
+                self.wave_start = wave[0]
             else:
                 raise ValueError('Size of the wavelength array has to be the '
-                            'same size of the adu array.')
+                                 'same size of the adu array.')
 
     def add_spec(self, adu, aduerr=None, adusky=None, stype='standard'):
 
@@ -2894,8 +2918,10 @@ class FluxCalibration(StandardLibrary):
 
             if not np.shape(np.shape(adu))[0] == 2:
                 self.adu = [adu]
+                self.nspec = np.shape(np.shape(adu))[0]
             else:
                 self.adu = adu
+                self.nspec = np.shape(adu)[0]
 
             if aduerr is not None:
                 if not np.shape(np.shape(aduerr))[0] == 2:
@@ -3008,7 +3034,6 @@ class FluxCalibration(StandardLibrary):
         if stype == 'science':
             self.wave = wavecal.wave
             self.wave_resampled = wavecal.wave_resampled
-            self.nspec = len(self.wave)
 
     def compute_sensitivity(self,
                             kind=3,
@@ -3259,45 +3284,54 @@ class FluxCalibration(StandardLibrary):
         # Can be multiple spectra in the science frame
         if 'science' in stype_split:
 
-            self.flux = np.array([None] * self.nspec, dtype=object)
-            self.fluxerr = np.array([None] * self.nspec, dtype=object)
-            self.fluxsky = np.array([None] * self.nspec, dtype=object)
+            self.flux = []
+            self.fluxerr = []
+            self.fluxsky = []
 
-            self.flux_raw = np.array([None] * self.nspec, dtype=object)
-            self.fluxerr_raw = np.array([None] * self.nspec, dtype=object)
-            self.fluxsky_raw = np.array([None] * self.nspec, dtype=object)
+            self.flux_raw = []
+            self.fluxerr_raw = []
+            self.fluxsky_raw = []
 
-            self.sensitivity_raw = np.array([None] * self.nspec, dtype=object)
-            self.sensitivity = np.array([None] * self.nspec, dtype=object)
+            self.sensitivity_raw = []
+            self.sensitivity = []
 
             for i in range(self.nspec):
-
                 # apply the flux calibration
-                self.sensitivity_raw[i] = 10.**self.sensitivity_itp(
-                    self.wave[i])
+                self.sensitivity_raw.append(10.**self.sensitivity_itp(
+                    self.wave[i]))
 
-                self.flux_raw[i] = self.sensitivity_raw[i] * self.adu[i]
-                self.fluxerr_raw[i] = self.sensitivity_raw[i] * self.aduerr[i]
-                self.fluxsky_raw[i] = self.sensitivity_raw[i] * self.adusky[i]
+                self.flux_raw.append(self.sensitivity_raw[i] * self.adu[i])
+                if self.aduerr is not None:
+                    self.fluxerr_raw.append(self.sensitivity_raw[i] *
+                                            self.aduerr[i])
+                if self.adusky is not None:
+                    self.fluxsky_raw.append(self.sensitivity_raw[i] *
+                                            self.adusky[i])
 
-                self.flux[i] = spectres(self.wave_resampled[i],
-                                        self.wave[i],
-                                        self.flux_raw[i],
-                                        verbose=False)
-                self.fluxerr[i] = spectres(self.wave_resampled[i],
-                                           self.wave[i],
-                                           self.fluxerr_raw[i],
-                                           verbose=False)
-                self.fluxsky[i] = spectres(self.wave_resampled[i],
-                                           self.wave[i],
-                                           self.fluxsky_raw[i],
-                                           verbose=False)
+                self.flux.append(
+                    spectres(self.wave_resampled[i],
+                             self.wave[i],
+                             self.flux_raw[i],
+                             verbose=False))
+                if self.aduerr is not None:
+                    self.fluxerr.append(
+                        spectres(self.wave_resampled[i],
+                                 self.wave[i],
+                                 self.fluxerr_raw[i],
+                                 verbose=False))
+                if self.adusky is not None:
+                    self.fluxsky.append(
+                        spectres(self.wave_resampled[i],
+                                 self.wave[i],
+                                 self.fluxsky_raw[i],
+                                 verbose=False))
 
                 # Only computed for diagnostic
-                self.sensitivity[i] = spectres(self.wave_resampled[i],
-                                               self.wave[i],
-                                               self.sensitivity_raw[i],
-                                               verbose=False)
+                self.sensitivity.append(
+                    spectres(self.wave_resampled[i],
+                             self.wave[i],
+                             self.sensitivity_raw[i],
+                             verbose=False))
 
             self.flux_science_calibrated = True
 
@@ -3308,21 +3342,25 @@ class FluxCalibration(StandardLibrary):
                 self.wave_standard)
 
             self.flux_standard_raw = self.sensitivity_standard_raw * self.adu_standard
-            self.fluxerr_standard_raw = self.sensitivity_standard_raw * self.aduerr_standard
-            self.fluxsky_standard_raw = self.sensitivity_standard_raw * self.adusky_standard
+            if self.aduerr_standard is not None:
+                self.fluxerr_standard_raw = self.sensitivity_standard_raw * self.aduerr_standard
+            if self.adusky_standard is not None:
+                self.fluxsky_standard_raw = self.sensitivity_standard_raw * self.adusky_standard
 
             self.flux_standard = spectres(self.wave_standard_resampled,
                                           self.wave_standard,
                                           self.flux_standard_raw,
                                           verbose=False)
-            self.fluxerr_standard = spectres(self.wave_standard_resampled,
-                                             self.wave_standard,
-                                             self.fluxerr_standard_raw,
-                                             verbose=False)
-            self.fluxsky_standard = spectres(self.wave_standard_resampled,
-                                             self.wave_standard,
-                                             self.fluxsky_standard_raw,
-                                             verbose=False)
+            if self.aduerr_standard is not None:
+                self.fluxerr_standard = spectres(self.wave_standard_resampled,
+                                                 self.wave_standard,
+                                                 self.fluxerr_standard_raw,
+                                                 verbose=False)
+            if self.adusky_standard is not None:
+                self.fluxsky_standard = spectres(self.wave_standard_resampled,
+                                                 self.wave_standard,
+                                                 self.fluxsky_standard_raw,
+                                                 verbose=False)
 
             # Only computed for diagnostic
             self.sensitivity_standard = spectres(self.wave_standard_resampled,
@@ -3377,7 +3415,7 @@ class FluxCalibration(StandardLibrary):
             fig_sci = np.array([None] * self.nspec, dtype='object')
             for i in range(self.nspec):
 
-                if (self.science_imported & self.flux_science_calibrated):
+                if self.flux_science_calibrated:
                     wave_mask = ((self.wave_resampled[i] > wave_min) &
                                  (self.wave_resampled[i] < wave_max))
                     flux_mask = (
@@ -3428,7 +3466,7 @@ class FluxCalibration(StandardLibrary):
                 ]),
                                                    title='Log scale'))
                 # show the image on the top
-                if (self.science_imported & self.flux_science_calibrated):
+                if self.flux_science_calibrated:
                     fig_sci[i].add_trace(
                         go.Scatter(x=self.wave_resampled[i],
                                    y=self.flux[i],
@@ -3499,7 +3537,7 @@ class FluxCalibration(StandardLibrary):
 
         if 'standard' in stype_split:
 
-            if self.standard_imported & self.flux_standard_calibrated:
+            if self.flux_standard_calibrated:
                 wave_standard_mask = (
                     (self.wave_standard_resampled > wave_min) &
                     (self.wave_standard_resampled < wave_max))
@@ -3555,43 +3593,48 @@ class FluxCalibration(StandardLibrary):
             ]),
                                                  title='Log scale'))
             # show the image on the top
-            if self.standard_imported & self.flux_standard_calibrated:
+            if self.flux_standard_calibrated:
                 fig_standard.add_trace(
                     go.Scatter(x=self.wave_standard_resampled,
                                y=self.flux_standard,
                                line=dict(color='royalblue'),
                                name='Flux'))
-                fig_standard.add_trace(
-                    go.Scatter(x=self.wave_standard_resampled,
-                               y=self.fluxerr_standard,
-                               line=dict(color='firebrick'),
-                               name='Flux Uncertainty'))
-                fig_standard.add_trace(
-                    go.Scatter(x=self.wave_standard_resampled,
-                               y=self.fluxsky_standard,
-                               line=dict(color='orange'),
-                               name='Sky Flux'))
-                fig_standard.add_trace(
-                    go.Scatter(x=self.wave_standard_true,
-                               y=self.fluxmag_standard_true,
-                               line=dict(color='black'),
-                               name='Standard'))
+                if self.fluxerr_standard is not None:
+                    fig_standard.add_trace(
+                        go.Scatter(x=self.wave_standard_resampled,
+                                   y=self.fluxerr_standard,
+                                   line=dict(color='firebrick'),
+                                   name='Flux Uncertainty'))
+                if self.fluxsky_standard is not None:
+                    fig_standard.add_trace(
+                        go.Scatter(x=self.wave_standard_resampled,
+                                   y=self.fluxsky_standard,
+                                   line=dict(color='orange'),
+                                   name='Sky Flux'))
+                if self.fluxmag_standard_true is not None:
+                    fig_standard.add_trace(
+                        go.Scatter(x=self.wave_standard_true,
+                                   y=self.fluxmag_standard_true,
+                                   line=dict(color='black'),
+                                   name='Standard'))
             else:
                 fig_standard.add_trace(
                     go.Scatter(x=self.wave_standard_resampled,
                                y=self.adu_standard,
                                line=dict(color='royalblue'),
                                name='ADU / s'))
-                fig_standard.add_trace(
-                    go.Scatter(x=self.wave_standard_resampled,
-                               y=self.aduerr_standard,
-                               line=dict(color='firebrick'),
-                               name='ADU Uncertainty / s'))
-                fig_standard.add_trace(
-                    go.Scatter(x=self.wave_standard_resampled,
-                               y=self.adusky_standard,
-                               line=dict(color='orange'),
-                               name='Sky ADU / s'))
+                if self.aduerr_standard is not None:
+                    fig_standard.add_trace(
+                        go.Scatter(x=self.wave_standard_resampled,
+                                   y=self.aduerr_standard,
+                                   line=dict(color='firebrick'),
+                                   name='ADU Uncertainty / s'))
+                if self.adusky_standard is not None:
+                    fig_standard.add_trace(
+                        go.Scatter(x=self.wave_standard_resampled,
+                                   y=self.adusky_standard,
+                                   line=dict(color='orange'),
+                                   name='Sky ADU / s'))
 
             fig_standard.update_layout(
                 autosize=True,
@@ -3743,8 +3786,9 @@ class FluxCalibration(StandardLibrary):
 
             if individual:
 
-                self.science_resampled_hdulist = np.array([None] * self.nspec,
-                                                          dtype='object')
+                self.science_resampled_hdulist = np.array(fits.HDUList() *
+                                                          self.nspec)
+
                 for i in range(self.nspec):
                     # Note that wave_start is the centre of the starting bin
                     flux_wavecal_fits = fits.ImageHDU(self.flux[i])
@@ -3756,36 +3800,47 @@ class FluxCalibration(StandardLibrary):
                     flux_wavecal_fits.header['CUNIT1'] = 'Angstroms'
                     flux_wavecal_fits.header[
                         'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                    self.science_resampled_hdulist[i].append(flux_wavecal_fits)
 
-                    fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr[i])
-                    fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
-                    fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-                    fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin[i]
-                    fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_start[i]
-                    fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
-                    fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-                    fluxerr_wavecal_fits.header[
-                        'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                    if self.fluxerr is not None:
+                        fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr[i])
+                        fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
+                        fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
+                        fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin[
+                            i]
+                        fluxerr_wavecal_fits.header[
+                            'CRVAL1'] = self.wave_start[i]
+                        fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
+                        fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
+                        fluxerr_wavecal_fits.header[
+                            'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                        self.science_resampled_hdulist[i].append(
+                            fluxerr_wavecal_fits)
 
-                    fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky[i])
-                    fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
-                    fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-                    fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin[i]
-                    fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_start[i]
-                    fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
-                    fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-                    fluxerr_wavecal_fits.header[
-                        'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                    if self.fluxsky is not None:
+                        fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky[i])
+                        fluxsky_wavecal_fits.header['LABEL'] = 'Flux'
+                        fluxsky_wavecal_fits.header['CRPIX1'] = 1.00E+00
+                        fluxsky_wavecal_fits.header['CDELT1'] = self.wave_bin[
+                            i]
+                        fluxsky_wavecal_fits.header[
+                            'CRVAL1'] = self.wave_start[i]
+                        fluxsky_wavecal_fits.header['CTYPE1'] = 'Wavelength'
+                        fluxsky_wavecal_fits.header['CUNIT1'] = 'Angstroms'
+                        fluxsky_wavecal_fits.header[
+                            'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                        self.science_resampled_hdulist[i].append(
+                            fluxsky_wavecal_fits)
 
-                    sensitivity_fits = fits.ImageHDU(self.sensitivity[i])
-
-                    self.science_resampled_hdulist[i] = fits.HDUList([
-                        flux_wavecal_fits, fluxerr_wavecal_fits,
-                        fluxsky_wavecal_fits, sensitivity_fits
-                    ])
+                    if self.sensitivity is not None:
+                        sensitivity_fits = fits.ImageHDU(self.sensitivity[i])
+                        self.science_resampled_hdulist[i].append(
+                            sensitivity_fits)
 
             else:
                 # Note that wave_start is the centre of the starting bin
+                self.science_resampled_hdulist = fits.HDUList()
+
                 flux_wavecal_fits = fits.ImageHDU(self.flux)
                 flux_wavecal_fits.header['LABEL'] = 'Flux'
                 flux_wavecal_fits.header['CRPIX1'] = 1.00E+00
@@ -3794,33 +3849,39 @@ class FluxCalibration(StandardLibrary):
                 flux_wavecal_fits.header['CTYPE1'] = 'Wavelength'
                 flux_wavecal_fits.header['CUNIT1'] = 'Angstroms'
                 flux_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                self.science_resampled_hdulist.append(flux_wavecal_fits)
 
-                fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr)
-                fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
-                fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-                fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin
-                fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_start
-                fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
-                fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-                fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                if self.fluxerr is not None:
+                    fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr)
+                    fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
+                    fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
+                    fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin
+                    fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_start
+                    fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
+                    fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
+                    fluxerr_wavecal_fits.header[
+                        'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                    self.science_resampled_hdulist.append(fluxerr_wavecal_fits)
 
-                fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky)
-                fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
-                fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-                fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin
-                fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_start
-                fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
-                fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-                fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                if self.fluxsky is not None:
+                    fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky)
+                    fluxsky_wavecal_fits.header['LABEL'] = 'Flux'
+                    fluxsky_wavecal_fits.header['CRPIX1'] = 1.00E+00
+                    fluxsky_wavecal_fits.header['CDELT1'] = self.wave_bin
+                    fluxsky_wavecal_fits.header['CRVAL1'] = self.wave_start
+                    fluxsky_wavecal_fits.header['CTYPE1'] = 'Wavelength'
+                    fluxsky_wavecal_fits.header['CUNIT1'] = 'Angstroms'
+                    fluxsky_wavecal_fits.header[
+                        'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                    self.science_resampled_hdulist.append(fluxsky_wavecal_fits)
 
-                sensitivity_fits = fits.ImageHDU(self.sensitivity)
-
-                self.science_resampled_hdulist = fits.HDUList([
-                    flux_wavecal_fits, fluxerr_wavecal_fits,
-                    fluxsky_wavecal_fits, sensitivity_fits
-                ])
+                if self.sensitivity is not None:
+                    sensitivity_fits = fits.ImageHDU(self.sensitivity)
+                    self.science_resampled_hdulist.append(sensitivity_fits)
 
         if 'standard' in stype_split:
+
+            self.standard_resampled_hdulist = fits.HDUList()
 
             # Note that wave_start is the centre of the starting bin
             flux_wavecal_fits = fits.ImageHDU(self.flux_standard)
@@ -3831,31 +3892,35 @@ class FluxCalibration(StandardLibrary):
             flux_wavecal_fits.header['CTYPE1'] = 'Wavelength'
             flux_wavecal_fits.header['CUNIT1'] = 'Angstroms'
             flux_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+            self.standard_resampled_hdulist.append(flux_wavecal_fits)
 
-            fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr_standard)
-            fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
-            fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-            fluxerr_wavecal_fits.header['CDELT1'] = self.wave_standard_bin
-            fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_standard_start
-            fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
-            fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-            fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+            if self.fluxerr_standard is not None:
+                fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr_standard)
+                fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
+                fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
+                fluxerr_wavecal_fits.header['CDELT1'] = self.wave_standard_bin
+                fluxerr_wavecal_fits.header[
+                    'CRVAL1'] = self.wave_standard_start
+                fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
+                fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
+                fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                self.standard_resampled_hdulist.append(fluxerr_wavecal_fits)
 
-            fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky_standard)
-            fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
-            fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-            fluxerr_wavecal_fits.header['CDELT1'] = self.wave_standard_bin
-            fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_standard_start
-            fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
-            fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-            fluxerr_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+            if self.fluxsky_standard is not None:
+                fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky_standard)
+                fluxsky_wavecal_fits.header['LABEL'] = 'Flux'
+                fluxsky_wavecal_fits.header['CRPIX1'] = 1.00E+00
+                fluxsky_wavecal_fits.header['CDELT1'] = self.wave_standard_bin
+                fluxsky_wavecal_fits.header[
+                    'CRVAL1'] = self.wave_standard_start
+                fluxsky_wavecal_fits.header['CTYPE1'] = 'Wavelength'
+                fluxsky_wavecal_fits.header['CUNIT1'] = 'Angstroms'
+                fluxsky_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                self.standard_resampled_hdulist.append(fluxsky_wavecal_fits)
 
-            sensitivity_fits = fits.ImageHDU(self.sensitivity_standard)
-
-            self.standard_resampled_hdulist = fits.HDUList([
-                flux_wavecal_fits, fluxerr_wavecal_fits, fluxsky_wavecal_fits,
-                sensitivity_fits
-            ])
+            if self.sensitivity_standard is not None:
+                sensitivity_fits = fits.ImageHDU(self.sensitivity_standard)
+                self.standard_resampled_hdulist.append(sensitivity_fits)
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
             raise ValueError('Unknown stype, please choose from (1) science; '
@@ -4414,7 +4479,7 @@ class OneDSpec():
             # Prepare multiple extension HDU
             hdu_output = fits.HDUList()
             if 'flux' in output_split:
-                if self.fluxcal.flux is None:
+                if self.fluxcal.flux_standard is None:
                     warnings.warn("Spectrum is not flux calibrated.")
                 else:
                     self.fluxcal._create_flux_resampled_fits(
@@ -4429,17 +4494,17 @@ class OneDSpec():
                     hdu_output.extend(self.wavecal_standard.wavecal_hdulist)
 
             if 'fluxraw' in output_split:
-                if self.fluxcal.flux_raw is None:
+                if self.fluxcal.flux_standard_raw is None:
                     warnings.warn("Spectrum is not flux calibrated.")
                 else:
                     self.fluxcal._create_flux_fits('standard', individual)
                     hdu_output.extend(self.fluxcal.flux_standard_hdulist)
 
             if 'adu' in output_split:
-                if self.fluxcal.adu is not None:
+                if self.fluxcal.adu_standard is not None:
                     self.fluxcal._create_adu_fits('standard', individual)
                     hdu_output.extend(self.fluxcal.adu_standard_hdulist)
-                elif self.wavecal_standard.adu is not None:
+                elif self.wavecal_standard.adu_standard is not None:
                     self.wavecal_standard._create_adu_fits(individual)
                     hdu_output.extend(
                         self.wavecal_standard.adu_standard_hdulist)

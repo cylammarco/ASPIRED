@@ -11,7 +11,7 @@ arc_fits = fits.open(
 # Loading two pre-saved spectral traces from a single FITS file.
 #
 
-lhs6328_extracted = fits.open('lhs6328_adu_traces.fits')
+lhs6328_extracted = fits.open('example_output/lhs6328_adu_traces.fits')
 lhs6328_adu = lhs6328_extracted[0].data
 lhs6328_trace = lhs6328_extracted[3].data
 lhs6328_trace_sigma = lhs6328_extracted[4].data
@@ -37,7 +37,7 @@ lhs6328_onedspec.wavecal_science.save_fits(filename='example_output/example_05_a
 # Loading a single pre-saved spectral trace.
 #
 
-lhs6328_extracted = fits.open('lhs6328_adu_traces_1.fits')
+lhs6328_extracted = fits.open('example_output/lhs6328_adu_traces_1.fits')
 lhs6328_adu = lhs6328_extracted[0].data
 lhs6328_trace = lhs6328_extracted[3].data
 lhs6328_trace_sigma = lhs6328_extracted[4].data

@@ -56,7 +56,7 @@ lhs6328_onedspec.inspect_reduced_spectrum(stype='science')
 
 # Save as a FITS file
 lhs6328_onedspec.save_fits(
-    output='wavecal+adu',
+    output='flux+wavecal+adu',
     filename='example_output/example_03_wavelength_calibrated_science_and_'
     'standard_frames_only',
     stype='science',
