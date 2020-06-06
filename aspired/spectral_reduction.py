@@ -1148,7 +1148,7 @@ class TwoDSpec:
                                                   self.trace_sigma[j])
                 else:
                     #-- finally, compute the error in this pixel
-                    sigB = np.standard(z)  # standarddev in the background data
+                    sigB = np.nanstd(z)  # standarddev in the background data
                     nB = len(y)  # number of bkgd pixels
                     nA = apwidth * 2. + 1  # number of aperture pixels
 
