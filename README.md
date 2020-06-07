@@ -12,29 +12,30 @@ More background information can be referring to the [arXiv article](https://ui.a
 We are to cover as many use cases as possible. If you would like to apply some reduction techniques that we have overseen, please use the [issue tracker](https://github.com/cylammarco/ASPIRED/issues) to request new features. The following is the list of scenarios that we can handle:
 
 ### Image
-1. Dataset with light frame and any combination (including none) of dark(s), bias(s) and flat(s) frames.
+0. [x] Dataset with light frame and any combination (including none) of dark(s), bias(s) and flat(s) frames.
 
 ### Spectrum - full reduction
-2. Dataset with science and standard field-flattened images and the respective arc image.
+1. [x] Dataset with science and standard field-flattened images and the respective arc image.
 
-### Spectrum - ADU spectrum extraction only
-3. Dataset with science field-flattened image only.
+### Spectrum - ADU spectrum extraction only (No flux calibration)
+2. [x] Dataset with science field-flattened image and the arc image only.
 
-### Spectrum - wavelength calibration only
-4. Dataset with science field-flattened image and the arc image only.
+### Spectrum - wavelength calibration only (Pre wavelength-calibrated)
+3. [x] Dataset with science and standard field-flattened images only.
 
 ### Spectrum - other cases for full or partial reduction
-5. User supplied trace(s).
-6. [Enhancement required] User supplied wavelength calibration polynomial coefficients.
-7. [Not started] User supplied line list.
-8. [Not started] User supplied pixel-to-wavelength mapping (not fitted).
-9. User supplied sensitivity curve (wavelength).
-10. User supplied wavelength calibrated standard.
-11. Flux calibration for user supplied wavelength calibrated science and standard spectra.
+4. [x] User supplied trace(s) for light spectrum extraction (only to extract ADU/s of the spectra).
+5. [x] User supplied trace(s) for arc extraction (only to get wavelength calibration polynomial).
+6. [x] User supplied wavelength calibration polynomial coefficients.
+7. [ ] User supplied line list. [Pending on the next RASCAL release]
+8. [ ] User supplied pixel-to-wavelength mapping (not fitted). [Pending on the next RASCAL release]
+9. [x] User supplied sensitivity curve.
+10. [x] User supplied wavelength calibrated standard.
+11. [x] Flux calibration for user supplied wavelength calibrated science and standard 1D spectra.
 
 ### Output
-12. Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
-13. [Enhancement required]Save data in FITS or ascii.
+11. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
+12. [ ] Save data in FITS (with header information) or ascii (csv).
 
 ## Dependencies
 * python >= 3.6
@@ -43,9 +44,9 @@ We are to cover as many use cases as possible. If you would like to apply some r
 * [astropy](https://github.com/astropy/astropy)
 * [astroscrappy](https://github.com/astropy/astroscrappy)
 * [ccdproc](https://github.com/astropy/ccdproc)
-* [plotly](https://github.com/plotly/plotly.py)
+* [plotly](https://github.com/plotly/plotly.py) >= 4.0
 * [rascal](https://github.com/jveitchmichaelis/rascal)
-* [spectres](https://github.com/ACCarnall/SpectRes)
+* [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
 
 ## Installation
 Instructions can be found [here](https://aspired.readthedocs.io/en/latest/installation/pip.html).
