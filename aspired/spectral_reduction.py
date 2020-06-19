@@ -2050,28 +2050,182 @@ class WavelengthCalibration():
                 else:
                     fig[j].show(renderer)
 
+    def initialise_calibrator(self,
+                              peaks=None,
+                              num_pix=None,
+                              pixel_list=None,
+                              min_wavelength=3000,
+                              max_wavelength=9000,
+                              plotting_library='plotly',
+                              log_level='info'):
+
+        self.calibrator = []
+        for i in range(self.nspec):
+
+            if peaks is None:
+                peaks = self.peaks[i]
+
+            if num_pix is None:
+                num_pix = len(self.arcspec[i])
+
+            self.calibrator.append(
+                Calibrator(peaks=peaks,
+                           num_pix=num_pix,
+                           pixel_list=pixel_list,
+                           min_wavelength=min_wavelength,
+                           max_wavelength=max_wavelength,
+                           plotting_library=plotting_library,
+                           log_level=log_level))
+
+    def set_known_pairs(self, pix=None, wave=None, idx=None):
+
+        if isinstance(idx, int):
+            idx = [idx]
+
+        if idx is None:
+            idx = range(self.nspec)
+
+        assert (pix is not None) & (
+            wave is not None), "pix and wave cannot be None."
+
+        assert (np.shape(pix)
+                == np.shape(wave)) & (np.shape(np.shape(pix)) == np.shape(
+                    np.shape(wave))), "pix and wave must have the same shape."
+
+        for i in idx:
+            if np.shape(np.shape(pix))[0] == 1:
+                self.calibrator[i].set_known_pairs(pix=pix, wave=wave)
+            elif np.shape(np.shape(pix))[0] == 2:
+                self.calibrator[i].set_known_pairs(pix=pix[i], wave=wave[i])
+
+    def set_fit_constraints(self,
+                            num_slopes=5000,
+                            range_tolerance=500,
+                            fit_tolerance=10.,
+                            polydeg=4,
+                            candidate_thresh=15.,
+                            linearity_thresh=1.5,
+                            ransac_thresh=3,
+                            num_candidates=25,
+                            xbins=100,
+                            ybins=100,
+                            brute_force=False,
+                            fittype='poly',
+                            idx=None):
+        '''
+        num_slopes : int (default: 1000)
+            Number of slopes to consider during Hough transform
+        range_tolerance : float (default: 500)
+            Estimation of the error on the provided spectral range
+            e.g. 3000-5000 with tolerance 500 will search for
+            solutions that may satisfy 2500-5500
+        fit_tolerance : float (default: 10)
+            Sets a tolerance on whether a fit found by RANSAC is considered
+            acceptable
+        polydeg : int (default: 4)
+            Degree of the polynomial fit.
+        candidate_thresh : float (default: 15)
+            Threshold  (Angstroms) for considering a point to be an inlier
+            during candidate peak/line selection. This should be reasonable
+            small as we want to search for candidate points which are
+            *locally* linear.
+        linearity_thresh : float (default: 1.5)
+            A threshold (Angstroms) that expresses how non-linear the solution
+            can be. This mostly affects which atlas points are included and
+            should be reasonably large, e.g. 500A.
+        ransac_thresh : float (default: 1)
+            The distance criteria  (Angstroms) to be considered an inlier to a
+            fit. This should be close to the size of the expected residuals on
+            the final fit (e.g. 1A is typical)
+        num_candidates: int (default: 25)
+            Number of best trial Hough pairs.
+        xbins : int (default: 50)
+            Number of bins for Hough accumulation
+        ybins : int (default: 50)
+            Number of bins for Hough accumulation
+        brute_force : boolean (default: False)
+            Set to True to try all possible combination in the given parameter
+            space
+        fittype : string (default: 'poly')
+            One of 'poly', 'legendre' or 'chebyshev'
+        '''
+
+        if isinstance(idx, int):
+            idx = [idx]
+
+        if idx is None:
+            idx = range(self.nspec)
+
+        self.polyfit_type = []
+        self.polyval = np.array([None] * len(idx), dtype='object')
+
+        for i in idx:
+            self.polyfit_type.append(fittype)
+
+            if self.polyfit_type[i].lower().startswith('poly'):
+                self.polyval[i] = np.polynomial.polynomial.polyval
+            elif self.polyfit_type[i].lower().startswith('leg'):
+                self.polyval[i] = np.polynomial.legendre.legval
+            elif self.polyfit_type[i].lower().startswith('cheb'):
+                self.polyval[i] = np.polynomial.chebyshev.chebval
+            else:
+                raise ValueError(
+                    'polyfit_type must be: (1) poly(nomial); (2) leg(endre); '
+                    'or (3) cheb(yshev)')
+
+            self.calibrator[i].set_fit_constraints(
+                num_slopes, range_tolerance, fit_tolerance, polydeg,
+                candidate_thresh, linearity_thresh, ransac_thresh,
+                num_candidates, xbins, ybins, brute_force, fittype)
+
+    def add_atlas(self,
+                  elements,
+                  min_atlas_wavelength=0,
+                  max_atlas_wavelength=15000,
+                  min_intensity=0,
+                  min_distance=0,
+                  vacuum=False,
+                  pressure=101325.,
+                  temperature=273.15,
+                  relative_humidity=0.,
+                  constrain_poly=False,
+                  idx=None):
+
+        '''
+            elements: string or list of string
+                String or list of strings of Chemical symbol. Case insensitive.
+            min_atlas_wave: float
+                Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
+            max_atlas_wave: float
+                Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+
+        '''
+        if isinstance(idx, int):
+            idx = [idx]
+
+        if idx is None:
+            idx = range(self.nspec)
+
+        for i in idx:
+            self.calibrator[i].add_atlas(elements, min_atlas_wavelength,
+                                         max_atlas_wavelength, min_intensity,
+                                         min_distance, vacuum, pressure,
+                                         temperature, relative_humidity,
+                                         constrain_poly)
+
     def fit(self,
-            elements=None,
-            min_wave=3500.,
-            max_wave=8500.,
             sample_size=5,
-            max_tries=10000,
-            top_n=8,
-            num_slope=5000,
-            polydeg=4,
-            range_tolerance=500.,
-            fit_tolerance=10.,
-            candidate_thresh=20.,
-            ransac_thresh=1.,
-            xbins=250,
-            ybins=250,
-            brute_force=False,
-            progress=False,
-            polyfit_coeff=None,
-            polyfit_type='poly',
+            top_n=10,
+            max_tries=5000,
+            progress=True,
+            coeff=None,
+            linear=True,
+            weighted=True,
+            filter_close=False,
             display=False,
             savefig=False,
-            filename=None):
+            filename=None,
+            idx=None):
         '''
         A wrapper function to perform wavelength calibration with RASCAL.
 
@@ -2085,49 +2239,29 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        elements: string or list of string
-            String or list of strings of Chemical symbol. Case insensitive.
-        min_wave: float
-            Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
-        max_wave: float
-            Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
         sample_size: int
             Number of lines to be fitted in each loop.
-        max_tries: int
-            Number of trials of polynomial fitting.
         top_n: int
             Top ranked lines to be fitted.
-        nslopes: int
-            Number of lines to be used in Hough transform.
-        polydeg: int
-            Degree of the polynomial
-        range_tolerance: float
-            Estimation of the error on the provided spectral range
-            e.g. 3000 - 5000 with tolerance 500 will search for
-            solutions that may satisfy 2500 - 5500
-        fit_tolerance: float
-            Maximum RMS allowed
-        candidate_thresh: float
-            Threshold for considering a point to be an inlier during candidate
-            peak/line selection. Don't make this too small, it should allow
-            for the error between a linear and non-linear fit.
-        ransac_thresh: float
-            The distance criteria to be considered an inlier to a fit. This
-            should be close to the size of the expected residuals on the final
-            fit.
-        xbins: int
-            The number of bins in the pixel direction (in Hough space).
-        ybins : int
-            The number of bins in the wavelength direction (in Hough space).
-        brute_force: boolean
-            Set to try all possible combinations and choose the best fit as
-            the solution. This takes tens of minutes for tens of lines.
+        max_tries: int
+            Number of trials of polynomial fitting.
         progress: boolean
             Set to show the progress using tdqm (if imported).
-        polyfit_coeff: list
+        coeff: list
             List of the polynomial fit coefficients for the first guess.
-        polyfit_type: string
-            One of 'poly', 'legendre' or 'chebyshev'.
+        lines: boolean (default: True)
+            Set to True to sample candidates with straight lines in hough space,
+            else sample candidates with coeff
+        weighted: boolean (default: True)
+            Set to True to use convolution in Hough space in the cost function
+        filter_close: boolean (default: False)
+
+        idx: None or int or List (default: None)
+            The indices of the calibrator. If set to None, all of the
+            calibrators will be fitted with the same given parameters. If set
+            to int, it will turn into a list with a single integer. If a list of
+            integers are given, those calibrators will be used to fit with
+            the input parameters
         display: boolean
             Set to show diagnostic plot.
         savefig: string
@@ -2139,54 +2273,25 @@ class WavelengthCalibration():
         '''
 
         self.polyfit_coeff = []
-        self.polyfit_type = []
         self.rms = []
         self.residual = []
         self.peak_utilisation = []
-        self.polyval = np.array([None] * self.nspec, dtype='object')
 
-        for i in range(self.nspec):
-            c = Calibrator(self.peaks[i],
-                           min_wavelength=min_wave,
-                           max_wavelength=max_wave,
-                           num_pix=self.pixel_mapping_itp[i](len(
-                               self.arcspec[i])),
-                           plotting_library='plotly')
-            c.add_atlas(elements)
-            c.set_fit_constraints(num_slopes=num_slope,
-                                  range_tolerance=range_tolerance,
-                                  fit_tolerance=fit_tolerance,
-                                  polydeg=polydeg,
-                                  candidate_thresh=candidate_thresh,
-                                  ransac_thresh=ransac_thresh,
-                                  xbins=xbins,
-                                  ybins=ybins,
-                                  brute_force=brute_force,
-                                  fittype=polyfit_type)
+        if isinstance(idx, int):
+            idx = [idx]
 
-            polyfit_coeff, rms, residual, peak_utilisation = c.fit(
-                sample_size=sample_size,
-                max_tries=max_tries,
-                top_n=top_n,
-                progress=progress,
-                coeff=polyfit_coeff)
+        if idx is None:
+            idx = range(self.nspec)
+
+        for i in idx:
+            polyfit_coeff, rms, residual, peak_utilisation = self.calibrator[
+                i].fit(sample_size, top_n, max_tries, progress, coeff, linear,
+                       weighted, filter_close)
 
             self.polyfit_coeff.append(polyfit_coeff)
-            self.polyfit_type.append(polyfit_type)
             self.rms.append(rms)
             self.residual.append(residual)
             self.peak_utilisation.append(peak_utilisation)
-
-            if self.polyfit_type[i].lower().startswith('poly'):
-                self.polyval[i] = np.polynomial.polynomial.polyval
-            elif self.polyfit_type[i].lower().startswith('leg'):
-                self.polyval[i] = np.polynomial.legendre.legval
-            elif self.polyfit_type[i].lower().startswith('cheb'):
-                self.polyval[i] = np.polynomial.chebyshev.chebval
-            else:
-                raise ValueError(
-                    'polyfit_type must be: (1) poly(nomial); (2) leg(endre); '
-                    'or (3) cheb(yshev)')
 
             if display:
                 if savefig:
@@ -2205,14 +2310,18 @@ class WavelengthCalibration():
                                tolerance=1.0)
 
     def refine_fit(self,
-                   elements,
-                   min_wave=3500.,
-                   max_wave=8500.,
+                   polyfit_coeff=None,
+                   n_delta=None,
+                   refine=True,
                    tolerance=10.,
+                   method='Nelder-Mead',
+                   convergence=1e-6,
+                   robust_refit=True,
                    polydeg=None,
                    display=False,
                    savefig=False,
-                   filename=None):
+                   filename=None,
+                   idx=None):
         '''
         A wrapper function to fine tune wavelength calibration with RASCAL
         when there is already a set of good coefficienes.
@@ -2226,9 +2335,9 @@ class WavelengthCalibration():
         ----------
         elements: string or list of string
             String or list of strings of Chemical symbol. Case insensitive.
-        min_wave: float
+        min_wavelength: float
             Minimum wavelength of the spectrum, NOT of the arc.
-        max_wave: float
+        max_wavelength: float
             Maximum wavelength of the spectrum, NOT of the arc.
         tolerance : float
             Absolute difference between fit and model.
@@ -2249,23 +2358,29 @@ class WavelengthCalibration():
         residual_new = []
         peak_utilisation_new = []
 
-        for i in range(self.nspec):
+        if idx is None:
+            idx = range(self.nspec)
+
+        for i in idx:
+
+            if polyfit_coeff is None:
+                polyfit_coeff = self.polyfit_coeff[i]
+
             if polydeg is None:
-                polydeg = len(self.polyfit_coeff[i]) - 1
+                polydeg = len(polyfit_coeff) - 1
 
-            c = Calibrator(self.peaks[i],
-                           min_wavelength=min_wave,
-                           max_wavelength=max_wave,
-                           num_pix=len(self.arcspec[i]),
-                           plotting_library='plotly')
-            c.add_atlas(elements=elements)
+            if n_delta is None:
+                n_delta = len(polyfit_coeff) - 1
 
-            polyfit_coeff, _, _, residual, peak_utilisation = c.match_peaks(
-                self.polyfit_coeff[i][:2],
-                tolerance=tolerance,
-                polydeg=polydeg)
-            polyfit_coeff, _, _, residual, peak_utilisation = c.match_peaks(
-                self.polyfit_coeff[i], tolerance=tolerance, polydeg=polydeg)
+            polyfit_coeff, _, _, residual, peak_utilisation = self.calibrator[
+                i].match_peaks(polyfit_coeff,
+                               n_delta=n_delta,
+                               refine=refine,
+                               tolerance=tolerance,
+                               method=method,
+                               convergence=convergence,
+                               robust_refit=robust_refit,
+                               polydeg=polydeg)
 
             polyfit_new.append(polyfit_coeff)
             rms_new.append(np.sqrt(np.mean(residual**2)))
@@ -2274,7 +2389,7 @@ class WavelengthCalibration():
 
             if display:
                 if savefig:
-                    c.plot_fit(self.arcspec[i],
+                    self.calibrator[i].plot_fit(self.arcspec[i],
                                polyfit_new[i],
                                plot_atlas=True,
                                log_spectrum=False,
@@ -2282,7 +2397,7 @@ class WavelengthCalibration():
                                savefig=True,
                                filename=filename)
                 else:
-                    c.plot_fit(self.arcspec[i],
+                    self.calibrator[i].plot_fit(self.arcspec[i],
                                polyfit_new[i],
                                plot_atlas=True,
                                log_spectrum=False,
@@ -2296,7 +2411,8 @@ class WavelengthCalibration():
     def apply_wavelength_calibration(self,
                                      wave_start=None,
                                      wave_end=None,
-                                     wave_bin=None):
+                                     wave_bin=None,
+                                     idx=None):
         '''
         Apply the wavelength calibration. Because the polynomial fit can run
         away at the two ends, the default minimum and maximum are limited to
@@ -2324,7 +2440,10 @@ class WavelengthCalibration():
         self.aduerr_wcal = []
         self.adusky_wcal = []
 
-        for i in range(self.nspec):
+        if idx is None:
+            idx = range(self.nspec)
+
+        for i in idx:
 
             # Adjust for pixel shift dur to chip gaps, map to itself
             # if it was not defined in WavelengthCalibration
@@ -3472,13 +3591,13 @@ class FluxCalibration(StandardLibrary):
                                    y=self.flux[i],
                                    line=dict(color='royalblue'),
                                    name='Flux'))
-                    if self.fluxerr is not None:
+                    if self.fluxerr != []:
                         fig_sci[i].add_trace(
                             go.Scatter(x=self.wave_resampled[i],
                                        y=self.fluxerr[i],
                                        line=dict(color='firebrick'),
                                        name='Flux Uncertainty'))
-                    if self.fluxsky is not None:
+                    if self.fluxsky != []:
                         fig_sci[i].add_trace(
                             go.Scatter(x=self.wave_resampled[i],
                                        y=self.fluxsky[i],
@@ -3998,7 +4117,7 @@ class OneDSpec():
     def add_wavelength(self, wave, stype):
         self.fluxcal.add_wavelength(wave, stype)
 
-    def add_spec(self, adu, aduerr=None, adusky=None, stype='standard'):
+    def add_spec(self, adu, aduerr=None, adusky=None, stype='science'):
 
         self.fluxcal.add_spec(adu, aduerr, adusky, stype)
 
@@ -4009,7 +4128,7 @@ class OneDSpec():
         if stype == 'standard':
             self.wavecal_standard.add_spec(adu, aduerr, adusky)
 
-    def add_twodspec(self, twodspec, trace_pix=None, stype='standard'):
+    def add_twodspec(self, twodspec, trace_pix=None, stype='science'):
         '''
         Extract the required information from the TwoDSpec object of the
         standard.
@@ -4029,20 +4148,20 @@ class OneDSpec():
         if stype == 'standard':
             self.wavecal_standard.add_twodspec(twodspec, trace_pix)
 
-    def apply_twodspec_mask(self, stype='standard'):
+    def apply_twodspec_mask(self, stype='science'):
 
         if stype == 'science':
             self.wavecal_science.apply_twodspec_mask()
         if stype == 'standard':
             self.wavecal_standard.apply_twodspec_mask()
 
-    def apply_spec_mask(self, spec_mask, stype='standard'):
+    def apply_spec_mask(self, spec_mask, stype='science'):
         self.apply_spec_mask(spec_mask)
 
-    def apply_spatial_mask(self, spatial_mask, stype='standard'):
+    def apply_spatial_mask(self, spatial_mask, stype='science'):
         self.apply_spatial_mask(spec_mask)
 
-    def add_arc_lines(self, peaks, stype='standard'):
+    def add_arc_lines(self, peaks, stype='science'):
 
         if stype == 'science':
             self.wavecal_science.add_arc_lines(peaks)
@@ -4051,7 +4170,7 @@ class OneDSpec():
             self.wavecal_standard.add_arc_lines(peaks)
             self.arc_lines_standard_imported = True
 
-    def add_arcspec(self, spectrum, stype='standard'):
+    def add_arcspec(self, spectrum, stype='science'):
 
         if stype == 'science':
             self.wavecal_science.add_arcspec(spectrum)
@@ -4060,7 +4179,7 @@ class OneDSpec():
             self.wavecal_standard.add_arcspec(spectrum)
             self.arc_standard_imported = True
 
-    def add_arc(self, arc, stype='standard'):
+    def add_arc(self, arc, stype='science'):
 
         if stype == 'science':
             self.wavecal_science.add_arc(arc)
@@ -4069,7 +4188,7 @@ class OneDSpec():
             self.wavecal_standard.add_arc(arc)
             self.arc_standard_imported = True
 
-    def add_trace(self, trace, trace_sigma, trace_pix=None, stype='standard'):
+    def add_trace(self, trace, trace_sigma, trace_pix=None, stype='science'):
 
         if stype == 'science':
             self.wavecal_science.add_trace(trace, trace_sigma, trace_pix)
@@ -4080,7 +4199,7 @@ class OneDSpec():
     def add_polyfit(self,
                     polyfit_coeff,
                     polyfit_type=['poly'],
-                    stype='standard'):
+                    stype='science'):
 
         if stype == 'science':
             self.wavecal_science.add_polyfit(polyfit_coeff, polyfit_type)
@@ -4094,16 +4213,22 @@ class OneDSpec():
                         renderer='default',
                         iframe=False,
                         open_iframe=False,
-                        stype='standard'):
+                        stype='science'):
 
         if stype == 'science':
-            self.wavecal_science.extract_arcspec(use_trace_pix, display,
-                                                 jsonstring, renderer, iframe,
-                                                 open_iframe)
+            self.wavecal_science.extract_arcspec(use_trace_pix=use_trace_pix,
+                                                 display=display,
+                                                 jsonstring=jsonstring,
+                                                 renderer=renderer,
+                                                 iframe=iframe,
+                                                 open_iframe=open_iframe)
         if stype == 'standard':
-            self.wavecal_standard.extract_arcspec(use_trace_pix, display,
-                                                  jsonstring, renderer, iframe,
-                                                  open_iframe)
+            self.wavecal_standard.extract_arcspec(use_trace_pix=use_trace_pix,
+                                                  display=display,
+                                                  jsonstring=jsonstring,
+                                                  renderer=renderer,
+                                                  iframe=iframe,
+                                                  open_iframe=open_iframe)
 
     def find_arc_lines(self,
                        percentile=25.,
@@ -4114,77 +4239,236 @@ class OneDSpec():
                        renderer='default',
                        iframe=False,
                        open_iframe=False,
-                       stype='standard'):
+                       stype='science'):
 
         if stype == 'science':
-            self.wavecal_science.find_arc_lines(percentile, prominence,
-                                                distance, display, jsonstring,
-                                                renderer, iframe, open_iframe)
+            self.wavecal_science.find_arc_lines(percentile=percentile,
+                                                prominence=prominence,
+                                                distance=distance,
+                                                display=display,
+                                                jsonstring=jsonstring,
+                                                renderer=renderer,
+                                                iframe=iframe,
+                                                open_iframe=open_iframe)
         if stype == 'standard':
-            self.wavecal_standard.find_arc_lines(percentile, prominence,
-                                                 distance, display, jsonstring,
-                                                 renderer, iframe, open_iframe)
+            self.wavecal_standard.find_arc_lines(percentile=percentile,
+                                                 prominence=prominence,
+                                                 distance=distance,
+                                                 display=display,
+                                                 jsonstring=jsonstring,
+                                                 renderer=renderer,
+                                                 iframe=iframe,
+                                                 open_iframe=open_iframe)
+
+    def initialise_calibrator(self,
+                              peaks=None,
+                              num_pix=None,
+                              pixel_list=None,
+                              min_wavelength=3000,
+                              max_wavelength=9000,
+                              plotting_library='plotly',
+                              log_level='info',
+                              stype='science'):
+        '''
+        If the peaks were found with find_arc_lines(), peaks and num_pix can
+        be None.
+        '''
+        if stype == 'science':
+            self.wavecal_science.initialise_calibrator(
+                peaks=peaks,
+                num_pix=num_pix,
+                pixel_list=pixel_list,
+                min_wavelength=min_wavelength,
+                max_wavelength=max_wavelength,
+                plotting_library=plotting_library,
+                log_level=log_level)
+        if stype == 'standard':
+            self.wavecal_standard.initialise_calibrator(
+                peaks=peaks,
+                num_pix=num_pix,
+                pixel_list=pixel_list,
+                min_wavelength=min_wavelength,
+                max_wavelength=max_wavelength,
+                plotting_library=plotting_library,
+                log_level=log_level)
+
+    def set_known_pairs(self, pix=None, wave=None, idx=None, stype='standard'):
+        if stype == 'science':
+            self.wavecal_science.set_known_pairs(pix, wave, idx)
+        if stype == 'standard':
+            self.wavecal_science.set_known_pairs(pix, wave, idx=0)
+
+    def set_fit_constraints(self,
+                            num_slopes=5000,
+                            range_tolerance=500,
+                            fit_tolerance=10.,
+                            polydeg=4,
+                            candidate_thresh=15.,
+                            linearity_thresh=1.5,
+                            ransac_thresh=3,
+                            num_candidates=25,
+                            xbins=100,
+                            ybins=100,
+                            brute_force=False,
+                            fittype='poly',
+                            idx=None,
+                            stype='science'):
+        if stype == 'science':
+            self.wavecal_science.set_fit_constraints(
+                num_slopes=num_slopes,
+                range_tolerance=range_tolerance,
+                fit_tolerance=fit_tolerance,
+                polydeg=polydeg,
+                candidate_thresh=candidate_thresh,
+                linearity_thresh=linearity_thresh,
+                ransac_thresh=ransac_thresh,
+                num_candidates=num_candidates,
+                xbins=xbins,
+                ybins=ybins,
+                brute_force=brute_force,
+                fittype=fittype,
+                idx=idx)
+        if stype == 'standard':
+            self.wavecal_standard.set_fit_constraints(
+                num_slopes=num_slopes,
+                range_tolerance=range_tolerance,
+                fit_tolerance=fit_tolerance,
+                polydeg=polydeg,
+                candidate_thresh=candidate_thresh,
+                linearity_thresh=linearity_thresh,
+                ransac_thresh=ransac_thresh,
+                num_candidates=num_candidates,
+                xbins=xbins,
+                ybins=ybins,
+                brute_force=brute_force,
+                fittype=fittype,
+                idx=0)
+
+    def add_atlas(self,
+                  elements,
+                  min_atlas_wavelength=0,
+                  max_atlas_wavelength=15000,
+                  min_intensity=0,
+                  min_distance=0,
+                  vacuum=False,
+                  pressure=101325.,
+                  temperature=273.15,
+                  relative_humidity=0.,
+                  constrain_poly=False,
+                  idx=None,
+                  stype='science'):
+        if stype == 'science':
+            self.wavecal_science.add_atlas(
+                elements=elements,
+                min_atlas_wavelength=min_atlas_wavelength,
+                max_atlas_wavelength=max_atlas_wavelength,
+                min_intensity=min_intensity,
+                min_distance=min_distance,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity,
+                constrain_poly=constrain_poly,
+                idx=idx)
+
+        if stype == 'standard':
+            self.wavecal_standard.add_atlas(
+                elements=elements,
+                min_atlas_wavelength=min_atlas_wavelength,
+                max_atlas_wavelength=max_atlas_wavelength,
+                min_intensity=min_intensity,
+                min_distance=min_distance,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity,
+                constrain_poly=constrain_poly,
+                idx=0)
 
     def fit(self,
-            elements=None,
-            min_wave=3500.,
-            max_wave=8500.,
             sample_size=5,
-            max_tries=10000,
-            top_n=8,
-            num_slope=5000,
-            polydeg=4,
-            range_tolerance=500.,
-            fit_tolerance=10.,
-            candidate_thresh=20.,
-            ransac_thresh=1.,
-            xbins=250,
-            ybins=250,
-            brute_force=False,
-            progress=False,
-            polyfit_coeff=None,
-            polyfit_type='poly',
+            top_n=10,
+            max_tries=5000,
+            progress=True,
+            coeff=None,
+            linear=True,
+            weighted=True,
+            filter_close=False,
             display=False,
             savefig=False,
             filename=None,
+            idx=None,
             stype='standard'):
 
         if stype == 'science':
-            self.wavecal_science.fit(elements, min_wave, max_wave, sample_size,
-                                     max_tries, top_n, num_slope, polydeg,
-                                     range_tolerance, fit_tolerance,
-                                     candidate_thresh, ransac_thresh, xbins,
-                                     ybins, brute_force, progress,
-                                     polyfit_coeff, polyfit_type, display,
-                                     savefig, filename)
+            self.wavecal_science.fit(sample_size=sample_size,
+                                     top_n=top_n,
+                                     max_tries=max_tries,
+                                     progress=progress,
+                                     coeff=coeff,
+                                     linear=linear,
+                                     weighted=weighted,
+                                     filter_close=filter_close,
+                                     display=display,
+                                     savefig=savefig,
+                                     filename=filename,
+                                     idx=idx)
+
         if stype == 'standard':
-            self.wavecal_standard.fit(elements, min_wave, max_wave,
-                                      sample_size, max_tries, top_n, num_slope,
-                                      polydeg, range_tolerance, fit_tolerance,
-                                      candidate_thresh, ransac_thresh, xbins,
-                                      ybins, brute_force, progress,
-                                      polyfit_coeff, polyfit_type, display,
-                                      savefig, filename)
+            self.wavecal_standard.fit(sample_size=sample_size,
+                                      top_n=top_n,
+                                      max_tries=max_tries,
+                                      progress=progress,
+                                      coeff=coeff,
+                                      linear=linear,
+                                      weighted=weighted,
+                                      filter_close=filter_close,
+                                      display=display,
+                                      savefig=savefig,
+                                      filename=filename,
+                                      idx=0)
 
     def refine_fit(self,
-                   elements,
-                   min_wave=3500.,
-                   max_wave=8500.,
+                   polyfit_coeff=None,
+                   n_delta=None,
+                   refine=True,
                    tolerance=10.,
+                   method='Nelder-Mead',
+                   convergence=1e-6,
+                   robust_refit=True,
                    polydeg=None,
                    display=False,
                    savefig=False,
                    filename=None,
+                   idx=None,
                    stype='standard'):
 
         if stype == 'science':
-            self.wavecal_science.refine_fit(elements, min_wave, max_wave,
-                                            tolerance, polydeg, display,
-                                            savefig, filename)
+            self.wavecal_science.refine_fit(polyfit_coeff=polyfit_coeff,
+                                            n_delta=n_delta,
+                                            refine=refine,
+                                            tolerance=tolerance,
+                                            method=method,
+                                            convergence=convergence,
+                                            robust_refit=robust_refit,
+                                            polydeg=polydeg,
+                                            display=display,
+                                            savefig=savefig,
+                                            filename=filename,
+                                            idx=idx)
         if stype == 'standard':
-            self.wavecal_standard.refine_fit(elements, min_wave, max_wave,
-                                             tolerance, polydeg, display,
-                                             savefig, filename)
+            self.wavecal_standard.refine_fit(polyfit_coeff=polyfit_coeff,
+                                             n_delta=n_delta,
+                                             refine=refine,
+                                             tolerance=tolerance,
+                                             method=method,
+                                             convergence=convergence,
+                                             robust_refit=robust_refit,
+                                             polydeg=polydeg,
+                                             display=display,
+                                             savefig=savefig,
+                                             filename=filename,
+                                             idx=0)
 
     def apply_wavelength_calibration(self,
                                      wave_start=None,
@@ -4379,7 +4663,7 @@ class OneDSpec():
                         self.wavecal_science._create_wavecal_fits(individual)
 
                 if 'fluxraw' in output_split:
-                    if self.fluxcal.flux_raw is None:
+                    if self.fluxcal.flux_raw != []:
                         warnings.warn("Spectrum is not flux calibrated.")
                     else:
                         self.fluxcal._create_flux_fits('science', individual)
@@ -4408,7 +4692,7 @@ class OneDSpec():
                                 self.wavecal_science.wavecal_hdulist[i])
 
                     if 'fluxraw' in output_split:
-                        if self.fluxcal.flux_raw is not None:
+                        if self.fluxcal.flux_raw != []:
                             hdu_output.extend(
                                 self.fluxcal.flux_science_hdulist[i])
 
@@ -4449,7 +4733,7 @@ class OneDSpec():
                         hdu_output.extend(self.wavecal_science.wavecal_hdulist)
 
                 if 'fluxraw' in output_split:
-                    if self.fluxcal.flux_raw is None:
+                    if self.fluxcal.flux_raw != []:
                         warnings.warn("Spectrum is not flux calibrated.")
                     else:
                         self.fluxcal._create_flux_fits('science', individual)
