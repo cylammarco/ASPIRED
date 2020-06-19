@@ -16,7 +16,7 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             optimal=True,
                             skywidth=10,
                             skydeg=1,
-                            display=True,
+                            display=False,
                             jsonstring=False)
 
 lhs6328_twodspec.save_fits(filename='example_output/lhs6328_adu_traces',
@@ -34,9 +34,20 @@ lhs6328_onedspec.extract_arcspec(display=False, stype='science')
 # Find the peaks of the arc
 lhs6328_onedspec.find_arc_lines(display=False, stype='science')
 
+# Configure the wavelength calibrator
+lhs6328_onedspec.initialise_calibrator(min_wavelength=3500, max_wavelength=8000)
+lhs6328_onedspec.set_fit_constraints(stype='science')
+lhs6328_onedspec.add_atlas(elements=['Xe'], stype='science')
+
 # Solve for the pixel-to-wavelength solution
-lhs6328_onedspec.fit(elements=["Xe"], stype='science')
-lhs6328_onedspec.refine_fit(elements=["Xe"], display=False, stype='science')
+lhs6328_onedspec.fit(stype='science')
+lhs6328_onedspec.refine_fit(
+    n_delta=2,
+    display=True,
+    stype='science')
+lhs6328_onedspec.refine_fit(
+    display=True,
+    stype='science')
 
 # Apply the wavelength calibration and display it
 lhs6328_onedspec.apply_wavelength_calibration(stype='science')
@@ -62,7 +73,7 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             optimal=True,
                             skywidth=10,
                             skydeg=1,
-                            display=True,
+                            display=False,
                             jsonstring=False)
 
 lhs6328_twodspec.save_fits(filename='example_output/lhs6328_adu_traces',
@@ -80,9 +91,17 @@ lhs6328_onedspec.extract_arcspec(display=False, stype='science')
 # Find the peaks of the arc
 lhs6328_onedspec.find_arc_lines(display=False, stype='science')
 
+# Configure the wavelength calibrator
+lhs6328_onedspec.initialise_calibrator(min_wavelength=3500, max_wavelength=8000)
+lhs6328_onedspec.set_fit_constraints(stype='science')
+lhs6328_onedspec.add_atlas(elements=['Xe'], stype='science')
+
 # Solve for the pixel-to-wavelength solution
-lhs6328_onedspec.fit(elements=["Xe"], stype='science')
-lhs6328_onedspec.refine_fit(elements=["Xe"], display=False, stype='science')
+lhs6328_onedspec.fit(stype='science')
+lhs6328_onedspec.refine_fit(
+    n_delta=2,
+    display=True,
+    stype='science')
 
 # Apply the wavelength calibration and display it
 lhs6328_onedspec.apply_wavelength_calibration(stype='science')

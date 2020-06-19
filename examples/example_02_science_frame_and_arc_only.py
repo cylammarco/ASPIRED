@@ -29,9 +29,14 @@ lhs6328_onedspec.extract_arcspec(display=False, stype='science')
 # Find the peaks of the arc
 lhs6328_onedspec.find_arc_lines(display=False, stype='science')
 
+# Configure the wavelength calibrator
+lhs6328_onedspec.initialise_calibrator(min_wavelength=3500, max_wavelength=8000)
+lhs6328_onedspec.set_fit_constraints(stype='science')
+lhs6328_onedspec.add_atlas(elements=['Xe'], stype='science')
+
 # Solve for the pixel-to-wavelength solution
-lhs6328_onedspec.fit(elements=["Xe"], stype='science')
-lhs6328_onedspec.refine_fit(elements=["Xe"], display=False, stype='science')
+lhs6328_onedspec.fit(stype='science')
+lhs6328_onedspec.refine_fit(display=False, stype='science')
 
 # Add the extracted 1D spectrum without the uncertainties and sky
 lhs6328_onedspec.add_spec(lhs6328_adu, stype='science')
@@ -70,9 +75,14 @@ lhs6328_onedspec.extract_arcspec(display=False, stype='science')
 # Find the peaks of the arc
 lhs6328_onedspec.find_arc_lines(display=False, stype='science')
 
+# Configure the wavelength calibrator
+lhs6328_onedspec.initialise_calibrator(min_wavelength=3500, max_wavelength=8000)
+lhs6328_onedspec.set_fit_constraints(stype='science')
+lhs6328_onedspec.add_atlas(elements=['Xe'], stype='science')
+
 # Solve for the pixel-to-wavelength solution
-lhs6328_onedspec.fit(elements=["Xe"], stype='science')
-lhs6328_onedspec.refine_fit(elements=["Xe"], display=False, stype='science')
+lhs6328_onedspec.fit(stype='science')
+lhs6328_onedspec.refine_fit(display=False, stype='science')
 
 # Add the extracted 1D spectrum without the uncertainties and sky
 lhs6328_onedspec.add_spec(lhs6328_adu, stype='science')

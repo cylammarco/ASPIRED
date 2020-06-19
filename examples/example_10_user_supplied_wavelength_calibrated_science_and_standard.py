@@ -29,7 +29,7 @@ lhs6328_onedspec.compute_sensitivity()
 lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
 # Inspect reduced spectrum
-#lhs6328_onedspec.inspect_reduced_spectrum(stype='science+standard')
+lhs6328_onedspec.inspect_reduced_spectrum(stype='science+standard')
 
 # Save as a FITS file
 lhs6328_onedspec.save_fits(
