@@ -194,14 +194,15 @@ class ImageReduction:
         if isinstance(self.filelist, str):
             self.filelist = np.genfromtxt(self.filelist,
                                           delimiter=self.delimiter,
-                                          dtype='object',
-                                          autostrip=True)
+                                          dtype=None,
+                                          autostrip=True).astype('U')
+
             if np.shape(np.shape(self.filelist))[0] == 2:
-                self.imtype = self.filelist[:, 0]
-                self.impath = self.filelist[:, 1]
+                self.imtype = self.filelist[:, 0].astype('object')
+                self.impath = self.filelist[:, 1].astype('object')
             elif np.shape(np.shape(self.filelist))[0] == 1:
-                self.imtype = self.filelist[0]
-                self.impath = self.filelist[1]
+                self.imtype = self.filelist[0].astype('object')
+                self.impath = self.filelist[1].astype('object')
             else:
                 raise TypeError(
                     'Please provide a text file with at least 2 columns.')
@@ -223,7 +224,9 @@ class ImageReduction:
         for i, im in enumerate(self.impath):
             if not os.path.isabs(im):
                 self.impath[i] = os.path.join(self.filelist_abspath,
-                                              im.decode('utf-8'))
+                                              im)
+            print(im)
+            print(self.impath[i])
 
         self.imtype = self.imtype.astype('str')
 
