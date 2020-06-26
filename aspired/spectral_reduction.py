@@ -2158,7 +2158,6 @@ class WavelengthCalibration():
                   relative_humidity=0.,
                   constrain_poly=False,
                   idx=None):
-
         '''
             elements: string or list of string
                 String or list of strings of Chemical symbol. Case insensitive.
@@ -2264,18 +2263,18 @@ class WavelengthCalibration():
             if display:
                 if savefig:
                     self.calibrator[i].plot_fit(self.arcspec[i],
-                               self.polyfit_coeff[i],
-                               plot_atlas=True,
-                               log_spectrum=False,
-                               tolerance=1.0,
-                               savefig=True,
-                               filename=filename)
+                                                self.polyfit_coeff[i],
+                                                plot_atlas=True,
+                                                log_spectrum=False,
+                                                tolerance=1.0,
+                                                savefig=True,
+                                                filename=filename)
                 else:
                     self.calibrator[i].plot_fit(self.arcspec[i],
-                               self.polyfit_coeff[i],
-                               plot_atlas=True,
-                               log_spectrum=False,
-                               tolerance=1.0)
+                                                self.polyfit_coeff[i],
+                                                plot_atlas=True,
+                                                log_spectrum=False,
+                                                tolerance=1.0)
 
     def refine_fit(self,
                    polyfit_coeff=None,
@@ -2361,18 +2360,18 @@ class WavelengthCalibration():
             if display:
                 if savefig:
                     self.calibrator[i].plot_fit(self.arcspec[i],
-                               polyfit_new[i],
-                               plot_atlas=True,
-                               log_spectrum=False,
-                               tolerance=1.0,
-                               savefig=True,
-                               filename=filename)
+                                                polyfit_new[i],
+                                                plot_atlas=True,
+                                                log_spectrum=False,
+                                                tolerance=1.0,
+                                                savefig=True,
+                                                filename=filename)
                 else:
                     self.calibrator[i].plot_fit(self.arcspec[i],
-                               polyfit_new[i],
-                               plot_atlas=True,
-                               log_spectrum=False,
-                               tolerance=1.0)
+                                                polyfit_new[i],
+                                                plot_atlas=True,
+                                                log_spectrum=False,
+                                                tolerance=1.0)
 
         self.polyfit_coeff = polyfit_new
         self.residual = residual_new
@@ -2470,7 +2469,6 @@ class WavelengthCalibration():
         self.aduerr_wcal = np.array(self.aduerr_wcal)
         self.adusky_wcal = np.array(self.adusky_wcal)
 
-
     def _create_adu_fits(self, stype):
 
         stype_split = stype.split('+')
@@ -2486,16 +2484,14 @@ class WavelengthCalibration():
 
     def _create_arcspec_fits(self):
         # Put the 1D arc spectrum in FITS format with an image header
-        self.arcspec_hdulist = np.array([None] * self.nspec,
-                                        dtype='object')
+        self.arcspec_hdulist = np.array([None] * self.nspec, dtype='object')
         for i in range(self.nspec):
             self.arcspec_hdulist[i] = fits.HDUList(
                 [fits.ImageHDU(self.arcspec[i])])
 
     def _create_wavecal_fits(self):
         # Put the polynomial(s) in FITS format with an image header
-        self.wavecal_hdulist = np.array([None] * self.nspec,
-                                        dtype='object')
+        self.wavecal_hdulist = np.array([None] * self.nspec, dtype='object')
         for i in range(self.nspec):
             self.wavecal_hdulist[i] = fits.HDUList(
                 [fits.ImageHDU(self.polyfit_coeff[i])])
@@ -2796,15 +2792,18 @@ class StandardLibrary:
                 self.library = library
             else:
                 self.library = libraries[0]
-                warnings.warn(
-                    'The request standard star cannot be found in the given '
-                    'library, using ' + self.library + ' instead.')
+                if not self.silence:
+                    warnings.warn(
+                        'The requested standard star cannot be found in the '
+                        'given library,  or the library is not specified. '
+                        'ASPIRED is using ' + self.library + '.')
         else:
             # If not, search again with the first one returned from lookup.
             self.target = libraries[0]
             libraries, _ = self.lookup_standard_libraries(self.target)
             self.library = libraries[0]
-            print('The requested library does not exist, ' + self.library +
+            if not self.silence:
+                print('The requested library does not exist, ' + self.library +
                   ' is used because it has the closest matching name.')
 
         if not self.silence:
@@ -3770,8 +3769,7 @@ class FluxCalibration(StandardLibrary):
         # Put the reduced data in FITS format with an image header
         if 'science' in stype_split:
 
-            self.adu_hdulist = np.array([None] * self.nspec,
-                                        dtype='object')
+            self.adu_hdulist = np.array([None] * self.nspec, dtype='object')
             for i in range(self.nspec):
                 self.adu_hdulist[i] = fits.HDUList([
                     fits.ImageHDU(self.adu[i]),
@@ -3805,7 +3803,7 @@ class FluxCalibration(StandardLibrary):
         # Put the reduced data in FITS format with an image header
         if 'science' in stype_split:
 
-            self.science_hdulist = np.array([None] * self.nspec,
+            self.flux_science_hdulist = np.array([None] * self.nspec,
                                             dtype='object')
             for i in range(self.nspec):
                 # Note that wave_start is the centre of the starting bin
@@ -3815,7 +3813,7 @@ class FluxCalibration(StandardLibrary):
 
                 sensitivity_fits = fits.ImageHDU(self.sensitivity_raw[i])
 
-                self.science_hdulist[i] = fits.HDUList([
+                self.flux_science_hdulist[i] = fits.HDUList([
                     flux_wavecal_fits, fluxerr_wavecal_fits,
                     fluxsky_wavecal_fits, sensitivity_fits
                 ])
@@ -3858,7 +3856,7 @@ class FluxCalibration(StandardLibrary):
         if 'science' in stype_split:
 
             self.science_resampled_hdulist = np.array([None] * self.nspec,
-                                            dtype='object')
+                                                      dtype='object')
 
             for i in range(self.nspec):
                 # Note that wave_start is the centre of the starting bin
@@ -3869,18 +3867,16 @@ class FluxCalibration(StandardLibrary):
                 flux_wavecal_fits.header['CRVAL1'] = self.wave_start[i]
                 flux_wavecal_fits.header['CTYPE1'] = 'Wavelength'
                 flux_wavecal_fits.header['CUNIT1'] = 'Angstroms'
-                flux_wavecal_fits.header[
-                    'BUNIT'] = 'erg/(s*cm**2*Angstrom)'
-                self.science_resampled_hdulist[i] = fits.HDUList(flux_wavecal_fits)
+                flux_wavecal_fits.header['BUNIT'] = 'erg/(s*cm**2*Angstrom)'
+                self.science_resampled_hdulist[i] = fits.HDUList(
+                    flux_wavecal_fits)
 
                 if self.fluxerr is not None:
                     fluxerr_wavecal_fits = fits.ImageHDU(self.fluxerr[i])
                     fluxerr_wavecal_fits.header['LABEL'] = 'Flux'
                     fluxerr_wavecal_fits.header['CRPIX1'] = 1.00E+00
-                    fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin[
-                        i]
-                    fluxerr_wavecal_fits.header[
-                        'CRVAL1'] = self.wave_start[i]
+                    fluxerr_wavecal_fits.header['CDELT1'] = self.wave_bin[i]
+                    fluxerr_wavecal_fits.header['CRVAL1'] = self.wave_start[i]
                     fluxerr_wavecal_fits.header['CTYPE1'] = 'Wavelength'
                     fluxerr_wavecal_fits.header['CUNIT1'] = 'Angstroms'
                     fluxerr_wavecal_fits.header[
@@ -3892,10 +3888,8 @@ class FluxCalibration(StandardLibrary):
                     fluxsky_wavecal_fits = fits.ImageHDU(self.fluxsky[i])
                     fluxsky_wavecal_fits.header['LABEL'] = 'Flux'
                     fluxsky_wavecal_fits.header['CRPIX1'] = 1.00E+00
-                    fluxsky_wavecal_fits.header['CDELT1'] = self.wave_bin[
-                        i]
-                    fluxsky_wavecal_fits.header[
-                        'CRVAL1'] = self.wave_start[i]
+                    fluxsky_wavecal_fits.header['CDELT1'] = self.wave_bin[i]
+                    fluxsky_wavecal_fits.header['CRVAL1'] = self.wave_start[i]
                     fluxsky_wavecal_fits.header['CTYPE1'] = 'Wavelength'
                     fluxsky_wavecal_fits.header['CUNIT1'] = 'Angstroms'
                     fluxsky_wavecal_fits.header[
@@ -3905,8 +3899,7 @@ class FluxCalibration(StandardLibrary):
 
                 if self.sensitivity is not None:
                     sensitivity_fits = fits.ImageHDU(self.sensitivity[i])
-                    self.science_resampled_hdulist[i].append(
-                        sensitivity_fits)
+                    self.science_resampled_hdulist[i].append(sensitivity_fits)
 
         if 'standard' in stype_split:
 
@@ -4135,12 +4128,13 @@ class OneDSpec():
                                                  iframe=iframe,
                                                  open_iframe=open_iframe)
         if 'standard' in stype_split:
-            self.wavecal_standard.extract_arcspec(use_pixel_list=use_pixel_list,
-                                                  display=display,
-                                                  jsonstring=jsonstring,
-                                                  renderer=renderer,
-                                                  iframe=iframe,
-                                                  open_iframe=open_iframe)
+            self.wavecal_standard.extract_arcspec(
+                use_pixel_list=use_pixel_list,
+                display=display,
+                jsonstring=jsonstring,
+                renderer=renderer,
+                iframe=iframe,
+                open_iframe=open_iframe)
 
     def find_arc_lines(self,
                        percentile=25.,
@@ -4537,6 +4531,8 @@ class OneDSpec():
                   output='flux+wavecal+fluxraw+adu',
                   filename='reduced',
                   stype='science',
+                  to_disk=True,
+                  to_memory=False,
                   overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -4544,8 +4540,6 @@ class OneDSpec():
 
         Parameters
         ----------
-        stype: String
-            Spectral type: science or standard
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
@@ -4562,8 +4556,12 @@ class OneDSpec():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        extension: String
-            File extension without the dot.
+        stype: String
+            Spectral type: science or standard
+        to_disk: boolean
+            Default is True. If True, the fits object will be saved to disk.
+        to_memory: boolean
+            Default is False. If True, the fits object will be returned.
         overwrite: boolean
             Default is False.
 
@@ -4576,14 +4574,17 @@ class OneDSpec():
         output_split = output.split('+')
         stype_split = stype.split('+')
 
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
+
         if 'science' in stype_split:
 
             if 'flux' in output_split:
                 if self.fluxcal.flux is None:
                     warnings.warn("Spectrum is not flux calibrated.")
                 else:
-                    self.fluxcal._create_flux_resampled_fits(
-                        'science')
+                    self.fluxcal._create_flux_resampled_fits('science')
 
             if 'wavecal' in output_split:
                 if self.wavecal_science.polyfit_coeff is None:
@@ -4592,7 +4593,7 @@ class OneDSpec():
                     self.wavecal_science._create_wavecal_fits()
 
             if 'fluxraw' in output_split:
-                if self.fluxcal.flux_raw != []:
+                if self.fluxcal.flux_raw == []:
                     warnings.warn("Spectrum is not flux calibrated.")
                 else:
                     self.fluxcal._create_flux_fits('science')
@@ -4605,6 +4606,9 @@ class OneDSpec():
                 else:
                     warnings.warn("ADU does not exist. Have you included "
                                   "a spectrum of anysort?")
+
+            if to_memory:
+                hdu_list_science = []
 
             for i in range(self.nspec):
 
@@ -4622,24 +4626,28 @@ class OneDSpec():
 
                 if 'fluxraw' in output_split:
                     if self.fluxcal.flux_raw != []:
-                        hdu_output.extend(
-                            self.fluxcal.flux_science_hdulist[i])
+                        hdu_output.extend(self.fluxcal.flux_science_hdulist[i])
 
                 if 'adu' in output_split:
-                    if (self.fluxcal.adu
-                            is not None) or (self.wavecal_science.adu
-                                             is not None):
-                        hdu_output.extend(
-                            self.fluxcal.adu_hdulist[i])
+                    if self.fluxcal.adu is not None:
+                        hdu_output.extend(self.fluxcal.adu_hdulist[i])
+                    elif self.wavecal_science.adu is not None:
+                        self.wavecal_science._create_adu_fits()
+                        hdu_output.extend(self.wavecal_science.adu_hdulist[i])
 
                 # Convert the first HDU to PrimaryHDU
                 hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
                                                 hdu_output[0].header)
                 hdu_output.update_extend()
 
-                # Save file to disk
-                hdu_output.writeto(filename + '_science_' + str(i) + '.fits',
-                                   overwrite=overwrite)
+                if to_disk:
+                    # Save file to disk
+                    hdu_output.writeto(filename + '_science_' + str(i) +
+                                       '.fits',
+                                       overwrite=overwrite)
+
+                if to_memory:
+                    hdu_list_science.append(hdu_output)
 
         if 'standard' in stype_split:
             # Prepare multiple extension HDU
@@ -4648,8 +4656,7 @@ class OneDSpec():
                 if self.fluxcal.flux_standard is None:
                     warnings.warn("Spectrum is not flux calibrated.")
                 else:
-                    self.fluxcal._create_flux_resampled_fits(
-                        'standard')
+                    self.fluxcal._create_flux_resampled_fits('standard')
                     hdu_output.extend(self.fluxcal.standard_resampled_hdulist)
 
             if 'wavecal' in output_split:
@@ -4657,7 +4664,7 @@ class OneDSpec():
                     warnings.warn("Spectrum is not wavelength calibrated.")
                 else:
                     self.wavecal_standard._create_wavecal_fits()
-                    hdu_output.extend(self.wavecal_standard.wavecal_hdulist)
+                    hdu_output.extend(self.wavecal_standard.wavecal_hdulist[0])
 
             if 'fluxraw' in output_split:
                 if self.fluxcal.flux_standard_raw is None:
@@ -4683,10 +4690,127 @@ class OneDSpec():
                                             hdu_output[0].header)
             hdu_output.update_extend()
 
-            # Save file to disk
-            hdu_output.writeto(filename + '_standard.fits',
-                               overwrite=overwrite)
+            if to_disk:
+                # Save file to disk
+                hdu_output.writeto(filename + '_standard.fits',
+                                   overwrite=overwrite)
 
-        if ('science' not in stype_split) and ('standard' not in stype_split):
-            raise ValueError('Unknown stype, please choose from (1) science; '
-                             'and/or (2) standard. use + as delimiter.')
+            if to_memory:
+                hdu_list_standard = hdu_output
+
+        if to_memory:
+            # return hdu list(s)
+            if 'science' in stype_split and 'standard' in stype_split:
+                return hdu_list_science, hdu_list_standard
+            elif 'science' in stype_split:
+                return hdu_list_science
+            else:
+                return hdu_list_standard
+
+    def save_csv(self,
+                 output='flux+wavecal+fluxraw+adu',
+                 filename='reduced',
+                 column_major=True,
+                 stype='science',
+                 overwrite=False):
+        '''
+        Save the reduced data to disk, with a choice of any combination of the
+        5 sets of data, see below the 'output' parameters for details.
+
+        Parameters
+        ----------
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            flux: 4 HDUs
+                Flux, uncertainty, sky, sensitivity (bin width = per wavelength)
+            wavecal: 1 HDU
+                Polynomial coefficients for wavelength calibration
+            fluxraw: 4 HDUs
+                Flux, uncertainty, sky, sensitivity (bin width = per pixel)
+            adu: 3 HDUs
+                ADU, uncertainty and sky (bin width = per pixel)
+        filename: String
+            Disk location to be written to. Default is at where the
+            process/subprocess is execuated.
+        stype: String
+            Spectral type: science or standard
+        to_disk: boolean
+
+        to_memory: boolean
+
+        overwrite: boolean
+            Default is False.
+
+        '''
+
+        hdu_output = self.save_fits(output=output,
+                                    filename=filename,
+                                    stype=stype,
+                                    to_disk=False,
+                                    to_memory=True,
+                                    overwrite=overwrite)
+
+        # Split the string into strings
+        output_split = output.split('+')
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split and 'standard' in stype_split:
+            hdu_list_science, hdu_list_standard = hdu_output
+        elif 'science' in stype_split:
+            hdu_list_science = hdu_output
+        else:
+            hdu_list_standard = hdu_output
+
+        header = {
+            'flux':
+            'Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, Sensitivity Curve',
+            'wavecal': 'Polynomial coefficients for wavelength calibration',
+            'fluxraw': 'Flux, Flux Uncertainty, Sky Flux, Sensitivity Curve',
+            'adu': 'ADU, ADU Uncertainty, Sky ADU'
+        }
+
+        n_hdu = {
+            'flux': 4,
+            'wavecal': 1,
+            'fluxraw': 4,
+            'adu': 3
+        }
+
+        if 'science' in stype_split:
+
+            # looping through each spectrum
+            for i in range(self.nspec):
+                start = 0
+                # looping through the output type of each spectrum
+                for j in range(len(output_split)):
+                    output_type = output_split[j]
+                    end = start + n_hdu[output_type]
+
+                    output_data = np.column_stack([hdu.data for hdu in hdu_list_science[i][start:end]])
+
+                    np.savetxt(filename + '_' + output_type + '_' + str(i) +
+                               '.csv',
+                               output_data,
+                               delimiter=',',
+                               header=header[output_type])
+                    start = end
+
+        if 'standard' in stype_split:
+
+            start = 0
+            # looping through the output type of each spectrum
+            for j in range(len(output_split)):
+                output_type = output_split[j]
+                end = start + n_hdu[output_type]
+
+                output_data = np.column_stack([hdu.data for hdu in hdu_list_standard[i][start:end]])
+
+                np.savetxt(filename + '_' + output_type + '_' + str(i) +
+                           '.csv',
+                           output_data,
+                           delimiter=',',
+                           header=header[output_type])
+                start = end
