@@ -500,7 +500,8 @@ class TwoDSpec:
         # display disgnostic plot
         if display:
             # set a side-by-side subplot
-            fig = go.Figure()
+            fig = go.Figure(
+                layout=dict(autosize=False, height=height, width=width))
 
             # show the image on the left
             fig.add_trace(
@@ -520,8 +521,7 @@ class TwoDSpec:
                            y=ydata[peaks_y],
                            marker=dict(color='firebrick'),
                            xaxis='x2'))
-            fig.update_layout(autosize=True,
-                              yaxis_title='Spatial Direction / pixel',
+            fig.update_layout(yaxis_title='Spatial Direction / pixel',
                               xaxis=dict(zeroline=False,
                                          domain=[0, 0.5],
                                          showgrid=False,
@@ -534,19 +534,18 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=False)
 
-            if jsonstring:
-                return fig.to_json()
             if iframe:
-                if open_iframe:
-                    pio.write_html(fig, 'identify_spectra.html')
-                else:
-                    pio.write_html(fig,
-                                   'identify_spectra.html',
-                                   auto_open=False)
+                pio.write_html(fig,
+                               'identify_spectra.html',
+                               auto_open=open_iframe)
+
             if renderer == 'default':
                 fig.show()
             else:
                 fig.show(renderer)
+
+            if jsonstring:
+                return fig.to_json()
 
         self.peak = peaks_y
         self.peak_height = heights_y
@@ -652,6 +651,8 @@ class TwoDSpec:
                  ap_faint=10,
                  display=False,
                  renderer='default',
+                 width=1920,
+                 height=1080,
                  jsonstring=False,
                  iframe=False,
                  open_iframe=False):
@@ -909,7 +910,8 @@ class TwoDSpec:
         # Plot
         if display:
 
-            fig = go.Figure()
+            fig = go.Figure(
+                layout=dict(autosize=False, height=height, width=width))
 
             fig.add_trace(
                 go.Heatmap(z=np.log10(self.img),
@@ -933,26 +935,23 @@ class TwoDSpec:
                            y=spec_idx[:, start_window_idx],
                            mode='markers',
                            marker=dict(color='firebrick')))
-            fig.update_layout(autosize=True,
-                              yaxis_title='Spatial Direction / pixel',
+            fig.update_layout(yaxis_title='Spatial Direction / pixel',
                               xaxis=dict(zeroline=False,
                                          showgrid=False,
                                          title='Spectral Direction / pixel'),
                               bargap=0,
                               hovermode='closest',
-                              showlegend=False,
-                              height=800)
-            if jsonstring:
-                return fig.to_json()
+                              showlegend=False)
             if iframe:
-                if open_iframe:
-                    pio.write_html(fig, 'ap_trace.html')
-                else:
-                    pio.write_html(fig, 'ap_trace.html', auto_open=False)
+                pio.write_html(fig, 'ap_trace.html', auto_open=open_iframe)
+
             if renderer == 'default':
                 fig.show()
             else:
                 fig.show(renderer)
+
+            if jsonstring:
+                return fig.to_json()
 
     def add_trace(self, trace, trace_sigma):
         '''
@@ -1009,6 +1008,8 @@ class TwoDSpec:
                    optimal=True,
                    display=False,
                    renderer='default',
+                   width=1920,
+                   height=1080,
                    jsonstring=False,
                    iframe=False,
                    open_iframe=False):
@@ -1171,7 +1172,8 @@ class TwoDSpec:
                 min_trace = int(min(self.trace[j]) + 0.5)
                 max_trace = int(max(self.trace[j]) + 0.5)
 
-                fig = go.Figure()
+                fig = go.Figure(
+                    layout=dict(autosize=False, height=height, width=width))
                 # the 3 is to show a little bit outside the extraction regions
                 img_display = np.log10(self.img[
                     max(0, min_trace - widthdn - skysep - skywidth -
@@ -1294,7 +1296,6 @@ class TwoDSpec:
 
                 # Decorative stuff
                 fig.update_layout(
-                    autosize=True,
                     xaxis=dict(showticklabels=False),
                     yaxis=dict(zeroline=False,
                                domain=[0.5, 1],
@@ -1340,21 +1341,19 @@ class TwoDSpec:
                                             bgcolor='rgba(0,0,0,0)'),
                     bargap=0,
                     hovermode='closest',
-                    showlegend=True,
-                    height=800)
-                if jsonstring:
-                    return fig.to_json()
+                    showlegend=True)
+
                 if iframe:
-                    if open_iframe:
-                        pio.write_html(fig, 'ap_extract_' + str(j) + 'html')
-                    else:
-                        pio.write_html(fig,
-                                       'ap_extract_' + str(j) + 'html',
-                                       auto_open=False)
+                    pio.write_html(fig,
+                                   'ap_extract_' + str(j) + 'html',
+                                   auto_open=open_iframe)
                 if renderer == 'default':
                     fig.show()
                 else:
                     fig.show(renderer)
+
+                if jsonstring:
+                    return fig.to_json()
 
         self.adu = adu
         self.aduerr = aduerr
@@ -1796,6 +1795,8 @@ class WavelengthCalibration():
                         display=False,
                         jsonstring=False,
                         renderer='default',
+                        width=1920,
+                        height=1080,
                         iframe=False,
                         open_iframe=False):
         '''
@@ -1857,7 +1858,8 @@ class WavelengthCalibration():
 
             # note that the display is adjusted for the chip gaps
             if display:
-                fig[i] = go.Figure()
+                fig[i] = go.Figure(
+                    layout=dict(autosize=False, height=height, width=width))
 
                 if use_pixel_list:
                     fig[i].add_trace(
@@ -1873,29 +1875,25 @@ class WavelengthCalibration():
                                    line=dict(color='royalblue', width=1)))
 
                 fig[i].update_layout(
-                    autosize=True,
                     xaxis=dict(zeroline=False,
                                title='Spectral Direction / pixel'),
                     yaxis=dict(zeroline=False,
                                range=[0, max(self.arcspec[i])],
                                title='ADU per second'),
                     hovermode='closest',
-                    showlegend=False,
-                    height=600)
+                    showlegend=False)
 
-                if jsonstring:
-                    return fig[i].to_json()
                 if iframe:
-                    if open_iframe:
-                        pio.write_html(fig[i], 'arcspec_' + str(i) + 'html')
-                    else:
-                        pio.write_html(fig[i],
-                                       'arcspec_' + str(i) + 'html',
-                                       auto_open=False)
+                    pio.write_html(fig[i],
+                                   'arcspec_' + str(i) + 'html',
+                                   auto_open=open_iframe)
                 if renderer == 'default':
                     fig[i].show()
                 else:
                     fig[i].show(renderer)
+
+                if jsonstring:
+                    return fig[i].to_json()
 
     def find_arc_lines(self,
                        percentile=25.,
@@ -1971,7 +1969,8 @@ class WavelengthCalibration():
                 self.peaks.append(self.peaks_raw[j])
 
             if display:
-                fig[j] = go.Figure()
+                fig[j] = go.Figure(
+                    layout=dict(autosize=False, height=height, width=width))
 
                 # show the image on the top
                 fig[j].add_trace(
@@ -1993,7 +1992,6 @@ class WavelengthCalibration():
                                    line=dict(color='firebrick', width=1)))
 
                 fig[j].update_layout(
-                    autosize=True,
                     xaxis=dict(zeroline=False,
                                range=[0, self.arc.shape[1]],
                                title='Spectral Direction / pixel'),
@@ -2001,22 +1999,20 @@ class WavelengthCalibration():
                                range=[0, self.arc.shape[0]],
                                title='Spatial Direction / pixel'),
                     hovermode='closest',
-                    showlegend=False,
-                    height=600)
+                    showlegend=False)
 
-                if jsonstring:
-                    return fig[j].to_json()
                 if iframe:
-                    if open_iframe:
-                        pio.write_html(fig[j], 'arc_lines_' + str(j) + 'html')
-                    else:
-                        pio.write_html(fig[j],
-                                       'arc_lines_' + str(j) + 'html',
-                                       auto_open=False)
+                    pio.write_html(fig[j],
+                                   'arc_lines_' + str(j) + 'html',
+                                   auto_open=open_iframe)
+
                 if renderer == 'default':
                     fig[j].show()
                 else:
                     fig[j].show(renderer)
+
+                if jsonstring:
+                    return fig[j].to_json()
 
     def initialise_calibrator(self,
                               peaks=None,
@@ -2804,7 +2800,7 @@ class StandardLibrary:
             self.library = libraries[0]
             if not self.silence:
                 print('The requested library does not exist, ' + self.library +
-                  ' is used because it has the closest matching name.')
+                      ' is used because it has the closest matching name.')
 
         if not self.silence:
             if library is None:
@@ -2829,6 +2825,8 @@ class StandardLibrary:
 
     def inspect_standard(self,
                          renderer='default',
+                         width=1920,
+                         height=1080,
                          jsonstring=False,
                          iframe=False,
                          open_iframe=False):
@@ -2854,6 +2852,9 @@ class StandardLibrary:
         '''
         fig = go.Figure(layout=dict(updatemenus=list([
             dict(
+                autosize=False,
+                height=height,
+                width=width,
                 active=0,
                 buttons=list([
                     dict(label='Log Scale',
@@ -2888,26 +2889,23 @@ class StandardLibrary:
                        line=dict(color='royalblue', width=4)))
 
         fig.update_layout(
-            autosize=True,
             title=self.library + ': ' + self.target + ' ' + self.ftype,
             xaxis_title=r'$\text{Wavelength / A}$',
             yaxis_title=
             r'$\text{Flux / ergs cm}^{-2} \text{s}^{-1} \text{A}^{-1}$',
             hovermode='closest',
-            showlegend=False,
-            height=800)
+            showlegend=False)
 
-        if jsonstring:
-            return fig.to_json()
         if iframe:
-            if open_iframe:
-                pio.write_html(fig, 'standard.html')
-            else:
-                pio.write_html(fig, 'standard.html', auto_open=False)
+            pio.write_html(fig, 'standard.html', auto_open=open_iframe)
+
         if renderer == 'default':
             fig.show()
         else:
             fig.show(renderer)
+
+        if jsonstring:
+            return fig.to_json()
 
     def query(self):
         pass
@@ -3234,6 +3232,8 @@ class FluxCalibration(StandardLibrary):
 
     def inspect_sensitivity(self,
                             renderer='default',
+                            width=1920,
+                            height=1080,
                             jsonstring=False,
                             iframe=False,
                             open_iframe=False):
@@ -3260,6 +3260,9 @@ class FluxCalibration(StandardLibrary):
 
         fig = go.Figure(layout=dict(updatemenus=list([
             dict(
+                autosize=False,
+                height=height,
+                width=width,
                 active=0,
                 buttons=list([
                     dict(label='Log Scale',
@@ -3316,8 +3319,7 @@ class FluxCalibration(StandardLibrary):
             fig.update_layout(title=self.library + ': ' + self.target,
                               yaxis_title='ADU / s')
 
-        fig.update_layout(autosize=True,
-                          hovermode='closest',
+        fig.update_layout(hovermode='closest',
                           showlegend=True,
                           xaxis_title=r'$\text{Wavelength / A}$',
                           yaxis=dict(title='ADU / s'),
@@ -3333,19 +3335,17 @@ class FluxCalibration(StandardLibrary):
                                                       family="sans-serif",
                                                       size=12,
                                                       color="black"),
-                                                  bgcolor='rgba(0,0,0,0)'),
-                          height=800)
-        if jsonstring:
-            return fig.to_json()
+                                                  bgcolor='rgba(0,0,0,0)'))
         if iframe:
-            if open_iframe:
-                pio.write_html(fig, 'senscurve.html')
-            else:
-                pio.write_html(fig, 'senscurve.html', auto_open=False)
+            pio.write_html(fig, 'senscurve.html', auto_open=open_iframe)
+
         if renderer == 'default':
             fig.show()
         else:
             fig.show(renderer)
+
+        if jsonstring:
+            return fig.to_json()
 
     def apply_flux_calibration(self, stype='science+standard'):
         '''
@@ -3470,6 +3470,13 @@ class FluxCalibration(StandardLibrary):
                                  wave_min=4000.,
                                  wave_max=8000.,
                                  renderer='default',
+                                 width=1920,
+                                 height=1080,
+                                 filename=None,
+                                 png=False,
+                                 jpg=False,
+                                 svg=False,
+                                 pdf=False,
                                  jsonstring=False,
                                  iframe=False,
                                  open_iframe=False):
@@ -3555,6 +3562,9 @@ class FluxCalibration(StandardLibrary):
                         ]),
                     )
                 ]),
+                                                   autosize=False,
+                                                   height=height,
+                                                   width=width,
                                                    title='Log scale'))
                 # show the image on the top
                 if self.flux_science_calibrated:
@@ -3594,7 +3604,6 @@ class FluxCalibration(StandardLibrary):
                                        line=dict(color='orange'),
                                        name='Sky ADU / s'))
                 fig_sci[i].update_layout(
-                    autosize=True,
                     hovermode='closest',
                     showlegend=True,
                     xaxis=dict(title='Wavelength / A',
@@ -3608,23 +3617,37 @@ class FluxCalibration(StandardLibrary):
                                             font=dict(family="sans-serif",
                                                       size=12,
                                                       color="black"),
-                                            bgcolor='rgba(0,0,0,0)'),
-                    height=800)
+                                            bgcolor='rgba(0,0,0,0)'))
 
-                if jsonstring:
-                    return fig_sci[j].to_json()
+                if filename is None:
+                    filename = "spectrum_" + str(i)
+                else:
+                    filename = os.path.splitext(filename)[0] + "_" + str(i)
+
                 if iframe:
-                    if open_iframe:
-                        pio.write_html(fig_sci[i],
-                                       'spectrum_' + str(i) + '.html')
-                    else:
-                        pio.write_html(fig_sci[i],
-                                       'spectrum_' + str(i) + '.html',
-                                       auto_open=False)
+                    pio.write_html(fig_sci[i],
+                                   filename + '.html',
+                                   auto_open=open_iframe)
+
                 if renderer == 'default':
                     fig_sci[i].show()
                 else:
                     fig_sci[i].show(renderer)
+
+                if jpg:
+                    fig_sci[i].write_image(filename + '.jpg', format='jpg')
+
+                if png:
+                    fig_sci[i].write_image(filename + '.png', format='png')
+
+                if svg:
+                    fig_sci[i].write_image(filename + '.svg', format='svg')
+
+                if pdf:
+                    fig_sci[i].write_image(filename + '.pdf', format='pdf')
+
+                if jsonstring:
+                    return fig_sci[j].to_json()
 
         if 'standard' in stype_split:
 
@@ -3682,6 +3705,9 @@ class FluxCalibration(StandardLibrary):
                     ]),
                 )
             ]),
+                                                 autosize=False,
+                                                 height=height,
+                                                 width=width,
                                                  title='Log scale'))
             # show the image on the top
             if self.flux_standard_calibrated:
@@ -3728,7 +3754,6 @@ class FluxCalibration(StandardLibrary):
                                    name='Sky ADU / s'))
 
             fig_standard.update_layout(
-                autosize=True,
                 hovermode='closest',
                 showlegend=True,
                 xaxis=dict(title='Wavelength / A', range=[wave_min, wave_max]),
@@ -3741,22 +3766,37 @@ class FluxCalibration(StandardLibrary):
                                         font=dict(family="sans-serif",
                                                   size=12,
                                                   color="black"),
-                                        bgcolor='rgba(0,0,0,0)'),
-                height=800)
+                                        bgcolor='rgba(0,0,0,0)'))
+
+            if filename is None:
+                filename = "spectrum_standard"
+            else:
+                filename = os.path.splitext(filename)[0]
+
+            if iframe:
+                pio.write_html(fig_standard,
+                               filename + '.html',
+                               auto_open=open_iframe)
+
+            if renderer == 'default':
+                fig_standard.show(height=height, width=width)
+            else:
+                fig_standard.show(renderer, height=height, width=width)
+
+            if jpg:
+                fig_standard.write_image(filename + '.jpg', format='jpg')
+
+            if png:
+                fig_standard.write_image(filename + '.png', format='png')
+
+            if svg:
+                fig_standard.write_image(filename + '.svg', format='svg')
+
+            if pdf:
+                fig_standard.write_image(filename + '.pdf', format='pdf')
 
             if jsonstring:
                 return fig_standard.to_json()
-            if iframe:
-                if open_iframe:
-                    pio.write_html(fig_standard, 'spectrum_standard.html')
-                else:
-                    pio.write_html(fig_standard,
-                                   'spectrum_standard.html',
-                                   auto_open=False)
-            if renderer == 'default':
-                fig_standard.show()
-            else:
-                fig_standard.show(renderer)
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
             raise ValueError('Unknown stype, please choose from (1) science; '
@@ -3804,7 +3844,7 @@ class FluxCalibration(StandardLibrary):
         if 'science' in stype_split:
 
             self.flux_science_hdulist = np.array([None] * self.nspec,
-                                            dtype='object')
+                                                 dtype='object')
             for i in range(self.nspec):
                 # Note that wave_start is the centre of the starting bin
                 flux_wavecal_fits = fits.ImageHDU(self.flux_raw[i])
@@ -4478,13 +4518,21 @@ class OneDSpec():
                                  wave_min=4000.,
                                  wave_max=8000.,
                                  renderer='default',
+                                 width=1920,
+                                 height=1080,
+                                 filename=None,
+                                 png=False,
+                                 jpg=False,
+                                 svg=False,
+                                 pdf=False,
                                  jsonstring=False,
                                  iframe=False,
                                  open_iframe=False):
 
         self.fluxcal.inspect_reduced_spectrum(stype, wave_min, wave_max,
-                                              renderer, jsonstring, iframe,
-                                              open_iframe)
+                                              renderer, width, height,
+                                              filename, png, jpg, svg, pdf,
+                                              jsonstring, iframe, open_iframe)
 
     def _create_wavelength_fits(self, stype, resample):
         '''
@@ -4772,12 +4820,7 @@ class OneDSpec():
             'adu': 'ADU, ADU Uncertainty, Sky ADU'
         }
 
-        n_hdu = {
-            'flux': 4,
-            'wavecal': 1,
-            'fluxraw': 4,
-            'adu': 3
-        }
+        n_hdu = {'flux': 4, 'wavecal': 1, 'fluxraw': 4, 'adu': 3}
 
         if 'science' in stype_split:
 
@@ -4789,7 +4832,8 @@ class OneDSpec():
                     output_type = output_split[j]
                     end = start + n_hdu[output_type]
 
-                    output_data = np.column_stack([hdu.data for hdu in hdu_list_science[i][start:end]])
+                    output_data = np.column_stack(
+                        [hdu.data for hdu in hdu_list_science[i][start:end]])
 
                     np.savetxt(filename + '_' + output_type + '_' + str(i) +
                                '.csv',
@@ -4806,10 +4850,10 @@ class OneDSpec():
                 output_type = output_split[j]
                 end = start + n_hdu[output_type]
 
-                output_data = np.column_stack([hdu.data for hdu in hdu_list_standard[i][start:end]])
+                output_data = np.column_stack(
+                    [hdu.data for hdu in hdu_list_standard[start:end]])
 
-                np.savetxt(filename + '_' + output_type + '_' + str(i) +
-                           '.csv',
+                np.savetxt(filename + '_' + output_type + '.csv',
                            output_data,
                            delimiter=',',
                            header=header[output_type])
