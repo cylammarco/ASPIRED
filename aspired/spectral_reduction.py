@@ -3802,6 +3802,9 @@ class FluxCalibration(StandardLibrary):
             raise ValueError('Unknown stype, please choose from (1) science; '
                              'and/or (2) standard. use + as delimiter.')
 
+    def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
+        np.save(filename, self.sensitivity_itp)
+
     def _create_adu_fits(self, stype):
 
         stype_split = stype.split('+')
@@ -4493,6 +4496,10 @@ class OneDSpec():
         self.fluxcal.compute_sensitivity(kind, smooth, slength, sorder,
                                          mask_range, display, renderer,
                                          jsonstring, iframe, open_iframe)
+
+    def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
+
+        self.fluxcal.save_sensitivity_itp(filename=filename)
 
     def add_sensitivity_itp(self, sensitivity_itp):
 
