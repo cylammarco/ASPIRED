@@ -3750,7 +3750,7 @@ class FluxCalibration(StandardLibrary):
 
         sensitivity = sensitivity[mask]
         wave_literature = wave_standard_true[mask]
-        flux_literature = flux_standard[mask]
+        flux_literature = flux_standard_true[mask]
 
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
