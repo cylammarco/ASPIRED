@@ -3730,7 +3730,7 @@ class FluxCalibration(StandardLibrary):
             flux_standard_true = self.fluxmag_standard_true
             wave_standard_true = self.wave_standard_true
         else:
-            flux_standard = self.adu_standard
+            flux_standard = spec.adu
             flux_standard_true = spectres(spec.wave,
                                           self.wave_standard_true,
                                           self.fluxmag_standard_true,
