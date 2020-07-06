@@ -175,8 +175,12 @@ class spectrum1D():
         self.adu = adu
         if adu_err is not None:
             self.adu_err = adu_err
+        else:
+            self.adu_err = np.zeros_like(self.adu)
         if adu_sky is not None:
             self.adu_sky = adu_sky
+        else:
+            self.adu_sky = np.zeros_like(self.adu)
 
     def remove_adu(self):
         self.adu = None
@@ -450,7 +454,7 @@ class spectrum1D():
         self.adu_err_resampled = None
         self.adu_sky_resampled = None
 
-    def add_smoothin(self, smooth, slength, sorder):
+    def add_smoothing(self, smooth, slength, sorder):
         # add assertion here
         self.smooth = smooth
         self.slength = slength
@@ -823,8 +827,8 @@ class TwoDSpec:
                 img = img[self.spec_mask]
 
         # get the length in the spectral and spatial directions
-        self.spec_size = np.shape(img)[self.waxis]
-        self.spatial_size = np.shape(img)[self.saxis]
+        self.spec_size = np.shape(img)[self.saxis]
+        self.spatial_size = np.shape(img)[self.waxis]
         if self.saxis == 0:
             self.img = np.transpose(img)
             img = None
@@ -1083,7 +1087,7 @@ class TwoDSpec:
         var1 = self.readnoise + np.abs(xslice) / self.gain
         variance1 = 1. / np.nansum(P**2. / var1)
 
-        sky_median = np.median(sky)
+        sky_median = np.nanmedian(sky)
 
         signal_diff = 1
         variance_diff = 1
@@ -2287,13 +2291,13 @@ class WavelengthCalibration():
             spec = self.spectrum_list[i]
 
             len_trace = len(spec.trace)
-            trace = np.mean(spec.trace)
-            trace_width = np.mean(spec.trace_sigma) * 3.
+            trace = np.nanmean(spec.trace)
+            trace_width = np.nanmean(spec.trace_sigma) * 3.
 
             arc_trace = self.arc[
                 max(0, int(trace - trace_width -
                            1)):min(int(trace + trace_width), len_trace), :]
-            arc_spec = np.median(arc_trace, axis=0)
+            arc_spec = np.nanmedian(arc_trace, axis=0)
 
             spec.add_arc_spec(list(arc_spec))
 
@@ -2440,8 +2444,8 @@ class WavelengthCalibration():
 
                 # note that the image is not adjusted for the chip gaps
                 # peaks_raw are plotted instead of the peaks
-                trace = np.mean(self.spectrum_list[i].trace)
-                trace_width = np.mean(self.spectrum_list[i].trace_sigma) * 3
+                trace = np.nanmean(self.spectrum_list[i].trace)
+                trace_width = np.nanmean(self.spectrum_list[i].trace_sigma) * 3
                 for j in peaks_raw:
                     fig.add_trace(
                         go.Scatter(x=[j, j],
@@ -2629,7 +2633,11 @@ class WavelengthCalibration():
                         wavelengths,
                         spec_id=None,
                         intensities=None,
-                        constrain_poly=False):
+                        constrain_poly=False,
+                        vacuum=False,
+                        pressure=101325.,
+                        temperature=273.15,
+                        relative_humidity=0.):
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -2646,7 +2654,11 @@ class WavelengthCalibration():
                 elements=elements,
                 wavelengths=wavelengths,
                 intensities=intensities,
-                constrain_poly=constrain_poly)
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
 
     def add_atlas(self,
                   elements,
@@ -2866,7 +2878,7 @@ class WavelengthCalibration():
                                           convergence=convergence,
                                           robust_refit=robust_refit,
                                           polydeg=polydeg)
-            rms = np.sqrt(np.mean(residual**2.))
+            rms = np.sqrt(np.nanmean(residual**2.))
 
             if display:
                 self.spectrum_list[i].calibrator.plot_fit(
@@ -2924,7 +2936,7 @@ class WavelengthCalibration():
 
             # compute the new equally-spaced wavelength array
             if wave_bin is None:
-                wave_bin = np.median(np.ediff1d(wave))
+                wave_bin = np.nanmedian(np.ediff1d(wave))
 
             if wave_start is None:
                 wave_start = wave[0]
@@ -3482,50 +3494,6 @@ class FluxCalibration(StandardLibrary):
         self.spectrum_list_science = {}
         self.spectrum_list_standard = {}
 
-    def add_wavelength(self,
-                       wave,
-                       wave_resampled=None,
-                       spec_id=None,
-                       stype='standard'):
-
-        if stype == 'standard':
-            if wave_resampled is None:
-                wave_resampled = wave
-
-            spec = spectrum_list_standard[0]
-
-            spec.add_wavelength(wave)
-            spec.add_wavelength_resampled(
-                wave_bin=np.median(np.ediff1d(wave_resampled)),
-                wave_start=wave_resampled[0],
-                wave_end=wave_resampled[-1],
-                wave_resampled=wave_resampled,
-            )
-
-        elif stype == 'science':
-
-            if spec_id is not None:
-                assert np.in1d(spec_id,
-                               list(self.spectrum_list.keys())).all(), 'Some '
-                'spec_id provided are not in the spectrum_list.'
-            else:
-                spec_id = list(self.spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-                spec_id = [spec_id]
-
-            for j in spec_id:
-
-                spec = spectrum_list_science[i]
-
-                spec.add_wavelength(wave)
-                spec.add_wavelength_resampled(
-                    wave_bin=np.median(np.ediff1d(wave)),
-                    wave_start=wave_resampled[0],
-                    wave_end=wave_resampled[-1],
-                    wave_resampled=wave_resampled,
-                )
-
     def add_spec(self,
                  adu,
                  spec_id=None,
@@ -3537,6 +3505,9 @@ class FluxCalibration(StandardLibrary):
         '''
 
         if stype == 'standard':
+
+            if len(self.spectrum_list_standard.keys()) == 0:
+                self.spectrum_list_standard[0] = spectrum1D()
 
             if spec_id in list(self.spectrum_list_standard.keys()):
                 if self.spectrum_list_standard[spec_id].adu is not None:
@@ -3578,6 +3549,69 @@ class FluxCalibration(StandardLibrary):
             if stype not in ['science', 'standard']:
                 raise ValueError('Unknown stype, please choose from '
                                  '(1) science; and/or (2) standard.')
+
+    def add_wavelength(self,
+                       wave=None,
+                       wave_resampled=None,
+                       spec_id=None,
+                       stype='standard'):
+        '''
+        Add wavelength, one at a time.
+        '''
+
+        if (wave is None) & (wave_resampled is None):
+            raise ValueError('wave and wave_resampled cannot be None at '
+                             'at the same time.')
+
+        elif wave_resampled is None:
+            wave_resampled = wave
+
+        elif wave is None:
+            wave = wave_resampled
+
+        if stype == 'standard':
+
+            if len(self.spectrum_list_standard.keys()) == 0:
+                self.spectrum_list_standard[0] = spectrum1D(0)
+
+            spec = self.spectrum_list_standard[0]
+
+            spec.add_wavelength(wave)
+            spec.add_wavelength_resampled(
+                wave_bin=np.nanmedian(np.array(np.ediff1d(wave_resampled))),
+                wave_start=wave_resampled[0],
+                wave_end=wave_resampled[-1],
+                wave_resampled=wave_resampled,
+            )
+
+        elif stype == 'science':
+
+            if spec_id is not None:
+                if spec_id not in list(self.spectrum_list_science.keys()):
+                    warnings.warn(
+                        'The spec_id provided is not in the '
+                        'spectrum_list_science, new spectrum1D with the ID '
+                        'is created.')
+                    self.spectrum_list_science[spec_id] = spectrum1D(spec_id)
+            else:
+                if len(self.spectrum_list_science) == 0:
+                    self.spectrum_list_science[0] = spectrum1D(0)
+                spec_id = list(self.spectrum_list_science.keys())
+
+            if isinstance(spec_id, int):
+                spec_id = [spec_id]
+
+            for i in spec_id:
+
+                spec = self.spectrum_list_science[i]
+
+                spec.add_wavelength(wave)
+                spec.add_wavelength_resampled(
+                    wave_bin=np.nanmedian(np.array(np.ediff1d(wave))),
+                    wave_start=wave_resampled[0],
+                    wave_end=wave_resampled[-1],
+                    wave_resampled=wave_resampled,
+                )
 
     def add_twodspec(self, twodspec, pixel_list=None, stype='standard'):
         '''
@@ -3686,8 +3720,9 @@ class FluxCalibration(StandardLibrary):
         # in unit of flux per second. The higher resolution spectrum is
         # resampled to match the lower resolution one.
         spec = self.spectrum_list_standard[0]
-        if np.median(np.ediff1d(spec.wave)) < np.median(
-                np.ediff1d(self.wave_standard_true)):
+
+        if np.nanmedian(np.array(np.ediff1d(spec.wave))) < np.nanmedian(
+                np.array(np.ediff1d(self.wave_standard_true))):
             flux_standard = spectres(self.wave_standard_true,
                                      np.array(spec.wave),
                                      np.array(spec.adu),
@@ -3730,26 +3765,28 @@ class FluxCalibration(StandardLibrary):
                                        kind=kind,
                                        fill_value='extrapolate')
 
-        spec.add_sensitivity_itp(sensitivity_itp)
         spec.add_sensitivity(sensitivity)
         spec.add_literature_standard(wave_literature, flux_literature)
 
-        spec_id = list(self.spectrum_list_science.keys())
-        for i in spec_id:
-            self.spectrum_list_science[i].add_sensitivity_itp(sensitivity_itp)
+        # Add to each spectrum1D object
+        self.add_sensitivity_itp(sensitivity_itp, stype='science+standard')
 
-    def add_sensitivity_itp(self, sensitivity_itp):
-        # Add to both science and standard spectrum_list
-        self.spectrum_list_standard[0].add_sensitivity_itp(sensitivity_itp)
+    def add_sensitivity_itp(self, sensitivity_itp, stype='standard'):
 
-        spec_id = list(self.spectrum_list_science.keys())
+        stype_split = stype.split('+')
 
-        for i in spec_id:
+        if 'standard' in stype_split:
+            # Add to both science and standard spectrum_list
+            self.spectrum_list_standard[0].add_sensitivity_itp(
+                sensitivity_itp=sensitivity_itp)
 
-            spec = self.spectrum_list_science[i]
+        if 'science' in stype_split:
+            spec_id = list(self.spectrum_list_science.keys())
 
-            # apply the flux calibration
-            spec.add_sensitivity_itp(sensitivity_itp)
+            for i in spec_id:
+                # apply the flux calibration
+                self.spectrum_list_science[i].add_sensitivity_itp(
+                    sensitivity_itp=sensitivity_itp)
 
     def inspect_sensitivity(self,
                             renderer='default',
@@ -3908,6 +3945,7 @@ class FluxCalibration(StandardLibrary):
                 sensitivity = 10.**spec.sensitivity_itp(spec.wave)
 
                 flux = sensitivity * spec.adu
+
                 if spec.adu_err is not None:
                     flux_err = sensitivity * spec.adu_err
                 if spec.adu_sky is not None:
@@ -3917,6 +3955,7 @@ class FluxCalibration(StandardLibrary):
                                           spec.wave,
                                           np.array(flux),
                                           verbose=False)
+
                 if spec.adu_err is None:
                     flux_err_resampled = np.zeros_like(flux_resampled)
                 else:
@@ -3961,27 +4000,27 @@ class FluxCalibration(StandardLibrary):
 
             flux_resampled = spectres(spec.wave_resampled,
                                       spec.wave,
-                                      flux,
+                                      np.array(flux),
                                       verbose=False)
             if spec.adu_err is None:
                 flux_err_resampled = np.zeros_like(flux_resampled)
             else:
                 flux_err_resampled = spectres(spec.wave_resampled,
                                               spec.wave,
-                                              flux_err,
+                                              np.array(flux_err),
                                               verbose=False)
             if spec.adu_sky is None:
                 flux_sky_resampled = np.zeros_like(flux_resampled)
             else:
                 flux_sky_resampled = spectres(spec.wave_resampled,
                                               spec.wave,
-                                              flux_sky,
+                                              np.array(flux_sky),
                                               verbose=False)
 
             # Only computed for diagnostic
             sensitivity_resampled = spectres(spec.wave_resampled,
                                              spec.wave,
-                                             sensitivity,
+                                             np.array(sensitivity),
                                              verbose=False)
 
             spec.add_flux(flux, flux_err, flux_sky)
@@ -4061,11 +4100,13 @@ class FluxCalibration(StandardLibrary):
                 if self.flux_science_calibrated:
                     wave_mask = ((spec.wave_resampled > wave_min) &
                                  (spec.wave_resampled < wave_max))
-                    flux_mask = (
-                        (spec.flux_resampled > np.nanpercentile(
-                            spec.flux_resampled[wave_mask], 5) / 1.5) &
-                        (spec.flux_resampled < np.nanpercentile(
-                            spec.flux_resampled[wave_mask], 95) * 1.5))
+
+                    flux_low = np.nanpercentile(
+                        np.array(spec.flux_resampled)[wave_mask], 5) / 1.5
+                    flux_high = np.nanpercentile(
+                        np.array(spec.flux_resampled)[wave_mask], 95) * 1.5
+                    flux_mask = ((spec.flux_resampled > flux_low) &
+                                 (spec.flux_resampled < flux_high))
                     flux_min = np.log10(
                         np.nanmin(spec.flux_resampled[flux_mask]))
                     flux_max = np.log10(
@@ -4357,7 +4398,7 @@ class FluxCalibration(StandardLibrary):
                              'and/or (2) standard. use + as delimiter.')
 
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
-        np.save(filename, self.spectrum_list_science[0].sensitivity_itp)
+        np.save(filename, self.spectrum_list_standard[0].sensitivity_itp)
 
     def _create_adu_fits(self, spec_id=None, stype='science+standard'):
 
@@ -4557,6 +4598,14 @@ class FluxCalibration(StandardLibrary):
 
                 sensitivity_resampled_fits = fits.ImageHDU(
                     spec.sensitivity_resampled)
+                sensitivity_resampled_fits.header['LABEL'] = 'Sensitivity'
+                sensitivity_resampled_fits.header['CRPIX1'] = 1.00E+00
+                sensitivity_resampled_fits.header['CDELT1'] = spec.wave_bin
+                sensitivity_resampled_fits.header['CRVAL1'] = spec.wave_start
+                sensitivity_resampled_fits.header['CTYPE1'] = 'Wavelength'
+                sensitivity_resampled_fits.header['CUNIT1'] = 'Angstroms'
+                sensitivity_resampled_fits.header[
+                    'BUNIT'] = 'erg/(s*cm**2*Angstrom)/ADU'
                 self.flux_science_resampled_hdulist[i].append(
                     sensitivity_resampled_fits)
 
@@ -4599,6 +4648,14 @@ class FluxCalibration(StandardLibrary):
 
             sensitivity_resampled_fits = fits.ImageHDU(
                 spec.sensitivity_resampled)
+            sensitivity_resampled_fits.header['LABEL'] = 'Sensitivity'
+            sensitivity_resampled_fits.header['CRPIX1'] = 1.00E+00
+            sensitivity_resampled_fits.header['CDELT1'] = spec.wave_bin
+            sensitivity_resampled_fits.header['CRVAL1'] = spec.wave_start
+            sensitivity_resampled_fits.header['CTYPE1'] = 'Wavelength'
+            sensitivity_resampled_fits.header['CUNIT1'] = 'Angstroms'
+            sensitivity_resampled_fits.header[
+                'BUNIT'] = 'erg/(s*cm**2*Angstrom)/ADU'
             self.flux_standard_resampled_hdulist.append(
                 sensitivity_resampled_fits)
 
@@ -4675,8 +4732,15 @@ class OneDSpec():
         self.fluxcal.add_wavecal(wavecal, stype)
         '''
 
-    def add_wavelength(self, wave, spec_id=None, stype='science'):
-        self.fluxcal.add_wavelength(wave, spec_id, stype)
+    def add_wavelength(self,
+                       wave,
+                       wave_resampled=None,
+                       spec_id=None,
+                       stype='science'):
+        self.fluxcal.add_wavelength(wave=wave,
+                                    wave_resampled=wave_resampled,
+                                    spec_id=spec_id,
+                                    stype=stype)
 
     def add_spec(self,
                  adu,
@@ -5037,23 +5101,37 @@ class OneDSpec():
                         spec_id=None,
                         intensities=None,
                         constrain_poly=False,
+                        vacuum=False,
+                        pressure=101325.,
+                        temperature=273.15,
+                        relative_humidity=0.,
                         stype='science'):
 
         stype_split = stype.split('+')
 
         if 'science' in stype_split:
-            self.wavecal_science.load_user_atlas(elements=elements,
-                                                 wavelengths=wavelengths,
-                                                 spec_id=spec_id,
-                                                 intensities=intensities,
-                                                 constrain_poly=constrain_poly)
+            self.wavecal_science.load_user_atlas(
+                elements=elements,
+                wavelengths=wavelengths,
+                spec_id=spec_id,
+                intensities=intensities,
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
 
         if 'standard' in stype_split:
-            self.wavecal_standard.load_user_atlas(elements=elements,
-                                                  wavelengths=wavelengths,
-                                                  spec_id=spec_id,
-                                                  intensities=intensities,
-                                                  constrain_poly=constrain_poly)
+            self.wavecal_standard.load_user_atlas(
+                elements=elements,
+                wavelengths=wavelengths,
+                spec_id=spec_id,
+                intensities=intensities,
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
 
     def fit(self,
             spec_id=None,
@@ -5206,9 +5284,10 @@ class OneDSpec():
 
         self.fluxcal.save_sensitivity_itp(filename=filename)
 
-    def add_sensitivity_itp(self, sensitivity_itp):
+    def add_sensitivity_itp(self, sensitivity_itp, stype='standard'):
 
-        self.fluxcal.sensitivity_itp = sensitivity_itp
+        self.fluxcal.add_sensitivity_itp(sensitivity_itp=sensitivity_itp,
+                                         stype=stype)
 
     def inspect_sensitivity(self,
                             renderer='default',
@@ -5463,8 +5542,7 @@ class OneDSpec():
                         self.fluxcal.flux_standard_resampled_hdulist)
 
             if 'wavecal' in output_split:
-                if self.wavecal_standard.spectrum_list[
-                        0].polyfit_coeff is not None:
+                if self.wavecal_standard.spectrum_list[0].polyfit_coeff is None:
                     warnings.warn("Spectrum is not wavelength calibrated.")
                 else:
                     self.wavecal_standard._create_wavecal_fits()
@@ -5585,7 +5663,7 @@ class OneDSpec():
 
         header = {
             'flux_resampled':
-            'Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, Sensitivity Curve',
+            'Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, Resampled Sensitivity Curve',
             'wavecal': 'Polynomial coefficients for wavelength calibration',
             'flux': 'Flux, Flux Uncertainty, Sky Flux, Sensitivity Curve',
             'adu': 'ADU, ADU Uncertainty, Sky ADU',
@@ -5634,15 +5712,14 @@ class OneDSpec():
 
             start = 0
             # looping through the output type of each spectrum
-            for j in range(len(output_split)):
-                output_type = output_split[j]
-                end = start + n_hdu[output_type]
+            for i in output_split:
+                end = start + n_hdu[i]
 
                 output_data = np.column_stack(
                     [hdu.data for hdu in hdu_list_standard[start:end]])
 
-                np.savetxt(filename + '_standard_' + output_type + '.csv',
+                np.savetxt(filename + '_standard_' + i + '.csv',
                            output_data,
                            delimiter=',',
-                           header=header[output_type])
+                           header=header[i])
                 start = end
