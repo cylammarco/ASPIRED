@@ -1,4 +1,3 @@
-import os
 from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
@@ -8,10 +7,8 @@ setup_requires = ['numpy~=1.16']
 
 install_requires = [
     'scipy~=1.1', 'astropy~=4.0', 'ccdproc~=2.1', 'astroscrappy~=1.0.8',
-    'plotly~=4.0', 'spectres~=2.1.1'
+    'plotly>=4.0', 'spectres~=2.1.1', 'rascal>=0.1'
 ]
-
-os.system('pip install git+https://github.com/jveitchmichaelis/rascal.git@dev')
 
 __packagename__ = "aspired"
 

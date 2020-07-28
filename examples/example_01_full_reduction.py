@@ -12,7 +12,6 @@ atlas = [
 ]
 element = ['Xe'] * len(atlas)
 
-
 # Case 1
 #
 # Extract two spectra
@@ -22,14 +21,19 @@ element = ['Xe'] * len(atlas)
 lhs6328_frame = image_reduction.ImageReduction('sprat_LHS6328.list')
 lhs6328_frame.reduce()
 
-lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame, cosmicray=False)
+lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
+                                               cosmicray=True,
+                                               readnoise=5.7)
+
 lhs6328_twodspec.ap_trace(nspec=2, display=False)
 
 lhs6328_twodspec.ap_extract(apwidth=15,
                             skywidth=10,
                             skydeg=1,
                             optimal=True,
-                            display=False)
+                            display=False,
+                            filename='example_output/example_01_a_science_apextract',
+                            save_iframe=True)
 
 #lhs6328_twodspec.save_fits(
 #    filename='example_output/example_01_a_science_traces', overwrite=True)
@@ -38,24 +42,28 @@ lhs6328_twodspec.ap_extract(apwidth=15,
 standard_frame = image_reduction.ImageReduction('sprat_Hiltner102.list')
 standard_frame.reduce()
 
-hilt102_twodspec = spectral_reduction.TwoDSpec(standard_frame, cosmicray=False)
+hilt102_twodspec = spectral_reduction.TwoDSpec(standard_frame,
+                                               cosmicray=True,
+                                               readnoise=5.7)
 
-hilt102_twodspec.ap_trace(nspec=1, display=False)
+hilt102_twodspec.ap_trace(nspec=1, resample_factor=10, display=False)
 
-hilt102_twodspec.ap_extract(apwidth=25,
+hilt102_twodspec.ap_extract(apwidth=15,
                             skysep=3,
                             skywidth=5,
                             skydeg=1,
                             optimal=True,
-                            display=False)
+                            display=False,
+                            filename='example_output/example_01_a_standard_apextract',
+                            save_iframe=True)
 
 #hilt102_twodspec.save_fits(
 #    filename='example_output/example_01_a_standard_trace', overwrite=True)
 
 # Handle 1D Science spectrum
 lhs6328_onedspec = spectral_reduction.OneDSpec()
-lhs6328_onedspec.add_twodspec(lhs6328_twodspec, stype='science')
-lhs6328_onedspec.add_twodspec(hilt102_twodspec, stype='standard')
+lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
+lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
 
 # Add a 2D arc image
 lhs6328_onedspec.add_arc(lhs6328_frame, stype='science')
@@ -94,7 +102,10 @@ lhs6328_onedspec.compute_sensitivity(kind='cubic')
 
 lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
-#lhs6328_onedspec.inspect_reduced_spectrum(stype='science+standard')
+lhs6328_onedspec.inspect_reduced_spectrum(stype='science', save_iframe=True,
+                            filename='example_output/example_01_a_science_spectrum')
+lhs6328_onedspec.inspect_reduced_spectrum(stype='standard', save_iframe=True,
+                            filename='example_output/example_01_a_standard_spectrum')
 
 # Save as FITS
 lhs6328_onedspec.save_fits(
@@ -130,9 +141,9 @@ lhs6328_twodspec.save_fits(
     filename='example_output/example_01_b_science_trace', overwrite=True)
 
 lhs6328_onedspec = spectral_reduction.OneDSpec()
-lhs6328_onedspec.add_twodspec(lhs6328_twodspec, stype='science')
+lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
 # The standard extraction is identical to above, so we are reusing it
-lhs6328_onedspec.add_twodspec(hilt102_twodspec, stype='standard')
+lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
 
 # Add a 2D arc image
 lhs6328_onedspec.add_arc(lhs6328_frame, stype='science')

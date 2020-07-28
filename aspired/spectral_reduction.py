@@ -24,6 +24,9 @@ from .image_reduction import ImageReduction
 
 base_dir = os.path.dirname(__file__)
 
+from matplotlib.pyplot import *
+ion()
+
 
 class spectrum1D():
     '''
@@ -948,8 +951,8 @@ class TwoDSpec:
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
-    def _identify_spectra(self, f_height, display, renderer, savejsonstring,
-                          saveiframe, open_iframe):
+    def _identify_spectra(self, f_height, display, renderer, return_jsonstring,
+                          save_iframe, filename, open_iframe):
         """
         Identify peaks assuming the spatial and spectral directions are
         aligned with the X and Y direction within a few degrees.
@@ -962,14 +965,14 @@ class TwoDSpec:
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
@@ -997,7 +1000,7 @@ class TwoDSpec:
         self.peak = peaks_y
         self.peak_height = heights_y
 
-        if display or saveiframe or savejsonstring:
+        if display or save_iframe or return_jsonstring:
 
             # set a side-by-side subplot
             fig = go.Figure(
@@ -1034,10 +1037,15 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=False)
 
-            if saveiframe:
-                pio.write_html(fig,
-                               'identify_spectra.html',
-                               auto_open=open_iframe)
+            if save_iframe:
+                if filename is None:
+                    pio.write_html(fig,
+                                   'identify_spectra.html',
+                                   auto_open=open_iframe)
+                else:
+                    pio.write_html(fig,
+                                   filename + '.html',
+                                   auto_open=open_iframe)
 
             # display disgnostic plot
             if display:
@@ -1046,10 +1054,17 @@ class TwoDSpec:
                 else:
                     fig.show(renderer)
 
-            if savejsonstring:
+            if return_jsonstring:
                 return fig.to_json()
 
-    def _optimal_signal(self, pix, xslice, sky, mu, sigma, tol=1e-6):
+    def _optimal_signal(self,
+                        pix,
+                        xslice,
+                        sky,
+                        mu,
+                        sigma,
+                        tol=1e-6,
+                        max_iter=99):
         """
         Iterate to get the optimal signal. Following the algorithm on
         Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).
@@ -1075,63 +1090,63 @@ class TwoDSpec:
             The noise associated with the optimal signal.
         """
 
-        # construct the Gaussian model
+        # step 2 - initial variance estimates
+        var1 = self.readnoise + np.abs(xslice) / self.gain
+
+        # step 4a - extract standard spectrum
+        f = xslice - sky
+        f[f < 0] = 0.
+        f1 = np.nansum(f)
+
+        # step 4b - variance of standard spectrum
+        v1 = 1. / np.nansum(1. / var1)
+
+        # step 5 - construct the spatial profile
         P = self._gaus(pix, 1., 0., mu, sigma)
         P /= np.nansum(P)
 
-        #
-        signal = xslice - sky
-        signal[signal < 0] = 0.
-        # weight function and initial values
-        signal1 = np.nansum(signal)
-        var1 = self.readnoise + np.abs(xslice) / self.gain
-        variance1 = 1. / np.nansum(P**2. / var1)
-
-        sky_median = np.nanmedian(sky)
-
-        signal_diff = 1
-        variance_diff = 1
+        f_diff = 1
+        v_diff = 1
         i = 0
         suboptimal = False
 
-        mask = np.ones(len(P), dtype=bool)
+        mask_cr = np.ones(len(P), dtype=bool)
 
-        while (signal_diff > tol) | (variance_diff > tol):
+        while (f_diff > tol) | (v_diff > tol):
 
-            signal0 = signal1
-            var0 = var1
-            variance0 = variance1
+            f0 = f1
+            v0 = v1
 
-            mask_cr = mask.copy()
+            # step 6 - revise variance estimates
+            var_f = self.readnoise + np.abs(P * f0 + sky) / self.gain
 
-            # cosmic ray mask, only start considering after the 1st iteration
-            # masking at most 2 pixels
-            if i > 0:
-                ratio = (self.cosmicray_sigma**2. * var0) / (signal -
-                                                             P * signal0)**2.
-                comparison = np.sum(ratio > 1)
-                if comparison == 1:
+            # step 7 - cosmic ray mask, only start considering after the
+            # 2nd iteration. 1 pixel is masked at a time until convergence,
+            # once the pixel is masked, it will stay masked.
+            if i > 1:
+                ratio = (self.cosmicray_sigma**2. * var_f) / (f - P * f0)**2.
+                outlier = np.sum(ratio > 1)
+                if outlier > 0:
                     mask_cr[np.argmax(ratio)] = False
-                if comparison >= 2:
-                    mask_cr[np.argsort(ratio)[-2:]] = False
 
-            # compute signal and noise
-            signal1 = np.nansum((P * signal / var0)[mask_cr]) / \
-                np.nansum((P**2. / var0)[mask_cr])
-            var1 = self.readnoise + np.abs(P * signal1 + sky) / self.gain
-            variance1 = 1. / np.nansum((P[mask_cr]**2. / var1[mask_cr]))
+            # step 8a - extract optimal signal
+            f1 = np.nansum((P * f / var_f)[mask_cr]) / \
+                np.nansum((P**2. / var_f)[mask_cr])
+            # step 8b - variance of optimal signal
+            v1 = np.nansum(P[mask_cr]**2.) / np.nansum(
+                (P**2. / var_f)[mask_cr])
 
-            signal_diff = abs((signal1 - signal0) / signal0)
-            variance_diff = abs((variance1 - variance0) / variance0)
+            f_diff = abs((f1 - f0) / f0)
+            v_diff = abs((v1 - v0) / v0)
 
             i += 1
 
-            if i == 99:
+            if i == int(max_iter):
                 suboptimal = True
                 break
 
-        signal = signal1
-        noise = np.sqrt(variance1)
+        signal = f1
+        noise = np.sqrt(v1)
 
         return signal, noise, suboptimal
 
@@ -1152,13 +1167,14 @@ class TwoDSpec:
                  renderer='default',
                  width=1280,
                  height=720,
-                 savejsonstring=False,
-                 saveiframe=False,
+                 return_jsonstring=False,
+                 save_iframe=False,
+                 filename=None,
                  open_iframe=False):
         '''
         Aperture tracing by first using cross-correlation then the peaks are
         fitting with a polynomial with an order of floor(nwindow, 10) with a
-        minimum order of 1. Nothing is returned unless savejsonstring of the
+        minimum order of 1. Nothing is returned unless return_jsonstring of the
         plotly graph is set to be returned.
 
         Each spectral slice is convolved with the adjacent one in the spectral
@@ -1222,18 +1238,18 @@ class TwoDSpec:
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
-        json string if savejsonstring is True, otherwise only an image is displayed
+        json string if return_jsonstring is True, otherwise only an image is displayed
         '''
 
         # Get the shape of the 2D spectrum and define upsampling ratio
@@ -1413,7 +1429,7 @@ class TwoDSpec:
             self.spectrum_list[i].add_trace(list(ap), [ap_sigma] * len(ap))
 
         # Plot
-        if saveiframe or display or savejsonstring:
+        if save_iframe or display or return_jsonstring:
 
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width))
@@ -1447,8 +1463,13 @@ class TwoDSpec:
                               bargap=0,
                               hovermode='closest',
                               showlegend=False)
-            if saveiframe:
-                pio.write_html(fig, 'ap_trace.html', auto_open=open_iframe)
+            if save_iframe:
+                if filename is None:
+                    pio.write_html(fig, 'ap_trace.html', auto_open=open_iframe)
+                else:
+                    pio.write_html(fig,
+                                   filename + '.html',
+                                   auto_open=open_iframe)
 
             if display:
                 if renderer == 'default':
@@ -1456,7 +1477,7 @@ class TwoDSpec:
                 else:
                     fig.show(renderer)
 
-            if savejsonstring:
+            if return_jsonstring:
                 return fig.to_json()
 
     def add_trace(self, spec_id, trace, trace_sigma):
@@ -1504,8 +1525,9 @@ class TwoDSpec:
                    renderer='default',
                    width=1280,
                    height=720,
-                   savejsonstring=False,
-                   saveiframe=False,
+                   return_jsonstring=False,
+                   save_iframe=False,
+                   filename=None,
                    open_iframe=False):
         """
         Extract the spectra using the traces, support tophat or optimal
@@ -1521,7 +1543,7 @@ class TwoDSpec:
                             will be used to construct the gaussian weight
                             function along the entire spectrum.
 
-        Nothing is returned unless savejsonstring of the plotly graph is set to be
+        Nothing is returned unless return_jsonstring of the plotly graph is set to be
         returned. The adu, adu_sky and adu_err are stored as properties of the
         TwoDSpec object.
 
@@ -1558,14 +1580,14 @@ class TwoDSpec:
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         """
 
@@ -1625,22 +1647,23 @@ class TwoDSpec:
 
                 # fix width if trace is too close to the edge
                 if (itrace + widthup > self.spatial_size):
-                    widthup = spatial_size - itrace - 1
+                    widthup = self.spatial_size - itrace - 1
                 if (itrace - widthdn < 0):
                     widthdn = itrace - 1  # i.e. starting at pixel row 1
 
                 # simply add up the total adu around the trace +/- width
                 xslice = self.img[itrace - widthdn:itrace + widthup + 1, i]
-                adu_ap = np.sum(xslice) - pix_frac * xslice[0] - (
-                    1 - pix_frac) * xslice[-1]
+                adu_ap = np.sum(xslice) - pix_frac * xslice[-1] - (
+                    1 - pix_frac) * xslice[0]
 
-                if (skywidthup > 0) or (skywidthdn > 0):
+                if (skywidthup >= 0) and (skywidthdn >= 0):
                     # get the indexes of the sky regions
                     y0 = max(itrace - widthdn - sepdn - skywidthdn, 0)
                     y1 = max(itrace - widthdn - sepdn, 0)
-                    y2 = min(itrace + widthup + sepup + 1, self.spatial_size)
+                    y2 = min(itrace + widthup + sepup + 1,
+                             self.spatial_size - 1)
                     y3 = min(itrace + widthup + sepup + skywidthup + 1,
-                             self.spatial_size)
+                             self.spatial_size - 1)
                     y = np.append(np.arange(y0, y1), np.arange(y2, y3))
                     z = self.img[y, i]
 
@@ -1652,11 +1675,10 @@ class TwoDSpec:
                         # evaluate the polynomial across the aperture, and sum
                         adu_sky_slice = np.polyval(polyfit, ap)
                         adu_sky[i] = np.sum(
-                            adu_sky_slice) - pix_frac * adu_sky_slice[0] - (
-                                1 - pix_frac) * adu_sky_slice[-1]
+                            adu_sky_slice) - pix_frac * adu_sky_slice[-1] - (
+                                1 - pix_frac) * adu_sky_slice[0]
                     elif (skydeg == 0):
-                        adu_sky[i] = (widthdn + widthup) * np.nanmean(z)
-
+                        adu_sky[i] = np.nanmean(z) * (len(xslice) - 1)
                 else:
                     polyfit = [0., 0.]
 
@@ -1669,14 +1691,16 @@ class TwoDSpec:
                     else:
                         sky = np.ones(len(pix)) * np.nanmean(z)
                     # Get the optimal signals
+                    # pix is the native pixel position
+                    # pos is the trace at the native pixel position
                     adu[i], adu_err[i], suboptimal[i] = self._optimal_signal(
-                        pix, xslice, sky, self.spectrum_list[j].trace[i],
+                        pix, xslice, sky, pos,
                         self.spectrum_list[j].trace_sigma[i])
                 else:
                     #-- finally, compute the error in this pixel
                     sigB = np.nanstd(z)  # standarddev in the background data
                     nB = len(y)  # number of bkgd pixels
-                    nA = apwidth * 2. + 1  # number of aperture pixels
+                    nA = widthdn + widthup + 1  # number of aperture pixels
 
                     # based on aperture phot err description by F. Masci, Caltech:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
@@ -1702,7 +1726,7 @@ class TwoDSpec:
                         'a longer iteration, larger tolerance or revert to '
                         'top-hat extraction.')
 
-            if saveiframe or display or savejsonstring:
+            if save_iframe or display or return_jsonstring:
                 min_trace = int(min(self.spectrum_list[j].trace) + 0.5)
                 max_trace = int(max(self.spectrum_list[j].trace) + 0.5)
 
@@ -1845,25 +1869,19 @@ class TwoDSpec:
                         range=[
                             min(
                                 np.nanmin(
-                                    sigma_clip(np.log10(adu),
-                                               sigma=5.,
+                                    sigma_clip(adu, sigma=5., masked=False)),
+                                np.nanmin(
+                                    sigma_clip(adu_err, sigma=5.,
                                                masked=False)),
                                 np.nanmin(
-                                    sigma_clip(np.log10(adu_err),
-                                               sigma=5.,
-                                               masked=False)),
-                                np.nanmin(
-                                    sigma_clip(np.log10(adu_sky),
-                                               sigma=5.,
+                                    sigma_clip(adu_sky, sigma=5.,
                                                masked=False)), 1),
-                            max(np.nanmax(np.log10(adu)),
-                                np.nanmax(np.log10(adu_sky)))
+                            max(np.nanmax(adu), np.nanmax(adu_sky))
                         ],
                         zeroline=False,
                         domain=[0, 0.5],
                         showgrid=True,
-                        type='log',
-                        title='log(ADU / Count / s)',
+                        title='ADU / s',
                     ),
                     yaxis3=dict(title='S/N ratio',
                                 anchor="x2",
@@ -1883,10 +1901,15 @@ class TwoDSpec:
                     hovermode='closest',
                     showlegend=True)
 
-                if saveiframe:
-                    pio.write_html(fig,
-                                   'ap_extract_' + str(j) + 'html',
-                                   auto_open=open_iframe)
+                if save_iframe:
+                    if filename is None:
+                        pio.write_html(fig,
+                                       'ap_extract_' + str(j) + '.html',
+                                       auto_open=open_iframe)
+                    else:
+                        pio.write_html(fig,
+                                       filename + '_' + str(j) + '.html',
+                                       auto_open=open_iframe)
 
                 if display:
                     if renderer == 'default':
@@ -1894,7 +1917,7 @@ class TwoDSpec:
                     else:
                         fig.show(renderer)
 
-                if savejsonstring:
+                if return_jsonstring:
                     return fig.to_json()
 
     def _create_trace_fits(self):
@@ -2064,7 +2087,7 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        spectrum: list of list or list of arrays
+        arc_spec: list of list or list of arrays
             The ADU/flux of the 1D arc spectrum/a. Multiple spectrum/a
             can be provided as list of list or list of arrays.
         '''
@@ -2077,7 +2100,7 @@ class WavelengthCalibration():
             # Add to the first spec
             spec_id = 0
 
-        self.spectrum_list[spec_id].arc_spec = arc_spec
+        self.spectrum_list[spec_id].arc_spec = list(arc_spec)
 
     def add_spec(self, adu, spec_id=None, adu_err=None, adu_sky=None):
         '''
@@ -2174,7 +2197,7 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].add_polyfit(polyfit_type, polyfit_coeff)
 
-    def add_twodspec(self, twodspec, pixel_list=None):
+    def from_twodspec(self, twodspec, pixel_list=None):
         '''
         To add a TwoDSpec object or numpy array to provide the traces, line
         spread function of the traces, optionally the pixel values
@@ -2237,11 +2260,12 @@ class WavelengthCalibration():
     def extract_arc_spec(self,
                          spec_id=None,
                          display=False,
-                         savejsonstring=False,
+                         return_jsonstring=False,
                          renderer='default',
                          width=1280,
                          height=720,
-                         saveiframe=False,
+                         save_iframe=False,
+                         filename=None,
                          open_iframe=False):
         '''
         This function applies the trace(s) to the arc image then take median
@@ -2262,14 +2286,14 @@ class WavelengthCalibration():
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
         '''
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -2284,7 +2308,7 @@ class WavelengthCalibration():
         if self.arc is None:
             raise ValueError(
                 'arc is not provided. Please provide arc by using add_arc() '
-                'or with add_twodspec() before executing find_arc_lines().')
+                'or with from_twodspec() before executing find_arc_lines().')
 
         for i in spec_id:
 
@@ -2302,7 +2326,7 @@ class WavelengthCalibration():
             spec.add_arc_spec(list(arc_spec))
 
             # note that the display is adjusted for the chip gaps
-            if saveiframe or display or savejsonstring:
+            if save_iframe or display or return_jsonstring:
 
                 fig = go.Figure(
                     layout=dict(autosize=False, height=height, width=width))
@@ -2323,10 +2347,15 @@ class WavelengthCalibration():
                                   hovermode='closest',
                                   showlegend=False)
 
-                if saveiframe:
-                    pio.write_html(fig,
-                                   'arc_spec_' + str(i) + 'html',
-                                   auto_open=open_iframe)
+                if save_iframe:
+                    if filename is None:
+                        pio.write_html(fig,
+                                       'arc_spec_' + str(i) + '.html',
+                                       auto_open=open_iframe)
+                    else:
+                        pio.write_html(fig,
+                                       filename + '_' + str(i) + '.html',
+                                       auto_open=open_iframe)
 
                 if display:
                     if renderer == 'default':
@@ -2334,7 +2363,7 @@ class WavelengthCalibration():
                     else:
                         fig.show(renderer)
 
-                if savejsonstring:
+                if return_jsonstring:
                     return fig.to_json()
 
     def find_arc_lines(self,
@@ -2348,9 +2377,10 @@ class WavelengthCalibration():
                        display=False,
                        width=1280,
                        height=720,
-                       savejsonstring=False,
+                       return_jsonstring=False,
                        renderer='default',
-                       saveiframe=False,
+                       save_iframe=False,
+                       filename=None,
                        open_iframe=False):
         '''
         This function applies the trace(s) to the arc image then take median
@@ -2375,18 +2405,18 @@ class WavelengthCalibration():
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
-        JSON strings if savejsonstring is set to True
+        JSON strings if return_jsonstring is set to True
         '''
 
         if spec_id is not None:
@@ -2402,7 +2432,7 @@ class WavelengthCalibration():
         if self.arc is None:
             raise ValueError(
                 'arc is not provided. Please provide arc by using add_arc() '
-                'or with add_twodspec() before executing find_arc_lines().')
+                'or with from_twodspec() before executing find_arc_lines().')
 
         for i in spec_id:
 
@@ -2430,7 +2460,7 @@ class WavelengthCalibration():
             self.spectrum_list[i].add_peaks_pixel(
                 list(self.spectrum_list[i].pixel_mapping_itp(peaks_raw)))
 
-            if saveiframe or display or savejsonstring:
+            if save_iframe or display or return_jsonstring:
                 fig = go.Figure(
                     layout=dict(autosize=False, height=height, width=width))
 
@@ -2466,10 +2496,15 @@ class WavelengthCalibration():
                     hovermode='closest',
                     showlegend=False)
 
-                if saveiframe:
-                    pio.write_html(fig,
-                                   'arc_lines_' + str(i) + '.html',
-                                   auto_open=open_iframe)
+                if save_iframe:
+                    if filename is None:
+                        pio.write_html(fig,
+                                       'arc_lines_' + str(i) + '.html',
+                                       auto_open=open_iframe)
+                    else:
+                        pio.write_html(fig,
+                                       filename + '_' + str(i) + '.html',
+                                       auto_open=open_iframe)
 
                 if display:
                     if renderer == 'default':
@@ -2477,7 +2512,7 @@ class WavelengthCalibration():
                     else:
                         fig.show(renderer)
 
-                if savejsonstring:
+                if return_jsonstring:
                     return fig.to_json()
 
     def initialise_calibrator(self,
@@ -3332,22 +3367,10 @@ class StandardLibrary:
             'flux' or 'mag'
         cutoff: float
             The threshold for the word similarity in the range of [0, 1].
-        display: boolean
-            Set to True to display disgnostic plot.
-        renderer: string
-            plotly renderer options.
-        savejsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
-            in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
-        open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
 
         Returns
         -------
-        JSON strings if savejsonstring is set to True
+
         '''
 
         self.target = target
@@ -3395,9 +3418,10 @@ class StandardLibrary:
                          renderer='default',
                          width=1280,
                          height=720,
-                         savejsonstring=False,
+                         return_jsonstring=False,
                          display=True,
-                         saveiframe=False,
+                         save_iframe=False,
+                         filename=None,
                          open_iframe=False):
         '''
         Display the standard star plot.
@@ -3406,18 +3430,18 @@ class StandardLibrary:
         ----------
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
-        JSON strings if savejsonstring is set to True
+        JSON strings if return_jsonstring is set to True
         '''
         fig = go.Figure(
             layout=dict(autosize=False,
@@ -3466,8 +3490,11 @@ class StandardLibrary:
             hovermode='closest',
             showlegend=False)
 
-        if saveiframe:
-            pio.write_html(fig, 'standard.html', auto_open=open_iframe)
+        if save_iframe:
+            if filename is None:
+                pio.write_html(fig, 'standard.html', auto_open=open_iframe)
+            else:
+                pio.write_html(fig, filename + '.html', auto_open=open_iframe)
 
         if display:
             if renderer == 'default':
@@ -3475,7 +3502,7 @@ class StandardLibrary:
             else:
                 fig.show(renderer)
 
-        if savejsonstring:
+        if return_jsonstring:
             return fig.to_json()
 
     def query(self):
@@ -3613,7 +3640,7 @@ class FluxCalibration(StandardLibrary):
                     wave_resampled=wave_resampled,
                 )
 
-    def add_twodspec(self, twodspec, pixel_list=None, stype='standard'):
+    def from_twodspec(self, twodspec, pixel_list=None, stype='standard'):
         '''
         To add a TwoDSpec object or numpy array to provide the traces, line
         spread function of the traces, optionally the pixel values
@@ -3683,7 +3710,9 @@ class FluxCalibration(StandardLibrary):
                             sorder=3,
                             mask_range=[[6850, 6960], [7150,
                                                        7400], [7575, 7700],
-                                        [8925, 9050], [9265, 9750]]):
+                                        [8925, 9050], [9265, 9750]],
+                            mask_fit_order=1,
+                            mask_fit_size=10):
         '''
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
@@ -3713,7 +3742,7 @@ class FluxCalibration(StandardLibrary):
 
         Returns
         -------
-        JSON strings if savejsonstring is set to True.
+        JSON strings if return_jsonstring is set to True.
         '''
 
         # resampling both the observed and the database standard spectra
@@ -3740,33 +3769,53 @@ class FluxCalibration(StandardLibrary):
         # Get the sensitivity curve
         sensitivity = flux_standard_true / flux_standard
 
-        if mask_range is None:
-            mask = np.isfinite(sensitivity)
-        else:
-            mask = np.isfinite(sensitivity)
+        sensitivity_masked = sensitivity.copy()
+        if mask_range is not None:
             for m in mask_range:
-                mask = mask & ((wave_standard_true < m[0]) |
-                               (wave_standard_true > m[1]))
+                # If the mask is partially outside the spectrum, ignore
+                if (m[0] < min(wave_standard_true)) or (
+                        m[1] > max(wave_standard_true)):
+                    continue
+                # Get the indices for the two sides of the masking region
+                left_end = int(max(np.where(wave_standard_true < m[0])[0]))
+                left_start = int(left_end - mask_fit_size)
+                right_start = int(min(np.where(wave_standard_true > m[1])[0]))
+                right_end = int(right_start + mask_fit_size)
+                # Get the wavelengths of the two sides
+                wave_temp = np.concatenate(
+                    (wave_standard_true[left_start:left_end],
+                     wave_standard_true[right_start:right_end]))
+                # Get the sensitivity of the two sides
+                sensitivity_temp = np.concatenate(
+                    (sensitivity[left_start:left_end],
+                     sensitivity[right_start:right_end]))
+                # Fit the polynomial across the masked region
+                coeff = np.polyfit(wave_temp, np.log10(sensitivity_temp),
+                                   mask_fit_order)
+                # Replace the snsitivity values with the fitted values
+                sensitivity_masked[left_end:right_start] = 10.**np.polyval(
+                    coeff, wave_standard_true[left_end:right_start])
 
-        sensitivity = sensitivity[mask]
-        wave_literature = wave_standard_true[mask]
-        flux_literature = flux_standard_true[mask]
+        mask = np.isfinite(sensitivity_masked)
+        sensitivity_masked = sensitivity_masked[mask]
+        wave_standard_masked = wave_standard_true[mask]
+        flux_standard_masked = flux_standard_true[mask]
 
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
-            sensitivity = signal.savgol_filter(sensitivity, slength, sorder)
-
-        # Set the smoothing parameters
-        if smooth:
+            sensitivity_masked = signal.savgol_filter(sensitivity_masked,
+                                                      slength, sorder)
+            # Set the smoothing parameters
             spec.add_smoothing(smooth, slength, sorder)
 
-        sensitivity_itp = itp.interp1d(wave_literature,
-                                       np.log10(sensitivity),
+        sensitivity_itp = itp.interp1d(wave_standard_masked,
+                                       np.log10(sensitivity_masked),
                                        kind=kind,
                                        fill_value='extrapolate')
 
-        spec.add_sensitivity(sensitivity)
-        spec.add_literature_standard(wave_literature, flux_literature)
+        spec.add_sensitivity(sensitivity_masked)
+        spec.add_literature_standard(wave_standard_masked,
+                                     flux_standard_masked)
 
         # Add to each spectrum1D object
         self.add_sensitivity_itp(sensitivity_itp, stype='science+standard')
@@ -3792,9 +3841,10 @@ class FluxCalibration(StandardLibrary):
                             renderer='default',
                             width=1280,
                             height=720,
-                            savejsonstring=False,
+                            return_jsonstring=False,
                             display=True,
-                            saveiframe=False,
+                            save_iframe=False,
+                            filename=None,
                             open_iframe=False):
         '''
         Display the computed sensitivity curve.
@@ -3805,18 +3855,18 @@ class FluxCalibration(StandardLibrary):
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
-        JSON strings if savejsonstring is set to True.
+        JSON strings if return_jsonstring is set to True.
         '''
         spec = self.spectrum_list_standard[0]
         fig = go.Figure(
@@ -3898,8 +3948,11 @@ class FluxCalibration(StandardLibrary):
                                                       size=12,
                                                       color="black"),
                                                   bgcolor='rgba(0,0,0,0)'))
-        if saveiframe:
-            pio.write_html(fig, 'senscurve.html', auto_open=open_iframe)
+        if save_iframe:
+            if filename is None:
+                pio.write_html(fig, 'senscurve.html', auto_open=open_iframe)
+            else:
+                pio.write_html(fig, filename + '.html', auto_open=open_iframe)
 
         if display:
             if renderer == 'default':
@@ -3907,7 +3960,7 @@ class FluxCalibration(StandardLibrary):
             else:
                 fig.show(renderer)
 
-        if savejsonstring:
+        if return_jsonstring:
             return fig.to_json()
 
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
@@ -4048,9 +4101,9 @@ class FluxCalibration(StandardLibrary):
                                  savejpg=False,
                                  savesvg=False,
                                  savepdf=False,
-                                 savejsonstring=False,
+                                 return_jsonstring=False,
                                  display=True,
-                                 saveiframe=False,
+                                 save_iframe=False,
                                  open_iframe=False):
         '''
         Display the reduced spectra.
@@ -4065,18 +4118,18 @@ class FluxCalibration(StandardLibrary):
             Maximum wavelength to display
         renderer: string
             Plotly renderer options.
-        savejsonstring: boolean
+        return_jsonstring: boolean
             Set to True to return json string that can be rendered by Plotly
             in any support language.
-        saveiframe: boolean
-            Save as an saveiframe, can work concurrently with other renderer
-            apart from exporting savejsonstring.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
         open_iframe: boolean
-            Open the saveiframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
-        JSON strings if savejsonstring is set to True.
+        JSON strings if return_jsonstring is set to True.
         '''
 
         stype_split = stype.split('+')
@@ -4212,13 +4265,13 @@ class FluxCalibration(StandardLibrary):
                                           bgcolor='rgba(0,0,0,0)'))
 
                 if filename is None:
-                    filename = "spectrum_" + str(i)
+                    filename_output = "spectrum_" + str(i)
                 else:
-                    filename = os.path.splitext(filename)[0] + "_" + str(i)
+                    filename_output = os.path.splitext(filename)[0] + "_" + str(i)
 
-                if saveiframe:
+                if save_iframe:
                     pio.write_html(fig_sci,
-                                   filename + '.html',
+                                   filename_output + '.html',
                                    auto_open=open_iframe)
 
                 if display:
@@ -4228,18 +4281,18 @@ class FluxCalibration(StandardLibrary):
                         fig_sci.show(renderer)
 
                 if savejpg:
-                    fig_sci.write_image(filename + '.jpg', format='jpg')
+                    fig_sci.write_image(filename_output + '.jpg', format='jpg')
 
                 if savepng:
-                    fig_sci.write_image(filename + '.png', format='png')
+                    fig_sci.write_image(filename_output + '.png', format='png')
 
                 if savesvg:
-                    fig_sci.write_image(filename + '.svg', format='svg')
+                    fig_sci.write_image(filename_output + '.svg', format='svg')
 
                 if savepdf:
-                    fig_sci.write_image(filename + '.pdf', format='pdf')
+                    fig_sci.write_image(filename_output + '.pdf', format='pdf')
 
-                if savejsonstring:
+                if return_jsonstring:
                     return fig_sci[j].to_json()
 
         if 'standard' in stype_split:
@@ -4363,13 +4416,13 @@ class FluxCalibration(StandardLibrary):
                                         bgcolor='rgba(0,0,0,0)'))
 
             if filename is None:
-                filename = "spectrum_standard"
+                filename_output = "spectrum_standard"
             else:
-                filename = os.path.splitext(filename)[0]
+                filename_output = os.path.splitext(filename)[0]
 
-            if saveiframe:
+            if save_iframe:
                 pio.write_html(fig_standard,
-                               filename + '.html',
+                               filename_output + '.html',
                                auto_open=open_iframe)
 
             if display:
@@ -4379,18 +4432,18 @@ class FluxCalibration(StandardLibrary):
                     fig_standard.show(renderer, height=height, width=width)
 
             if savejpg:
-                fig_standard.write_image(filename + '.jpg', format='jpg')
+                fig_standard.write_image(filename_output + '.jpg', format='jpg')
 
             if savepng:
-                fig_standard.write_image(filename + '.png', format='png')
+                fig_standard.write_image(filename_output + '.png', format='png')
 
             if savesvg:
-                fig_standard.write_image(filename + '.svg', format='svg')
+                fig_standard.write_image(filename_output + '.svg', format='svg')
 
             if savepdf:
-                fig_standard.write_image(filename + '.pdf', format='pdf')
+                fig_standard.write_image(filename_output + '.pdf', format='pdf')
 
-            if savejsonstring:
+            if return_jsonstring:
                 return fig_standard.to_json()
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
@@ -4767,7 +4820,7 @@ class OneDSpec():
                                            adu_err=adu_err,
                                            adu_sky=adu_sky)
 
-    def add_twodspec(self, twodspec, pixel_list=None, stype='science'):
+    def from_twodspec(self, twodspec, pixel_list=None, stype='science'):
         '''
         Extract the required information from the TwoDSpec object of the
         standard.
@@ -4778,17 +4831,17 @@ class OneDSpec():
             The TwoDSpec object with the extracted standard target
         '''
 
-        self.fluxcal.add_twodspec(twodspec=twodspec,
-                                  pixel_list=pixel_list,
-                                  stype=stype)
+        self.fluxcal.from_twodspec(twodspec=twodspec,
+                                   pixel_list=pixel_list,
+                                   stype=stype)
 
         if stype == 'science':
-            self.wavecal_science.add_twodspec(twodspec=twodspec,
-                                              pixel_list=pixel_list)
+            self.wavecal_science.from_twodspec(twodspec=twodspec,
+                                               pixel_list=pixel_list)
 
         if stype == 'standard':
-            self.wavecal_standard.add_twodspec(twodspec=twodspec,
-                                               pixel_list=pixel_list)
+            self.wavecal_standard.from_twodspec(twodspec=twodspec,
+                                                pixel_list=pixel_list)
 
     def apply_twodspec_mask(self, stype='science'):
 
@@ -4869,11 +4922,12 @@ class OneDSpec():
     def extract_arc_spec(self,
                          spec_id=None,
                          display=False,
-                         savejsonstring=False,
+                         return_jsonstring=False,
                          renderer='default',
                          width=1280,
                          height=720,
-                         saveiframe=False,
+                         save_iframe=False,
+                         filename=None,
                          open_iframe=False,
                          stype='science'):
 
@@ -4883,21 +4937,23 @@ class OneDSpec():
             self.wavecal_science.extract_arc_spec(
                 spec_id=spec_id,
                 display=display,
-                savejsonstring=savejsonstring,
+                return_jsonstring=return_jsonstring,
                 renderer=renderer,
                 width=width,
                 height=height,
-                saveiframe=saveiframe,
+                save_iframe=save_iframe,
+                filename=filename,
                 open_iframe=open_iframe)
         if 'standard' in stype_split:
             self.wavecal_standard.extract_arc_spec(
                 spec_id=spec_id,
                 display=display,
-                savejsonstring=savejsonstring,
+                return_jsonstring=return_jsonstring,
                 renderer=renderer,
                 width=width,
                 height=height,
-                saveiframe=saveiframe,
+                save_iframe=save_iframe,
+                filename=filename,
                 open_iframe=open_iframe)
 
     def find_arc_lines(self,
@@ -4911,40 +4967,45 @@ class OneDSpec():
                        display=False,
                        width=1280,
                        height=720,
-                       savejsonstring=False,
+                       return_jsonstring=False,
                        renderer='default',
-                       saveiframe=False,
+                       save_iframe=False,
+                       filename=None,
                        open_iframe=False,
                        stype='science'):
 
         stype_split = stype.split('+')
 
         if 'science' in stype_split:
-            self.wavecal_science.find_arc_lines(spec_id=spec_id,
-                                                background=background,
-                                                percentile=percentile,
-                                                prominence=prominence,
-                                                distance=distance,
-                                                display=display,
-                                                width=width,
-                                                height=height,
-                                                savejsonstring=savejsonstring,
-                                                renderer=renderer,
-                                                saveiframe=saveiframe,
-                                                open_iframe=open_iframe)
+            self.wavecal_science.find_arc_lines(
+                spec_id=spec_id,
+                background=background,
+                percentile=percentile,
+                prominence=prominence,
+                distance=distance,
+                display=display,
+                width=width,
+                height=height,
+                return_jsonstring=return_jsonstring,
+                renderer=renderer,
+                save_iframe=save_iframe,
+                filename=filename,
+                open_iframe=open_iframe)
         if 'standard' in stype_split:
-            self.wavecal_standard.find_arc_lines(spec_id=spec_id,
-                                                 background=background,
-                                                 percentile=percentile,
-                                                 prominence=prominence,
-                                                 distance=distance,
-                                                 display=display,
-                                                 width=width,
-                                                 height=height,
-                                                 savejsonstring=savejsonstring,
-                                                 renderer=renderer,
-                                                 saveiframe=saveiframe,
-                                                 open_iframe=open_iframe)
+            self.wavecal_standard.find_arc_lines(
+                spec_id=spec_id,
+                background=background,
+                percentile=percentile,
+                prominence=prominence,
+                distance=distance,
+                display=display,
+                width=width,
+                height=height,
+                return_jsonstring=return_jsonstring,
+                renderer=renderer,
+                save_iframe=save_iframe,
+                filename=filename,
+                open_iframe=open_iframe)
 
     def initialise_calibrator(self,
                               spec_id=None,
@@ -5250,19 +5311,21 @@ class OneDSpec():
 
     def inspect_standard(self,
                          renderer='default',
-                         savejsonstring=False,
+                         return_jsonstring=False,
                          display=True,
                          height=1280,
                          width=720,
-                         saveiframe=False,
+                         save_iframe=False,
+                         filename=None,
                          open_iframe=False):
 
         self.fluxcal.inspect_standard(renderer=renderer,
-                                      savejsonstring=savejsonstring,
+                                      return_jsonstring=return_jsonstring,
                                       display=display,
                                       height=height,
                                       width=width,
-                                      saveiframe=saveiframe,
+                                      save_iframe=save_iframe,
+                                      filename=filename,
                                       open_iframe=open_iframe)
 
     def compute_sensitivity(self,
@@ -5272,13 +5335,17 @@ class OneDSpec():
                             sorder=3,
                             mask_range=[[6850, 6960], [7150,
                                                        7400], [7575, 7700],
-                                        [8925, 9050], [9265, 9750]]):
+                                        [8925, 9050], [9265, 9750]],
+                            mask_fit_order=1,
+                            mask_fit_size=10):
 
         self.fluxcal.compute_sensitivity(kind=kind,
                                          smooth=smooth,
                                          slength=slength,
                                          sorder=sorder,
-                                         mask_range=mask_range)
+                                         mask_range=mask_range,
+                                         mask_fit_order=mask_fit_order,
+                                         mask_fit_size=mask_fit_size)
 
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
 
@@ -5293,16 +5360,18 @@ class OneDSpec():
                             renderer='default',
                             width=1280,
                             height=720,
-                            savejsonstring=False,
+                            return_jsonstring=False,
                             display=True,
-                            saveiframe=False,
+                            save_iframe=False,
+                            filename=None,
                             open_iframe=False):
         self.fluxcal.inspect_sensitivity(renderer=renderer,
                                          width=width,
                                          height=height,
-                                         savejsonstring=savejsonstring,
+                                         return_jsonstring=return_jsonstring,
                                          display=display,
-                                         saveiframe=saveiframe,
+                                         save_iframe=save_iframe,
+                                         filename=filename,
                                          open_iframe=open_iframe)
 
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
@@ -5325,25 +5394,26 @@ class OneDSpec():
                                  savesvg=False,
                                  savepdf=False,
                                  display=True,
-                                 savejsonstring=False,
-                                 saveiframe=False,
+                                 return_jsonstring=False,
+                                 save_iframe=False,
                                  open_iframe=False):
 
-        self.fluxcal.inspect_reduced_spectrum(spec_id=spec_id,
-                                              stype=stype,
-                                              wave_min=wave_min,
-                                              wave_max=wave_max,
-                                              renderer=renderer,
-                                              width=width,
-                                              height=height,
-                                              filename=filename,
-                                              savepng=savepng,
-                                              savejpg=savejpg,
-                                              savesvg=savesvg,
-                                              savepdf=savepdf,
-                                              savejsonstring=savejsonstring,
-                                              saveiframe=saveiframe,
-                                              open_iframe=open_iframe)
+        self.fluxcal.inspect_reduced_spectrum(
+            spec_id=spec_id,
+            stype=stype,
+            wave_min=wave_min,
+            wave_max=wave_max,
+            renderer=renderer,
+            width=width,
+            height=height,
+            filename=filename,
+            savepng=savepng,
+            savejpg=savejpg,
+            savesvg=savesvg,
+            savepdf=savepdf,
+            return_jsonstring=return_jsonstring,
+            save_iframe=save_iframe,
+            open_iframe=open_iframe)
 
     def _create_wavelength_fits(self, stype, resample):
         '''
