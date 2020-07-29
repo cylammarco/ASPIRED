@@ -13,51 +13,6 @@ sys.path.insert(0, abs_dir)
 from aspired import image_reduction
 from aspired import spectral_reduction
 
-
-def test_imagereduction():
-    science_frame = image_reduction.ImageReduction(os.path.join(
-        abs_dir, 'examples/sprat_LHS6328.list'),
-                                                   silence=True)
-    science_frame.reduce()
-
-    properties_len = len(science_frame.__dict__)
-    assert properties_len == 54, 'There should be 54 properties. You have ' + str(
-        properties_len) + '.'
-
-    # Check if files are loaded to the right place
-    filelist_len = len(science_frame.filelist)
-    assert filelist_len == 7, 'There should be 7 files. You have ' + str(
-        filelist_len) + '.'
-
-    bias_len = len(science_frame.bias_filename)
-    assert bias_len == 0, 'There should be 0 files. You have ' + str(
-        bias_len) + '.'
-
-    dark_len = len(science_frame.dark_filename)
-    assert dark_len == 1, 'There should be 1 files. You have ' + str(
-        dark_len) + '.'
-
-    light_len = len(science_frame.light_filename)
-    assert light_len == 5, 'There should be 5 files. You have ' + str(
-        light_len) + '.'
-
-    flat_len = len(science_frame.flat_filename)
-    assert flat_len == 0, 'There should be 0 files. You have ' + str(
-        flat_len) + '.'
-
-    arc_len = len(science_frame.arc_filename)
-    assert arc_len == 1, 'There should be 1 files. You have ' + str(
-        arc_len) + '.'
-
-    # Check if there is any numeric values in the final image array
-    assert np.isfinite(science_frame.light_master).any(
-    ), 'The reduced image contains no usable information.'
-
-    # Free memory
-    del science_frame
-    science_frame = None
-
-
 def test_spectral_extraction():
     # Prepare dummy data
     # total signal at a given spectral position = 2 + 5 + 10 + 5 + 2 - 1*5 = 19
