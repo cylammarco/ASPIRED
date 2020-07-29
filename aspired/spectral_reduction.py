@@ -1133,8 +1133,7 @@ class TwoDSpec:
             f1 = np.nansum((P * f / var_f)[mask_cr]) / \
                 np.nansum((P**2. / var_f)[mask_cr])
             # step 8b - variance of optimal signal
-            v1 = np.nansum(P[mask_cr]**2.) / np.nansum(
-                (P**2. / var_f)[mask_cr])
+            v1 = np.nansum(P[mask_cr]) / np.nansum((P**2. / var_f)[mask_cr])
 
             f_diff = abs((f1 - f0) / f0)
             v_diff = abs((v1 - v0) / v0)
@@ -3708,11 +3707,10 @@ class FluxCalibration(StandardLibrary):
                             smooth=False,
                             slength=5,
                             sorder=3,
-                            mask_range=[[6850, 6960], [7150,
-                                                       7400], [7575, 7700],
+                            mask_range=[[6850, 6960], [7575, 7700],
                                         [8925, 9050], [9265, 9750]],
                             mask_fit_order=1,
-                            mask_fit_size=10):
+                            mask_fit_size=1):
         '''
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
@@ -3722,7 +3720,8 @@ class FluxCalibration(StandardLibrary):
         A Savitzky-Golay filter is available for smoothing before the
         interpolation but it is not used by default.
 
-        6850 - 7000 A,  7150 - 7400 A and 7575 - 7775 A are masked by default.
+        6850 - 6960, 7575 - 7700, 8925 - 9050 and 9265 - 9750 A are masked by
+        default.
 
         Parameters
         ----------
@@ -3739,6 +3738,10 @@ class FluxCalibration(StandardLibrary):
             Masking out regions not suitable for fitting the sensitivity curve.
             None for no mask. List of list has the pattern
             [[min1, max1], [min2, max2],...]
+        mask_fit_order: int
+            Order of polynomial to be fitted over the masked regions.
+        mask_fit_size: int
+            Number of "pixels" to be fitted on each side of the masked regions.
 
         Returns
         -------
@@ -3768,7 +3771,6 @@ class FluxCalibration(StandardLibrary):
 
         # Get the sensitivity curve
         sensitivity = flux_standard_true / flux_standard
-
         sensitivity_masked = sensitivity.copy()
         if mask_range is not None:
             for m in mask_range:
@@ -3777,24 +3779,29 @@ class FluxCalibration(StandardLibrary):
                         m[1] > max(wave_standard_true)):
                     continue
                 # Get the indices for the two sides of the masking region
-                left_end = int(max(np.where(wave_standard_true < m[0])[0]))
+                left_end = int(max(np.where(wave_standard_true <= m[0])[0]))
                 left_start = int(left_end - mask_fit_size)
-                right_start = int(min(np.where(wave_standard_true > m[1])[0]))
+                right_start = int(min(np.where(wave_standard_true >= m[1])[0]))
                 right_end = int(right_start + mask_fit_size)
+
                 # Get the wavelengths of the two sides
                 wave_temp = np.concatenate(
                     (wave_standard_true[left_start:left_end],
                      wave_standard_true[right_start:right_end]))
+
                 # Get the sensitivity of the two sides
                 sensitivity_temp = np.concatenate(
                     (sensitivity[left_start:left_end],
                      sensitivity[right_start:right_end]))
+
                 # Fit the polynomial across the masked region
-                coeff = np.polyfit(wave_temp, np.log10(sensitivity_temp),
-                                   mask_fit_order)
+                coeff = np.polynomial.polynomial.polyfit(
+                    wave_temp, sensitivity_temp, mask_fit_order)
+
                 # Replace the snsitivity values with the fitted values
-                sensitivity_masked[left_end:right_start] = 10.**np.polyval(
-                    coeff, wave_standard_true[left_end:right_start])
+                sensitivity_masked[
+                    left_end:right_start] = np.polynomial.polynomial.polyval(
+                        wave_standard_true[left_end:right_start], coeff)
 
         mask = np.isfinite(sensitivity_masked)
         sensitivity_masked = sensitivity_masked[mask]
@@ -4267,7 +4274,8 @@ class FluxCalibration(StandardLibrary):
                 if filename is None:
                     filename_output = "spectrum_" + str(i)
                 else:
-                    filename_output = os.path.splitext(filename)[0] + "_" + str(i)
+                    filename_output = os.path.splitext(
+                        filename)[0] + "_" + str(i)
 
                 if save_iframe:
                     pio.write_html(fig_sci,
@@ -4432,16 +4440,20 @@ class FluxCalibration(StandardLibrary):
                     fig_standard.show(renderer, height=height, width=width)
 
             if savejpg:
-                fig_standard.write_image(filename_output + '.jpg', format='jpg')
+                fig_standard.write_image(filename_output + '.jpg',
+                                         format='jpg')
 
             if savepng:
-                fig_standard.write_image(filename_output + '.png', format='png')
+                fig_standard.write_image(filename_output + '.png',
+                                         format='png')
 
             if savesvg:
-                fig_standard.write_image(filename_output + '.svg', format='svg')
+                fig_standard.write_image(filename_output + '.svg',
+                                         format='svg')
 
             if savepdf:
-                fig_standard.write_image(filename_output + '.pdf', format='pdf')
+                fig_standard.write_image(filename_output + '.pdf',
+                                         format='pdf')
 
             if return_jsonstring:
                 return fig_standard.to_json()
@@ -5333,11 +5345,10 @@ class OneDSpec():
                             smooth=False,
                             slength=5,
                             sorder=3,
-                            mask_range=[[6850, 6960], [7150,
-                                                       7400], [7575, 7700],
+                            mask_range=[[6850, 6960], [7575, 7700],
                                         [8925, 9050], [9265, 9750]],
                             mask_fit_order=1,
-                            mask_fit_size=10):
+                            mask_fit_size=1):
 
         self.fluxcal.compute_sensitivity(kind=kind,
                                          smooth=smooth,
