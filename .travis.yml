@@ -4,114 +4,114 @@ jobs:
   include:
     # Ubuntu 2018
     - os: linux
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       dist: bionic
     - os: linux
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       dist: bionic
     - os: linux
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       dist: bionic
     - os: linux
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       dist: bionic
     # Ubuntu 2016
     - os: linux
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       dist: xenial
     - os: linux
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       dist: xenial
     - os: linux
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       dist: xenial
     - os: linux
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       dist: xenial
     # Catalina (2019)
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       osx_image: xcode12u
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       osx_image: xcode12u
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       osx_image: xcode12u
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       osx_image: xcode12u
     # Mojave (2018)
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       osx_image: xcode11.3
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       osx_image: xcode11.3
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       osx_image: xcode11.3
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       osx_image: xcode11.3
     # High Sierra (2017)
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       osx_image: xcode10.1
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       osx_image: xcode10.1
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       osx_image: xcode10.1
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       osx_image: xcode10.1
     # Sierra (2016)
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       osx_image: xcode9.2
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       osx_image: xcode9.2
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       osx_image: xcode9.2
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       osx_image: xcode9.2
     # El Capitan (2015)
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.6
+      env: PYTHON_VERSION=3.6.11
       osx_image: xcode8
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.7
+      env: PYTHON_VERSION=3.7.8
       osx_image: xcode8
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.8
+      env: PYTHON_VERSION=3.8.5
       osx_image: xcode8
     - os: osx
       language: generic
-      env: PYTHON_VERSION=3.9
+      env: PYTHON_VERSION=3.9.0b5
       osx_image: xcode8
   # Some upstream bug as of 2020-05-15
   allow_failures:
@@ -119,6 +119,7 @@ jobs:
       osx_image: xcode9.2
     - os: osx
       osx_image: xcode8
+    - env: PYTHON_VERSION=3.9.0b5
 
 before_install:
   - unset PYENV_ROOT
