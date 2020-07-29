@@ -3739,7 +3739,7 @@ class FluxCalibration(StandardLibrary):
             None for no mask. List of list has the pattern
             [[min1, max1], [min2, max2],...]
         mask_fit_order: int
-            Order of polynomial to be fitted over the masked regions.
+            Order of polynomial to be fitted over the masked regions
         mask_fit_size: int
             Number of "pixels" to be fitted on each side of the masked regions.
 
@@ -4104,10 +4104,10 @@ class FluxCalibration(StandardLibrary):
                                  width=1280,
                                  height=720,
                                  filename=None,
-                                 savepng=False,
-                                 savejpg=False,
-                                 savesvg=False,
-                                 savepdf=False,
+                                 save_png=False,
+                                 save_jpg=False,
+                                 save_svg=False,
+                                 save_pdf=False,
                                  return_jsonstring=False,
                                  display=True,
                                  save_iframe=False,
@@ -4288,16 +4288,16 @@ class FluxCalibration(StandardLibrary):
                     else:
                         fig_sci.show(renderer)
 
-                if savejpg:
+                if save_jpg:
                     fig_sci.write_image(filename_output + '.jpg', format='jpg')
 
-                if savepng:
+                if save_png:
                     fig_sci.write_image(filename_output + '.png', format='png')
 
-                if savesvg:
+                if save_svg:
                     fig_sci.write_image(filename_output + '.svg', format='svg')
 
-                if savepdf:
+                if save_pdf:
                     fig_sci.write_image(filename_output + '.pdf', format='pdf')
 
                 if return_jsonstring:
@@ -4439,19 +4439,19 @@ class FluxCalibration(StandardLibrary):
                 else:
                     fig_standard.show(renderer, height=height, width=width)
 
-            if savejpg:
+            if save_jpg:
                 fig_standard.write_image(filename_output + '.jpg',
                                          format='jpg')
 
-            if savepng:
+            if save_png:
                 fig_standard.write_image(filename_output + '.png',
                                          format='png')
 
-            if savesvg:
+            if save_svg:
                 fig_standard.write_image(filename_output + '.svg',
                                          format='svg')
 
-            if savepdf:
+            if save_pdf:
                 fig_standard.write_image(filename_output + '.pdf',
                                          format='pdf')
 
@@ -5400,10 +5400,10 @@ class OneDSpec():
                                  width=1280,
                                  height=720,
                                  filename=None,
-                                 savepng=False,
-                                 savejpg=False,
-                                 savesvg=False,
-                                 savepdf=False,
+                                 save_png=False,
+                                 save_jpg=False,
+                                 save_svg=False,
+                                 save_pdf=False,
                                  display=True,
                                  return_jsonstring=False,
                                  save_iframe=False,
@@ -5418,10 +5418,10 @@ class OneDSpec():
             width=width,
             height=height,
             filename=filename,
-            savepng=savepng,
-            savejpg=savejpg,
-            savesvg=savesvg,
-            savepdf=savepdf,
+            save_png=save_png,
+            save_jpg=save_jpg,
+            save_svg=save_svg,
+            save_pdf=save_pdf,
             return_jsonstring=return_jsonstring,
             save_iframe=save_iframe,
             open_iframe=open_iframe)
