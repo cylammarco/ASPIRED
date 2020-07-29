@@ -103,7 +103,7 @@ before_install:
   - pyenv install $PYTHON_VERSION
   - pyenv global $PYTHON_VERSION
   - pyenv shell $PYTHON_VERSION
-  - pip install --upgrade pip setuptools wheel py
+  - pip install --upgrade pip setuptools wheel py pytest
 
 install:
   - python setup.py install

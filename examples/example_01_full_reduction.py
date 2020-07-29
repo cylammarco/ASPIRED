@@ -97,8 +97,8 @@ lhs6328_onedspec.apply_wavelength_calibration(stype='science+standard')
 lhs6328_onedspec.load_standard(target='hiltner102')
 #lhs6328_onedspec.inspect_standard()
 
-lhs6328_onedspec.compute_sensitivity(kind='cubic')
-#lhs6328_onedspec.inspect_sensitivity()
+lhs6328_onedspec.compute_sensitivity(kind='cubic', mask_fit_size=1)
+lhs6328_onedspec.inspect_sensitivity()
 
 lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
@@ -107,6 +107,7 @@ lhs6328_onedspec.inspect_reduced_spectrum(stype='science', save_iframe=True,
 lhs6328_onedspec.inspect_reduced_spectrum(stype='standard', save_iframe=True,
                             filename='example_output/example_01_a_standard_spectrum')
 
+exit()
 # Save as FITS
 lhs6328_onedspec.save_fits(
     output='flux_resampled+wavecal+flux+adu',
@@ -178,7 +179,7 @@ lhs6328_onedspec.apply_wavelength_calibration(stype='science+standard')
 lhs6328_onedspec.load_standard(target='hiltner102')
 #lhs6328_onedspec.inspect_standard()
 
-lhs6328_onedspec.compute_sensitivity(kind='cubic')
+lhs6328_onedspec.compute_sensitivity(kind='cubic', mask_fit_size=1)
 #lhs6328_onedspec.inspect_sensitivity()
 
 lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
