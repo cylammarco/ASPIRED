@@ -24,16 +24,11 @@ from .image_reduction import ImageReduction
 
 base_dir = os.path.dirname(__file__)
 
-from matplotlib.pyplot import *
-ion()
-
 
 class spectrum1D():
     '''
     Base class of a 1D spectral object
 
-    [To Do]
-    support masking
     '''
     def __init__(self, spec_id):
 
@@ -57,9 +52,9 @@ class spectrum1D():
         self.pixel_list = None
         self.pixel_mapping_itp = None
         self.background = None
-        self.adu = None
-        self.adu_err = None
-        self.adu_sky = None
+        self.count = None
+        self.count_err = None
+        self.count_sky = None
         self.extraction_type = None
         self.optimal_pixel = None
 
@@ -106,9 +101,9 @@ class spectrum1D():
         self.wave_start = None
         self.wave_end = None
         self.wave_resampled = None
-        self.adu_resampled = None
-        self.adu_err_resampled = None
-        self.adu_sky_resampled = None
+        self.count_resampled = None
+        self.count_err_resampled = None
+        self.count_sky_resampled = None
 
         # Fluxes
         self.flux = None
@@ -161,34 +156,34 @@ class spectrum1D():
         self.remove_pixel_list()
         self.remove_pixel_mapping_itp()
 
-    def add_adu(self, adu, adu_err=None, adu_sky=None):
-        assert type(adu) == list, 'adu has to be a list'
+    def add_count(self, count, count_err=None, count_sky=None):
+        assert type(count) == list, 'count has to be a list'
 
-        if adu_err is not None:
-            assert type(adu_err) == list, 'adu_err has to be a list'
-            assert len(adu_err) == len(
-                adu), 'adu_err has to be the same size as adu'
+        if count_err is not None:
+            assert type(count_err) == list, 'count_err has to be a list'
+            assert len(count_err) == len(
+                count), 'count_err has to be the same size as count'
 
-        if adu_sky is not None:
-            assert type(adu_sky) == list, 'adu_sky has to be a list'
-            assert len(adu_sky) == len(
-                adu), 'adu_sky has to be the same size as adu'
+        if count_sky is not None:
+            assert type(count_sky) == list, 'count_sky has to be a list'
+            assert len(count_sky) == len(
+                count), 'count_sky has to be the same size as count'
 
         # Only add if all assertions are passed.
-        self.adu = adu
-        if adu_err is not None:
-            self.adu_err = adu_err
+        self.count = count
+        if count_err is not None:
+            self.count_err = count_err
         else:
-            self.adu_err = np.zeros_like(self.adu)
-        if adu_sky is not None:
-            self.adu_sky = adu_sky
+            self.count_err = np.zeros_like(self.count)
+        if count_sky is not None:
+            self.count_sky = count_sky
         else:
-            self.adu_sky = np.zeros_like(self.adu)
+            self.count_sky = np.zeros_like(self.count)
 
-    def remove_adu(self):
-        self.adu = None
-        self.adu_err = None
-        self.adu_sky = None
+    def remove_count(self):
+        self.count = None
+        self.count_err = None
+        self.count_sky = None
 
     def add_arc_spec(self, arc_spec):
         assert type(arc_spec) == list, 'arc_spec has to be a list'
@@ -236,7 +231,7 @@ class spectrum1D():
         self.peaks_wave = None
 
     def add_background(self, background):
-        # background ADU level
+        # background Count level
         assert np.isfinite(background), 'background has to be finite.'
         self.background = background
 
@@ -280,6 +275,18 @@ class spectrum1D():
 
     def remove_min_atlas_distance(self):
         self.min_atlas_distance = None
+
+    def add_gain(self, gain):
+        assert np.isfinite(gain), 'gain has to be finite.'
+        self.gain = gain
+
+    def add_readnoise(self, readnoise):
+        assert np.isfinite(readnoise), 'readnoise has to be finite.'
+        self.readnoise = None
+
+    def add_exptime(self, exptime):
+        assert np.isfinite(exptime), 'exptime has to be finite.'
+        self.exptime = None
 
     def add_weather_condition(self, pressure, temperature, relative_humidity):
         assert np.isfinite(pressure), 'pressure has to be finite.'
@@ -445,17 +452,17 @@ class spectrum1D():
         self.wave_end = None
         self.wave_resampled = None
 
-    def add_adu_resampled(self, adu_resampled, adu_err_resampled,
-                          adu_sky_resampled):
+    def add_count_resampled(self, count_resampled, count_err_resampled,
+                            count_sky_resampled):
         # add assertion here
-        self.adu_resampled = adu_resampled
-        self.adu_err_resampled = adu_err_resampled
-        self.adu_sky_resampled = adu_sky_resampled
+        self.count_resampled = count_resampled
+        self.count_err_resampled = count_err_resampled
+        self.count_sky_resampled = count_sky_resampled
 
-    def remove_adu_resampled(self):
-        self.adu_resampled = None
-        self.adu_err_resampled = None
-        self.adu_sky_resampled = None
+    def remove_count_resampled(self):
+        self.count_resampled = None
+        self.count_err_resampled = None
+        self.count_sky_resampled = None
 
     def add_smoothing(self, smooth, slength, sorder):
         # add assertion here
@@ -1066,6 +1073,9 @@ class TwoDSpec:
                         tol=1e-6,
                         max_iter=99):
         """
+        Make sure the counts are the number of photoelectrons or an equivalent
+        detector unit, and not counts per second.
+
         Iterate to get the optimal signal. Following the algorithm on
         Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).
 
@@ -1074,9 +1084,9 @@ class TwoDSpec:
         pix: 1-d numpy array
             pixel number along the spatial direction
         xslice: 1-d numpy array
-            ADU along the pix
+            Count along the pix
         sky: 1-d numpy array
-            ADU of the fitted sky along the pix
+            Count of the fitted sky along the pix
         mu: float
             The center of the Gaussian
         sigma: float
@@ -1222,7 +1232,7 @@ class TwoDSpec:
             Steps of the scaling factor.
         percentile: float
             The percentile of the flux to be used as the estimate of the
-            background sky level to the first order. [ADU]
+            background sky level to the first order. [Count]
         tol: float
             Maximum allowed shift between neighbouring slices, this value is
             referring to native pixel size without the application of the
@@ -1230,8 +1240,8 @@ class TwoDSpec:
         polydeg: int
             Degree of the polynomial fit of the trace.
         ap_faint: float
-            The percentile threshold of ADU aperture to be used for fitting
-            the trace. Note that this percentile is of the ADU, not of the
+            The percentile threshold of Count aperture to be used for fitting
+            the trace. Note that this percentile is of the Count, not of the
             number of subspectra.
         display: boolean
             Set to True to display disgnostic plot.
@@ -1380,7 +1390,7 @@ class TwoDSpec:
 
         for i in range(len(spec_idx)):
 
-            # Get the median of the subspectrum and then get the ADU at the
+            # Get the median of the subspectrum and then get the Count at the
             # centre of the aperture
             ap_val = np.zeros(nwindow)
             for j in range(nwindow):
@@ -1427,6 +1437,10 @@ class TwoDSpec:
             self.spectrum_list[i] = spectrum1D(i)
             self.spectrum_list[i].add_trace(list(ap), [ap_sigma] * len(ap))
 
+            self.spectrum_list[i].add_gain(self.gain)
+            self.spectrum_list[i].add_readnoise(self.readnoise)
+            self.spectrum_list[i].add_exptime(self.exptime)
+
         # Plot
         if save_iframe or display or return_jsonstring:
 
@@ -1438,7 +1452,7 @@ class TwoDSpec:
                            zmin=self.zmin,
                            zmax=self.zmax,
                            colorscale="Viridis",
-                           colorbar=dict(title='log(ADU / s)')))
+                           colorbar=dict(title='log( e- / s )')))
             for i in range(len(spec_idx)):
                 fig.add_trace(
                     go.Scatter(x=np.arange(nwave),
@@ -1543,17 +1557,17 @@ class TwoDSpec:
                             function along the entire spectrum.
 
         Nothing is returned unless return_jsonstring of the plotly graph is set to be
-        returned. The adu, adu_sky and adu_err are stored as properties of the
+        returned. The count, count_sky and count_err are stored as properties of the
         TwoDSpec object.
 
-        adu: 1-d array
-            The summed adu at each column about the trace. Note: is not
+        count: 1-d array
+            The summed count at each column about the trace. Note: is not
             sky subtracted!
-        adu_sky: 1-d array
+        count_sky: 1-d array
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
-        adu_err: 1-d array
-            the uncertainties of the adu values
+        count_err: 1-d array
+            the uncertainties of the count values
 
         Parameters
         ----------
@@ -1602,9 +1616,9 @@ class TwoDSpec:
 
         for j in spec_id:
             len_trace = len(self.spectrum_list[j].trace)
-            adu_sky = np.zeros(len_trace)
-            adu_err = np.zeros(len_trace)
-            adu = np.zeros(len_trace)
+            count_sky = np.zeros(len_trace)
+            count_err = np.zeros(len_trace)
+            count = np.zeros(len_trace)
             suboptimal = np.zeros(len_trace, dtype=bool)
 
             for i, pos in enumerate(self.spectrum_list[j].trace):
@@ -1612,7 +1626,7 @@ class TwoDSpec:
                 pix_frac = pos - itrace
 
                 if isinstance(apwidth, int):
-                    # first do the aperture adu
+                    # first do the aperture count
                     widthdn = apwidth
                     widthup = apwidth
                 elif len(apwidth) == 2:
@@ -1623,7 +1637,7 @@ class TwoDSpec:
                         'apwidth can only be an int or a list of two ints')
 
                 if isinstance(skysep, int):
-                    # first do the aperture adu
+                    # first do the aperture count
                     sepdn = skysep
                     sepup = skysep
                 elif len(skysep) == 2:
@@ -1634,7 +1648,7 @@ class TwoDSpec:
                         'skysep can only be an int or a list of two ints')
 
                 if isinstance(skywidth, int):
-                    # first do the aperture adu
+                    # first do the aperture count
                     skywidthdn = skywidth
                     skywidthup = skywidth
                 elif len(skywidth) == 2:
@@ -1650,12 +1664,12 @@ class TwoDSpec:
                 if (itrace - widthdn < 0):
                     widthdn = itrace - 1  # i.e. starting at pixel row 1
 
-                # simply add up the total adu around the trace +/- width
+                # simply add up the total count around the trace +/- width
                 xslice = self.img[itrace - widthdn:itrace + widthup + 1, i]
-                adu_ap = np.sum(xslice) - pix_frac * xslice[-1] - (
+                count_ap = np.sum(xslice) - pix_frac * xslice[-1] - (
                     1 - pix_frac) * xslice[0]
 
-                if (skywidthup >= 0) and (skywidthdn >= 0):
+                if (skywidthup >= 0) or (skywidthdn >= 0):
                     # get the indexes of the sky regions
                     y0 = max(itrace - widthdn - sepdn - skywidthdn, 0)
                     y1 = max(itrace - widthdn - sepdn, 0)
@@ -1672,14 +1686,18 @@ class TwoDSpec:
                         # define the aperture in this column
                         ap = np.arange(itrace - widthdn, itrace + widthup + 1)
                         # evaluate the polynomial across the aperture, and sum
-                        adu_sky_slice = np.polyval(polyfit, ap)
-                        adu_sky[i] = np.sum(
-                            adu_sky_slice) - pix_frac * adu_sky_slice[-1] - (
-                                1 - pix_frac) * adu_sky_slice[0]
+                        count_sky_slice = np.polyval(polyfit, ap)
+                        count_sky[i] = np.sum(
+                            count_sky_slice) - pix_frac * count_sky_slice[
+                                -1] - (1 - pix_frac) * count_sky_slice[0]
                     elif (skydeg == 0):
-                        adu_sky[i] = np.nanmean(z) * (len(xslice) - 1)
+                        count_sky[i] = np.nanmean(z) * (len(xslice) - 1)
+                    else:
+                        warnings.warn('skydeg cannot be negative. sky '
+                            'background is set to zero.')
+                        count_sky[i] = np.zeros(len(xslice))
                 else:
-                    polyfit = [0., 0.]
+                    count_sky[i] = np.zeros(len(xslice))
 
                 # if optimal extraction
                 if optimal:
@@ -1692,23 +1710,27 @@ class TwoDSpec:
                     # Get the optimal signals
                     # pix is the native pixel position
                     # pos is the trace at the native pixel position
-                    adu[i], adu_err[i], suboptimal[i] = self._optimal_signal(
-                        pix, xslice, sky, pos,
-                        self.spectrum_list[j].trace_sigma[i])
+                    count[i], count_err[i], suboptimal[
+                        i] = self._optimal_signal(
+                            pix, xslice * self.exptime, sky * self.exptime,
+                            pos, self.spectrum_list[j].trace_sigma[i])
                 else:
                     #-- finally, compute the error in this pixel
-                    sigB = np.nanstd(z)  # standarddev in the background data
+                    sigB = np.nanstd(
+                        z) * self.exptime  # standarddev in the background data
                     nB = len(y)  # number of bkgd pixels
                     nA = widthdn + widthup + 1  # number of aperture pixels
 
-                    # based on aperture phot err description by F. Masci, Caltech:
+                    # Based on aperture phot err description by F. Masci, Caltech:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
-                    adu_err[i] = np.sqrt((adu_ap - adu_sky[i]) / self.gain +
-                                         (nA + nA**2. / nB) * (sigB**2.))
-                    adu[i] = adu_ap - adu_sky[i]
+                    # All the counts are in per second already, so need to
+                    count_err[i] = np.sqrt((count_ap - count_sky[i]) *
+                                           self.exptime / self.gain +
+                                           (nA + nA**2. / nB) * (sigB**2.))
+                    count[i] = count_ap - count_sky[i]
 
-            self.spectrum_list[j].add_adu(list(adu), list(adu_err),
-                                          list(adu_sky))
+            self.spectrum_list[j].add_count(list(count), list(count_err),
+                                            list(count_sky))
             self.spectrum_list[j].gain = self.gain
             self.spectrum_list[j].optimal_pixel = suboptimal
 
@@ -1753,7 +1775,7 @@ class TwoDSpec:
                         zmax=self.zmax,
                         xaxis='x',
                         yaxis='y',
-                        colorbar=dict(title='log(ADU / s)')))
+                        colorbar=dict(title='log( e- / s )')))
 
                 # Middle black box on the image
                 fig.add_trace(
@@ -1828,7 +1850,7 @@ class TwoDSpec:
                 # plot the SNR
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
-                               y=adu / adu_err,
+                               y=count / count_err,
                                xaxis='x2',
                                yaxis='y3',
                                line=dict(color='slategrey'),
@@ -1837,25 +1859,25 @@ class TwoDSpec:
                 # extrated source, sky and uncertainty
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
-                               y=adu_sky,
+                               y=count_sky,
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='firebrick'),
-                               name='Sky ADU / s'))
+                               name='Sky count / (e- / s)'))
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
-                               y=adu_err,
+                               y=count_err,
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='orange'),
-                               name='Uncertainty'))
+                               name='Uncertainty count / (e- / s)'))
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
-                               y=adu,
+                               y=count,
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='royalblue'),
-                               name='Target ADU / s'))
+                               name='Target count / (e- / s)'))
 
                 # Decorative stuff
                 fig.update_layout(
@@ -1868,19 +1890,21 @@ class TwoDSpec:
                         range=[
                             min(
                                 np.nanmin(
-                                    sigma_clip(adu, sigma=5., masked=False)),
+                                    sigma_clip(count, sigma=5., masked=False)),
                                 np.nanmin(
-                                    sigma_clip(adu_err, sigma=5.,
+                                    sigma_clip(count_err,
+                                               sigma=5.,
                                                masked=False)),
                                 np.nanmin(
-                                    sigma_clip(adu_sky, sigma=5.,
+                                    sigma_clip(count_sky,
+                                               sigma=5.,
                                                masked=False)), 1),
-                            max(np.nanmax(adu), np.nanmax(adu_sky))
+                            max(np.nanmax(count), np.nanmax(count_sky))
                         ],
                         zeroline=False,
                         domain=[0, 0.5],
                         showgrid=True,
-                        title='ADU / s',
+                        title='Count / s',
                     ),
                     yaxis3=dict(title='S/N ratio',
                                 anchor="x2",
@@ -1928,19 +1952,19 @@ class TwoDSpec:
                 [fits.ImageHDU(spec.trace),
                  fits.ImageHDU(spec.trace_sigma)])
 
-    def _create_adu_fits(self):
+    def _create_count_fits(self):
         # Put the reduced data in FITS format with an image header
-        self.adu_hdulist = np.array([None] * len(self.spectrum_list),
-                                    dtype='object')
+        self.count_hdulist = np.array([None] * len(self.spectrum_list),
+                                      dtype='object')
         for i, spec in self.spectrum_list.items():
-            self.adu_hdulist[i] = fits.HDUList([
-                fits.ImageHDU(spec.adu),
-                fits.ImageHDU(spec.adu_err),
-                fits.ImageHDU(spec.adu_sky)
+            self.count_hdulist[i] = fits.HDUList([
+                fits.ImageHDU(spec.count),
+                fits.ImageHDU(spec.count_err),
+                fits.ImageHDU(spec.count_sky)
             ])
 
     def save_fits(self,
-                  output='trace+adu',
+                  output='trace+count',
                   filename='TwoDSpecExtracted',
                   overwrite=False):
         '''
@@ -1953,7 +1977,7 @@ class TwoDSpec:
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            adu: 3 HDUs
+            count: 3 HDUs
                 Flux, uncertainty and sky (bin width = per wavelength)
             trace: 2 HDU
                 Pixel position of the trace in the spatial direction
@@ -1970,8 +1994,8 @@ class TwoDSpec:
 
         output_split = output.split('+')
 
-        if 'adu' in output_split:
-            self._create_adu_fits()
+        if 'count' in output_split:
+            self._create_count_fits()
 
         if 'trace' in output_split:
             self._create_trace_fits()
@@ -1981,8 +2005,8 @@ class TwoDSpec:
 
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()
-            if 'adu' in output_split:
-                hdu_output.extend(self.adu_hdulist[i])
+            if 'count' in output_split:
+                hdu_output.extend(self.count_hdulist[i])
 
             if 'trace' in output_split:
                 hdu_output.extend(self.trace_hdulist[i])
@@ -2070,7 +2094,7 @@ class WavelengthCalibration():
             can be provided as list of list or list of arrays.
         '''
         if spec_id in list(self.spectrum_list.keys()):
-            if self.spectrum_list[spec_id].adu is not None:
+            if self.spectrum_list[spec_id].count is not None:
                 warnings.warn('The given spec_id is in use already, the given '
                               'peaks will overwrite the current data.')
 
@@ -2087,11 +2111,11 @@ class WavelengthCalibration():
         Parameters
         ----------
         arc_spec: list of list or list of arrays
-            The ADU/flux of the 1D arc spectrum/a. Multiple spectrum/a
+            The Count/flux of the 1D arc spectrum/a. Multiple spectrum/a
             can be provided as list of list or list of arrays.
         '''
         if spec_id in list(self.spectrum_list.keys()):
-            if self.spectrum_list[spec_id].adu is not None:
+            if self.spectrum_list[spec_id].count is not None:
                 warnings.warn('The given spec_id is in use already, the given '
                               'arc_spec will overwrite the current data.')
 
@@ -2101,23 +2125,24 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].arc_spec = list(arc_spec)
 
-    def add_spec(self, adu, spec_id=None, adu_err=None, adu_sky=None):
+    def add_spec(self, count, spec_id=None, count_err=None, count_sky=None):
         '''
         To provide user-supplied extracted spectrum for wavelegth calibration.
 
         '''
 
         if spec_id in list(self.spectrum_list.keys()):
-            if self.spectrum_list[spec_id].adu is not None:
-                warnings.warn('The given spec_id is in use already, the given '
-                              'adu, adu_err and adu_sky will overwrite the '
-                              'current data.')
+            if self.spectrum_list[spec_id].count is not None:
+                warnings.warn(
+                    'The given spec_id is in use already, the given '
+                    'count, count_err and count_sky will overwrite the '
+                    'current data.')
 
         if spec_id is None:
             # Add to the first spec
             spec_id = 0
 
-        self.spectrum_list[spec_id].add_adu(adu, adu_err, adu_sky)
+        self.spectrum_list[spec_id].add_count(count, count_err, count_sky)
 
     def remove_spec(self, spec_id):
         '''
@@ -2127,7 +2152,7 @@ class WavelengthCalibration():
         if spec_id not in list(self.spectrum_list.keys()):
             raise ValueError('The given spec_id does not exist.')
 
-        self.spectrum_list[spec_id].remove_adu()
+        self.spectrum_list[spec_id].remove_count()
 
     def add_trace(self, trace, trace_sigma, spec_id=None, pixel_list=None):
         '''
@@ -2342,7 +2367,7 @@ class WavelengthCalibration():
                     title='Spectral Direction / pixel'),
                                   yaxis=dict(zeroline=False,
                                              range=[0, max(arc_spec)],
-                                             title='ADU per second'),
+                                             title='e- / s'),
                                   hovermode='closest',
                                   showlegend=False)
 
@@ -2397,7 +2422,7 @@ class WavelengthCalibration():
         percentile: float
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
-            is None. [ADU]
+            is None. [Count]
         distance: float
             Minimum separation between peaks
         display: boolean
@@ -2469,7 +2494,7 @@ class WavelengthCalibration():
                                y=np.arange(self.arc.shape[1]),
                                z=np.log10(self.arc),
                                colorscale="Viridis",
-                               colorbar=dict(title='log(ADU / s)')))
+                               colorbar=dict(title='log( e- / s )')))
 
                 # note that the image is not adjusted for the chip gaps
                 # peaks_raw are plotted instead of the peaks
@@ -2981,28 +3006,28 @@ class WavelengthCalibration():
             wave_resampled = np.arange(wave_start, wave_end, wave_bin)
 
             # apply the flux calibration and resample
-            adu_resampled = spectres(wave_resampled,
-                                     wave,
-                                     np.array(spec.adu),
-                                     verbose=False)
-            if spec.adu_err is not None:
-                adu_err_resampled = spectres(wave_resampled,
-                                             wave,
-                                             np.array(spec.adu_err),
-                                             verbose=False)
-            if spec.adu_sky is not None:
-                adu_sky_resampled = spectres(wave_resampled,
-                                             wave,
-                                             np.array(spec.adu_sky),
-                                             verbose=False)
+            count_resampled = spectres(wave_resampled,
+                                       wave,
+                                       np.array(spec.count),
+                                       verbose=False)
+            if spec.count_err is not None:
+                count_err_resampled = spectres(wave_resampled,
+                                               wave,
+                                               np.array(spec.count_err),
+                                               verbose=False)
+            if spec.count_sky is not None:
+                count_sky_resampled = spectres(wave_resampled,
+                                               wave,
+                                               np.array(spec.count_sky),
+                                               verbose=False)
 
             spec.add_wavelength(wave)
             spec.add_wavelength_resampled(wave_bin, wave_start, wave_end,
                                           wave_resampled)
-            spec.add_adu_resampled(adu_resampled, adu_err_resampled,
-                                   adu_sky_resampled)
+            spec.add_count_resampled(count_resampled, count_err_resampled,
+                                     count_sky_resampled)
 
-    def _create_adu_fits(self, spec_id=None):
+    def _create_count_fits(self, spec_id=None):
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3014,17 +3039,17 @@ class WavelengthCalibration():
         if isinstance(spec_id, int):
             spec_id = [spec_id]
 
-        self.adu_hdulist = np.array([None](max(spec_id) + 1), dtype='object')
+        self.count_hdulist = np.array([None](max(spec_id) + 1), dtype='object')
 
         for i in spec_id:
             spec = self.spectrum_list[i]
-            self.adu_hdulist[i] = fits.HDUList([
-                fits.ImageHDU(spec.adu),
-                fits.ImageHDU(spec.adu_err),
-                fits.ImageHDU(spec.adu_sky)
+            self.count_hdulist[i] = fits.HDUList([
+                fits.ImageHDU(spec.count),
+                fits.ImageHDU(spec.count_err),
+                fits.ImageHDU(spec.count_sky)
             ])
 
-    def _create_adu_resampled_fits(self, spec_id=None):
+    def _create_count_resampled_fits(self, spec_id=None):
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3036,15 +3061,15 @@ class WavelengthCalibration():
         if isinstance(spec_id, int):
             spec_id = [spec_id]
 
-        self.adu_resampled_hdulist = np.array([None] * (max(spec_id) + 1),
-                                              dtype='object')
+        self.count_resampled_hdulist = np.array([None] * (max(spec_id) + 1),
+                                                dtype='object')
 
         for i in spec_id:
             spec = self.spectrum_list[i]
-            self.adu_resampled_hdulist[i] = fits.HDUList([
-                fits.ImageHDU(spec.adu_resampled),
-                fits.ImageHDU(spec.adu_err_resampled),
-                fits.ImageHDU(spec.adu_sky_resampled)
+            self.count_resampled_hdulist[i] = fits.HDUList([
+                fits.ImageHDU(spec.count_resampled),
+                fits.ImageHDU(spec.count_err_resampled),
+                fits.ImageHDU(spec.count_sky_resampled)
             ])
 
     def _create_arc_spec_fits(self, spec_id=None):
@@ -3128,11 +3153,11 @@ class WavelengthCalibration():
         if 'arc_spec' in output_split:
             self._create_arc_spec_fits(spec_id)
 
-        if 'adu' in output_split:
-            self._create_adu_fits(spec_id)
+        if 'count' in output_split:
+            self._create_count_fits(spec_id)
 
-        if 'adu_resampled' in output_split:
-            self._create_adu_resampled_fits(spec_id)
+        if 'count_resampled' in output_split:
+            self._create_count_resampled_fits(spec_id)
 
         if 'wavecal' in output_split:
             self._create_wavecal_fits(spec_id)
@@ -3148,13 +3173,13 @@ class WavelengthCalibration():
                 if spec.arc_spec is not None:
                     hdu_output.extend(self.arc_spec_hdulist[i])
 
-            if 'adu' in output_split:
-                if spec.adu is not None:
-                    hdu_output.extend(self.adu_hdulist[i])
+            if 'count' in output_split:
+                if spec.count is not None:
+                    hdu_output.extend(self.count_hdulist[i])
 
-            if 'adu_resampled' in output_split:
-                if spec.adu_resampled is not None:
-                    hdu_output.extend(self.adu_resampled_hdulist[i])
+            if 'count_resampled' in output_split:
+                if spec.count_resampled is not None:
+                    hdu_output.extend(self.count_resampled_hdulist[i])
 
             if 'wavecal' in output_split:
                 if spec.polyfit_coeff is not None:
@@ -3521,13 +3546,13 @@ class FluxCalibration(StandardLibrary):
         self.spectrum_list_standard = {}
 
     def add_spec(self,
-                 adu,
+                 count,
                  spec_id=None,
-                 adu_err=None,
-                 adu_sky=None,
+                 count_err=None,
+                 count_sky=None,
                  stype='standard'):
         '''
-        Add spectrum (adu, adu_err & adu_sky) one at a time.
+        Add spectrum (count, count_err & count_sky) one at a time.
         '''
 
         if stype == 'standard':
@@ -3536,7 +3561,7 @@ class FluxCalibration(StandardLibrary):
                 self.spectrum_list_standard[0] = spectrum1D()
 
             if spec_id in list(self.spectrum_list_standard.keys()):
-                if self.spectrum_list_standard[spec_id].adu is not None:
+                if self.spectrum_list_standard[spec_id].count is not None:
                     warnings.warn(
                         'The given spec_id is in use already, the given '
                         'trace, trace_sigma and pixel_list will overwrite the '
@@ -3550,12 +3575,13 @@ class FluxCalibration(StandardLibrary):
                 else:
                     spec_id = 0
 
-            self.spectrum_list_standard[spec_id].add_adu(adu, adu_err, adu_sky)
+            self.spectrum_list_standard[spec_id].add_count(
+                count, count_err, count_sky)
 
         elif stype == 'science':
 
             if spec_id in list(self.spectrum_list_science.keys()):
-                if self.spectrum_list_science[spec_id].adu is not None:
+                if self.spectrum_list_science[spec_id].count is not None:
                     warnings.warn(
                         'The given spec_id is in use already, the given '
                         'trace, trace_sigma and pixel_list will overwrite the '
@@ -3569,7 +3595,8 @@ class FluxCalibration(StandardLibrary):
                 else:
                     spec_id = 0
 
-            self.spectrum_list_science[spec_id].add_adu(adu, adu_err, adu_sky)
+            self.spectrum_list_science[spec_id].add_count(
+                count, count_err, count_sky)
 
         else:
             if stype not in ['science', 'standard']:
@@ -3757,12 +3784,12 @@ class FluxCalibration(StandardLibrary):
                 np.array(np.ediff1d(self.wave_standard_true))):
             flux_standard = spectres(self.wave_standard_true,
                                      np.array(spec.wave),
-                                     np.array(spec.adu),
+                                     np.array(spec.count),
                                      verbose=False)
             flux_standard_true = self.fluxmag_standard_true
             wave_standard_true = self.wave_standard_true
         else:
-            flux_standard = spec.adu
+            flux_standard = spec.count
             flux_standard_true = spectres(spec.wave,
                                           self.wave_standard_true,
                                           self.fluxmag_standard_true,
@@ -3913,7 +3940,7 @@ class FluxCalibration(StandardLibrary):
             go.Scatter(x=spec.wave_literature,
                        y=spec.flux_literature,
                        line=dict(color='royalblue', width=4),
-                       name='ADU / s (Observed)'))
+                       name='Count / s (Observed)'))
 
         fig.add_trace(
             go.Scatter(x=spec.wave_literature,
@@ -3933,15 +3960,15 @@ class FluxCalibration(StandardLibrary):
             fig.update_layout(title='SG(' + str(spec.slength) + ', ' +
                               str(spec.sorder) + ')-Smoothed ' + self.library +
                               ': ' + self.target,
-                              yaxis_title='Smoothed ADU / s')
+                              yaxis_title='Smoothed Count / s')
         else:
             fig.update_layout(title=self.library + ': ' + self.target,
-                              yaxis_title='ADU / s')
+                              yaxis_title='Count / s')
 
         fig.update_layout(hovermode='closest',
                           showlegend=True,
                           xaxis_title=r'$\text{Wavelength / A}$',
-                          yaxis=dict(title='ADU / s'),
+                          yaxis=dict(title='Count / s'),
                           yaxis2=dict(title='Sensitivity Curve',
                                       type='log',
                                       anchor="x",
@@ -4004,26 +4031,26 @@ class FluxCalibration(StandardLibrary):
                 # apply the flux calibration
                 sensitivity = 10.**spec.sensitivity_itp(spec.wave)
 
-                flux = sensitivity * spec.adu
+                flux = sensitivity * spec.count
 
-                if spec.adu_err is not None:
-                    flux_err = sensitivity * spec.adu_err
-                if spec.adu_sky is not None:
-                    flux_sky = sensitivity * spec.adu_sky
+                if spec.count_err is not None:
+                    flux_err = sensitivity * spec.count_err
+                if spec.count_sky is not None:
+                    flux_sky = sensitivity * spec.count_sky
 
                 flux_resampled = spectres(spec.wave_resampled,
                                           spec.wave,
                                           np.array(flux),
                                           verbose=False)
 
-                if spec.adu_err is None:
+                if spec.count_err is None:
                     flux_err_resampled = np.zeros_like(flux_resampled)
                 else:
                     flux_err_resampled = spectres(spec.wave_resampled,
                                                   spec.wave,
                                                   np.array(flux_err),
                                                   verbose=False)
-                if spec.adu_sky is None:
+                if spec.count_sky is None:
                     flux_sky_resampled = np.zeros_like(flux_resampled)
                 else:
                     flux_sky_resampled = spectres(spec.wave_resampled,
@@ -4052,24 +4079,24 @@ class FluxCalibration(StandardLibrary):
             # apply the flux calibration
             sensitivity = 10.**spec.sensitivity_itp(spec.wave)
 
-            flux = sensitivity * spec.adu
-            if spec.adu_err is not None:
-                flux_err = sensitivity * spec.adu_err
-            if spec.adu_sky is not None:
-                flux_sky = sensitivity * spec.adu_sky
+            flux = sensitivity * spec.count
+            if spec.count_err is not None:
+                flux_err = sensitivity * spec.count_err
+            if spec.count_sky is not None:
+                flux_sky = sensitivity * spec.count_sky
 
             flux_resampled = spectres(spec.wave_resampled,
                                       spec.wave,
                                       np.array(flux),
                                       verbose=False)
-            if spec.adu_err is None:
+            if spec.count_err is None:
                 flux_err_resampled = np.zeros_like(flux_resampled)
             else:
                 flux_err_resampled = spectres(spec.wave_resampled,
                                               spec.wave,
                                               np.array(flux_err),
                                               verbose=False)
-            if spec.adu_sky is None:
+            if spec.count_sky is None:
                 flux_sky_resampled = np.zeros_like(flux_resampled)
             else:
                 flux_sky_resampled = spectres(spec.wave_resampled,
@@ -4175,14 +4202,15 @@ class FluxCalibration(StandardLibrary):
                     warnings.warn('Flux calibration is not available.')
                     wave_mask = ((spec.wave_resampled > wave_min) &
                                  (spec.wave_resampled < wave_max))
-                    flux_mask = ((spec.adu_resampled > np.nanpercentile(
-                        spec.adu_resampled[wave_mask], 5) / 1.5) &
-                                 (spec.adu_resampled < np.nanpercentile(
-                                     spec.adu_resampled[wave_mask], 95) * 1.5))
+                    flux_mask = (
+                        (spec.count_resampled > np.nanpercentile(
+                            spec.count_resampled[wave_mask], 5) / 1.5) &
+                        (spec.count_resampled < np.nanpercentile(
+                            spec.count_resampled[wave_mask], 95) * 1.5))
                     flux_min = np.log10(
-                        np.nanmin(spec.adu_resampled[flux_mask]))
+                        np.nanmin(spec.count_resampled[flux_mask]))
                     flux_max = np.log10(
-                        np.nanmax(spec.adu_resampled[flux_mask]))
+                        np.nanmax(spec.count_resampled[flux_mask]))
 
                 fig_sci = go.Figure(
                     layout=dict(autosize=False,
@@ -4239,21 +4267,21 @@ class FluxCalibration(StandardLibrary):
                 else:
                     fig_sci.add_trace(
                         go.Scatter(x=spec.wave_resampled,
-                                   y=spec.adu_resampled,
+                                   y=spec.count_resampled,
                                    line=dict(color='royalblue'),
-                                   name='ADU / s'))
-                    if spec.adu_err is not None:
+                                   name='Count / (e- / s)'))
+                    if spec.count_err is not None:
                         fig_sci.add_trace(
                             go.Scatter(x=spec.wave_resampled,
-                                       y=spec.adu_err_resampled,
+                                       y=spec.count_err_resampled,
                                        line=dict(color='firebrick'),
-                                       name='ADU Uncertainty / s'))
-                    if spec.adu_sky is not None:
+                                       name='Count Uncertainty / (e- / s)'))
+                    if spec.count_sky is not None:
                         fig_sci.add_trace(
                             go.Scatter(x=spec.wave_resampled,
-                                       y=spec.adu_sky_resampled,
+                                       y=spec.count_sky_resampled,
                                        line=dict(color='orange'),
-                                       name='Sky ADU / s'))
+                                       name=r'Sky Count / (e- / s)'))
 
                 fig_sci.update_layout(hovermode='closest',
                                       showlegend=True,
@@ -4324,14 +4352,14 @@ class FluxCalibration(StandardLibrary):
                 wave_standard_mask = ((spec.wave_resampled > wave_min) &
                                       (spec.wave_resampled < wave_max))
                 flux_standard_mask = (
-                    (spec.adu_resampled > np.nanpercentile(
-                        spec.adu_resampled[wave_standard_mask], 5) / 1.5) &
-                    (spec.adu_standard < np.nanpercentile(
-                        spec.adu_resampled[wave_standard_mask], 95) * 1.5))
+                    (spec.count_resampled > np.nanpercentile(
+                        spec.count_resampled[wave_standard_mask], 5) / 1.5) &
+                    (spec.count_standard < np.nanpercentile(
+                        spec.count_resampled[wave_standard_mask], 95) * 1.5))
                 flux_standard_min = np.log10(
-                    np.nanmin(spec.adu_resampled[flux_standard_mask]))
+                    np.nanmin(spec.count_resampled[flux_standard_mask]))
                 flux_standard_max = np.log10(
-                    np.nanmax(spec.adu_resampled[flux_standard_mask]))
+                    np.nanmax(spec.count_resampled[flux_standard_mask]))
 
             fig_standard = go.Figure(layout=dict(updatemenus=list([
                 dict(
@@ -4392,21 +4420,21 @@ class FluxCalibration(StandardLibrary):
             else:
                 fig_standard.add_trace(
                     go.Scatter(x=spec.wave_resampled,
-                               y=spec.adu_resampled,
+                               y=spec.count_resampled,
                                line=dict(color='royalblue'),
-                               name='ADU / s'))
-                if spec.adu_err_resampled is not None:
+                               name='Counts / (e- / s)'))
+                if spec.count_err_resampled is not None:
                     fig_standard.add_trace(
                         go.Scatter(x=spec.wave_resampled,
-                                   y=spec.adu_err_resampled,
+                                   y=spec.count_err_resampled,
                                    line=dict(color='firebrick'),
-                                   name='ADU Uncertainty / s'))
-                if spec.adu_sky_resampled is not None:
+                                   name='Counts Uncertainty / (e- / s)'))
+                if spec.count_sky_resampled is not None:
                     fig_standard.add_trace(
                         go.Scatter(x=spec.wave_resampled,
-                                   y=spec.adu_sky_resampled,
+                                   y=spec.count_sky_resampled,
                                    line=dict(color='orange'),
-                                   name='Sky ADU / s'))
+                                   name='Sky Counts / (e- / s)'))
 
             fig_standard.update_layout(
                 hovermode='closest',
@@ -4465,7 +4493,7 @@ class FluxCalibration(StandardLibrary):
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
         np.save(filename, self.spectrum_list_standard[0].sensitivity_itp)
 
-    def _create_adu_fits(self, spec_id=None, stype='science+standard'):
+    def _create_count_fits(self, spec_id=None, stype='science+standard'):
 
         stype_split = stype.split('+')
 
@@ -4482,27 +4510,27 @@ class FluxCalibration(StandardLibrary):
             if isinstance(spec_id, int):
                 spec_id = [spec_id]
 
-            self.adu_hdulist = np.array([None] *
-                                        len(self.spectrum_list_science),
-                                        dtype='object')
+            self.count_hdulist = np.array([None] *
+                                          len(self.spectrum_list_science),
+                                          dtype='object')
             for i, spec in self.spectrum_list_science.items():
-                self.adu_hdulist[i] = fits.HDUList([
-                    fits.ImageHDU(spec.adu),
-                    fits.ImageHDU(spec.adu_err),
-                    fits.ImageHDU(spec.adu_sky)
+                self.count_hdulist[i] = fits.HDUList([
+                    fits.ImageHDU(spec.count),
+                    fits.ImageHDU(spec.count_err),
+                    fits.ImageHDU(spec.count_sky)
                 ])
 
         if 'standard' in stype_split:
             spec = self.spectrum_list_standard[0]
-            self.adu_standard_hdulist = fits.HDUList([
-                fits.ImageHDU(spec.adu),
-                fits.ImageHDU(spec.adu_err),
-                fits.ImageHDU(spec.adu_sky)
+            self.count_standard_hdulist = fits.HDUList([
+                fits.ImageHDU(spec.count),
+                fits.ImageHDU(spec.count_err),
+                fits.ImageHDU(spec.count_sky)
             ])
 
-    def _create_adu_resampled_fits(self,
-                                   spec_id=None,
-                                   stype='science+standard'):
+    def _create_count_resampled_fits(self,
+                                     spec_id=None,
+                                     stype='science+standard'):
 
         stype_split = stype.split('+')
 
@@ -4519,21 +4547,21 @@ class FluxCalibration(StandardLibrary):
             if isinstance(spec_id, int):
                 spec_id = [spec_id]
 
-            self.adu_resampled_hdulist = np.array(
+            self.count_resampled_hdulist = np.array(
                 [None] * len(self.spectrum_list_science), dtype='object')
             for i, spec in self.spectrum_list_science.items():
-                self.adu_resampled_hdulist[i] = fits.HDUList([
-                    fits.ImageHDU(spec.adu_resampled),
-                    fits.ImageHDU(spec.adu_err_resampled),
-                    fits.ImageHDU(spec.adu_sky_resampled)
+                self.count_resampled_hdulist[i] = fits.HDUList([
+                    fits.ImageHDU(spec.count_resampled),
+                    fits.ImageHDU(spec.count_err_resampled),
+                    fits.ImageHDU(spec.count_sky_resampled)
                 ])
 
         if 'standard' in stype_split:
             spec = self.spectrum_list_standard[0]
-            self.adu_standard_resampled_hdulist = fits.HDUList([
-                fits.ImageHDU(spec.adu_resampled),
-                fits.ImageHDU(spec.adu_err_resampled),
-                fits.ImageHDU(spec.adu_sky_resampled)
+            self.count_standard_resampled_hdulist = fits.HDUList([
+                fits.ImageHDU(spec.count_resampled),
+                fits.ImageHDU(spec.count_err_resampled),
+                fits.ImageHDU(spec.count_sky_resampled)
             ])
 
     def _create_flux_fits(self, spec_id=None, stype='science+standard'):
@@ -4670,7 +4698,7 @@ class FluxCalibration(StandardLibrary):
                 sensitivity_resampled_fits.header['CTYPE1'] = 'Wavelength'
                 sensitivity_resampled_fits.header['CUNIT1'] = 'Angstroms'
                 sensitivity_resampled_fits.header[
-                    'BUNIT'] = 'erg/(s*cm**2*Angstrom)/ADU'
+                    'BUNIT'] = 'erg/(s*cm**2*Angstrom)/Count'
                 self.flux_science_resampled_hdulist[i].append(
                     sensitivity_resampled_fits)
 
@@ -4720,7 +4748,7 @@ class FluxCalibration(StandardLibrary):
             sensitivity_resampled_fits.header['CTYPE1'] = 'Wavelength'
             sensitivity_resampled_fits.header['CUNIT1'] = 'Angstroms'
             sensitivity_resampled_fits.header[
-                'BUNIT'] = 'erg/(s*cm**2*Angstrom)/ADU'
+                'BUNIT'] = 'erg/(s*cm**2*Angstrom)/Count'
             self.flux_standard_resampled_hdulist.append(
                 sensitivity_resampled_fits)
 
@@ -4808,29 +4836,29 @@ class OneDSpec():
                                     stype=stype)
 
     def add_spec(self,
-                 adu,
+                 count,
                  spec_id=None,
-                 adu_err=None,
-                 adu_sky=None,
+                 count_err=None,
+                 count_sky=None,
                  stype='science'):
 
-        self.fluxcal.add_spec(adu=adu,
+        self.fluxcal.add_spec(count=count,
                               spec_id=spec_id,
-                              adu_err=adu_err,
-                              adu_sky=adu_sky,
+                              count_err=count_err,
+                              count_sky=count_sky,
                               stype=stype)
 
         if stype == 'science':
-            self.wavecal_science.add_spec(adu=adu,
+            self.wavecal_science.add_spec(count=count,
                                           spec_id=spec_id,
-                                          adu_err=adu_err,
-                                          adu_sky=adu_sky)
+                                          count_err=count_err,
+                                          count_sky=count_sky)
 
         if stype == 'standard':
-            self.wavecal_standard.add_spec(adu=adu,
+            self.wavecal_standard.add_spec(count=count,
                                            spec_id=spec_id,
-                                           adu_err=adu_err,
-                                           adu_sky=adu_sky)
+                                           count_err=count_err,
+                                           count_sky=count_sky)
 
     def from_twodspec(self, twodspec, pixel_list=None, stype='science'):
         '''
@@ -5469,7 +5497,7 @@ class OneDSpec():
 
     def save_fits(self,
                   spec_id=None,
-                  output='flux+wavecal+fluxraw+adu',
+                  output='flux+wavecal+fluxraw+count',
                   filename='reduced',
                   stype='science',
                   to_disk=True,
@@ -5492,8 +5520,8 @@ class OneDSpec():
                 Polynomial coefficients for wavelength calibration
             fluxraw: 3 HDUs
                 Flux, uncertainty and sky (bin width = per pixel)
-            adu: 3 HDUs
-                ADU, uncertainty and sky (bin width = per pixel)
+            count: 3 HDUs
+                Count, uncertainty and sky (bin width = per pixel)
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
@@ -5517,7 +5545,8 @@ class OneDSpec():
 
         for i in output_split:
             if i not in [
-                    'flux_resampled', 'wavecal', 'flux', 'adu', 'adu_resampled'
+                    'flux_resampled', 'wavecal', 'flux', 'count',
+                    'count_resampled'
             ]:
                 raise ValueError('%s is not a valid output.' % i)
 
@@ -5573,26 +5602,28 @@ class OneDSpec():
                                                        stype='science')
                         hdu_output.extend(self.fluxcal.flux_science_hdulist[i])
 
-                if 'adu' in output_split:
-                    if self.fluxcal.spectrum_list_science[i].adu is None:
-                        warnings.warn("ADU does not exist. Have you included "
-                                      "a spectrum?")
+                if 'count' in output_split:
+                    if self.fluxcal.spectrum_list_science[i].count is None:
+                        warnings.warn(
+                            "Count does not exist. Have you included "
+                            "a spectrum?")
                     else:
-                        self.fluxcal._create_adu_fits(spec_id=i,
-                                                      stype='science')
-                        hdu_output.extend(self.fluxcal.adu_hdulist[i])
+                        self.fluxcal._create_count_fits(spec_id=i,
+                                                        stype='science')
+                        hdu_output.extend(self.fluxcal.count_hdulist[i])
 
-                if 'adu_resampled' in output_split:
+                if 'count_resampled' in output_split:
                     if self.fluxcal.spectrum_list_science[
-                            i].adu_resampled is None:
-                        warnings.warn("Resampled ADU does not exist. Have you "
-                                      "included a spectrum? Is it wavelength "
-                                      "calibrated and resampled?")
+                            i].count_resampled is None:
+                        warnings.warn(
+                            "Resampled Count does not exist. Have you "
+                            "included a spectrum? Is it wavelength "
+                            "calibrated and resampled?")
                     else:
-                        self.fluxcal._create_adu_resampled_fits(
+                        self.fluxcal._create_count_resampled_fits(
                             spec_id=i, stype='science')
                         hdu_output.extend(
-                            self.fluxcal.adu_resampled_hdulist[i])
+                            self.fluxcal.count_resampled_hdulist[i])
 
                 # Convert the first HDU to PrimaryHDU
                 hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
@@ -5637,24 +5668,25 @@ class OneDSpec():
                                                    stype='standard')
                     hdu_output.extend(self.fluxcal.flux_standard_hdulist)
 
-            if 'adu' in output_split:
-                if self.fluxcal.spectrum_list_standard[0].adu is None:
-                    warnings.warn("ADU does not exist. Have you included "
+            if 'count' in output_split:
+                if self.fluxcal.spectrum_list_standard[0].count is None:
+                    warnings.warn("Count does not exist. Have you included "
                                   "a spectrum?")
-                self.fluxcal._create_adu_fits(spec_id=spec_id,
-                                              stype='standard')
-                hdu_output.extend(self.fluxcal.adu_standard_hdulist)
+                self.fluxcal._create_count_fits(spec_id=spec_id,
+                                                stype='standard')
+                hdu_output.extend(self.fluxcal.count_standard_hdulist)
 
-            if 'adu_resampled' in output_split:
-                if self.fluxcal.spectrum_list_standard[0].adu_resampled is None:
-                    warnings.warn("Resampled ADU does not exist. Have you "
+            if 'count_resampled' in output_split:
+                if self.fluxcal.spectrum_list_standard[
+                        0].count_resampled is None:
+                    warnings.warn("Resampled Count does not exist. Have you "
                                   "included a spectrum? Is it wavelength "
                                   "calibrated and resampled?")
                 else:
-                    self.fluxcal._create_adu_resampled_fits(spec_id=spec_id,
-                                                            stype='standard')
+                    self.fluxcal._create_count_resampled_fits(spec_id=spec_id,
+                                                              stype='standard')
                     hdu_output.extend(
-                        self.fluxcal.adu_standard_resampled_hdulist)
+                        self.fluxcal.count_standard_resampled_hdulist)
 
             # Convert the first HDU to PrimaryHDU
             hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
@@ -5680,7 +5712,7 @@ class OneDSpec():
 
     def save_csv(self,
                  spec_id=None,
-                 output='flux_resampled+wavecal+flux+adu+adu_resampled',
+                 output='flux_resampled+wavecal+flux+count+count_resampled',
                  filename='reduced',
                  column_major=True,
                  stype='science',
@@ -5702,8 +5734,8 @@ class OneDSpec():
                 Polynomial coefficients for wavelength calibration
             fluxraw: 4 HDUs
                 Flux, uncertainty, sky, sensitivity (bin width = per pixel)
-            adu: 3 HDUs
-                ADU, uncertainty and sky (bin width = per pixel)
+            count: 3 HDUs
+                Count, uncertainty and sky (bin width = per pixel)
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
@@ -5731,7 +5763,8 @@ class OneDSpec():
 
         for i in output_split:
             if i not in [
-                    'flux_resampled', 'wavecal', 'flux', 'adu', 'adu_resampled'
+                    'flux_resampled', 'wavecal', 'flux', 'count',
+                    'count_resampled'
             ]:
                 raise ValueError('%s is not a valid output.' % i)
 
@@ -5747,16 +5780,16 @@ class OneDSpec():
             'Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, Resampled Sensitivity Curve',
             'wavecal': 'Polynomial coefficients for wavelength calibration',
             'flux': 'Flux, Flux Uncertainty, Sky Flux, Sensitivity Curve',
-            'adu': 'ADU, ADU Uncertainty, Sky ADU',
-            'adu_resampled': 'Resampled ADU, ADU Uncertainty, Sky ADU'
+            'count': 'Count, Count Uncertainty, Sky Count',
+            'count_resampled': 'Resampled Count, Count Uncertainty, Sky Count'
         }
 
         n_hdu = {
             'flux_resampled': 4,
             'wavecal': 1,
             'flux': 4,
-            'adu': 3,
-            'adu_resampled': 3
+            'count': 3,
+            'count_resampled': 3
         }
 
         if 'science' in stype_split:
