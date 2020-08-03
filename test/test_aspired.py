@@ -50,6 +50,6 @@ def test_spectral_extraction():
 
     # Optimal extracting spectrum by summing over the aperture along the trace
     dummy_twodspec.ap_extract(apwidth=5, optimal=False)
-    adu = np.mean(dummy_twodspec.spectrum_list[0].adu)
-    assert np.round(adu).astype(
-        'int') == 47, 'Extracted ADU is ' + str(adu) + ' but it should be 19.'
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    assert np.round(count).astype(
+        'int') == 47, 'Extracted count is ' + str(count) + ' but it should be 19.'
