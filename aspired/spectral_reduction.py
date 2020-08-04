@@ -27,7 +27,8 @@ base_dir = os.path.dirname(__file__)
 
 class spectrum1D():
     '''
-    Base class of a 1D spectral object
+    Base class of a 1D spectral object to hold the information of each
+    extracted spectrum.
 
     '''
     def __init__(self, spec_id):
@@ -51,12 +52,19 @@ class spectrum1D():
         self.len_trace = None
         self.pixel_list = None
         self.pixel_mapping_itp = None
+        self.widthdn = None
+        self.widthup = None
+        self.sepdn = None
+        self.sepup = None
+        self.skywidthdn = None
+        self.skywidthup = None
         self.background = None
         self.count = None
         self.count_err = None
         self.count_sky = None
         self.extraction_type = None
         self.optimal_pixel = None
+        self.variances = None
 
         # Wavelength calibration properties
         self.arc_spec = None
@@ -156,6 +164,21 @@ class spectrum1D():
         self.remove_pixel_list()
         self.remove_pixel_mapping_itp()
 
+    def add_aperture(self, widthdn, widthup, sepdn, sepup, skywidthdn,
+                     skywidthup):
+        assert np.isfinite(widthdn), 'widthdn has to be finite.'
+        assert np.isfinite(widthup), 'widthup has to be finite.'
+        assert np.isfinite(sepdn), 'sepdn has to be finite.'
+        assert np.isfinite(sepup), 'sepup has to be finite.'
+        assert np.isfinite(skywidthdn), 'skywidthdn has to be finite.'
+        assert np.isfinite(skywidthup), 'skywidthup has to be finite.'
+        self.widthdn = widthdn
+        self.widthup = widthup
+        self.sepdn = sepdn
+        self.sepup = sepup
+        self.skywidthdn = skywidthdn
+        self.skywidthup = skywidthup
+
     def add_count(self, count, count_err=None, count_sky=None):
         assert type(count) == list, 'count has to be a list'
 
@@ -185,6 +208,12 @@ class spectrum1D():
         self.count_err = None
         self.count_sky = None
 
+    def add_variances(self, var):
+        self.var = var
+
+    def remove_variances(self):
+        self.var = None
+
     def add_arc_spec(self, arc_spec):
         assert type(arc_spec) == list, 'arc_spec has to be a list'
         self.arc_spec = arc_spec
@@ -202,8 +231,8 @@ class spectrum1D():
     def add_pixel_mapping_itp(self, pixel_mapping_itp):
         assert type(
             pixel_mapping_itp
-        ) == itp.interpolate.interp1d, 'pixel_mapping_itp has to be a scipy.interpolate.interpolate.interp1d '
-        'object.'
+        ) == itp.interpolate.interp1d, 'pixel_mapping_itp has to be a '
+        'scipy.interpolate.interpolate.interp1d object.'
         self.pixel_mapping_itp = pixel_mapping_itp
 
     def remove_pixel_mapping_itp(self):
@@ -241,7 +270,8 @@ class spectrum1D():
     def add_calibrator(self, calibrator):
         assert type(
             calibrator
-        ) == rascal.Calibrator, 'calibrator has to be a rascal.Calibrator object.'
+        ) == rascal.Calibrator, 'calibrator has to be a rascal.Calibrator '
+        'object.'
         self.calibrator = calibrator
 
     def remove_calibrator(self):
@@ -280,12 +310,21 @@ class spectrum1D():
         assert np.isfinite(gain), 'gain has to be finite.'
         self.gain = gain
 
+    def remove_gain(self):
+        self.gain = None
+
     def add_readnoise(self, readnoise):
         assert np.isfinite(readnoise), 'readnoise has to be finite.'
+        self.readnoise = readnoise
+
+    def remove_readnoise(self):
         self.readnoise = None
 
     def add_exptime(self, exptime):
         assert np.isfinite(exptime), 'exptime has to be finite.'
+        self.exptime = exptime
+
+    def remove_exptime(self):
         self.exptime = None
 
     def add_weather_condition(self, pressure, temperature, relative_humidity):
@@ -1071,7 +1110,9 @@ class TwoDSpec:
                         mu,
                         sigma,
                         tol=1e-6,
-                        max_iter=99):
+                        max_iter=99,
+                        forced=False,
+                        variances=None):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second.
@@ -1084,13 +1125,23 @@ class TwoDSpec:
         pix: 1-d numpy array
             pixel number along the spatial direction
         xslice: 1-d numpy array
-            Count along the pix
+            Count along the pix, has to be the same length as pix
         sky: 1-d numpy array
-            Count of the fitted sky along the pix
+            Count of the fitted sky along the pix, has to be the same
+            length as pix
         mu: float
             The center of the Gaussian
         sigma: float
             The width of the Gaussian
+        tol: float
+            The tolerance limit for the covergence
+        max_iter: int
+            The maximum number of iteration in the optimal extraction
+        forced: boolean
+            Forced extraction with the given weights
+        variances: 2-d numpy array
+            The 1/weights of used for optimal extraction, has to be the
+            same length as the pix.
 
         Returns
         -------
@@ -1098,6 +1149,9 @@ class TwoDSpec:
             The optimal signal.
         noise: float
             The noise associated with the optimal signal.
+        suboptimal: boolean
+            List indicating whether the extraction at that pixel was
+            optimal or not.  True = suboptimal, False = optimal.
         """
 
         # step 2 - initial variance estimates
@@ -1122,13 +1176,17 @@ class TwoDSpec:
 
         mask_cr = np.ones(len(P), dtype=bool)
 
+        if forced:
+            var_f = variances
+
         while (f_diff > tol) | (v_diff > tol):
 
             f0 = f1
             v0 = v1
 
             # step 6 - revise variance estimates
-            var_f = self.readnoise + np.abs(P * f0 + sky) / self.gain
+            if not forced:
+                var_f = self.readnoise + np.abs(P * f0 + sky) / self.gain
 
             # step 7 - cosmic ray mask, only start considering after the
             # 2nd iteration. 1 pixel is masked at a time until convergence,
@@ -1157,7 +1215,7 @@ class TwoDSpec:
         signal = f1
         noise = np.sqrt(v1)
 
-        return signal, noise, suboptimal
+        return signal, noise, suboptimal, var_f
 
     def ap_trace(self,
                  nspec=1,
@@ -1534,6 +1592,10 @@ class TwoDSpec:
                    skydeg=1,
                    spec_id=None,
                    optimal=True,
+                   tolerance=1e-6,
+                   max_iter=99,
+                   forced=False,
+                   variances=None,
                    display=False,
                    renderer='default',
                    width=1280,
@@ -1619,44 +1681,45 @@ class TwoDSpec:
             count_sky = np.zeros(len_trace)
             count_err = np.zeros(len_trace)
             count = np.zeros(len_trace)
+            var = np.ones((len_trace, 2 * apwidth + 1))
             suboptimal = np.zeros(len_trace, dtype=bool)
+
+            if isinstance(apwidth, int):
+                # first do the aperture count
+                widthdn = apwidth
+                widthup = apwidth
+            elif len(apwidth) == 2:
+                widthdn = apwidth[0]
+                widthup = apwidth[1]
+            else:
+                raise TypeError(
+                    'apwidth can only be an int or a list of two ints')
+
+            if isinstance(skysep, int):
+                # first do the aperture count
+                sepdn = skysep
+                sepup = skysep
+            elif len(skysep) == 2:
+                sepdn = skysep[0]
+                sepup = skysep[1]
+            else:
+                raise TypeError(
+                    'skysep can only be an int or a list of two ints')
+
+            if isinstance(skywidth, int):
+                # first do the aperture count
+                skywidthdn = skywidth
+                skywidthup = skywidth
+            elif len(skywidth) == 2:
+                skywidthdn = skywidth[0]
+                skywidthup = skywidth[1]
+            else:
+                raise TypeError(
+                    'skywidth can only be an int or a list of two ints')
 
             for i, pos in enumerate(self.spectrum_list[j].trace):
                 itrace = int(pos)
                 pix_frac = pos - itrace
-
-                if isinstance(apwidth, int):
-                    # first do the aperture count
-                    widthdn = apwidth
-                    widthup = apwidth
-                elif len(apwidth) == 2:
-                    widthdn = apwidth[0]
-                    widthup = apwidth[1]
-                else:
-                    raise TypeError(
-                        'apwidth can only be an int or a list of two ints')
-
-                if isinstance(skysep, int):
-                    # first do the aperture count
-                    sepdn = skysep
-                    sepup = skysep
-                elif len(skysep) == 2:
-                    sepdn = skysep[0]
-                    sepup = skysep[1]
-                else:
-                    raise TypeError(
-                        'skysep can only be an int or a list of two ints')
-
-                if isinstance(skywidth, int):
-                    # first do the aperture count
-                    skywidthdn = skywidth
-                    skywidthup = skywidth
-                elif len(skywidth) == 2:
-                    skywidthdn = skywidth[0]
-                    skywidthup = skywidth[1]
-                else:
-                    raise TypeError(
-                        'skywidth can only be an int or a list of two ints')
 
                 # fix width if trace is too close to the edge
                 if (itrace + widthup > self.spatial_size):
@@ -1694,7 +1757,7 @@ class TwoDSpec:
                         count_sky[i] = np.nanmean(z) * (len(xslice) - 1)
                     else:
                         warnings.warn('skydeg cannot be negative. sky '
-                            'background is set to zero.')
+                                      'background is set to zero.')
                         count_sky[i] = np.zeros(len(xslice))
                 else:
                     count_sky[i] = np.zeros(len(xslice))
@@ -1707,13 +1770,46 @@ class TwoDSpec:
                         sky = np.polyval(polyfit, pix)
                     else:
                         sky = np.ones(len(pix)) * np.nanmean(z)
+
+                    if forced:
+                        if np.ndim(variances) == 0:
+                            if np.isfinite(variances):
+                                var_i = np.ones(len(pix)) * variances
+                            else:
+                                var_i = np.ones(len(pix))
+                                warnings.warn('Variances are set to 1.')
+                        elif np.ndim(variances) == 1:
+                            if len(variances) == len(pix):
+                                var_i = variances
+                            elif len(variances) == len_trace:
+                                var_i = np.ones(len(pix)) * variances[i]
+                            else:
+                                var_i = np.ones(len(pix))
+                                warnings.warn('Variances are set to 1.')
+                        elif np.ndim(variances) == 2:
+                            var_i = variances[i]
+                        else:
+                            var_i = np.ones(len(pix))
+                            warnings.warn('Variances are set to 1.')
+                    else:
+                        var_i = None
+
                     # Get the optimal signals
                     # pix is the native pixel position
                     # pos is the trace at the native pixel position
                     count[i], count_err[i], suboptimal[
-                        i] = self._optimal_signal(
-                            pix, xslice * self.exptime, sky * self.exptime,
-                            pos, self.spectrum_list[j].trace_sigma[i])
+                        i], var[i] = self._optimal_signal(
+                            pix = pix,
+                            xslice = xslice * self.exptime,
+                            sky = sky * self.exptime,
+                            mu = pos,
+                            sigma = self.spectrum_list[j].trace_sigma[i],
+                            tol = tolerance,
+                            max_iter = max_iter,
+                            forced = forced,
+                            variances = var_i)
+                    count[i] /= self.exptime
+                    count_err[i] /= self.exptime
                 else:
                     #-- finally, compute the error in this pixel
                     sigB = np.nanstd(
@@ -1724,13 +1820,16 @@ class TwoDSpec:
                     # Based on aperture phot err description by F. Masci, Caltech:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
                     # All the counts are in per second already, so need to
-                    count_err[i] = np.sqrt((count_ap - count_sky[i]) *
-                                           self.exptime / self.gain +
-                                           (nA + nA**2. / nB) * (sigB**2.))
                     count[i] = count_ap - count_sky[i]
+                    count_err[i] = np.sqrt(count[i] *
+                                           self.exptime / self.gain +
+                                           (nA + nA**2. / nB) * (sigB**2.)) / self.exptime
 
+            self.spectrum_list[j].add_aperture(widthdn, widthup, sepdn, sepup,
+                                               skywidthdn, skywidthup)
             self.spectrum_list[j].add_count(list(count), list(count_err),
                                             list(count_sky))
+            self.spectrum_list[j].add_variances(var)
             self.spectrum_list[j].gain = self.gain
             self.spectrum_list[j].optimal_pixel = suboptimal
 
@@ -1743,9 +1842,9 @@ class TwoDSpec:
             if np.sum(suboptimal) / i > 0.333:
                 if not self.silence:
                     print(
-                        'Signal extracted is likely to be suboptimal, please try '
-                        'a longer iteration, larger tolerance or revert to '
-                        'top-hat extraction.')
+                        'Signal extracted is likely to be suboptimal, please '
+                        'try a longer iteration, larger tolerance or revert '
+                        'to top-hat extraction.')
 
             if save_iframe or display or return_jsonstring:
                 min_trace = int(min(self.spectrum_list[j].trace) + 0.5)
