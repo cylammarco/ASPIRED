@@ -1,6 +1,7 @@
 import difflib
 import json
 import os
+import pkg_resources
 import sys
 import warnings
 from itertools import chain
@@ -646,7 +647,7 @@ class TwoDSpec:
         readnoise: float
             Readnoise of the detector, not important if noise estimation is
             not needed.
-            (Deafult is None, which will be replaced with 1.0)
+            (Deafult is None, which will be replaced with 0.0)
         gain: float
             Gain of the detector, not important if noise estimation is
             not needed.
@@ -904,6 +905,8 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
+        append: boolean (default: False)
+            Set to False to overwrite the current list.
         '''
 
         if append:
@@ -919,6 +922,8 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
+        append: boolean (default: False)
+            Set to False to overwrite the current list.
         '''
 
         if append:
@@ -934,6 +939,8 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
+        append: boolean (default: False)
+            Set to False to overwrite the current list.
         '''
 
         if append:
@@ -949,6 +956,8 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
+        append: boolean (default: False)
+            Set to False to overwrite the current list.
         '''
 
         if append:
@@ -1017,6 +1026,9 @@ class TwoDSpec:
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
 
@@ -1276,7 +1288,8 @@ class TwoDSpec:
             Number of spectral slices (subspectra) to be produced for
             cross-correlation.
         spec_sep: int
-            Minimum separation between sky lines.
+            Minimum separation between spectra (only if there are multiple
+            sources on the longslit).
         resample_factor: int
             Number of times the collapsed 1D slices in the spatial directions
             are to be upsampled.
@@ -1305,12 +1318,19 @@ class TwoDSpec:
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
 
@@ -1558,6 +1578,8 @@ class TwoDSpec:
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         trace: list (N)
             The spatial pixel value (can be sub-pixel) of the trace at each
             spectral position.
@@ -1579,6 +1601,13 @@ class TwoDSpec:
                              spec_id)
 
     def remove_trace(self, spec_id):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        '''
+
         if spec_id in spectrum_list:
             self.spectrum_list[spec_id].remove_trace()
         else:
@@ -1625,11 +1654,11 @@ class TwoDSpec:
         count: 1-d array
             The summed count at each column about the trace. Note: is not
             sky subtracted!
+        count_err: 1-d array
+            the uncertainties of the count values
         count_sky: 1-d array
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
-        count_err: 1-d array
-            the uncertainties of the count values
 
         Parameters
         ----------
@@ -1647,20 +1676,36 @@ class TwoDSpec:
         skydeg: int
             The polynomial order to fit between the sky windows.
             (Default is 0, i.e. constant flat sky level)
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         optimal: boolean
             Set optimal extraction. (Default is True)
-        silence: boolean
-            Set to disable warning/error messages. (Default is False)
+        tolerance: float
+            The tolerance limit for the convergence of the optimal extraction
+        max_iter: float
+            The maximum number of iterations before optimal extraction fails
+            and return to standard tophot extraction
+        forced: boolean
+            To perform forced optimal extraction  by using the given aperture
+            profile as it is without interation, the resulting uncertainty
+            will almost certainly be wrong. This is an experimental feature.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
 
@@ -1797,17 +1842,17 @@ class TwoDSpec:
                     # Get the optimal signals
                     # pix is the native pixel position
                     # pos is the trace at the native pixel position
-                    count[i], count_err[i], suboptimal[
-                        i], var[i] = self._optimal_signal(
-                            pix = pix,
-                            xslice = xslice * self.exptime,
-                            sky = sky * self.exptime,
-                            mu = pos,
-                            sigma = self.spectrum_list[j].trace_sigma[i],
-                            tol = tolerance,
-                            max_iter = max_iter,
-                            forced = forced,
-                            variances = var_i)
+                    count[i], count_err[i], suboptimal[i], var[
+                        i] = self._optimal_signal(
+                            pix=pix,
+                            xslice=xslice * self.exptime,
+                            sky=sky * self.exptime,
+                            mu=pos,
+                            sigma=self.spectrum_list[j].trace_sigma[i],
+                            tol=tolerance,
+                            max_iter=max_iter,
+                            forced=forced,
+                            variances=var_i)
                     count[i] /= self.exptime
                     count_err[i] /= self.exptime
                 else:
@@ -1821,9 +1866,9 @@ class TwoDSpec:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
                     # All the counts are in per second already, so need to
                     count[i] = count_ap - count_sky[i]
-                    count_err[i] = np.sqrt(count[i] *
-                                           self.exptime / self.gain +
-                                           (nA + nA**2. / nB) * (sigB**2.)) / self.exptime
+                    count_err[i] = np.sqrt(count[i] * self.exptime /
+                                           self.gain + (nA + nA**2. / nB) *
+                                           (sigB**2.)) / self.exptime
 
             self.spectrum_list[j].add_aperture(widthdn, widthup, sepdn, sepup,
                                                skywidthdn, skywidthup)
@@ -2081,9 +2126,9 @@ class TwoDSpec:
             trace: 2 HDU
                 Pixel position of the trace in the spatial direction
                 and the best fit gaussian line spread function sigma
-        filename: String
-            Disk location to be written to. Default is at where the
-            process/subprocess is execuated.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         overwrite: boolean
             Default is False.
 
@@ -2191,6 +2236,8 @@ class WavelengthCalibration():
         peaks: list of list or list of arrays
             The pixel locations of the arc lines. Multiple traces of the arc
             can be provided as list of list or list of arrays.
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         '''
         if spec_id in list(self.spectrum_list.keys()):
             if self.spectrum_list[spec_id].count is not None:
@@ -2212,6 +2259,8 @@ class WavelengthCalibration():
         arc_spec: list of list or list of arrays
             The Count/flux of the 1D arc spectrum/a. Multiple spectrum/a
             can be provided as list of list or list of arrays.
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         '''
         if spec_id in list(self.spectrum_list.keys()):
             if self.spectrum_list[spec_id].count is not None:
@@ -2227,6 +2276,11 @@ class WavelengthCalibration():
     def add_spec(self, count, spec_id=None, count_err=None, count_sky=None):
         '''
         To provide user-supplied extracted spectrum for wavelegth calibration.
+
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
 
         '''
 
@@ -2247,7 +2301,13 @@ class WavelengthCalibration():
         '''
         To modify or append a spectrum with the user-supplied one, one at a
         time.
+
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         '''
+
         if spec_id not in list(self.spectrum_list.keys()):
             raise ValueError('The given spec_id does not exist.')
 
@@ -2262,9 +2322,13 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        trace: 1D numpy array of list of 1D numpy array
+        trace: 1D numpy array of list of 1D numpy array (N)
             The spatial pixel value (can be sub-pixel) of the trace at each
             spectral position.
+        trace_sigma: 1D numpy array of list of 1D numpy array (N)
+            Standard deviation of the Gaussian profile of a trace
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         pixel_list: list or numpy array
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
@@ -2287,6 +2351,12 @@ class WavelengthCalibration():
         self.spectrum_list[spec_id].add_trace(trace, trace_sigma, pixel_list)
 
     def remove_trace(self, spec_id):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        '''
         if spec_id not in list(self.spectrum_list.keys()):
             raise ValueError('The given spec_id does not exist.')
 
@@ -2300,6 +2370,8 @@ class WavelengthCalibration():
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         polyfit_coeff: list or list of list
             Polynomial fit coefficients.
         polyfit_type: str or list of str
@@ -2334,8 +2406,12 @@ class WavelengthCalibration():
         twodspec: TwoDSpec object
             TwoDSpec of the science/standard image containin the trace(s) and
             trace_sigma(s).
-        pixel_list:
-
+        pixel_list: list or numpy array
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(len(spec.trace[0])), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
 
         '''
 
@@ -2362,8 +2438,8 @@ class WavelengthCalibration():
         self.apply_spec_mask(self.spec_mask)
         self.apply_spatial_mask(self.spatial_mask)
 
-    '''
     def apply_spec_mask(self, spec_mask):
+        # (Experimental)
         # the valid x-range of the chip (i.e. spectral direction)
         if (len(spec_mask) > 1):
             if self.saxis == 1:
@@ -2372,13 +2448,13 @@ class WavelengthCalibration():
                 self.arc = self.arc[spec_mask]
 
     def apply_spatial_mask(self, spatial_mask):
+        # (Experimental)
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(spatial_mask) > 1):
             if self.saxis == 1:
                 self.arc = self.arc[spatial_mask]
             else:
                 self.arc = self.arc[:, spatial_mask]
-    '''
 
     def extract_arc_spec(self,
                          spec_id=None,
@@ -2403,18 +2479,28 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        use_pixel_list: boolean
-            Use the user supplied pixel if available.
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         display: boolean
             Set to True to display disgnostic plot.
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
         '''
@@ -2498,10 +2584,10 @@ class WavelengthCalibration():
                        refine=True,
                        refine_window_width=5,
                        display=False,
+                       renderer='default',
                        width=1280,
                        height=720,
                        return_jsonstring=False,
-                       renderer='default',
                        save_iframe=False,
                        filename=None,
                        open_iframe=False):
@@ -2518,22 +2604,41 @@ class WavelengthCalibration():
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        background: int
+            User-supplied estimated background level
         percentile: float
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
             is None. [Count]
+        prominence: float
+            The minimum prominence to be considered as a peak
         distance: float
             Minimum separation between peaks
+        refine: boolean
+            Set to true to fit a gaussian to get the peak at sub-pixel
+            precision
+        refine_window_width: boolean
+            The number of pixels (on each side of the existing peaks) to be
+            fitted with gaussian profiles over.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
 
@@ -2647,6 +2752,31 @@ class WavelengthCalibration():
                               max_wavelength=9000,
                               plotting_library='plotly',
                               log_level='info'):
+        '''
+        Parameters
+        ----------
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum!D object
+        peaks: list (default: None)
+            The pixel values of the peaks (start from zero)
+        num_pix: int (default: None)
+            The number of pixels in the dispersion direction
+        pixel_list: list or numpy array (default: None)
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(num_pix), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+        min_wavelength: float (default: 3000)
+            Minimum wavelength of the spectrum.
+        max_wavelength: float (default: 9000)
+            Maximum wavelength of the spectrum.
+        plotting_library : string (default: 'matplotlib')
+            Choose between matplotlib and plotly.
+        log_level : string (default: 'info')
+            Choose {critical, error, warning, info, debug, notset}.
+
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -2679,6 +2809,18 @@ class WavelengthCalibration():
                 log_level=log_level)
 
     def set_known_pairs(self, spec_id=None, pix=None, wave=None):
+        '''
+        Parameters
+        ----------
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum!D object
+        pix : numeric value, list or numpy 1D array (N) (default: None)
+            Any pixel value, can be outside the detector chip and
+            serve purely as anchor points.
+        wave : numeric value, list or numpy 1D array (N) (default: None)
+            The matching wavelength for each of the pix.
+
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -2716,40 +2858,42 @@ class WavelengthCalibration():
                             brute_force=False,
                             polyfit_type='poly'):
         '''
-        num_slopes : int (default: 1000)
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum!D object
+        num_slopes: int (default: 1000)
             Number of slopes to consider during Hough transform
-        range_tolerance : float (default: 500)
+        range_tolerance: float (default: 500)
             Estimation of the error on the provided spectral range
             e.g. 3000-5000 with tolerance 500 will search for
             solutions that may satisfy 2500-5500
-        fit_tolerance : float (default: 10)
+        fit_tolerance: float (default: 10)
             Sets a tolerance on whether a fit found by RANSAC is considered
             acceptable
-        polydeg : int (default: 4)
+        polydeg: int (default: 4)
             Degree of the polynomial fit.
-        candidate_thresh : float (default: 15)
+        candidate_thresh: float (default: 15)
             Threshold  (Angstroms) for considering a point to be an inlier
             during candidate peak/line selection. This should be reasonable
             small as we want to search for candidate points which are
             *locally* linear.
-        linearity_thresh : float (default: 1.5)
+        linearity_thresh: float (default: 1.5)
             A threshold (Angstroms) that expresses how non-linear the solution
             can be. This mostly affects which atlas points are included and
             should be reasonably large, e.g. 500A.
-        ransac_thresh : float (default: 1)
+        ransac_thresh: float (default: 1)
             The distance criteria  (Angstroms) to be considered an inlier to a
             fit. This should be close to the size of the expected residuals on
             the final fit (e.g. 1A is typical)
         num_candidates: int (default: 25)
             Number of best trial Hough pairs.
-        xbins : int (default: 50)
+        xbins: int (default: 50)
             Number of bins for Hough accumulation
-        ybins : int (default: 50)
+        ybins: int (default: 50)
             Number of bins for Hough accumulation
-        brute_force : boolean (default: False)
+        brute_force: boolean (default: False)
             Set to True to try all possible combination in the given parameter
             space
-        polyfit_type : string (default: 'poly')
+        polyfit_type: string (default: 'poly')
             One of 'poly', 'legendre' or 'chebyshev'
         '''
 
@@ -2796,6 +2940,37 @@ class WavelengthCalibration():
                         pressure=101325.,
                         temperature=273.15,
                         relative_humidity=0.):
+        '''
+        *Remove* all the arc lines loaded to the Calibrator and then use the user
+        supplied arc lines instead.
+
+        The vacuum to air wavelength conversion is deafult to False because
+        observatories usually provide the line lists in the respective air
+        wavelength, as the corrections from temperature and humidity are
+        small. See https://emtoolbox.nist.gov/Wavelength/Documentation.asp
+
+        Parameters
+        ----------
+        elements : list
+            Element (required). Preferably a standard (i.e. periodic table)
+            name for convenience with built-in atlases
+        wavelengths : list
+            Wavelength to add (Angstrom)
+        intensities : list
+            Relative line intensities
+        constrain_poly : boolean
+            Apply a polygonal constraint on possible peak/atlas pairs
+        vacuum: boolean
+            Set to true to convert the input wavelength to air-wavelengths
+            based on the given pressure, temperature and humidity.
+        pressure: float
+            Pressure when the observation took place, in Pascal.
+            If it is not known, assume 10% decrement per 1000 meter altitude
+        temperature: float
+            Temperature when the observation took place, in Kelvin.
+        relative_humidity: float
+            In percentage.
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -2831,14 +3006,47 @@ class WavelengthCalibration():
                   relative_humidity=0.,
                   constrain_poly=False):
         '''
-            elements: string or list of string
-                String or list of strings of Chemical symbol. Case insensitive.
-            min_atlas_wave: float
-                Minimum wavelength of the bluest arc line, NOT OF THE SPECTRUM.
-            max_atlas_wave: float
-                Maximum wavelength of the reddest arc line, NOT OF THE SPECTRUM.
+        Adds an atlas of arc lines to the calibrator, given an element.
 
+        Arc lines are taken from a general list of NIST lines and can be filtered
+        using the minimum relative intensity (note this may not be accurate due to
+        instrumental effects such as detector response, dichroics, etc) and
+        minimum line separation.
+
+        Lines are filtered first by relative intensity, then by separation. This
+        is to improve robustness in the case where there is a strong line very
+        close to a weak line (which is within the separation limit).
+
+        The vacuum to air wavelength conversion is deafult to False because
+        observatories usually provide the line lists in the respective air
+        wavelength, as the corrections from temperature and humidity are
+        small. See https://emtoolbox.nist.gov/Wavelength/Documentation.asp
+
+        Parameters
+        ----------
+        elements: string or list of strings
+            Chemical symbol, case insensitive
+        min_atlas_wavelength: float (default: None)
+            Minimum wavelength of the arc lines.
+        max_atlas_wavelength: float (default: None)
+            Maximum wavelength of the arc lines.
+        min_intensity: float (default: None)
+            Minimum intensity of the arc lines. Refer to NIST for the intensity.
+        min_distance: float (default: None)
+            Minimum separation between neighbouring arc lines.
+        include_second_order: boolean (default: None)
+            Set to True to include second order arc lines.
+        pressure: float
+            Pressure when the observation took place, in Pascal.
+            If it is not known, assume 10% decrement per 1000 meter altitude
+        temperature: float
+            Temperature when the observation took place, in Kelvin.
+        relative_humidity: float
+            In percentage.
+        constrain_poly : boolean
+            Apply a polygonal constraint on possible peak/atlas pairs
         '''
+
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
                 raise ValueError('The given spec_id does not exist.')
@@ -2925,9 +3133,9 @@ class WavelengthCalibration():
             Set to show diagnostic plot.
         savefig: string
             Set to save figure.
-        filename: string
-            Filename of the figure. Only work if display and savefig are set
-            to True.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
 
         '''
 
@@ -2985,25 +3193,50 @@ class WavelengthCalibration():
 
             https://physics.nist.gov/PhysRefData/ASD/lines_form.html
 
+        Refine the polynomial fit coefficients. Recommended to use in it
+        multiple calls to first refine the lowest order and gradually increase
+        the order of coefficients to be included for refinement. This is be
+        achieved by providing delta in the length matching the number of the
+        lowest degrees to be refined.
+
+        Set refine to True to improve on the polynomial solution.
+
+        Set robust_refit to True to fit all the detected peaks with the
+        given polynomial solution for a fit using maximal information, with
+        the degree of polynomial = polydeg.
+
+        Set both refine and robust_refit to False will return the list of
+        arc lines are well fitted by the current solution within the
+        tolerance limit provided.
+
         Parameters
         ----------
-        polyfit_coeff: list
-
-        n_delta: int
-            The n-th lowest order coefficients to be refitted.
-        refine: boolean
-
-        tolerance : float
-            Absolute difference between fit and model.
-        polydeg: int
-            Degree of the polynomial
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        polyfit_coeff : list
+            List of polynomial fit coefficients.
+        n_delta : int (default: None)
+            The number of the highest polynomial order to be adjusted
+        refine : boolean (default: True)
+            Set to True to refine solution.
+        tolerance : float (default: 10.)
+            Absolute difference between fit and model in the unit of nm.
+        method : string (default: 'Nelder-Mead')
+            scipy.optimize.minimize method.
+        convergence : float (default: 1e-6)
+            scipy.optimize.minimize tol.
+        robust_refit : boolean (default: True)
+            Set to True to fit all the detected peaks with the given polynomial
+            solution.
+        polydeg : int (default: length of the input coefficients)
+            Order of polynomial fit with all the detected peaks.
         display: boolean
             Set to show diagnostic plot.
         savefig: string
             Set to save figure.
-        filename: string
-            Filename of the figure. Only work if display and savefig are set
-            to True.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
 
         '''
         if spec_id is not None:
@@ -3064,6 +3297,8 @@ class WavelengthCalibration():
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         wave_start: float
             Provide the minimum wavelength for resampling.
         wave_end: float
@@ -3127,6 +3362,12 @@ class WavelengthCalibration():
                                      count_sky_resampled)
 
     def _create_count_fits(self, spec_id=None):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3149,6 +3390,12 @@ class WavelengthCalibration():
             ])
 
     def _create_count_resampled_fits(self, spec_id=None):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3172,6 +3419,12 @@ class WavelengthCalibration():
             ])
 
     def _create_arc_spec_fits(self, spec_id=None):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3192,6 +3445,12 @@ class WavelengthCalibration():
                 [fits.ImageHDU(spec.arc_spec)])
 
     def _create_wavecal_fits(self, spec_id=None):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        '''
 
         if spec_id is not None:
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3221,11 +3480,14 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        filename: String
-            Disk location to be written to. Default is at where the
-            process/subprocess is execuated.
-        extension: String
-            File extension without the dot.
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        output: str
+            coose from arc_spec, count, count_resampled and wavecal, "+" is
+            the delimiter
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         overwrite: boolean
             Default is False.
 
@@ -3322,11 +3584,12 @@ class StandardLibrary:
         '''
         Load the dictionaries
         '''
-
-        self.lib_to_uname = json.load(
-            open(os.path.join(base_dir, 'standards/lib_to_uname.json')))
-        self.uname_to_lib = json.load(
-            open(os.path.join(base_dir, 'standards/uname_to_lib.json')))
+        self.lib_to_uname = json.load(open(
+            pkg_resources.resource_filename('aspired',
+                                            'standards/lib_to_uname.json')))
+        self.uname_to_lib = json.load(open(
+            pkg_resources.resource_filename('aspired',
+                                            'standards/uname_to_lib.json')))
 
     def _get_eso_standard(self):
 
@@ -3441,6 +3704,13 @@ class StandardLibrary:
         most similar words if the requested one does not exist. See
 
             https://docs.python.org/3.7/library/difflib.html
+
+        Parameters
+        ----------
+        target: str
+            Name of the standard star
+        cutoff: float (default: 0.4)
+            The similarity threshold [0 (completely different) - 1 (identical)]
         '''
 
         # Load the list of targets in the requested library
@@ -3480,8 +3750,8 @@ class StandardLibrary:
         | mag:        mag (AB)
 
 
-        Returns
-        -------
+        Parameters
+        ----------
         target: string
             Name of the standard star
         library: string
@@ -3490,9 +3760,6 @@ class StandardLibrary:
             'flux' or 'mag'
         cutoff: float
             The threshold for the word similarity in the range of [0, 1].
-
-        Returns
-        -------
 
         '''
 
@@ -3538,11 +3805,11 @@ class StandardLibrary:
             self._get_eso_standard()
 
     def inspect_standard(self,
+                         display=True,
                          renderer='default',
                          width=1280,
                          height=720,
                          return_jsonstring=False,
-                         display=True,
                          save_iframe=False,
                          filename=None,
                          open_iframe=False):
@@ -3551,14 +3818,23 @@ class StandardLibrary:
 
         Parameters
         ----------
+        display: boolean
+            Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
 
@@ -3566,6 +3842,7 @@ class StandardLibrary:
         -------
         JSON strings if return_jsonstring is set to True
         '''
+
         fig = go.Figure(
             layout=dict(autosize=False,
                         height=height,
@@ -3634,6 +3911,16 @@ class StandardLibrary:
 
 class FluxCalibration(StandardLibrary):
     def __init__(self, silence=False):
+        '''
+        Initialise a FluxCalibration object.
+
+        Parameters
+        ----------
+        silence: boolean
+            Set to True to suppress all verbose warnings.
+
+        '''
+
         # Load the dictionary
         super().__init__()
         self.science_imported = False
@@ -3652,6 +3939,20 @@ class FluxCalibration(StandardLibrary):
                  stype='standard'):
         '''
         Add spectrum (count, count_err & count_sky) one at a time.
+
+        Parameters
+        ----------
+        count: 1-d array
+            The summed count at each column about the trace.
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        count_err: 1-d array
+            the uncertainties of the count values
+        count_sky: 1-d array
+            The integrated sky values along each column, suitable for
+            subtracting from the output of ap_extract
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
 
         if stype == 'standard':
@@ -3709,6 +4010,13 @@ class FluxCalibration(StandardLibrary):
                        stype='standard'):
         '''
         Add wavelength, one at a time.
+
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
 
         if (wave is None) & (wave_resampled is None):
@@ -3781,7 +4089,8 @@ class FluxCalibration(StandardLibrary):
             The image of the arc image.
         pixel_list:
 
-        stype:
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
 
         '''
@@ -3805,7 +4114,10 @@ class FluxCalibration(StandardLibrary):
                     setattr(self.spectrum_list_science[i], key, value)
 
     def add_wavecal(self, wavecal, stype='standard'):
-
+        '''
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
         stype_split = stype.split('+')
 
         if 'standard' in stype_split:
@@ -3954,7 +4266,10 @@ class FluxCalibration(StandardLibrary):
         self.add_sensitivity_itp(sensitivity_itp, stype='science+standard')
 
     def add_sensitivity_itp(self, sensitivity_itp, stype='standard'):
-
+        '''
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
         stype_split = stype.split('+')
 
         if 'standard' in stype_split:
@@ -3971,11 +4286,11 @@ class FluxCalibration(StandardLibrary):
                     sensitivity_itp=sensitivity_itp)
 
     def inspect_sensitivity(self,
+                            display=True,
                             renderer='default',
                             width=1280,
                             height=720,
                             return_jsonstring=False,
-                            display=True,
                             save_iframe=False,
                             filename=None,
                             open_iframe=False):
@@ -3988,12 +4303,19 @@ class FluxCalibration(StandardLibrary):
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
 
@@ -4104,6 +4426,8 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
@@ -4226,6 +4550,7 @@ class FluxCalibration(StandardLibrary):
                                  stype='science+standard',
                                  wave_min=4000.,
                                  wave_max=8000.,
+                                 display=True,
                                  renderer='default',
                                  width=1280,
                                  height=720,
@@ -4235,7 +4560,6 @@ class FluxCalibration(StandardLibrary):
                                  save_svg=False,
                                  save_pdf=False,
                                  return_jsonstring=False,
-                                 display=True,
                                  save_iframe=False,
                                  open_iframe=False):
         '''
@@ -4243,16 +4567,35 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         wave_min: float
             Minimum wavelength to display
         wave_max: float
             Maximum wavelength to display
+        display: boolean
+            Set to True to display disgnostic plot.
         renderer: string
-            Plotly renderer options.
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        save_png: boolean
+            Save an png image of the Plotly plot
+        save_jpg: boolean
+            Save an png image of the Plotly plot
+        save_svg: boolean
+            Save an png image of the Plotly plot
+        save_pdf: boolean
+            Save a pdf of the Plotly plot
         return_jsonstring: boolean
-            Set to True to return json string that can be rendered by Plotly
+            set to True to return json string that can be rendered by Plotly
             in any support language.
         save_iframe: boolean
             Save as an save_iframe, can work concurrently with other renderer
@@ -4590,9 +4933,22 @@ class FluxCalibration(StandardLibrary):
                              'and/or (2) standard. use + as delimiter.')
 
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
+        '''
+        Parameters
+        ----------
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        '''
         np.save(filename, self.spectrum_list_standard[0].sensitivity_itp)
 
     def _create_count_fits(self, spec_id=None, stype='science+standard'):
+        '''
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -4630,6 +4986,14 @@ class FluxCalibration(StandardLibrary):
     def _create_count_resampled_fits(self,
                                      spec_id=None,
                                      stype='science+standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -4670,10 +5034,12 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-
         '''
+
         stype_split = stype.split('+')
 
         # wavelengths are in the natively extracted bins
@@ -4729,6 +5095,8 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -4866,18 +5234,6 @@ class OneDSpec():
 
         Parameters
         ----------
-        science: TwoDSpec object
-            The TwoDSpec object with the extracted science target
-        wave_cal: WavelengthPolyFit object
-            The WavelengthPolyFit object for the science target, flux will
-            not be calibrated if this is not provided.
-        standard: TwoDSpec object
-            The TwoDSpec object with the extracted standard target
-        wave_cal_standard: WavelengthPolyFit object
-            The WavelengthPolyFit object for the standard target, flux will
-            not be calibrated if this is not provided.
-        flux_cal: StandardFlux object
-            The true mag/flux values.
         silence: boolean
             Set to True to suppress all verbose warnings.
         '''
@@ -4904,13 +5260,13 @@ class OneDSpec():
         ----------
         fluxcal: FluxCalibration object
             The true mag/flux values.
+        '''
 
         try:
             self.fluxcal = fluxcal
             self.flux_imported = True
         except:
             raise TypeError('Please provide a valid StandardFlux.')
-        '''
 
     def add_wavelengthcalibration(self, wavecal, stype):
         pass
@@ -4919,16 +5275,32 @@ class OneDSpec():
 
         Parameters
         ----------
-        wavecal: WavelengthCalibration object
-            The true mag/flux values.
-        self.fluxcal.add_wavecal(wavecal, stype)
+        wavecal: WavelengthPolyFit object
+            The WavelengthPolyFit object for the science target, flux will
+            not be calibrated if this is not provided.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
+        self.fluxcal.add_wavecal(wavecal, stype)
 
     def add_wavelength(self,
                        wave,
                        wave_resampled=None,
                        spec_id=None,
                        stype='science'):
+        '''
+        Parameters
+        ----------
+        wave : numeric value, list or numpy 1D array (N) (default: None)
+            The wavelength of each pixels of the spectrum.
+        wave_resampled:
+            The resampled wavelength of each pixels of the spectrum.
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
+
         self.fluxcal.add_wavelength(wave=wave,
                                     wave_resampled=wave_resampled,
                                     spec_id=spec_id,
@@ -4940,6 +5312,22 @@ class OneDSpec():
                  count_err=None,
                  count_sky=None,
                  stype='science'):
+        '''
+        Parameters
+        ----------
+        count: 1-d array
+            The summed count at each column about the trace. Note: is not
+            sky subtracted!
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        count_err: 1-d array
+            the uncertainties of the count values
+        count_sky: 1-d array
+            The integrated sky values along each column, suitable for
+            subtracting from the output of ap_extract
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         self.fluxcal.add_spec(count=count,
                               spec_id=spec_id,
@@ -4966,8 +5354,17 @@ class OneDSpec():
 
         Parameters
         ----------
-        standard: TwoDSpec object
-            The TwoDSpec object with the extracted standard target
+        twodspec: TwoDSpec object
+            TwoDSpec of the science/standard image containin the trace(s) and
+            trace_sigma(s).
+        pixel_list: list or numpy array
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(len(spec.trace[0])), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
 
         self.fluxcal.from_twodspec(twodspec=twodspec,
@@ -4983,19 +5380,49 @@ class OneDSpec():
                                                 pixel_list=pixel_list)
 
     def apply_twodspec_mask(self, stype='science'):
-
+        '''
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
         if stype == 'science':
             self.wavecal_science.apply_twodspec_mask()
         if stype == 'standard':
             self.wavecal_standard.apply_twodspec_mask()
 
     def apply_spec_mask(self, spec_mask, stype='science'):
+        '''
+        spec_mask: 1D numpy array (M)
+            Mask in the spectral direction, can be the indices of the pixels
+            to be included (size <M) or a 1D numpy array of True/False (size M)
+            (Default is (1,) i.e. keep everything)
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
         self.apply_spec_mask(spec_mask=spec_mask)
 
     def apply_spatial_mask(self, spatial_mask, stype='science'):
+        '''
+        spatial_mask: 1D numpy array (N)
+            Mask in the spatial direction, can be the indices of the pixels
+            to be included (size <N) or a 1D numpy array of True/False (size N)
+            (Default is (1,) i.e. keep everything)
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
         self.apply_spatial_mask(spatial_mask=spatial_mask)
 
     def add_arc_lines(self, spec_id, peaks, stype='science'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        peaks: list of list or list of arrays
+            The pixel locations of the arc lines. Multiple traces of the arc
+            can be provided as list of list or list of arrays.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         if stype == 'science':
             self.wavecal_science.add_arc_lines(spec_id=spec_id, peaks=peaks)
@@ -5005,6 +5432,16 @@ class OneDSpec():
             self.arc_lines_standard_imported = True
 
     def add_arc_spec(self, spec_id, arc_spec, stype='science'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        arc_spec: 1-d array
+            The count of the summed 1D arc spec
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         if stype == 'science':
             self.wavecal_science.add_arc_spec(spec_id=spec_id,
@@ -5016,6 +5453,12 @@ class OneDSpec():
             self.arc_standard_imported = True
 
     def add_arc(self, arc, stype='science'):
+        '''
+        arc: 2D numpy array (M x N) OR astropy.io.fits object
+            2D spectral image in either format
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         if stype == 'science':
             self.wavecal_science.add_arc(arc)
@@ -5030,6 +5473,25 @@ class OneDSpec():
                   spec_id=None,
                   pixel_list=None,
                   stype='science'):
+        '''
+        Parameters
+        ----------
+        trace: list (N)
+            The spatial pixel value (can be sub-pixel) of the trace at each
+            spectral position.
+        trace_sigma: list (N)
+            Standard deviation of the Gaussian profile of a trace
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        pixel_list: list or numpy array
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(len(spec.trace[0])), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         if stype == 'science':
             self.wavecal_science.add_trace(trace=trace,
@@ -5048,6 +5510,19 @@ class OneDSpec():
                     polyfit_coeff,
                     polyfit_type=['poly'],
                     stype='science'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        polyfit_coeff: list or list of list
+            Polynomial fit coefficients.
+        polyfit_type: str or list of str
+            Strings starting with 'poly', 'leg' or 'cheb' for polynomial,
+            legendre and chebyshev fits. Case insensitive.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         if stype == 'science':
             self.wavecal_science.add_polyfit(spec_id=spec_id,
@@ -5069,6 +5544,36 @@ class OneDSpec():
                          filename=None,
                          open_iframe=False,
                          stype='science'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        display: boolean
+            Set to True to display disgnostic plot.
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        renderer: string
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: boolean
+            Open the save_iframe in the default browser if set to True.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5112,6 +5617,53 @@ class OneDSpec():
                        filename=None,
                        open_iframe=False,
                        stype='science'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        background: int
+            User-supplied estimated background level
+        percentile: float
+            The percentile of the flux to be used as the estimate of the
+            background sky level to the first order. Only used if background
+            is None. [Count]
+        prominence: float
+            The minimum prominence to be considered as a peak
+        distance: float
+            Minimum separation between peaks
+        refine: boolean
+            Set to true to fit a gaussian to get the peak at sub-pixel
+            precision
+        refine_window_width: boolean
+            The number of pixels (on each side of the existing peaks) to be
+            fitted with gaussian profiles over.
+        display: boolean
+            Set to True to display disgnostic plot.
+        renderer: string
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: boolean
+            Open the save_iframe in the default browser if set to True.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True
+        '''
 
         stype_split = stype.split('+')
 
@@ -5159,6 +5711,31 @@ class OneDSpec():
         '''
         If the peaks were found with find_arc_lines(), peaks and num_pix can
         be None.
+
+        Parameters
+        ----------
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum!D object
+        peaks: list (default: None)
+            The pixel values of the peaks (start from zero)
+        num_pix: int (default: None)
+            The number of pixels in the dispersion direction
+        pixel_list: list or numpy array (default: None)
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(num_pix), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+        min_wavelength: float (default: 3000)
+            Minimum wavelength of the spectrum.
+        max_wavelength: float (default: 9000)
+            Maximum wavelength of the spectrum.
+        plotting_library : string (default: 'matplotlib')
+            Choose between matplotlib and plotly.
+        log_level : string (default: 'info')
+            Choose {critical, error, warning, info, debug, notset}.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         '''
 
         stype_split = stype.split('+')
@@ -5188,8 +5765,20 @@ class OneDSpec():
                         spec_id=None,
                         pix=None,
                         wave=None,
-                        idx=None,
                         stype='standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum!D object
+        pix : numeric value, list or numpy 1D array (N) (default: None)
+            Any pixel value, can be outside the detector chip and
+            serve purely as anchor points.
+        wave : numeric value, list or numpy 1D array (N) (default: None)
+            The matching wavelength for each of the pix.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5217,6 +5806,49 @@ class OneDSpec():
                             brute_force=False,
                             polyfit_type='poly',
                             stype='science'):
+        '''
+        Parameters
+        ----------
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum!D object
+        num_slopes: int (default: 1000)
+            Number of slopes to consider during Hough transform
+        range_tolerance: float (default: 500)
+            Estimation of the error on the provided spectral range
+            e.g. 3000-5000 with tolerance 500 will search for
+            solutions that may satisfy 2500-5500
+        fit_tolerance: float (default: 10)
+            Sets a tolerance on whether a fit found by RANSAC is considered
+            acceptable
+        polydeg: int (default: 4)
+            Degree of the polynomial fit.
+        candidate_thresh: float (default: 15)
+            Threshold  (Angstroms) for considering a point to be an inlier
+            during candidate peak/line selection. This should be reasonable
+            small as we want to search for candidate points which are
+            *locally* linear.
+        linearity_thresh: float (default: 1.5)
+            A threshold (Angstroms) that expresses how non-linear the solution
+            can be. This mostly affects which atlas points are included and
+            should be reasonably large, e.g. 500A.
+        ransac_thresh: float (default: 1)
+            The distance criteria  (Angstroms) to be considered an inlier to a
+            fit. This should be close to the size of the expected residuals on
+            the final fit (e.g. 1A is typical)
+        num_candidates: int (default: 25)
+            Number of best trial Hough pairs.
+        xbins: int (default: 50)
+            Number of bins for Hough accumulation
+        ybins: int (default: 50)
+            Number of bins for Hough accumulation
+        brute_force: boolean (default: False)
+            Set to True to try all possible combination in the given parameter
+            space
+        polyfit_type: string (default: 'poly')
+            One of 'poly', 'legendre' or 'chebyshev'
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5251,6 +5883,69 @@ class OneDSpec():
                 brute_force=brute_force,
                 polyfit_type=polyfit_type)
 
+    def load_user_atlas(self,
+                        elements,
+                        wavelengths,
+                        spec_id=None,
+                        intensities=None,
+                        constrain_poly=False,
+                        vacuum=False,
+                        pressure=101325.,
+                        temperature=273.15,
+                        relative_humidity=0.,
+                        stype='science'):
+        '''
+        Parameters
+        ----------
+        elements : list
+            Element (required). Preferably a standard (i.e. periodic table)
+            name for convenience with built-in atlases
+        wavelengths : list
+            Wavelength to add (Angstrom)
+        intensities : list
+            Relative line intensities
+        constrain_poly : boolean
+            Apply a polygonal constraint on possible peak/atlas pairs
+        vacuum: boolean
+            Set to true to convert the input wavelength to air-wavelengths
+            based on the given pressure, temperature and humidity.
+        pressure: float
+            Pressure when the observation took place, in Pascal.
+            If it is not known, assume 10% decrement per 1000 meter altitude
+        temperature: float
+            Temperature when the observation took place, in Kelvin.
+        relative_humidity: float
+            In percentage.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+            self.wavecal_science.load_user_atlas(
+                elements=elements,
+                wavelengths=wavelengths,
+                spec_id=spec_id,
+                intensities=intensities,
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
+
+        if 'standard' in stype_split:
+            self.wavecal_standard.load_user_atlas(
+                elements=elements,
+                wavelengths=wavelengths,
+                spec_id=spec_id,
+                intensities=intensities,
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
+
     def add_atlas(self,
                   elements,
                   spec_id=None,
@@ -5264,6 +5959,33 @@ class OneDSpec():
                   relative_humidity=0.,
                   constrain_poly=False,
                   stype='science'):
+        '''
+        Parameters
+        ----------
+        elements: string or list of strings
+            Chemical symbol, case insensitive
+        min_atlas_wavelength: float (default: None)
+            Minimum wavelength of the arc lines.
+        max_atlas_wavelength: float (default: None)
+            Maximum wavelength of the arc lines.
+        min_intensity: float (default: None)
+            Minimum intensity of the arc lines. Refer to NIST for the intensity.
+        min_distance: float (default: None)
+            Minimum separation between neighbouring arc lines.
+        include_second_order: boolean (default: None)
+            Set to True to include second order arc lines.
+        pressure: float
+            Pressure when the observation took place, in Pascal.
+            If it is not known, assume 10% decrement per 1000 meter altitude
+        temperature: float
+            Temperature when the observation took place, in Kelvin.
+        relative_humidity: float
+            In percentage.
+        constrain_poly : boolean
+            Apply a polygonal constraint on possible peak/atlas pairs
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5295,44 +6017,6 @@ class OneDSpec():
                 relative_humidity=relative_humidity,
                 constrain_poly=constrain_poly)
 
-    def load_user_atlas(self,
-                        elements,
-                        wavelengths,
-                        spec_id=None,
-                        intensities=None,
-                        constrain_poly=False,
-                        vacuum=False,
-                        pressure=101325.,
-                        temperature=273.15,
-                        relative_humidity=0.,
-                        stype='science'):
-
-        stype_split = stype.split('+')
-
-        if 'science' in stype_split:
-            self.wavecal_science.load_user_atlas(
-                elements=elements,
-                wavelengths=wavelengths,
-                spec_id=spec_id,
-                intensities=intensities,
-                constrain_poly=constrain_poly,
-                vacuum=vacuum,
-                pressure=pressure,
-                temperature=temperature,
-                relative_humidity=relative_humidity)
-
-        if 'standard' in stype_split:
-            self.wavecal_standard.load_user_atlas(
-                elements=elements,
-                wavelengths=wavelengths,
-                spec_id=spec_id,
-                intensities=intensities,
-                constrain_poly=constrain_poly,
-                vacuum=vacuum,
-                pressure=pressure,
-                temperature=temperature,
-                relative_humidity=relative_humidity)
-
     def fit(self,
             spec_id=None,
             sample_size=5,
@@ -5347,6 +6031,44 @@ class OneDSpec():
             savefig=False,
             filename=None,
             stype='standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        sample_size: int
+            Number of lines to be fitted in each loop.
+        top_n: int
+            Top ranked lines to be fitted.
+        max_tries: int
+            Number of trials of polynomial fitting.
+        progress: boolean
+            Set to show the progress using tdqm (if imported).
+        coeff: list
+            List of the polynomial fit coefficients for the first guess.
+        lines: boolean (default: True)
+            Set to True to sample candidates with straight lines in hough space,
+            else sample candidates with coeff
+        weighted: boolean (default: True)
+            Set to True to use convolution in Hough space in the cost function
+        filter_close: boolean (default: False)
+
+        idx: None or int or List (default: None)
+            The indices of the calibrator. If set to None, all of the
+            calibrators will be fitted with the same given parameters. If set
+            to int, it will turn into a list with a single integer. If a list of
+            integers are given, those calibrators will be used to fit with
+            the input parameters
+        display: boolean
+            Set to show diagnostic plot.
+        savefig: string
+            Set to save figure.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5391,6 +6113,38 @@ class OneDSpec():
                    savefig=False,
                    filename=None,
                    stype='standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        polyfit_coeff : list
+            List of polynomial fit coefficients.
+        n_delta : int (default: None)
+            The number of the highest polynomial order to be adjusted
+        refine : boolean (default: True)
+            Set to True to refine solution.
+        tolerance : float (default: 10.)
+            Absolute difference between fit and model in the unit of nm.
+        method : string (default: 'Nelder-Mead')
+            scipy.optimize.minimize method.
+        convergence : float (default: 1e-6)
+            scipy.optimize.minimize tol.
+        robust_refit : boolean (default: True)
+            Set to True to fit all the detected peaks with the given polynomial
+            solution.
+        polydeg : int (default: length of the input coefficients)
+            Order of polynomial fit with all the detected peaks.
+        display: boolean
+            Set to show diagnostic plot.
+        savefig: string
+            Set to save figure.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5427,6 +6181,20 @@ class OneDSpec():
                                      wave_end=None,
                                      wave_bin=None,
                                      stype='science+standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        wave_start: float
+            Provide the minimum wavelength for resampling.
+        wave_end: float
+            Provide the maximum wavelength for resampling
+        wave_bin: float
+            Provide the resampling bin size
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5440,23 +6208,72 @@ class OneDSpec():
             self.fluxcal.add_wavecal(self.wavecal_standard, stype='standard')
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
+        '''
+        Parameters
+        ----------
+        target: str
+            Name of the standard star
+        cutoff: float (default: 0.4)
+            The similarity threshold [0 (completely different) - 1 (identical)]
+        '''
+
         self.fluxcal.lookup_standard_libraries(target, cutoff)
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
+        '''
+        Parameters
+        ----------
+        target: string
+            Name of the standard star
+        library: string
+            Name of the library of standard star
+        ftype: string
+            'flux' or 'mag'
+        cutoff: float
+            The threshold for the word similarity in the range of [0, 1].
+        '''
+
         self.fluxcal.load_standard(target=target,
                                    library=library,
                                    ftype=ftype,
                                    cutoff=cutoff)
 
     def inspect_standard(self,
-                         renderer='default',
-                         return_jsonstring=False,
                          display=True,
-                         height=1280,
-                         width=720,
+                         renderer='default',
+                         width=1280,
+                         height=720,
+                         return_jsonstring=False,
                          save_iframe=False,
                          filename=None,
                          open_iframe=False):
+        '''
+        Parameters
+        ----------
+        display: boolean
+            Set to True to display disgnostic plot.
+        renderer: string
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: boolean
+            Open the save_iframe in the default browser if set to True.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True.
+        '''
 
         self.fluxcal.inspect_standard(renderer=renderer,
                                       return_jsonstring=return_jsonstring,
@@ -5476,6 +6293,27 @@ class OneDSpec():
                                         [8925, 9050], [9265, 9750]],
                             mask_fit_order=1,
                             mask_fit_size=1):
+        '''
+        Parameters
+        ----------
+        kind: string or integer [1,2,3,4,5 only]
+            interpolation kind is one of [‘linear’, ‘nearest’, ‘zero’,
+             ‘slinear’, ‘quadratic’, ‘cubic’, ‘previous’, ‘next’]
+        smooth: boolean
+            set to smooth the input spectrum with scipy.signal.savgol_filter
+        slength: int
+            SG-filter window size
+        sorder: int
+            SG-filter polynomial order
+        mask_range: None or list of list
+            Masking out regions not suitable for fitting the sensitivity curve.
+            None for no mask. List of list has the pattern
+            [[min1, max1], [min2, max2],...]
+        mask_fit_order: int
+            Order of polynomial to be fitted over the masked regions
+        mask_fit_size: int
+            Number of "pixels" to be fitted on each side of the masked regions.
+        '''
 
         self.fluxcal.compute_sensitivity(kind=kind,
                                          smooth=smooth,
@@ -5486,23 +6324,61 @@ class OneDSpec():
                                          mask_fit_size=mask_fit_size)
 
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
+        '''
+        Parameters
+        ----------
+        filename: str
+            Filename for the output interpolated sensivity curve.
+        '''
 
         self.fluxcal.save_sensitivity_itp(filename=filename)
 
     def add_sensitivity_itp(self, sensitivity_itp, stype='standard'):
+        '''
+        Parameters
+        ----------
+        sensitivity_itp: str
+            Interpolated sensivity curve object.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         self.fluxcal.add_sensitivity_itp(sensitivity_itp=sensitivity_itp,
                                          stype=stype)
 
     def inspect_sensitivity(self,
+                            display=True,
                             renderer='default',
                             width=1280,
                             height=720,
                             return_jsonstring=False,
-                            display=True,
                             save_iframe=False,
                             filename=None,
                             open_iframe=False):
+        '''
+        Parameters
+        ----------
+        display: boolean
+            Set to True to display disgnostic plot.
+        renderer: string
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: boolean
+            Open the save_iframe in the default browser if set to True.
+        '''
+
         self.fluxcal.inspect_sensitivity(renderer=renderer,
                                          width=width,
                                          height=height,
@@ -5513,6 +6389,14 @@ class OneDSpec():
                                          open_iframe=open_iframe)
 
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        '''
 
         stype_split = stype.split('+')
 
@@ -5535,6 +6419,45 @@ class OneDSpec():
                                  return_jsonstring=False,
                                  save_iframe=False,
                                  open_iframe=False):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        wave_min: float
+            Minimum wavelength to display
+        wave_max: float
+            Maximum wavelength to display
+        display: boolean
+            Set to True to display disgnostic plot.
+        renderer: string
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        save_png: boolean
+            Save an png image of the Plotly plot
+        save_jpg: boolean
+            Save an png image of the Plotly plot
+        save_svg: boolean
+            Save an png image of the Plotly plot
+        save_pdf: boolean
+            Save a pdf of the Plotly plot
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        open_iframe: boolean
+            Open the save_iframe in the default browser if set to True.
+        '''
 
         self.fluxcal.inspect_reduced_spectrum(
             spec_id=spec_id,
@@ -5608,6 +6531,8 @@ class OneDSpec():
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
@@ -5624,8 +6549,8 @@ class OneDSpec():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: String
-            Spectral type: science or standard
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         to_disk: boolean
             Default is True. If True, the fits object will be saved to disk.
         to_memory: boolean
@@ -5822,6 +6747,8 @@ class OneDSpec():
 
         Parameters
         ----------
+        spec_id: int
+            The ID corresponding to the spectrum!D object
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
@@ -5838,12 +6765,8 @@ class OneDSpec():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: String
-            Spectral type: science or standard
-        to_disk: boolean
-
-        to_memory: boolean
-
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
         overwrite: boolean
             Default is False.
 
