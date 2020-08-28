@@ -6598,56 +6598,59 @@ class OneDSpec():
 
                 # Prepare multiple extension HDU
                 hdu_output = fits.HDUList()
-                if 'flux_resampled' in output_split:
-                    if self.fluxcal.spectrum_list_science[
-                            i].flux_resampled is None:
-                        warnings.warn(
-                            "Spectrum is not flux calibrated and resampled.")
-                    else:
-                        self.fluxcal._create_flux_resampled_fits(
-                            spec_id=i, stype='science')
-                        hdu_output.extend(
-                            self.fluxcal.flux_science_resampled_hdulist[i])
 
-                if 'wavecal' in output_split:
-                    if self.wavecal_science.spectrum_list[
-                            i].polyfit_coeff is None:
-                        warnings.warn("Spectrum is not wavelength calibrated.")
-                    else:
-                        self.wavecal_science._create_wavecal_fits(spec_id=i)
-                        hdu_output.extend(
-                            self.wavecal_science.wavecal_hdulist[i])
+                for out in output_split:
 
-                if 'flux' in output_split:
-                    if self.fluxcal.spectrum_list_science[i].flux is None:
-                        warnings.warn("Spectrum is not flux calibrated.")
-                    else:
-                        self.fluxcal._create_flux_fits(spec_id=i,
-                                                       stype='science')
-                        hdu_output.extend(self.fluxcal.flux_science_hdulist[i])
+                    if out == 'flux_resampled':
+                        if self.fluxcal.spectrum_list_science[
+                                i].flux_resampled is None:
+                            warnings.warn(
+                                "Spectrum is not flux calibrated and resampled.")
+                        else:
+                            self.fluxcal._create_flux_resampled_fits(
+                                spec_id=i, stype='science')
+                            hdu_output.extend(
+                                self.fluxcal.flux_science_resampled_hdulist[i])
 
-                if 'count' in output_split:
-                    if self.fluxcal.spectrum_list_science[i].count is None:
-                        warnings.warn(
-                            "Count does not exist. Have you included "
-                            "a spectrum?")
-                    else:
-                        self.fluxcal._create_count_fits(spec_id=i,
-                                                        stype='science')
-                        hdu_output.extend(self.fluxcal.count_hdulist[i])
+                    if out == 'wavecal':
+                        if self.wavecal_science.spectrum_list[
+                                i].polyfit_coeff is None:
+                            warnings.warn("Spectrum is not wavelength calibrated.")
+                        else:
+                            self.wavecal_science._create_wavecal_fits(spec_id=i)
+                            hdu_output.extend(
+                                self.wavecal_science.wavecal_hdulist[i])
 
-                if 'count_resampled' in output_split:
-                    if self.fluxcal.spectrum_list_science[
-                            i].count_resampled is None:
-                        warnings.warn(
-                            "Resampled Count does not exist. Have you "
-                            "included a spectrum? Is it wavelength "
-                            "calibrated and resampled?")
-                    else:
-                        self.fluxcal._create_count_resampled_fits(
-                            spec_id=i, stype='science')
-                        hdu_output.extend(
-                            self.fluxcal.count_resampled_hdulist[i])
+                    if out == 'flux':
+                        if self.fluxcal.spectrum_list_science[i].flux is None:
+                            warnings.warn("Spectrum is not flux calibrated.")
+                        else:
+                            self.fluxcal._create_flux_fits(spec_id=i,
+                                                           stype='science')
+                            hdu_output.extend(self.fluxcal.flux_science_hdulist[i])
+
+                    if out == 'count':
+                        if self.fluxcal.spectrum_list_science[i].count is None:
+                            warnings.warn(
+                                "Count does not exist. Have you included "
+                                "a spectrum?")
+                        else:
+                            self.fluxcal._create_count_fits(spec_id=i,
+                                                            stype='science')
+                            hdu_output.extend(self.fluxcal.count_hdulist[i])
+
+                    if out == 'count_resampled':
+                        if self.fluxcal.spectrum_list_science[
+                                i].count_resampled is None:
+                            warnings.warn(
+                                "Resampled Count does not exist. Have you "
+                                "included a spectrum? Is it wavelength "
+                                "calibrated and resampled?")
+                        else:
+                            self.fluxcal._create_count_resampled_fits(
+                                spec_id=i, stype='science')
+                            hdu_output.extend(
+                                self.fluxcal.count_resampled_hdulist[i])
 
                 # Convert the first HDU to PrimaryHDU
                 hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
@@ -6666,51 +6669,54 @@ class OneDSpec():
         if 'standard' in stype_split:
             # Prepare multiple extension HDU
             hdu_output = fits.HDUList()
-            if 'flux_resampled' in output_split:
-                if self.fluxcal.spectrum_list_standard[
-                        0].flux_resampled is None:
-                    warnings.warn(
-                        "Spectrum is not flux calibrated and resampled.")
-                else:
-                    self.fluxcal._create_flux_resampled_fits(spec_id=spec_id,
-                                                             stype='standard')
-                    hdu_output.extend(
-                        self.fluxcal.flux_standard_resampled_hdulist)
 
-            if 'wavecal' in output_split:
-                if self.wavecal_standard.spectrum_list[0].polyfit_coeff is None:
-                    warnings.warn("Spectrum is not wavelength calibrated.")
-                else:
-                    self.wavecal_standard._create_wavecal_fits()
-                    hdu_output.extend(self.wavecal_standard.wavecal_hdulist[0])
+            for out in output_split:
 
-            if 'flux' in output_split:
-                if self.fluxcal.spectrum_list_standard[0].flux is None:
-                    warnings.warn("Spectrum is not flux calibrated.")
-                else:
-                    self.fluxcal._create_flux_fits(spec_id=spec_id,
-                                                   stype='standard')
-                    hdu_output.extend(self.fluxcal.flux_standard_hdulist)
+                if out == 'flux_resampled':
+                    if self.fluxcal.spectrum_list_standard[
+                            0].flux_resampled is None:
+                        warnings.warn(
+                            "Spectrum is not flux calibrated and resampled.")
+                    else:
+                        self.fluxcal._create_flux_resampled_fits(spec_id=spec_id,
+                                                                 stype='standard')
+                        hdu_output.extend(
+                            self.fluxcal.flux_standard_resampled_hdulist)
 
-            if 'count' in output_split:
-                if self.fluxcal.spectrum_list_standard[0].count is None:
-                    warnings.warn("Count does not exist. Have you included "
-                                  "a spectrum?")
-                self.fluxcal._create_count_fits(spec_id=spec_id,
-                                                stype='standard')
-                hdu_output.extend(self.fluxcal.count_standard_hdulist)
+                if out == 'wavecal':
+                    if self.wavecal_standard.spectrum_list[0].polyfit_coeff is None:
+                        warnings.warn("Spectrum is not wavelength calibrated.")
+                    else:
+                        self.wavecal_standard._create_wavecal_fits()
+                        hdu_output.extend(self.wavecal_standard.wavecal_hdulist[0])
 
-            if 'count_resampled' in output_split:
-                if self.fluxcal.spectrum_list_standard[
-                        0].count_resampled is None:
-                    warnings.warn("Resampled Count does not exist. Have you "
-                                  "included a spectrum? Is it wavelength "
-                                  "calibrated and resampled?")
-                else:
-                    self.fluxcal._create_count_resampled_fits(spec_id=spec_id,
-                                                              stype='standard')
-                    hdu_output.extend(
-                        self.fluxcal.count_standard_resampled_hdulist)
+                if out == 'flux':
+                    if self.fluxcal.spectrum_list_standard[0].flux is None:
+                        warnings.warn("Spectrum is not flux calibrated.")
+                    else:
+                        self.fluxcal._create_flux_fits(spec_id=spec_id,
+                                                       stype='standard')
+                        hdu_output.extend(self.fluxcal.flux_standard_hdulist)
+
+                if out == 'count':
+                    if self.fluxcal.spectrum_list_standard[0].count is None:
+                        warnings.warn("Count does not exist. Have you included "
+                                      "a spectrum?")
+                    self.fluxcal._create_count_fits(spec_id=spec_id,
+                                                    stype='standard')
+                    hdu_output.extend(self.fluxcal.count_standard_hdulist)
+
+                if out == 'count_resampled':
+                    if self.fluxcal.spectrum_list_standard[
+                            0].count_resampled is None:
+                        warnings.warn("Resampled Count does not exist. Have you "
+                                      "included a spectrum? Is it wavelength "
+                                      "calibrated and resampled?")
+                    else:
+                        self.fluxcal._create_count_resampled_fits(spec_id=spec_id,
+                                                                  stype='standard')
+                        hdu_output.extend(
+                            self.fluxcal.count_standard_resampled_hdulist)
 
             # Convert the first HDU to PrimaryHDU
             hdu_output[0] = fits.PrimaryHDU(hdu_output[0].data,
