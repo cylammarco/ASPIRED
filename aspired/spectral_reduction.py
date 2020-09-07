@@ -2907,7 +2907,7 @@ class TwoDSpec:
                   to_disk=True,
                   to_memory=False,
                   overwrite=False,
-                  empty_primary_hdu=empty_primary_hdu):
+                  empty_primary_hdu=True):
         '''
         Save the reduced image to disk.
 
