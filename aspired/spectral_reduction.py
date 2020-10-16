@@ -4857,7 +4857,9 @@ class FluxCalibration(StandardLibrary):
 
         '''
 
-        if stype == 'standard':
+        stype_split = stype.split('+')
+
+        if 'standard' in stype_split:
 
             if len(self.spectrum_list_standard.keys()) == 0:
                 self.spectrum_list_standard[0] = _spectrum1D()
@@ -4880,7 +4882,7 @@ class FluxCalibration(StandardLibrary):
             self.spectrum_list_standard[spec_id].add_count(
                 count, count_err, count_sky)
 
-        elif stype == 'science':
+        elif 'science' in stype_split:
 
             if spec_id in list(self.spectrum_list_science.keys()):
                 if self.spectrum_list_science[spec_id].count is not None:
@@ -4932,7 +4934,9 @@ class FluxCalibration(StandardLibrary):
         elif wave is None:
             wave = wave_resampled
 
-        if stype == 'standard':
+        stype_split = stype.split('+')
+
+        if 'standard' in stype_split:
 
             if len(self.spectrum_list_standard.keys()) == 0:
                 self.spectrum_list_standard[0] = _spectrum1D(0)
@@ -4947,7 +4951,7 @@ class FluxCalibration(StandardLibrary):
                 wave_resampled=wave_resampled,
             )
 
-        elif stype == 'science':
+        elif 'science' in stype_split:
 
             if spec_id is not None:
                 if spec_id not in list(self.spectrum_list_science.keys()):
@@ -5000,7 +5004,9 @@ class FluxCalibration(StandardLibrary):
 
         '''
 
-        if stype == 'standard':
+        stype_split = stype.split('+')
+
+        if 'standard' in stype_split:
             # Loop through the twodspec.spectrum_list to update the
             # spectrum_list_standard
             if not self.spectrum_list_standard:
@@ -5008,7 +5014,7 @@ class FluxCalibration(StandardLibrary):
             for key, value in twodspec.spectrum_list[0].__dict__.items():
                 setattr(self.spectrum_list_standard[0], key, value)
 
-        if stype == 'science':
+        if 'science' in stype_split:
             # Loop through the spec_id in twodspec
             for i in twodspec.spectrum_list.keys():
                 # Loop through the twodspec.spectrum_list to update the
@@ -6239,13 +6245,15 @@ class OneDSpec():
                               count_sky=count_sky,
                               stype=stype)
 
-        if stype == 'science':
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
             self.wavecal_science.add_spec(count=count,
                                           spec_id=spec_id,
                                           count_err=count_err,
                                           count_sky=count_sky)
 
-        if stype == 'standard':
+        if 'standard' in stype_split:
             self.wavecal_standard.add_spec(count=count,
                                            spec_id=spec_id,
                                            count_err=count_err,
@@ -6873,9 +6881,9 @@ class OneDSpec():
                                                  wave=wave)
 
         if 'standard' in stype_split:
-            self.wavecal_science.set_known_pairs(spec_id=spec_id,
-                                                 pix=pix,
-                                                 wave=wave)
+            self.wavecal_standard.set_known_pairs(spec_id=spec_id,
+                                                  pix=pix,
+                                                  wave=wave)
 
     def load_user_atlas(self,
                         elements,

@@ -27,15 +27,15 @@ We are to cover as many use cases as possible. If you would like to apply some r
 4. [x] User supplied trace(s) for light spectrum extraction (only to extract ADU/s of the spectra).
 5. [x] User supplied trace(s) for arc extraction (only to get wavelength calibration polynomial).
 6. [x] User supplied wavelength calibration polynomial coefficients.
-7. [ ] User supplied line list. [Pending on the next RASCAL release]
-8. [ ] User supplied pixel-to-wavelength mapping (not fitted). [Pending on the next RASCAL release]
+7. [x] User supplied line list.
+8. [x] User supplied pixel-to-wavelength mapping (not fitted).
 9. [x] User supplied sensitivity curve.
 10. [x] User supplied wavelength calibrated standard.
 11. [x] Flux calibration for user supplied wavelength calibrated science and standard 1D spectra.
 
 ### Output
 11. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
-12. [ ] Save data in FITS (with header information) or ascii (csv).
+12. [x] Save data in FITS (with header information) or ascii (csv).
 
 ## Dependencies
 * python >= 3.6
@@ -45,7 +45,7 @@ We are to cover as many use cases as possible. If you would like to apply some r
 * [astroscrappy](https://github.com/astropy/astroscrappy)
 * [ccdproc](https://github.com/astropy/ccdproc)
 * [plotly](https://github.com/plotly/plotly.py) >= 4.0
-* [rascal](https://github.com/jveitchmichaelis/rascal)
+* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.2
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
 
 ## Installation
@@ -65,3 +65,5 @@ Style -- as long as it passes PEP8, it's fine. We suggest you to use yapf defaul
 ## Funding bodies
 1. European Union’s Horizon 2020 research and innovation programme (grant agreement No. 730890)
 (January 2019 - March 2020)
+2. Polish NCN grant Daina No. 2017/27/L/ST9/03221
+(May - June 2020)
