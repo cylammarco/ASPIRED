@@ -7243,14 +7243,14 @@ class OneDSpec():
             self.wavecal_science.apply_wavelength_calibration(
                 wave_start, wave_end, wave_bin)
             self.fluxcal.add_wavecal(self.wavecal_science,
-                                     stype='science+standard')
+                                     stype='science')
             self.wavelength_science_calibrated = True
 
         if 'standard' in stype_split:
             self.wavecal_standard.apply_wavelength_calibration(
                 wave_start, wave_end, wave_bin)
             self.fluxcal.add_wavecal(self.wavecal_standard,
-                                     stype='science+standard')
+                                     stype='standard')
             self.wavelength_standard_calibrated = True
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
