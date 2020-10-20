@@ -32,7 +32,6 @@ class _spectrum1D():
     extracted spectrum.
 
     '''
-
     def __init__(self, spec_id):
 
         # spectrum ID
@@ -200,7 +199,6 @@ class _spectrum1D():
             'flux_resampled': False
         }
 
-
     def add_trace(self, trace, trace_sigma, pixel_list=None):
 
         assert type(trace) == list, 'trace has to be a list'
@@ -230,7 +228,6 @@ class _spectrum1D():
         self.add_pixel_list(pixel_list)
         self.add_pixel_mapping_itp(pixel_mapping_itp)
 
-
     def remove_trace(self):
 
         self.trace = None
@@ -238,7 +235,6 @@ class _spectrum1D():
         self.len_trace = None
         self.remove_pixel_list()
         self.remove_pixel_mapping_itp()
-
 
     def add_aperture(self, widthdn, widthup, sepdn, sepup, skywidthdn,
                      skywidthup):
@@ -255,7 +251,6 @@ class _spectrum1D():
         self.sepup = sepup
         self.skywidthdn = skywidthdn
         self.skywidthup = skywidthup
-
 
     def add_count(self, count, count_err=None, count_sky=None):
 
@@ -292,44 +287,36 @@ class _spectrum1D():
 
             self.count_sky = np.zeros_like(self.count)
 
-
     def remove_count(self):
 
         self.count = None
         self.count_err = None
         self.count_sky = None
 
-
     def add_variances(self, var):
 
         self.var = var
 
-
     def remove_variances(self):
 
         self.var = None
-
 
     def add_arc_spec(self, arc_spec):
 
         assert type(arc_spec) == list, 'arc_spec has to be a list'
         self.arc_spec = arc_spec
 
-
     def remove_arc_spec(self):
         self.arc_spec = None
-
 
     def add_pixel_list(self, pixel_list):
 
         assert type(pixel_list) == list, 'pixel_list has to be a list'
         self.pixel_list = pixel_list
 
-
     def remove_pixel_list(self):
 
         self.pixel_list = None
-
 
     def add_pixel_mapping_itp(self, pixel_mapping_itp):
 
@@ -339,44 +326,36 @@ class _spectrum1D():
         'scipy.interpolate.interpolate.interp1d object.'
         self.pixel_mapping_itp = pixel_mapping_itp
 
-
     def remove_pixel_mapping_itp(self):
 
         self.pixel_mapping_itp = None
-
 
     def add_peaks_raw(self, peaks_raw):
 
         assert type(peaks_raw) == list, 'peaks_raw has to be a list'
         self.peaks_raw = peaks_raw
 
-
     def remove_peaks_raw(self):
 
         self.peaks_raw = None
-
 
     def add_peaks_pixel(self, peaks_pixel):
 
         assert type(peaks_pixel) == list, 'peaks_pixel has to be a list'
         self.peaks_pixel = peaks_pixel
 
-
     def remove_peaks_pixel(self):
 
         self.peaks_pixel = None
-
 
     def add_peaks_wave(self, peaks_wave):
 
         assert type(peaks_wave) == list, 'peaks_wave has to be a list'
         self.peaks_wave = peaks_wave
 
-
     def remove_peaks_pixel(self):
 
         self.peaks_wave = None
-
 
     def add_background(self, background):
 
@@ -384,11 +363,9 @@ class _spectrum1D():
         assert np.isfinite(background), 'background has to be finite.'
         self.background = background
 
-
     def remove_background(self):
 
         self.background = None
-
 
     def add_calibrator(self, calibrator):
 
@@ -398,11 +375,9 @@ class _spectrum1D():
         'object.'
         self.calibrator = calibrator
 
-
     def remove_calibrator(self):
 
         self.calibrator = None
-
 
     def add_atlas_wavelength_range(self, min_atlas_wavelength,
                                    max_atlas_wavelength):
@@ -414,12 +389,10 @@ class _spectrum1D():
         self.min_atlas_wavelength = min_atlas_wavelength
         self.max_atlas_wavelength = max_atlas_wavelength
 
-
     def remove_atlas_wavelength_range(self):
 
         self.min_atlas_wavelength = None
         self.max_atlas_wavelength = None
-
 
     def add_min_atlas_intensity(self, min_atlas_intensity):
 
@@ -427,11 +400,9 @@ class _spectrum1D():
             min_atlas_intensity), 'min_atlas_intensity has to be finite.'
         self.min_atlas_intensity = min_atlas_intensity
 
-
     def remove_min_atlas_intensity(self):
 
         self.min_atlas_intensity = None
-
 
     def add_min_atlas_distance(self, min_atlas_distance):
 
@@ -439,44 +410,36 @@ class _spectrum1D():
             min_atlas_distance), 'min_atlas_distance has to be finite.'
         self.min_atlas_distance = min_atlas_distance
 
-
     def remove_min_atlas_distance(self):
 
         self.min_atlas_distance = None
-
 
     def add_gain(self, gain):
 
         assert np.isfinite(gain), 'gain has to be finite.'
         self.gain = gain
 
-
     def remove_gain(self):
 
         self.gain = None
-
 
     def add_readnoise(self, readnoise):
 
         assert np.isfinite(readnoise), 'readnoise has to be finite.'
         self.readnoise = readnoise
 
-
     def remove_readnoise(self):
 
         self.readnoise = None
-
 
     def add_exptime(self, exptime):
 
         assert np.isfinite(exptime), 'exptime has to be finite.'
         self.exptime = exptime
 
-
     def remove_exptime(self):
 
         self.exptime = None
-
 
     def add_weather_condition(self, pressure, temperature, relative_humidity):
 
@@ -488,14 +451,12 @@ class _spectrum1D():
         self.temperature = temperature
         self.relative_humidity = relative_humidity
 
-
     def remove_weather_condition(self, pressure, temperature,
                                  relative_humidity):
 
         self.pressure = None
         self.temperature = None
         self.relative_humidity = None
-
 
     def add_fit_type(self, fit_type):
 
@@ -504,11 +465,9 @@ class _spectrum1D():
         '(1) poly(nomial); (2) leg(endre); or (3) cheb(yshev).'
         self.fit_type = fit_type
 
-
     def remove_fit_type(self):
 
         self.fit_type = None
-
 
     def add_fit_coeff(self, fit_coeff):
 
@@ -517,11 +476,9 @@ class _spectrum1D():
                              == np.ndarray), 'fit_coeff has to be a list.'
         self.fit_coeff = fit_coeff
 
-
     def remove_fit_coeff(self):
 
         self.fit_coeff = None
-
 
     def add_calibrator_properties(self, num_pix, pixel_list, plotting_library,
                                   log_level):
@@ -531,14 +488,12 @@ class _spectrum1D():
         self.plotting_library = plotting_library
         self.log_level = log_level
 
-
     def remove_calibrator_properties(self):
 
         self.num_pix = None
         self.pixel_list = None
         self.plotting_library = None
         self.log_level = None
-
 
     def add_hough_properties(self, num_slopes, xbins, ybins, min_wavelength,
                              max_wavelength, range_tolerance,
@@ -552,7 +507,6 @@ class _spectrum1D():
         self.range_tolerance = range_tolerance
         self.linearity_tolerance = linearity_tolerance
 
-
     def remove_hough_properties(self):
 
         self.num_slopes = None
@@ -562,7 +516,6 @@ class _spectrum1D():
         self.max_wavelength = None
         self.range_tolerance = range_tolerance
         self.linearity_tolerance = v
-
 
     def add_ransac_properties(self, sample_size, top_n_candidate, linear,
                               filter_close, ransac_tolerance,
@@ -576,7 +529,6 @@ class _spectrum1D():
         self.candidate_weighted = candidate_weighted
         self.hough_weight = hough_weight
 
-
     def remove_ransac_properties(self):
 
         self.sample_size = None
@@ -587,7 +539,6 @@ class _spectrum1D():
         self.candidate_weighted = None
         self.hough_weight = None
 
-
     def add_fit_output_final(self, fit_coeff, rms, residual, peak_utilisation):
 
         # add assertion here
@@ -596,14 +547,12 @@ class _spectrum1D():
         self.residual = residual
         self.peak_utilisation = peak_utilisation
 
-
     def remove_fit_output_final(self):
 
         self.fit_coeff = None
         self.rms = None
         self.residual = None
         self.peak_utilisation = None
-
 
     def add_fit_output_rascal(self, fit_coeff, rms, residual,
                               peak_utilisation):
@@ -615,14 +564,12 @@ class _spectrum1D():
         self.peak_utilisation_rascal = peak_utilisation
         self.add_fit_output_final(fit_coeff, rms, residual, peak_utilisation)
 
-
     def remove_fit_output_rascal(self):
 
         self.fit_coeff_rascal = None
         self.rms_rascal = None
         self.residual_rascal = None
         self.peak_utilisation_rascal = None
-
 
     def add_fit_output_refine(self, fit_coeff, rms, residual,
                               peak_utilisation):
@@ -634,7 +581,6 @@ class _spectrum1D():
         self.peak_utilisation_refine = peak_utilisation
         self.add_fit_output_final(fit_coeff, rms, residual, peak_utilisation)
 
-
     def remove_fit_output_refine(self):
 
         self.fit_coeff_refine = None
@@ -642,16 +588,13 @@ class _spectrum1D():
         self.residual_refine = None
         self.peak_utilisation_refine = None
 
-
     def add_wavelength(self, wave):
 
         self.wave = wave
 
-
     def remove_wavelength(self):
 
         self.wave = None
-
 
     def add_wavelength_resampled(self, wave_bin, wave_start, wave_end,
                                  wave_resampled):
@@ -661,14 +604,12 @@ class _spectrum1D():
         self.wave_end = wave_end
         self.wave_resampled = wave_resampled
 
-
     def remove_wavelength_resampled(self):
 
         self.wave_bin = None
         self.wave_start = None
         self.wave_end = None
         self.wave_resampled = None
-
 
     def add_count_resampled(self, count_resampled, count_err_resampled,
                             count_sky_resampled):
@@ -677,13 +618,11 @@ class _spectrum1D():
         self.count_err_resampled = count_err_resampled
         self.count_sky_resampled = count_sky_resampled
 
-
     def remove_count_resampled(self):
 
         self.count_resampled = None
         self.count_err_resampled = None
         self.count_sky_resampled = None
-
 
     def add_smoothing(self, smooth, slength, sorder):
 
@@ -691,45 +630,37 @@ class _spectrum1D():
         self.slength = slength
         self.sorder = sorder
 
-
     def remove_smoothing(self):
 
         self.smooth = None
         self.slength = None
         self.sorder = None
 
-
     def add_sensitivity_itp(self, sensitivity_itp):
 
         self.sensitivity_itp = sensitivity_itp
-
 
     def remove_sensitivity_itp(self):
 
         self.sensitivity_itp = None
 
-
     def add_sensitivity(self, sensitivity):
 
         self.sensitivity = sensitivity
 
-
     def remove_sensitivity(self):
 
         self.sensitivity = None
-
 
     def add_literature_standard(self, wave_literature, flux_literature):
 
         self.wave_literature = wave_literature
         self.flux_literature = flux_literature
 
-
     def remove_literature_standard(self):
 
         self.wave_literature = None
         self.flux_literature = None
-
 
     def add_flux(self, flux, flux_err, flux_sky):
 
@@ -737,13 +668,11 @@ class _spectrum1D():
         self.flux_err = flux_err
         self.flux_sky = flux_sky
 
-
     def remove_flux(self):
 
         self.flux = None
         self.flux_err = None
         self.flux_sky = None
-
 
     def add_flux_resampled(self, flux_resampled, flux_err_resampled,
                            flux_sky_resampled):
@@ -752,42 +681,36 @@ class _spectrum1D():
         self.flux_err_resampled = flux_err_resampled
         self.flux_sky_resampled = flux_sky_resampled
 
-
     def remove_flux_resampled(self):
 
         self.flux_resampled = None
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
 
-
     def add_sensitivity_resampled(self, sensitivity_resampled):
 
         self.sensitivity_resampled = sensitivity_resampled
 
-
     def remove_sensitivity_resampled(self):
 
         self.sensitivity_resampled = None
-
 
     def _modify_imagehdu_data(self, hdulist, idx, method, *args):
 
         method_to_call = getattr(hdulist[idx].data, method)
         method_to_call(*args)
 
-
     def _modify_imagehdu_header(self, hdulist, idx, method, *args):
         '''
         e.g.
         method = 'set'
         args = 'BUNIT', 'Angstroms'
-        
+
         method_to_call(*args) becomes hdu[idx].header.set('BUNIT', 'Angstroms')
         '''
-        
+
         method_to_call = getattr(hdulist[idx].header, method)
         method_to_call(*args)
-
 
     def modify_trace_header(self, idx, method, *args):
         '''
@@ -798,7 +721,6 @@ class _spectrum1D():
         '''
 
         self._modify_imagehdu_header(self.trace_hdulist, idx, method, *args)
-
 
     def modify_count_header(self, idx, method, *args):
         '''
@@ -813,7 +735,6 @@ class _spectrum1D():
 
         self._modify_imagehdu_header(self.count_hdulist, idx, method, *args)
 
-
     def modify_count_resampled_header(self, idx, method, *args):
         '''
         for method 'set', it takes
@@ -826,7 +747,6 @@ class _spectrum1D():
         self._modify_imagehdu_header(self.count_resampled_hdulist, idx, method,
                                      *args)
 
-
     def modify_arc_spec_header(self, idx, method, *args):
         '''
         for method 'set', it takes
@@ -835,9 +755,8 @@ class _spectrum1D():
             1: peaks_raw
             2: peaks_pixel
         '''
-        
-        self._modify_imagehdu_header(self.arc_spec_hdulist, idx, method, *args)
 
+        self._modify_imagehdu_header(self.arc_spec_hdulist, idx, method, *args)
 
     def modify_wavecal_header(self, method, *args):
         '''
@@ -845,9 +764,8 @@ class _spectrum1D():
         keyword, value=None, comment=None, before=None, after=None
         wavelength fits only has one ImageHDU so the idx is always 0
         '''
-        
-        self._modify_imagehdu_header(self.wavecal_hdulist, 0, method, *args)
 
+        self._modify_imagehdu_header(self.wavecal_hdulist, 0, method, *args)
 
     def modify_flux_header(self, idx, method, *args):
         '''
@@ -860,7 +778,6 @@ class _spectrum1D():
         '''
 
         self._modify_imagehdu_header(self.flux_hdulist, idx, method, *args)
-
 
     def modify_flux_resampled_header(self, idx, method, *args):
         '''
@@ -875,7 +792,6 @@ class _spectrum1D():
         self._modify_imagehdu_header(self.flux_resampled_hdulist, idx, method,
                                      *args)
 
-
     def modify_wavelength_header(self, method, *args):
         '''
         for method 'set', it takes
@@ -884,7 +800,6 @@ class _spectrum1D():
         '''
 
         self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
-
 
     def create_trace_fits(self, force=True):
 
@@ -938,7 +853,6 @@ class _spectrum1D():
 
             warnings.warn('trace ImageHDU already exists, set force to True '
                           'to create a new one.')
-
 
     def create_count_fits(self, force=True):
 
@@ -1027,7 +941,6 @@ class _spectrum1D():
             warnings.warn('count ImageHDU already exists, set force to True '
                           'to create a new one.')
 
-
     def create_count_resampled_fits(self, force=True):
 
         if (self.count_resampled_hdulist is None) or force:
@@ -1111,7 +1024,6 @@ class _spectrum1D():
                 'count_resampled ImageHDU already exists, set force to True '
                 'to create a new one.')
 
-
     def create_arc_spec_fits(self, force=True):
 
         if (self.arc_spec_hdulist is None) or force:
@@ -1165,7 +1077,6 @@ class _spectrum1D():
             warnings.warn(
                 'arc_spec ImageHDU already exists, set force to True '
                 'to create a new one.')
-
 
     def create_wavecal_fits(self, force=True):
 
@@ -1234,7 +1145,6 @@ class _spectrum1D():
             warnings.warn(
                 'wave_cal ImageHDU already exists, set force to True '
                 'to create a new one.')
-
 
     def create_flux_fits(self, force=True):
 
@@ -1305,7 +1215,6 @@ class _spectrum1D():
 
             warnings.warn('flux ImageHDU already exists, set force to True '
                           'to create a new one.')
-
 
     def create_flux_resampled_fits(self, force=True):
 
@@ -1398,7 +1307,6 @@ class _spectrum1D():
                 'flux_resampled ImageHDU already exists, set force to True '
                 'to create a new one.')
 
-
     def create_wavelength_fits(self, force=True):
 
         if (self.wavelength_hdulist is None) or force:
@@ -1438,41 +1346,33 @@ class _spectrum1D():
                 'wavelength ImageHDU already exists, set force to True '
                 'to create a new one.')
 
-
     def remove_trace_fits(self):
 
         self.trace_hdulist = None
-
 
     def remove_count_fits(self):
 
         self.count_hdulist = None
 
-
     def remove_count_resampled_fits(self):
 
         self.count_resampled_hdulist = None
-
 
     def remove_arc_spec_fits(self):
 
         self.arc_spec_hdulist = None
 
-
     def remove_wavecal_fits(self):
 
         self.wavecal_hdulist = None
-
 
     def remove_flux_resampled_fits(self):
 
         self.flux_resampled_hdulist = None
 
-
     def remove_wavelength_fits(self):
 
         self.wavelength_hdulist = None
-
 
     def create_fits(self,
                     output,
@@ -1637,7 +1537,6 @@ class _spectrum1D():
 
             return self.hdu_output
 
-
     def save_fits(self,
                   output,
                   filename,
@@ -1680,7 +1579,6 @@ class _spectrum1D():
 
         # Save file to disk
         self.hdu_output.writeto(filename + '.fits', overwrite=overwrite)
-
 
     def save_csv(self, output, filename, force, overwrite):
         '''
@@ -1748,7 +1646,6 @@ class _spectrum1D():
 
 
 class TwoDSpec:
-
     def __init__(self,
                  data,
                  header=None,
@@ -2168,7 +2065,6 @@ class TwoDSpec:
 
         self.spectrum_list = {}
 
-
     def set_readnoise_keyword(self, keyword_list, append=False):
         '''
         Set the exptime keyword list.
@@ -2189,7 +2085,6 @@ class TwoDSpec:
         else:
 
             self.readnoise_keyword = list(keyword_list)
-
 
     def set_gain_keyword(self, keyword_list, append=False):
         '''
@@ -2212,7 +2107,6 @@ class TwoDSpec:
 
             self.gain_keyword = list(keyword_list)
 
-
     def set_seeing_keyword(self, keyword_list, append=False):
         '''
         Set the exptime keyword list.
@@ -2233,7 +2127,6 @@ class TwoDSpec:
         else:
 
             self.seeing_keyword = list(keyword_list)
-
 
     def set_exptime_keyword(self, keyword_list, append=False):
         '''
@@ -2256,7 +2149,6 @@ class TwoDSpec:
 
             self.exptime_keyword = list(keyword_list)
 
-
     def set_header(self, header):
         '''
         Set/replace the header.
@@ -2277,7 +2169,6 @@ class TwoDSpec:
 
             raise TypeError(
                 'Please provide an astropy.io.fits.header.Header object.')
-
 
     def _gaus(self, x, a, b, x0, sigma):
         """
@@ -2303,7 +2194,6 @@ class TwoDSpec:
         """
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
-
 
     def _identify_spectra(self, f_height, display, renderer, return_jsonstring,
                           save_iframe, filename, open_iframe):
@@ -2423,7 +2313,6 @@ class TwoDSpec:
             if return_jsonstring:
 
                 return fig.to_json()
-
 
     def _optimal_signal(self,
                         pix,
@@ -2545,7 +2434,6 @@ class TwoDSpec:
         noise = np.sqrt(v1)
 
         return signal, noise, suboptimal, var_f
-
 
     def ap_trace(self,
                  nspec=1,
@@ -2699,7 +2587,6 @@ class TwoDSpec:
 
         # Scipy correlate method
         for i in chain(range(start_window_idx, nwindow),
-
                        range(start_window_idx - 1, -1, -1)):
 
             # smooth by taking the median
@@ -2916,7 +2803,6 @@ class TwoDSpec:
 
                 return fig.to_json()
 
-
     def add_trace(self, spec_id, trace, trace_sigma):
         '''
         Add user-supplied trace. The trace has to have the size as the 2D
@@ -2949,7 +2835,6 @@ class TwoDSpec:
             raise ValueError("{spec_id: %s} is not in the list of spectra." %
                              spec_id)
 
-
     def remove_trace(self, spec_id):
         '''
         Parameters
@@ -2967,7 +2852,6 @@ class TwoDSpec:
 
             raise ValueError("{spec_id: %s} is not in the list of spectra." %
                              spec_id)
-
 
     def ap_extract(self,
                    apwidth=7,
@@ -3515,7 +3399,6 @@ class TwoDSpec:
 
                     return fig.to_json()
 
-
     def save_fits(self,
                   output='trace+count',
                   filename='TwoDSpecExtracted',
@@ -3567,7 +3450,6 @@ class TwoDSpec:
 
 
 class WavelengthCalibration():
-
     def __init__(self, silence=False):
         '''
         This is a wrapper for using RASCAL to perform wavelength calibration,
@@ -3603,7 +3485,6 @@ class WavelengthCalibration():
             'cheb': np.polynomial.chebyshev.chebval
         }
 
-
     def add_arc(self, arc):
         '''
         To provide an arc image. Make sure left (small index) is blue,
@@ -3623,7 +3504,6 @@ class WavelengthCalibration():
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
-
                 arc, fits.hdu.image.ImageHDU):
             self.arc = arc.data
 
@@ -3638,7 +3518,6 @@ class WavelengthCalibration():
                 'Please provide a numpy array, an ' +
                 'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
                 'aspired.ImageReduction object.')
-
 
     def add_arc_lines(self, peaks, spec_id=None):
         '''
@@ -3668,7 +3547,6 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].peaks = peaks
 
-
     def add_arc_spec(self, arc_spec, spec_id=None):
         '''
         Provide the collapsed 1D spectrum/a of the arc image.
@@ -3697,7 +3575,6 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].arc_spec = list(arc_spec)
 
-
     def add_spec(self, count, spec_id=None, count_err=None, count_sky=None):
         '''
         To provide user-supplied extracted spectrum for wavelegth calibration.
@@ -3724,7 +3601,6 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].add_count(count, count_err, count_sky)
 
-
     def remove_spec(self, spec_id):
         '''
         To modify or append a spectrum with the user-supplied one, one at a
@@ -3741,7 +3617,6 @@ class WavelengthCalibration():
             raise ValueError('The given spec_id does not exist.')
 
         self.spectrum_list[spec_id].remove_count()
-
 
     def add_trace(self, trace, trace_sigma, spec_id=None, pixel_list=None):
         '''
@@ -3783,7 +3658,6 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].add_trace(trace, trace_sigma, pixel_list)
 
-
     def remove_trace(self, spec_id):
         '''
         Parameters
@@ -3798,7 +3672,6 @@ class WavelengthCalibration():
             raise ValueError('The given spec_id does not exist.')
 
         self.spectrum_list[spec_id].remove_trace()
-
 
     def add_polyfit(self, spec_id, fit_type, fit_coeff):
         '''
@@ -3833,7 +3706,6 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].add_fit_type(fit_type)
         self.spectrum_list[spec_id].add_fit_coeff(fit_coeff)
-
 
     def from_twodspec(self, twodspec, pixel_list=None):
         '''
@@ -3874,7 +3746,6 @@ class WavelengthCalibration():
         self.spatial_mask = twodspec.spatial_mask
         self.spectrum_list = twodspec.spectrum_list
 
-
     def apply_twodspec_mask(self):
 
         if self.saxis == 0:
@@ -3888,13 +3759,12 @@ class WavelengthCalibration():
         self.apply_spec_mask(self.spec_mask)
         self.apply_spatial_mask(self.spatial_mask)
 
-
     def apply_spec_mask(self, spec_mask):
         '''
         * Experimental *
         the valid x-range of the chip (i.e. spectral direction)
 
-        ''' 
+        '''
 
         if (len(spec_mask) > 1):
 
@@ -3906,24 +3776,22 @@ class WavelengthCalibration():
 
                 self.arc = self.arc[spec_mask]
 
-
     def apply_spatial_mask(self, spatial_mask):
         '''
         * Experimental *
         the valid y-range of the chip (i.e. spatial direction)
-        
-        '''
-        
-        if (len(spatial_mask) > 1):
-        
-            if self.saxis == 1:
-        
-                self.arc = self.arc[spatial_mask]
-        
-            else:
-        
-                self.arc = self.arc[:, spatial_mask]
 
+        '''
+
+        if (len(spatial_mask) > 1):
+
+            if self.saxis == 1:
+
+                self.arc = self.arc[spatial_mask]
+
+            else:
+
+                self.arc = self.arc[:, spatial_mask]
 
     def extract_arc_spec(self,
                          spec_id=None,
@@ -4059,7 +3927,6 @@ class WavelengthCalibration():
                 if return_jsonstring:
 
                     return fig.to_json()
-
 
     def find_arc_lines(self,
                        spec_id=None,
@@ -4249,7 +4116,6 @@ class WavelengthCalibration():
 
                     return fig.to_json()
 
-
     def initialise_calibrator(self, spec_id=None, peaks=None, spectrum=None):
         '''
         Parameters
@@ -4286,7 +4152,6 @@ class WavelengthCalibration():
 
             self.spectrum_list[i].calibrator = Calibrator(peaks=peaks,
                                                           spectrum=spectrum)
-
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -4347,7 +4212,6 @@ class WavelengthCalibration():
 
             self.spectrum_list[i].add_calibrator_propertie(
                 num_pix, pixel_list, plotting_library, log_level)
-
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -4415,7 +4279,6 @@ class WavelengthCalibration():
                                                        max_wavelength,
                                                        range_tolerance,
                                                        linearity_tolerance)
-
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -4488,7 +4351,6 @@ class WavelengthCalibration():
                 sample_size, top_n_candidate, linear, filter_close,
                 ransac_tolerance, candidate_weighted, hough_weight)
 
-
     def do_hough_transform(self, spec_id):
         '''
         Perform Hough transform on the pixel-wavelength pairs with the
@@ -4519,7 +4381,6 @@ class WavelengthCalibration():
         for i in spec_id:
 
             self.spectrum_list[i].calibrator.do_hough_transform()
-
 
     def set_known_pairs(self, spec_id=None, pix=None, wave=None):
         '''
@@ -4561,7 +4422,6 @@ class WavelengthCalibration():
 
             self.spectrum_list[i].calibrator.set_known_pairs(pix=pix,
                                                              wave=wave)
-
 
     def load_user_atlas(self,
                         elements,
@@ -4631,7 +4491,6 @@ class WavelengthCalibration():
                 pressure=pressure,
                 temperature=temperature,
                 relative_humidity=relative_humidity)
-
 
     def add_atlas(self,
                   elements,
@@ -4734,7 +4593,6 @@ class WavelengthCalibration():
 
             self.spectrum_list[i].add_weather_condition(
                 pressure, temperature, relative_humidity)
-
 
     def fit(self,
             spec_id=None,
@@ -4956,7 +4814,6 @@ class WavelengthCalibration():
             self.spectrum_list[i].add_fit_output_refine(
                 fit_coeff_new, rms, residual, peak_utilisation)
 
-
     def apply_wavelength_calibration(self,
                                      spec_id=None,
                                      wave_start=None,
@@ -5046,7 +4903,6 @@ class WavelengthCalibration():
             spec.add_count_resampled(count_resampled, count_err_resampled,
                                      count_sky_resampled)
 
-
     def create_fits(self,
                     spec_id=None,
                     output='arc_spec+wavecal+count_resampled',
@@ -5119,7 +4975,6 @@ class WavelengthCalibration():
         if return_id:
 
             return spec_id
-
 
     def save_fits(self,
                   spec_id=None,
@@ -5276,7 +5131,6 @@ class StandardLibrary:
 
         self._load_standard_dictionary()
 
-
     def _load_standard_dictionary(self):
         '''
         Load the dictionaries
@@ -5291,7 +5145,6 @@ class StandardLibrary:
             open(
                 pkg_resources.resource_filename(
                     'aspired', 'standards/uname_to_lib.json')))
-
 
     def _get_eso_standard(self):
 
@@ -5324,7 +5177,6 @@ class StandardLibrary:
             if self.library != 'esoxshooter':
 
                 self.fluxmag_standard_true *= 1e-16
-
 
     def _get_ing_standard(self):
 
@@ -5403,7 +5255,6 @@ class StandardLibrary:
 
                 self.fluxmag_standard_true * 1e-6 * 3.33564095e4 * self.wave_standard_true**2
 
-
     def _get_iraf_standard(self):
         # iraf is always in AB magnitude
 
@@ -5425,7 +5276,6 @@ class StandardLibrary:
             self.fluxmag_standard_true = 10.**(
                 -(self.fluxmag_standard_true / 2.5)
             ) * 3630.780548 / 3.33564095e4 / self.wave_standard_true**2
-
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
@@ -5472,7 +5322,6 @@ class StandardLibrary:
                 raise ValueError(
                     'Please check the name of your standard star, nothing '
                     'share a similarity above ' + str(cutoff) + '.')
-
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
         '''
@@ -5553,7 +5402,6 @@ class StandardLibrary:
         if self.library.startswith('eso'):
 
             self._get_eso_standard()
-
 
     def inspect_standard(self,
                          display=True,
@@ -5668,7 +5516,6 @@ class StandardLibrary:
 
 
 class FluxCalibration(StandardLibrary):
-
     def __init__(self, silence=False):
         '''
         Initialise a FluxCalibration object.
@@ -5689,7 +5536,6 @@ class FluxCalibration(StandardLibrary):
 
         self.spectrum_list_science = {}
         self.spectrum_list_standard = {}
-
 
     def add_spec(self,
                  count,
@@ -5777,7 +5623,6 @@ class FluxCalibration(StandardLibrary):
                 raise ValueError('Unknown stype, please choose from '
                                  '(1) science; and/or (2) standard.')
 
-
     def add_wavelength(self,
                        wave=None,
                        wave_resampled=None,
@@ -5851,7 +5696,6 @@ class FluxCalibration(StandardLibrary):
                     wave_resampled=wave_resampled,
                 )
 
-
     def from_twodspec(self,
                       twodspec,
                       pixel_list=None,
@@ -5905,7 +5749,6 @@ class FluxCalibration(StandardLibrary):
 
                     setattr(self.spectrum_list_science[i], key, value)
 
-
     def add_wavecal(self, wavecal, stype='science+standard'):
         '''
         Copy the spectrum_list from the WavelengthCalibration object to here.
@@ -5945,7 +5788,6 @@ class FluxCalibration(StandardLibrary):
                         self.spectrum_list_science[i] = _spectrum1D(spec_id=i)
 
                     setattr(self.spectrum_list_science[i], key, value)
-
 
     def compute_sensitivity(self,
                             kind=3,
@@ -6082,7 +5924,6 @@ class FluxCalibration(StandardLibrary):
         # Add to each _spectrum1D object
         self.add_sensitivity_itp(sensitivity_itp, stype='science+standard')
 
-
     def add_sensitivity_itp(self, sensitivity_itp, stype='science+standard'):
         '''
         stype: string
@@ -6106,7 +5947,6 @@ class FluxCalibration(StandardLibrary):
                 # apply the flux calibration
                 self.spectrum_list_science[i].add_sensitivity_itp(
                     sensitivity_itp=sensitivity_itp)
-
 
     def inspect_sensitivity(self,
                             display=True,
@@ -6255,7 +6095,6 @@ class FluxCalibration(StandardLibrary):
         if return_jsonstring:
 
             return fig.to_json()
-
 
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
         '''
@@ -6412,7 +6251,6 @@ class FluxCalibration(StandardLibrary):
 
             raise ValueError('Unknown stype, please choose from (1) science; '
                              'and/or (2) standard. use + as delimiter.')
-
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
@@ -6866,7 +6704,6 @@ class FluxCalibration(StandardLibrary):
             raise ValueError('Unknown stype, please choose from (1) science; '
                              'and/or (2) standard. use + as delimiter.')
 
-
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
         '''
         Parameters
@@ -6878,7 +6715,6 @@ class FluxCalibration(StandardLibrary):
         '''
 
         np.save(filename, self.spectrum_list_standard[0].sensitivity_itp)
-
 
     def create_fits(self,
                     spec_id=None,
@@ -6958,7 +6794,6 @@ class FluxCalibration(StandardLibrary):
             else:
 
                 raise Error('Flux is not calibrated.')
-
 
     def save_fits(self,
                   spec_id=None,
@@ -7048,7 +6883,6 @@ class FluxCalibration(StandardLibrary):
                 force=False,
                 overwrite=overwrite,
                 empty_primary_hdu=empty_primary_hdu)
-
 
     def save_csv(self,
                  spec_id=None,
@@ -7147,7 +6981,6 @@ class FluxCalibration(StandardLibrary):
 
 
 class OneDSpec():
-
     def __init__(self, silence=False):
         '''
         This class applies the wavelength calibrations and compute & apply the
@@ -7182,7 +7015,6 @@ class OneDSpec():
         self.flux_science_calibrated = False
         self.flux_standard_calibrated = False
 
-
     def add_fluxcalibration(self, fluxcal):
         '''
         Provide the pre-calibrated FluxCalibration object.
@@ -7202,7 +7034,6 @@ class OneDSpec():
         except:
 
             raise TypeError('Please provide a valid StandardFlux.')
-
 
     def add_wavelengthcalibration(self, wavecal, stype):
         '''
@@ -7232,7 +7063,6 @@ class OneDSpec():
 
             wavecal_standard_imported = True
 
-
     def add_wavelength(self,
                        wave,
                        wave_resampled=None,
@@ -7256,7 +7086,6 @@ class OneDSpec():
                                     wave_resampled=wave_resampled,
                                     spec_id=spec_id,
                                     stype=stype)
-
 
     def add_spec(self,
                  count,
@@ -7304,7 +7133,6 @@ class OneDSpec():
                                            count_err=count_err,
                                            count_sky=count_sky)
 
-
     def from_twodspec(self,
                       twodspec,
                       pixel_list=None,
@@ -7345,7 +7173,6 @@ class OneDSpec():
             self.wavecal_standard.from_twodspec(twodspec=twodspec,
                                                 pixel_list=pixel_list)
 
-
     def apply_twodspec_mask(self, stype='science+standard'):
         '''
         stype: string
@@ -7363,7 +7190,6 @@ class OneDSpec():
 
             self.wavecal_standard.apply_twodspec_mask()
 
-
     def apply_spec_mask(self, spec_mask, stype='science+standard'):
         '''
         spec_mask: 1D numpy array (M)
@@ -7377,7 +7203,6 @@ class OneDSpec():
 
         self.apply_spec_mask(spec_mask=spec_mask)
 
-
     def apply_spatial_mask(self, spatial_mask, stype='science+standard'):
         '''
         spatial_mask: 1D numpy array (N)
@@ -7390,7 +7215,6 @@ class OneDSpec():
         '''
 
         self.apply_spatial_mask(spatial_mask=spatial_mask)
-
 
     def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
         '''
@@ -7417,7 +7241,6 @@ class OneDSpec():
 
             self.wavecal_standard.add_arc_lines(spec_id=spec_id, peaks=peaks)
             self.arc_lines_standard_imported = True
-
 
     def add_arc_spec(self, spec_id, arc_spec, stype='science+standard'):
         '''
@@ -7446,7 +7269,6 @@ class OneDSpec():
                                                arc_spec=arc_spec)
             self.arc_standard_imported = True
 
-
     def add_arc(self, arc, stype='science+standard'):
         '''
         arc: 2D numpy array (M x N) OR astropy.io.fits object
@@ -7467,7 +7289,6 @@ class OneDSpec():
 
             self.wavecal_standard.add_arc(arc)
             self.arc_standard_imported = True
-
 
     def add_trace(self,
                   trace,
@@ -7512,7 +7333,6 @@ class OneDSpec():
                                             spec_id=spec_id,
                                             pixel_list=pixel_list)
 
-
     def add_polyfit(self,
                     fit_coeff,
                     fit_type=['poly'],
@@ -7546,7 +7366,6 @@ class OneDSpec():
             self.wavecal_standard.add_polyfit(spec_id=spec_id,
                                               fit_coeff=fit_coeff,
                                               fit_type=fit_type)
-
 
     def extract_arc_spec(self,
                          spec_id=None,
@@ -7618,7 +7437,6 @@ class OneDSpec():
                 save_iframe=save_iframe,
                 filename=filename,
                 open_iframe=open_iframe)
-
 
     def find_arc_lines(self,
                        spec_id=None,
@@ -7722,7 +7540,6 @@ class OneDSpec():
                 filename=filename,
                 open_iframe=open_iframe)
 
-
     def initialise_calibrator(self,
                               spec_id=None,
                               peaks=None,
@@ -7758,7 +7575,6 @@ class OneDSpec():
             self.wavecal_standard.initialise_calibrator(spec_id=spec_id,
                                                         peaks=peaks,
                                                         spectrum=spectrum)
-
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -7806,7 +7622,6 @@ class OneDSpec():
                 pixel_list=pixel_list,
                 plotting_library=plotting_library,
                 log_level=log_level)
-
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -7869,7 +7684,6 @@ class OneDSpec():
                 max_wavelength=max_wavelength,
                 range_tolerance=range_tolerance,
                 linearity_tolerance=linearity_tolerance)
-
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -7939,7 +7753,6 @@ class OneDSpec():
                 candidate_weighted=candidate_weighted,
                 hough_weight=hough_weight)
 
-
     def set_known_pairs(self,
                         spec_id=None,
                         pix=None,
@@ -7973,7 +7786,6 @@ class OneDSpec():
             self.wavecal_standard.set_known_pairs(spec_id=spec_id,
                                                   pix=pix,
                                                   wave=wave)
-
 
     def load_user_atlas(self,
                         elements,
@@ -8041,7 +7853,7 @@ class OneDSpec():
                 relative_humidity=relative_humidity)
 
         if 'standard' in stype_split:
-            
+
             self.wavecal_standard.load_user_atlas(
                 elements=elements,
                 wavelengths=wavelengths,
@@ -8052,7 +7864,6 @@ class OneDSpec():
                 pressure=pressure,
                 temperature=temperature,
                 relative_humidity=relative_humidity)
-
 
     def add_atlas(self,
                   elements,
@@ -8136,7 +7947,6 @@ class OneDSpec():
                 temperature=temperature,
                 relative_humidity=relative_humidity)
 
-
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''
         Parameters
@@ -8157,7 +7967,6 @@ class OneDSpec():
         if 'standard' in stype_split:
 
             self.wavecal_standard.do_hough_transform(spec_id=spec_id)
-
 
     def fit(self,
             spec_id=None,
@@ -8235,7 +8044,6 @@ class OneDSpec():
                                       display=display,
                                       savefig=savefig,
                                       filename=filename)
-
 
     def refine_fit(self,
                    spec_id=None,
@@ -8319,7 +8127,6 @@ class OneDSpec():
                                              savefig=savefig,
                                              filename=filename)
 
-
     def apply_wavelength_calibration(self,
                                      spec_id=None,
                                      wave_start=None,
@@ -8358,7 +8165,6 @@ class OneDSpec():
             self.fluxcal.add_wavecal(self.wavecal_standard, stype='standard')
             self.wavelength_standard_calibrated = True
 
-
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
         Parameters
@@ -8371,7 +8177,6 @@ class OneDSpec():
         '''
 
         self.fluxcal.lookup_standard_libraries(target, cutoff)
-
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
         '''
@@ -8392,7 +8197,6 @@ class OneDSpec():
                                    library=library,
                                    ftype=ftype,
                                    cutoff=cutoff)
-
 
     def inspect_standard(self,
                          display=True,
@@ -8441,7 +8245,6 @@ class OneDSpec():
                                       filename=filename,
                                       open_iframe=open_iframe)
 
-
     def compute_sensitivity(self,
                             kind=3,
                             smooth=False,
@@ -8482,7 +8285,6 @@ class OneDSpec():
                                          mask_fit_order=mask_fit_order,
                                          mask_fit_size=mask_fit_size)
 
-
     def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
         '''
         Parameters
@@ -8492,7 +8294,6 @@ class OneDSpec():
         '''
 
         self.fluxcal.save_sensitivity_itp(filename=filename)
-
 
     def add_sensitivity_itp(self, sensitivity_itp, stype='science+standard'):
         '''
@@ -8506,7 +8307,6 @@ class OneDSpec():
 
         self.fluxcal.add_sensitivity_itp(sensitivity_itp=sensitivity_itp,
                                          stype=stype)
-
 
     def inspect_sensitivity(self,
                             display=True,
@@ -8551,7 +8351,6 @@ class OneDSpec():
                                          filename=filename,
                                          open_iframe=open_iframe)
 
-
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
         '''
         Parameters
@@ -8574,7 +8373,6 @@ class OneDSpec():
         if 'standard' in stype_split:
 
             self.flux_standard_calibrated = True
-
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
@@ -8650,7 +8448,6 @@ class OneDSpec():
             return_jsonstring=return_jsonstring,
             save_iframe=save_iframe,
             open_iframe=open_iframe)
-
 
     def create_fits(self,
                     spec_id=None,
@@ -8814,7 +8611,6 @@ class OneDSpec():
 
                 raise Error('Neither wavelength nor flux is calibrated.')
 
-
     def save_fits(self,
                   spec_id=None,
                   output='arc_spec+wavecal+wavelength+flux+flux_resampled',
@@ -8942,7 +8738,6 @@ class OneDSpec():
             else:
 
                 raise Error('Neither wavelength nor flux is calibrated.')
-
 
     def save_csv(self,
                  spec_id=None,
