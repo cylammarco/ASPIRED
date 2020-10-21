@@ -1,6 +1,6 @@
 astropy>=4.0
 ccdproc>=2.1
-rascal>=0.1
+rascal>=0.2
 plotly>=4.0
 astroscrappy>=1.0.8
 spectres>=2.1.1

@@ -65,7 +65,7 @@ class _spectrum1D():
         self.count = None
         self.count_err = None
         self.count_sky = None
-        self.variances = None
+        self.var = None
 
         # Wavelength calibration properties
         self.arc_spec = None
@@ -201,8 +201,11 @@ class _spectrum1D():
 
     def add_trace(self, trace, trace_sigma, pixel_list=None):
 
-        assert type(trace) == list, 'trace has to be a list'
-        assert type(trace_sigma) == list, 'trace_sigma has to be a list'
+        assert isinstance(
+            trace, (list, np.ndarray)), 'trace has to be a list or an array'
+        assert isinstance(
+            trace_sigma,
+            (list, np.ndarray)), 'trace_sigma has to be a list or an array'
         assert len(trace_sigma) == len(trace), 'trace and trace_sigma have to '
         ' be the same size.'
 
@@ -212,7 +215,8 @@ class _spectrum1D():
 
         else:
 
-            assert type(pixel_list) == list, 'pixel_list has to be a list'
+            assert isinstance(
+                pixel_list, (list, np.ndarray)), 'pixel_list has to be a list'
             assert len(pixel_list) == len(trace), 'trace and pixel_list have '
             'to be the same size.'
 
@@ -254,17 +258,22 @@ class _spectrum1D():
 
     def add_count(self, count, count_err=None, count_sky=None):
 
-        assert type(count) == list, 'count has to be a list'
+        assert isinstance(
+            count, (list, np.ndarray)), 'count has to be a list or an array'
 
         if count_err is not None:
 
-            assert type(count_err) == list, 'count_err has to be a list'
+            assert isinstance(
+                count_err,
+                (list, np.ndarray)), 'count_err has to be a list or an array'
             assert len(count_err) == len(
                 count), 'count_err has to be the same size as count'
 
         if count_sky is not None:
 
-            assert type(count_sky) == list, 'count_sky has to be a list'
+            assert isinstance(
+                count_sky,
+                (list, np.ndarray)), 'count_sky has to be a list or an array'
             assert len(count_sky) == len(
                 count), 'count_sky has to be the same size as count'
 
@@ -287,6 +296,17 @@ class _spectrum1D():
 
             self.count_sky = np.zeros_like(self.count)
 
+        if self.pixel_list is None:
+
+            pixel_list = list(np.arange(len(count)).astype('int'))
+            self.add_pixel_list(pixel_list)
+
+        else:
+
+            assert len(
+                self.pixel_list) == len(count), 'count and pixel_list have '
+            'to be the same size.'
+
     def remove_count(self):
 
         self.count = None
@@ -303,7 +323,8 @@ class _spectrum1D():
 
     def add_arc_spec(self, arc_spec):
 
-        assert type(arc_spec) == list, 'arc_spec has to be a list'
+        assert isinstance(arc_spec,
+                          (list, np.ndarray)), 'arc_spec has to be a list'
         self.arc_spec = arc_spec
 
     def remove_arc_spec(self):
@@ -311,7 +332,8 @@ class _spectrum1D():
 
     def add_pixel_list(self, pixel_list):
 
-        assert type(pixel_list) == list, 'pixel_list has to be a list'
+        assert isinstance(pixel_list,
+                          (list, np.ndarray)), 'pixel_list has to be a list'
         self.pixel_list = pixel_list
 
     def remove_pixel_list(self):
@@ -332,7 +354,8 @@ class _spectrum1D():
 
     def add_peaks_raw(self, peaks_raw):
 
-        assert type(peaks_raw) == list, 'peaks_raw has to be a list'
+        assert isinstance(peaks_raw,
+                          (list, np.ndarray)), 'peaks_raw has to be a list'
         self.peaks_raw = peaks_raw
 
     def remove_peaks_raw(self):
@@ -341,7 +364,8 @@ class _spectrum1D():
 
     def add_peaks_pixel(self, peaks_pixel):
 
-        assert type(peaks_pixel) == list, 'peaks_pixel has to be a list'
+        assert isinstance(peaks_pixel,
+                          (list, np.ndarray)), 'peaks_pixel has to be a list'
         self.peaks_pixel = peaks_pixel
 
     def remove_peaks_pixel(self):
@@ -350,7 +374,8 @@ class _spectrum1D():
 
     def add_peaks_wave(self, peaks_wave):
 
-        assert type(peaks_wave) == list, 'peaks_wave has to be a list'
+        assert isinstance(peaks_wave,
+                          (list, np.ndarray)), 'peaks_wave has to be a list'
         self.peaks_wave = peaks_wave
 
     def remove_peaks_pixel(self):
@@ -471,9 +496,8 @@ class _spectrum1D():
 
     def add_fit_coeff(self, fit_coeff):
 
-        assert (type(fit_coeff)
-                == list) or (type(fit_coeff)
-                             == np.ndarray), 'fit_coeff has to be a list.'
+        assert isinstance(fit_coeff,
+                          (list, np.ndarray)), 'fit_coeff has to be a list.'
         self.fit_coeff = fit_coeff
 
     def remove_fit_coeff(self):
@@ -591,6 +615,9 @@ class _spectrum1D():
     def add_wavelength(self, wave):
 
         self.wave = wave
+        self.wave_bin = np.nanmedian(np.array(np.ediff1d(wave)))
+        self.wave_start = np.min(wave)
+        self.wave_end = np.max(wave)
 
     def remove_wavelength(self):
 
@@ -920,12 +947,18 @@ class _spectrum1D():
                 # Add the extraction weights
                 self.modify_count_header(3, 'set', 'LABEL',
                                          'Optimal Extraction Profile')
-                self.modify_count_header(3, 'set', 'CRPIX1', 1)
-                self.modify_count_header(3, 'set', 'CDELT1', 1)
-                self.modify_count_header(3, 'set', 'CRVAL1', len(self.var))
-                self.modify_count_header(3, 'set', 'CTYPE1', 'Pixel (Spatial)')
-                self.modify_count_header(3, 'set', 'CUNIT1', 'Pixel')
-                self.modify_count_header(3, 'set', 'BUNIT', 'weights')
+                if self.var is not None:
+                    self.modify_count_header(3, 'set', 'CRVAL1', len(self.var))
+                    self.modify_count_header(3, 'set', 'CRPIX1', 1)
+                    self.modify_count_header(3, 'set', 'CDELT1', 1)
+                    self.modify_count_header(3, 'set', 'CTYPE1',
+                                             'Pixel (Spatial)')
+                    self.modify_count_header(3, 'set', 'CUNIT1', 'Pixel')
+                    self.modify_count_header(3, 'set', 'BUNIT', 'weights')
+                else:
+                    self.modify_count_header(
+                        3, 'set', 'COMMENT',
+                        'Extraction Profile is not available.')
 
             except Exception as e:
 
@@ -1378,7 +1411,7 @@ class _spectrum1D():
                     output,
                     force=False,
                     empty_primary_hdu=True,
-                    return_fits=False):
+                    return_hdu_list=False):
         '''
         Parameters
         ----------
@@ -1403,11 +1436,12 @@ class _spectrum1D():
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        filename: str
-            Filename for the output, all of them will share the same name but
-            will have different extension.
-        overwrite: boolean
-            Default is False.
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        return_hdu_list: boolean (default: False)
+            Set to True to return the HDU List
 
         '''
 
@@ -1533,7 +1567,7 @@ class _spectrum1D():
             self.empty_primary_hdu = True
             self.hdu_output = hdu_output
 
-        if return_fits:
+        if return_hdu_list:
 
             return self.hdu_output
 
@@ -1570,8 +1604,12 @@ class _spectrum1D():
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
         overwrite: boolean
             Default is False.
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
 
         '''
 
@@ -1587,8 +1625,6 @@ class _spectrum1D():
 
         Parameters
         ----------
-        spec_id: int
-            The ID corresponding to the spectrum1D object
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
@@ -1613,8 +1649,8 @@ class _spectrum1D():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
         overwrite: boolean
             Default is False.
 
@@ -1646,24 +1682,124 @@ class _spectrum1D():
 
 
 class TwoDSpec:
-    def __init__(self,
-                 data,
-                 header=None,
-                 saxis=1,
-                 spatial_mask=(1, ),
-                 spec_mask=(1, ),
-                 flip=False,
-                 cosmicray=False,
-                 cosmicray_sigma=5.,
-                 readnoise=None,
-                 gain=None,
-                 seeing=None,
-                 exptime=None,
-                 silence=False):
+    '''
+    This is a class for processing a 2D spectral image.
+
+    '''
+    def __init__(self, data, header=None, **kwargs):
         '''
-        This is a class for processing a 2D spectral image, the read noise,
-        detector gain, seeing and exposure time will be automatically extracted
-        from the FITS header if it conforms with the IAUFWG FITS standard.
+        The constructor takes the data and the header, and the the header
+        infromation will be read automatically. See set_properties()
+        for the detail information of the keyword arguments.
+
+        parameters
+        ----------
+        data: 2D numpy array (M x N) OR astropy.io.fits object
+            2D spectral image in either format
+        header: FITS header (deafult: None)
+            THIS WILL OVERRIDE the header from the astropy.io.fits object
+        **kwargs: keyword arguments (default: see set_properties())
+            see set_properties().
+
+        '''
+
+        # If data provided is an numpy array
+        if isinstance(data, np.ndarray):
+
+            self.img = data
+            self.header = header
+
+        # If it is a fits.hdu.image.PrimaryHDU object
+        elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
+                data, fits.hdu.image.ImageHDU):
+
+            self.img = data.data
+            self.header = data.header
+
+        # If it is an ImageReduction object
+        elif isinstance(data, ImageReduction):
+
+            # If the data is not reduced, reduce it here. Error handling is
+            # done by the ImageReduction class
+            if data.image_fits is None:
+
+                data._create_image_fits()
+
+            self.img = data.image_fits.data
+            self.header = data.image_fits.header
+
+        # If a filepath is provided
+        elif isinstance(data, str):
+
+            # If HDU number is provided
+            if data[-1] == ']':
+
+                filepath, hdunum = data.split('[')
+                hdunum = hdunum[:-1]
+
+            # If not, assume the HDU idnex is 0
+            else:
+
+                filepath = data
+                hdunum = 0
+
+            # Load the file and dereference it afterwards
+            fitsfile_tmp = fits.open(filepath)[hdunum]
+            self.img = fitsfile_tmp.data
+            self.header = fitsfile_tmp.header
+            fitsfile_tmp = None
+
+        else:
+
+            raise TypeError(
+                'Please provide a numpy array, an ' +
+                'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
+                'ImageReduction object.')
+
+        self.saxis = 1
+        self.waxis = 0
+
+        self.spatial_mask = (1, )
+        self.spec_mask = (1, )
+        self.flip = False
+        self.cosmicray = False
+        self.cosmicray_sigma = 5.
+
+        # Default values if not supplied or cannot be automatically identified
+        # from the header
+        self.readnoise = 0.
+        self.gain = 1.
+        self.seeing = 1.
+        self.exptime = 1.
+
+        self.silence = False
+
+        # Default keywords to be searched in the order in the list
+        self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
+        self.gain_keyword = ['GAIN']
+        self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
+        self.exptime_keyword = [
+            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+        ]
+
+        self.set_properties(**kwargs)
+
+    def set_properties(self,
+                       saxis=None,
+                       spatial_mask=None,
+                       spec_mask=None,
+                       flip=None,
+                       cosmicray=None,
+                       cosmicray_sigma=None,
+                       readnoise=None,
+                       gain=None,
+                       seeing=None,
+                       exptime=None,
+                       silence=None):
+        '''
+        The read noise, detector gain, seeing and exposure time will be 
+        automatically extracted from the FITS header if it conforms with the
+        IAUFWG FITS standard.
 
         Currently, there is no automated way to decide if a flip is needed.
 
@@ -1696,10 +1832,6 @@ class TwoDSpec:
 
         Parameters
         ----------
-        data: 2D numpy array (M x N) OR astropy.io.fits object
-            2D spectral image in either format
-        header: FITS header
-            THIS WILL OVERRIDE the header from the astropy.io.fits object
         saxis: int
             Spectral direction, 0 for vertical, 1 for horizontal.
             (Default is 1)
@@ -1741,91 +1873,57 @@ class TwoDSpec:
 
         '''
 
-        # If data provided is an numpy array
-        if isinstance(data, np.ndarray):
+        if saxis is not None:
 
-            img = data
-            self.header = header
+            self.saxis = saxis
 
-        # If it is a fits.hdu.image.PrimaryHDU object
-        elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
-                data, fits.hdu.image.ImageHDU):
+            if self.saxis == 1:
 
-            img = data.data
-            self.header = data.header
+                self.waxis = 0
 
-        # If it is an ImageReduction object
-        elif isinstance(data, ImageReduction):
+            elif self.saxis == 0:
 
-            # If the data is not reduced, reduce it here. Error handling is
-            # done by the ImageReduction class
-            if data.image_fits is None:
+                self.waxis = 1
 
-                data._create_image_fits()
-
-            img = data.image_fits.data
-            self.header = data.image_fits.header
-
-        # If a filepath is provided
-        elif isinstance(data, str):
-
-            # If HDU number is provided
-            if data[-1] == ']':
-
-                filepath, hdunum = data.split('[')
-                hdunum = hdunum[:-1]
-
-            # If not, assume the HDU idnex is 0
             else:
 
-                filepath = data
-                hdunum = 0
+                raise ValueError(
+                    "saxis can only be 0 or 1, {} is given".format(saxis))
 
-            # Load the file and dereference it afterwards
-            fitsfile_tmp = fits.open(filepath)[hdunum]
-            img = fitsfile_tmp.data
-            self.header = fitsfile_tmp.header
-            fitsfile_tmp = None
+        if spatial_mask is not None:
 
-        else:
+            self.spatial_mask = spatial_mask
 
-            raise TypeError(
-                'Please provide a numpy array, an ' +
-                'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
-                'ImageReduction object.')
+        if spec_mask is not None:
 
-        self.saxis = saxis
+            self.spec_mask = spec_mask
 
-        if self.saxis == 1:
+        if flip is not None:
 
-            self.waxis = 0
+            self.flip = flip
 
-        else:
+        # cosmic ray rejection
+        if cosmicray is not None:
 
-            self.waxis = 1
+            self.cosmicray = cosmicray
 
-        self.spatial_mask = spatial_mask
-        self.spec_mask = spec_mask
-        self.flip = flip
-        self.cosmicray_sigma = cosmicray_sigma
+            self.img = detect_cosmics(self.img,
+                                      sigclip=self.cosmicray_sigma,
+                                      readnoise=self.readnoise,
+                                      gain=self.gain,
+                                      fsmode='convolve',
+                                      psfmodel='gaussy',
+                                      psfsize=31,
+                                      psffwhm=self.seeing)[1]
 
-        # Default values if not supplied or cannot be automatically identified
-        # from the header
-        self.readnoise = 0.
-        self.gain = 1.
-        self.seeing = 1.
-        self.exptime = 1.
+        if cosmicray_sigma is not None:
 
-        # Default keywords to be searched in the order in the list
-        self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
-        self.gain_keyword = ['GAIN']
-        self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
-        self.exptime_keyword = [
-            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
-        ]
+            self.cosmicray_sigma = cosmicray_sigma
 
         # Get the Read Noise
         if readnoise is not None:
+
+            self.readnoise = readnoise
 
             if isinstance(readnoise, str):
 
@@ -1869,8 +1967,10 @@ class TwoDSpec:
                               'Read Noise value is not provided. ' +
                               'It is set to 0.')
 
-        # Get the Gain
+        # Get the gain
         if gain is not None:
+
+            self.gain = gain
 
             if isinstance(gain, str):
 
@@ -1913,6 +2013,8 @@ class TwoDSpec:
 
         # Get the Seeing
         if seeing is not None:
+
+            self.seeing = seeing
 
             if isinstance(seeing, str):
 
@@ -1959,6 +2061,8 @@ class TwoDSpec:
         # Get the Exposure Time
         if exptime is not None:
 
+            self.exptime = exptime
+
             if isinstance(exptime, str):
 
                 # use the supplied keyword
@@ -2002,56 +2106,41 @@ class TwoDSpec:
                               'Exposure Time value is not provided. ' +
                               'It is set to 1.')
 
-        img = img / self.exptime
-        self.silence = silence
+        if silence is not None:
 
-        # cosmic ray rejection
-        if cosmicray:
+            self.silence = silence
 
-            img = detect_cosmics(img,
-                                 sigclip=self.cosmicray_sigma,
-                                 readnoise=self.readnoise,
-                                 gain=self.gain,
-                                 fsmode='convolve',
-                                 psfmodel='gaussy',
-                                 psfsize=31,
-                                 psffwhm=self.seeing)[1]
+        self.img = self.img / self.exptime
 
         # the valid y-range of the chip (i.e. spatial direction)
         if (len(self.spatial_mask) > 1):
 
             if self.saxis == 1:
 
-                img = img[self.spatial_mask]
+                self.img = self.img[self.spatial_mask]
 
             else:
 
-                img = img[:, self.spatial_mask]
+                self.img = self.img[:, self.spatial_mask]
 
         # the valid x-range of the chip (i.e. spectral direction)
         if (len(self.spec_mask) > 1):
 
             if self.saxis == 1:
 
-                img = img[:, self.spec_mask]
+                self.img = self.img[:, self.spec_mask]
 
             else:
 
-                img = img[self.spec_mask]
+                self.img = self.img[self.spec_mask]
 
         # get the length in the spectral and spatial directions
-        self.spec_size = np.shape(img)[self.saxis]
-        self.spatial_size = np.shape(img)[self.waxis]
+        self.spec_size = np.shape(self.img)[self.saxis]
+        self.spatial_size = np.shape(self.img)[self.waxis]
 
         if self.saxis == 0:
 
-            self.img = np.transpose(img)
-            img = None
-
-        else:
-
-            self.img = img
-            img = None
+            self.img = np.transpose(self.img)
 
         if self.flip:
 
@@ -2363,6 +2452,8 @@ class TwoDSpec:
         suboptimal: boolean
             List indicating whether the extraction at that pixel was
             optimal or not.  True = suboptimal, False = optimal.
+        var_f: float
+            Weight function used in the extraction.
 
         """
 
@@ -2629,8 +2720,8 @@ class TwoDSpec:
                 i]
 
             spec_spatial += spectres(np.arange(nresample),
-                                     pix_resampled,
-                                     lines,
+                                     np.array(pix_resampled).reshape(-1),
+                                     np.array(lines).reshape(-1),
                                      verbose=False)
 
             # Update (increment) the reference line
@@ -2803,37 +2894,63 @@ class TwoDSpec:
 
                 return fig.to_json()
 
-    def add_trace(self, spec_id, trace, trace_sigma):
+    def add_trace(self, trace, trace_sigma, spec_id=None):
         '''
         Add user-supplied trace. The trace has to have the size as the 2D
         spectral image in the spectral direction.
 
         Parameters
         ----------
-        spec_id: int
-            The ID corresponding to the spectrum1D object
-        trace: list (N)
+        trace: list or numpy.ndarray (N)
             The spatial pixel value (can be sub-pixel) of the trace at each
             spectral position.
-        trace_sigma: list (N)
+        trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
+        spec_id: int
+            The ID corresponding to the spectrum1D object
 
         '''
 
-        assert type(spec_id) == int, 'spec_id has to be an integer.'
-        assert type(trace) == list, 'trace has to be a list.'
-        assert type(trace_sigma) == list, 'trace_sigma has to be a list.'
+        assert isinstance(spec_id, (int, list, np.ndarray)) or (
+            spec_id is
+            None), 'spec_id has to be an integer, None, list or array.'
+
+        if spec_id is None:
+
+            if len(np.shape(trace)) == 1:
+
+                spec_id = [0]
+
+            elif len(np.shape(trace)) == 2:
+
+                spec_id = list(np.arange(np.shape(trace)[0]))
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if isinstance(spec_id, np.ndarray):
+
+            spec_id = list(spec_id)
+
+        assert isinstance(
+            trace, (list, np.ndarray)), 'trace has to be a list or an array.'
+        assert isinstance(
+            trace_sigma,
+            (list, np.ndarray)), 'trace_sigma has to be a list or an array.'
         assert len(trace) == len(trace_sigma), 'trace and trace_sigma have to '
         'be the same size.'
 
-        if spec_id in spectrum_list:
+        for i in spec_id:
 
-            self.spectrum_list[spec_id].add_trace(trace, trace_sigma)
+            if i in self.spectrum_list.keys():
 
-        else:
+                self.spectrum_list[i].add_trace(trace, trace_sigma)
 
-            raise ValueError("{spec_id: %s} is not in the list of spectra." %
-                             spec_id)
+            else:
+
+                self.spectrum_list[i] = _spectrum1D(i)
+                self.spectrum_list[i].add_trace(trace, trace_sigma)
 
     def remove_trace(self, spec_id):
         '''
@@ -2928,6 +3045,9 @@ class TwoDSpec:
             To perform forced optimal extraction  by using the given aperture
             profile as it is without interation, the resulting uncertainty
             will almost certainly be wrong. This is an experimental feature.
+        variances: list or numpy.ndarray
+            The weight function for forced extraction. It is only used if force
+            is set to True.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
@@ -3423,8 +3543,12 @@ class TwoDSpec:
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
         overwrite: boolean
             Default is False.
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
 
         '''
 
@@ -3545,6 +3669,10 @@ class WavelengthCalibration():
             # Add to the first spec
             spec_id = 0
 
+        if len(self.spectrum_list.keys()) == 0:
+
+            self.spectrum_list[0] = _spectrum1D(0)
+
         self.spectrum_list[spec_id].peaks = peaks
 
     def add_arc_spec(self, arc_spec, spec_id=None):
@@ -3573,14 +3701,26 @@ class WavelengthCalibration():
             # Add to the first spec
             spec_id = 0
 
+        if len(self.spectrum_list.keys()) == 0:
+
+            self.spectrum_list[0] = _spectrum1D(0)
+
         self.spectrum_list[spec_id].arc_spec = list(arc_spec)
 
-    def add_spec(self, count, spec_id=None, count_err=None, count_sky=None):
+    def add_spec(self, count, count_err=None, count_sky=None, spec_id=None):
         '''
         To provide user-supplied extracted spectrum for wavelegth calibration.
 
         Parameters
         ----------
+        count: 1-d array
+            The summed count at each column about the trace. Note: is not
+            sky subtracted!
+        count_err: 1-d array
+            the uncertainties of the count values
+        count_sky: 1-d array
+            The integrated sky values along each column, suitable for
+            subtracting from the output of ap_extract
         spec_id: int
             The ID corresponding to the spectrum1D object
 
@@ -3599,6 +3739,10 @@ class WavelengthCalibration():
             # Add to the first spec
             spec_id = 0
 
+        if len(self.spectrum_list.keys()) == 0:
+
+            self.spectrum_list[0] = _spectrum1D(0)
+
         self.spectrum_list[spec_id].add_count(count, count_err, count_sky)
 
     def remove_spec(self, spec_id):
@@ -3614,6 +3758,7 @@ class WavelengthCalibration():
         '''
 
         if spec_id not in list(self.spectrum_list.keys()):
+
             raise ValueError('The given spec_id does not exist.')
 
         self.spectrum_list[spec_id].remove_count()
@@ -3656,6 +3801,10 @@ class WavelengthCalibration():
             # Add to the first spec
             spec_id = 0
 
+        if len(self.spectrum_list.keys()) == 0:
+
+            self.spectrum_list[0] = _spectrum1D(0)
+
         self.spectrum_list[spec_id].add_trace(trace, trace_sigma, pixel_list)
 
     def remove_trace(self, spec_id):
@@ -3673,7 +3822,7 @@ class WavelengthCalibration():
 
         self.spectrum_list[spec_id].remove_trace()
 
-    def add_polyfit(self, spec_id, fit_type, fit_coeff):
+    def add_fit_coeff(self, spec_id, fit_type, fit_coeff):
         '''
         To provide the polynomial coefficients and polynomial type for science,
         standard or both. Science stype can provide multiple traces. Standard
@@ -3699,13 +3848,29 @@ class WavelengthCalibration():
                               'fit_coeff and fit_type will overwrite the '
                               'current data.')
 
+        if isinstance(spec_id, int):
+            spec_id = [spec_id]
+
         if spec_id is None:
 
             # Add to the first spec
-            spec_id = 0
+            spec_id = list(np.arange(len(fit_type)))
 
-        self.spectrum_list[spec_id].add_fit_type(fit_type)
-        self.spectrum_list[spec_id].add_fit_coeff(fit_coeff)
+        if len(self.spectrum_list.keys()) == 0:
+
+            self.spectrum_list[0] = _spectrum1D(0)
+
+        for i, s in enumerate(spec_id):
+
+            if len(np.array(fit_type)) > 1:
+
+                self.spectrum_list[s].add_fit_type(fit_type[i])
+                self.spectrum_list[s].add_fit_coeff(fit_coeff[i])
+
+            else:
+
+                self.spectrum_list[s].add_fit_type(fit_type)
+                self.spectrum_list[s].add_fit_coeff(fit_coeff)
 
     def from_twodspec(self, twodspec, pixel_list=None):
         '''
@@ -3747,6 +3912,12 @@ class WavelengthCalibration():
         self.spectrum_list = twodspec.spectrum_list
 
     def apply_twodspec_mask(self):
+        '''
+        * Experimental *
+        Apply both the spec_mask and spatial_mask that are already stroed in
+        the object.
+
+        '''
 
         if self.saxis == 0:
 
@@ -3762,7 +3933,15 @@ class WavelengthCalibration():
     def apply_spec_mask(self, spec_mask):
         '''
         * Experimental *
-        the valid x-range of the chip (i.e. spectral direction)
+        Apply to use only the valid x-range of the chip (i.e. dispersion
+        direction)
+
+        parameters
+        ----------
+        spec_mask: 1D numpy array (M)
+            Mask in the spectral direction, can be the indices of the pixels
+            to be included (size <M) or a 1D numpy array of True/False (size M)
+            (Default is (1,) i.e. keep everything)
 
         '''
 
@@ -3779,7 +3958,15 @@ class WavelengthCalibration():
     def apply_spatial_mask(self, spatial_mask):
         '''
         * Experimental *
-        the valid y-range of the chip (i.e. spatial direction)
+        Apply to use only the valid y-range of the chip (i.e. spatial
+        direction)
+
+        parameters
+        ----------
+        spatial_mask: 1D numpy array (N)
+            Mask in the spatial direction, can be the indices of the pixels
+            to be included (size <N) or a 1D numpy array of True/False (size N)
+            (Default is (1,) i.e. keep everything)
 
         '''
 
@@ -3840,6 +4027,7 @@ class WavelengthCalibration():
             will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
+
         '''
 
         if spec_id is not None:
@@ -3998,6 +4186,7 @@ class WavelengthCalibration():
         Returns
         -------
         JSON strings if return_jsonstring is set to True
+
         '''
 
         if spec_id is not None:
@@ -4118,6 +4307,8 @@ class WavelengthCalibration():
 
     def initialise_calibrator(self, spec_id=None, peaks=None, spectrum=None):
         '''
+        Initialise a RASCAL calibrator.
+
         Parameters
         ----------
         spec_id: int (default: None)
@@ -4160,6 +4351,8 @@ class WavelengthCalibration():
                                   plotting_library='plotly',
                                   log_level='info'):
         '''
+        Set the properties of the calibrator.
+
         Parameters
         ----------
         spec_id: int (default: None)
@@ -4210,7 +4403,7 @@ class WavelengthCalibration():
                 plotting_library=plotting_library,
                 log_level=log_level)
 
-            self.spectrum_list[i].add_calibrator_propertie(
+            self.spectrum_list[i].add_calibrator_properties(
                 num_pix, pixel_list, plotting_library, log_level)
 
     def set_hough_properties(self,
@@ -4223,6 +4416,8 @@ class WavelengthCalibration():
                              range_tolerance=500,
                              linearity_tolerance=50):
         '''
+        Set the properties of the hough transform.
+
         Parameters
         ----------
         spec_id: int (default: None)
@@ -4290,17 +4485,15 @@ class WavelengthCalibration():
                               candidate_weighted=True,
                               hough_weight=1.0):
         '''
-        Configure the Calibrator. This may require some manual twiddling before
-        the calibrator can work efficiently. However, in theory, a large
-        max_tries in fit() should provide a good solution in the expense of
-        performance (minutes instead of seconds).
+        Set the properties of the RANSAC process.
 
         Parameters
         ----------
         spec_id: int (default: None)
             The ID corresponding to the spectrum1D object
         sample_size: int (default: 5)
-            €£$
+            Number of pixel-wavelength hough pairs to be used for each arc line
+            being picked.
         top_n_candidate: int (default: 5)
             Top ranked lines to be fitted.
         linear: boolean (default: True)
@@ -4354,7 +4547,7 @@ class WavelengthCalibration():
     def do_hough_transform(self, spec_id):
         '''
         Perform Hough transform on the pixel-wavelength pairs with the
-        configuration set by the set_hough_properties()
+        configuration set by the set_hough_properties().
 
         Parameters
         ----------
@@ -4384,6 +4577,15 @@ class WavelengthCalibration():
 
     def set_known_pairs(self, spec_id=None, pix=None, wave=None):
         '''
+        Provide manual pixel-wavelength pair(s), they will be appended to the
+        list of pixel-wavelength pairs after the random sample being drawn from
+        the RANSAC step, i.e. they are ALWAYS PRESENT in the fitting step. Use
+        with caution because it can skew or bias the fit significantly, make
+        sure the pixel value is accurate to at least 1/10 of a pixel.
+
+        This can be used, for example, for low intensity lines at the edge of
+        the spectrum.
+
         Parameters
         ----------
         spec_id: int (default: None)
@@ -4426,13 +4628,13 @@ class WavelengthCalibration():
     def load_user_atlas(self,
                         elements,
                         wavelengths,
-                        spec_id=None,
                         intensities=None,
                         constrain_poly=False,
                         vacuum=False,
                         pressure=101325.,
                         temperature=273.15,
-                        relative_humidity=0.):
+                        relative_humidity=0.,
+                        spec_id=None):
         '''
         *Remove* all the arc lines loaded to the Calibrator and then use the user
         supplied arc lines instead.
@@ -4463,6 +4665,9 @@ class WavelengthCalibration():
             Temperature when the observation took place, in Kelvin.
         relative_humidity: float
             In percentage.
+        spec_id: int or None (default: None)
+            The ID corresponding to the spectrum1D object
+
         '''
 
         if spec_id is not None:
@@ -4494,7 +4699,6 @@ class WavelengthCalibration():
 
     def add_atlas(self,
                   elements,
-                  spec_id=None,
                   min_atlas_wavelength=1000.,
                   max_atlas_wavelength=30000.,
                   min_intensity=10.,
@@ -4504,7 +4708,8 @@ class WavelengthCalibration():
                   vacuum=False,
                   pressure=101325.,
                   temperature=273.15,
-                  relative_humidity=0.):
+                  relative_humidity=0.,
+                  spec_id=None):
         '''
         Adds an atlas of arc lines to the calibrator, given an element.
 
@@ -4551,6 +4756,8 @@ class WavelengthCalibration():
             Temperature when the observation took place, in Kelvin.
         relative_humidity: float
             In percentage.
+        spec_id: int (default: None)
+            The ID corresponding to the spectrum1D object
 
         '''
 
@@ -4587,9 +4794,9 @@ class WavelengthCalibration():
             self.spectrum_list[i].add_atlas_wavelength_range(
                 min_atlas_wavelength, max_atlas_wavelength)
 
-            self.spectrum_list[i].add_min_atlas_intensity(min_atlas_intensity)
+            self.spectrum_list[i].add_min_atlas_intensity(min_intensity)
 
-            self.spectrum_list[i].add_min_atlas_distance(min_atlas_distance)
+            self.spectrum_list[i].add_min_atlas_distance(min_distance)
 
             self.spectrum_list[i].add_weather_condition(
                 pressure, temperature, relative_humidity)
@@ -4760,6 +4967,7 @@ class WavelengthCalibration():
             will have different extension.
 
         '''
+
         if spec_id is not None:
 
             if spec_id not in list(self.spectrum_list.keys()):
@@ -4835,6 +5043,7 @@ class WavelengthCalibration():
             Provide the maximum wavelength for resampling
         wave_bin: float
             Provide the resampling bin size
+
         '''
 
         if spec_id is not None:
@@ -4860,7 +5069,7 @@ class WavelengthCalibration():
 
             # Adjust for pixel shift due to chip gaps
             wave = self.polyval[fit_type](np.array(spec.pixel_list),
-                                          spec.fit_coeff)
+                                          spec.fit_coeff).reshape(-1)
 
             # compute the new equally-spaced wavelength array
             if wave_bin is None:
@@ -4878,24 +5087,26 @@ class WavelengthCalibration():
             wave_resampled = np.arange(wave_start, wave_end, wave_bin)
 
             # apply the flux calibration and resample
-            count_resampled = spectres(wave_resampled,
-                                       wave,
-                                       np.array(spec.count),
+            count_resampled = spectres(np.array(wave_resampled).reshape(-1),
+                                       np.array(wave).reshape(-1),
+                                       np.array(spec.count).reshape(-1),
                                        verbose=False)
 
             if spec.count_err is not None:
 
-                count_err_resampled = spectres(wave_resampled,
-                                               wave,
-                                               np.array(spec.count_err),
-                                               verbose=False)
+                count_err_resampled = spectres(
+                    np.array(wave_resampled).reshape(-1),
+                    np.array(wave).reshape(-1),
+                    np.array(spec.count_err).reshape(-1),
+                    verbose=False)
 
             if spec.count_sky is not None:
 
-                count_sky_resampled = spectres(wave_resampled,
-                                               wave,
-                                               np.array(spec.count_sky),
-                                               verbose=False)
+                count_sky_resampled = spectres(
+                    np.array(wave_resampled).reshape(-1),
+                    np.array(wave).reshape(-1),
+                    np.array(spec.count_sky).reshape(-1),
+                    verbose=False)
 
             spec.add_wavelength(wave)
             spec.add_wavelength_resampled(wave_bin, wave_start, wave_end,
@@ -4906,8 +5117,9 @@ class WavelengthCalibration():
     def create_fits(self,
                     spec_id=None,
                     output='arc_spec+wavecal+count_resampled',
+                    force=False,
                     empty_primary_hdu=True,
-                    force=False):
+                    return_id=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
         5 sets of data, see below the 'output' parameters for details.
@@ -4933,10 +5145,12 @@ class WavelengthCalibration():
                 Wavelength of each pixel
             count_resampled: 3 HDUs
                 Resampled Count, uncertainty, and sky (wavelength)
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-        overwrite: boolean
-            Default is False.
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        return_id: boolean (default: False)
+            Set to True to return the set of spec_id
 
         '''
 
@@ -4959,7 +5173,7 @@ class WavelengthCalibration():
         else:
 
             # if spec_id is None, contraints are applied to all calibrators
-            spec_id = list(self.fluxcal.spectrum_list.keys())
+            spec_id = list(self.spectrum_list.keys())
 
         if isinstance(spec_id, int):
 
@@ -4980,8 +5194,8 @@ class WavelengthCalibration():
                   spec_id=None,
                   output='arc_spec+wavecal+count_resampled',
                   filename='wavecal',
-                  empty_primary_hdu=True,
                   force=False,
+                  empty_primary_hdu=True,
                   overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -5011,8 +5225,10 @@ class WavelengthCalibration():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
         overwrite: boolean
             Default is False.
 
@@ -5075,8 +5291,8 @@ class WavelengthCalibration():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
         overwrite: boolean
             Default is False.
 
@@ -5568,7 +5784,7 @@ class FluxCalibration(StandardLibrary):
 
             if len(self.spectrum_list_standard.keys()) == 0:
 
-                self.spectrum_list_standard[0] = _spectrum1D()
+                self.spectrum_list_standard[0] = _spectrum1D(0)
 
             if spec_id in list(self.spectrum_list_standard.keys()):
 
@@ -5581,7 +5797,7 @@ class FluxCalibration(StandardLibrary):
             if spec_id is None:
 
                 # If spectrum_list is not empty
-                if spectrum_list_standard:
+                if not self.spectrum_list_standard:
 
                     spec_id = max(self.spectrum_list_standard.keys()) + 1
 
@@ -5594,6 +5810,10 @@ class FluxCalibration(StandardLibrary):
 
         elif 'science' in stype_split:
 
+            if len(self.spectrum_list_science.keys()) == 0:
+
+                self.spectrum_list_science[0] = _spectrum1D(0)
+
             if spec_id in list(self.spectrum_list_science.keys()):
 
                 if self.spectrum_list_science[spec_id].count is not None:
@@ -5605,7 +5825,7 @@ class FluxCalibration(StandardLibrary):
             if spec_id is None:
 
                 # If spectrum_list is not empty
-                if spectrum_list_science:
+                if not self.spectrum_list_science:
 
                     spec_id = max(self.spectrum_list_science.keys()) + 1
 
@@ -5633,6 +5853,10 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
+        wave : numeric value, list or numpy 1D array (N) (default: None)
+            The wavelength of each pixels of the spectrum.
+        wave_resampled:
+            The resampled wavelength of each pixels of the spectrum.
         spec_id: int
             The ID corresponding to the spectrum1D object
         stype: string
@@ -5677,24 +5901,44 @@ class FluxCalibration(StandardLibrary):
                         'is created.')
                     self.spectrum_list_science[spec_id] = _spectrum1D(spec_id)
             else:
-                if len(self.spectrum_list_science) == 0:
+                if not self.spectrum_list_science:
                     self.spectrum_list_science[0] = _spectrum1D(0)
                 spec_id = list(self.spectrum_list_science.keys())
 
             if isinstance(spec_id, int):
                 spec_id = [spec_id]
 
-            for i in spec_id:
+            for i, s in enumerate(spec_id):
 
-                spec = self.spectrum_list_science[i]
+                spec = self.spectrum_list_science[s]
 
-                spec.add_wavelength(wave)
-                spec.add_wavelength_resampled(
-                    wave_bin=np.nanmedian(np.array(np.ediff1d(wave))),
-                    wave_start=wave_resampled[0],
-                    wave_end=wave_resampled[-1],
-                    wave_resampled=wave_resampled,
-                )
+                if (len(np.shape(np.array(wave))) == 2):
+
+                    spec.add_wavelength(wave[i])
+
+                else:
+
+                    spec.add_wavelength(wave)
+
+                if (len(np.shape(np.array(wave))) == 2):
+
+                    spec.add_wavelength_resampled(
+                        wave_bin=np.nanmedian(
+                            np.array(np.ediff1d(wave_resampled[i]))),
+                        wave_start=wave_resampled[i][0],
+                        wave_end=wave_resampled[i][-1],
+                        wave_resampled=wave_resampled[i],
+                    )
+
+                else:
+
+                    spec.add_wavelength_resampled(
+                        wave_bin=np.nanmedian(
+                            np.array(np.ediff1d(wave_resampled))),
+                        wave_start=wave_resampled[0],
+                        wave_end=wave_resampled[-1],
+                        wave_resampled=wave_resampled,
+                    )
 
     def from_twodspec(self,
                       twodspec,
@@ -5711,10 +5955,12 @@ class FluxCalibration(StandardLibrary):
         ----------
         twodspec: TwoDSpec object
             TwoDSpec of the science/standard image containin the trace(s)
-        arc: 2D numpy array, PrimaryHDU object or ImageReduction object
-            The image of the arc image.
-        pixel_list:
-
+        pixel_list: list or numpy array
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(len(spec.trace[0])), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -5755,6 +6001,9 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
+        wavecal: WavelengthPolyFit object
+            The WavelengthPolyFit object for the science target, flux will
+            not be calibrated if this is not provided.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -5844,9 +6093,10 @@ class FluxCalibration(StandardLibrary):
         if np.nanmedian(np.array(np.ediff1d(spec.wave))) < np.nanmedian(
                 np.array(np.ediff1d(self.wave_standard_true))):
 
-            flux_standard = spectres(self.wave_standard_true,
-                                     np.array(spec.wave),
-                                     np.array(spec.count),
+            flux_standard = spectres(np.array(
+                self.wave_standard_true).reshape(-1),
+                                     np.array(spec.wave).reshape(-1),
+                                     np.array(spec.count).reshape(-1),
                                      verbose=False)
             flux_standard_true = self.fluxmag_standard_true
             wave_standard_true = self.wave_standard_true
@@ -5854,10 +6104,11 @@ class FluxCalibration(StandardLibrary):
         else:
 
             flux_standard = spec.count
-            flux_standard_true = spectres(spec.wave,
-                                          self.wave_standard_true,
-                                          self.fluxmag_standard_true,
-                                          verbose=False)
+            flux_standard_true = spectres(
+                np.array(spec.wave).reshape(-1),
+                np.array(self.wave_standard_true).reshape(-1),
+                np.array(self.fluxmag_standard_true).reshape(-1),
+                verbose=False)
             wave_standard_true = spec.wave
 
         # Get the sensitivity curve
@@ -5926,6 +6177,10 @@ class FluxCalibration(StandardLibrary):
 
     def add_sensitivity_itp(self, sensitivity_itp, stype='science+standard'):
         '''
+        parameters
+        ----------
+        sensitivity_itp: str
+            Interpolated sensivity curve object.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -6148,9 +6403,10 @@ class FluxCalibration(StandardLibrary):
 
                     flux_sky = sensitivity * spec.count_sky
 
-                flux_resampled = spectres(spec.wave_resampled,
-                                          spec.wave,
-                                          np.array(flux),
+                flux_resampled = spectres(np.array(
+                    spec.wave_resampled).reshape(-1),
+                                          np.array(spec.wave).reshape(-1),
+                                          np.array(flux).reshape(-1),
                                           verbose=False)
 
                 if spec.count_err is None:
@@ -6159,10 +6415,11 @@ class FluxCalibration(StandardLibrary):
 
                 else:
 
-                    flux_err_resampled = spectres(spec.wave_resampled,
-                                                  spec.wave,
-                                                  np.array(flux_err),
-                                                  verbose=False)
+                    flux_err_resampled = spectres(
+                        np.array(spec.wave_resampled).reshape(-1),
+                        np.array(spec.wave).reshape(-1),
+                        np.array(flux_err).reshape(-1),
+                        verbose=False)
 
                 if spec.count_sky is None:
 
@@ -6170,16 +6427,18 @@ class FluxCalibration(StandardLibrary):
 
                 else:
 
-                    flux_sky_resampled = spectres(spec.wave_resampled,
-                                                  spec.wave,
-                                                  np.array(flux_sky),
-                                                  verbose=False)
+                    flux_sky_resampled = spectres(
+                        np.array(spec.wave_resampled).reshape(-1),
+                        np.array(spec.wave).reshape(-1),
+                        np.array(flux_sky).reshape(-1),
+                        verbose=False)
 
                 # Only computed for diagnostic
-                sensitivity_resampled = spectres(spec.wave_resampled,
-                                                 spec.wave,
-                                                 np.array(sensitivity),
-                                                 verbose=False)
+                sensitivity_resampled = spectres(
+                    np.array(spec.wave_resampled).reshape(-1),
+                    np.array(spec.wave).reshape(-1),
+                    np.array(sensitivity).reshape(-1),
+                    verbose=False)
 
                 spec.add_flux(flux, flux_err, flux_sky)
                 spec.add_flux_resampled(flux_resampled, flux_err_resampled,
@@ -6206,9 +6465,10 @@ class FluxCalibration(StandardLibrary):
 
                 flux_sky = sensitivity * spec.count_sky
 
-            flux_resampled = spectres(spec.wave_resampled,
-                                      spec.wave,
-                                      np.array(flux),
+            flux_resampled = spectres(np.array(
+                spec.wave_resampled).reshape(-1),
+                                      np.array(spec.wave).reshape(-1),
+                                      np.array(flux).reshape(-1),
                                       verbose=False)
 
             if spec.count_err is None:
@@ -6217,9 +6477,10 @@ class FluxCalibration(StandardLibrary):
 
             else:
 
-                flux_err_resampled = spectres(spec.wave_resampled,
-                                              spec.wave,
-                                              np.array(flux_err),
+                flux_err_resampled = spectres(np.array(
+                    spec.wave_resampled).reshape(-1),
+                                              np.array(spec.wave).reshape(-1),
+                                              np.array(flux_err).reshape(-1),
                                               verbose=False)
 
             if spec.count_sky is None:
@@ -6228,15 +6489,17 @@ class FluxCalibration(StandardLibrary):
 
             else:
 
-                flux_sky_resampled = spectres(spec.wave_resampled,
-                                              spec.wave,
-                                              np.array(flux_sky),
+                flux_sky_resampled = spectres(np.array(
+                    spec.wave_resampled).reshape(-1),
+                                              np.array(spec.wave).reshape(-1),
+                                              np.array(flux_sky).reshape(-1),
                                               verbose=False)
 
             # Only computed for diagnostic
-            sensitivity_resampled = spectres(spec.wave_resampled,
-                                             spec.wave,
-                                             np.array(sensitivity),
+            sensitivity_resampled = spectres(np.array(
+                spec.wave_resampled).reshape(-1),
+                                             np.array(spec.wave).reshape(-1),
+                                             np.array(sensitivity).reshape(-1),
                                              verbose=False)
 
             spec.add_flux(flux, flux_err, flux_sky)
@@ -6341,34 +6604,54 @@ class FluxCalibration(StandardLibrary):
 
                 if self.flux_science_calibrated:
 
-                    wave_mask = ((spec.wave_resampled > wave_min) &
-                                 (spec.wave_resampled < wave_max))
+                    wave_mask = (
+                        (np.array(spec.wave_resampled).reshape(-1) > wave_min)
+                        &
+                        (np.array(spec.wave_resampled).reshape(-1) < wave_max))
 
                     flux_low = np.nanpercentile(
-                        np.array(spec.flux_resampled)[wave_mask], 5) / 1.5
+                        np.array(spec.flux_resampled).reshape(-1)[wave_mask],
+                        5) / 1.5
                     flux_high = np.nanpercentile(
-                        np.array(spec.flux_resampled)[wave_mask], 95) * 1.5
-                    flux_mask = ((spec.flux_resampled > flux_low) &
-                                 (spec.flux_resampled < flux_high))
+                        np.array(spec.flux_resampled).reshape(-1)[wave_mask],
+                        95) * 1.5
+                    flux_mask = (
+                        (np.array(spec.flux_resampled).reshape(-1) > flux_low)
+                        &
+                        (np.array(spec.flux_resampled).reshape(-1) < flux_high)
+                    )
                     flux_min = np.log10(
-                        np.nanmin(spec.flux_resampled[flux_mask]))
+                        np.nanmin(
+                            np.array(
+                                spec.flux_resampled).reshape(-1)[flux_mask]))
                     flux_max = np.log10(
-                        np.nanmax(spec.flux_resampled[flux_mask]))
+                        np.nanmax(
+                            np.array(
+                                spec.flux_resampled).reshape(-1)[flux_mask]))
 
                 else:
 
                     warnings.warn('Flux calibration is not available.')
-                    wave_mask = ((spec.wave_resampled > wave_min) &
-                                 (spec.wave_resampled < wave_max))
-                    flux_mask = (
-                        (spec.count_resampled > np.nanpercentile(
-                            spec.count_resampled[wave_mask], 5) / 1.5) &
-                        (spec.count_resampled < np.nanpercentile(
-                            spec.count_resampled[wave_mask], 95) * 1.5))
+                    wave_mask = (
+                        (np.array(spec.wave_resampled).reshape(-1) > wave_min)
+                        &
+                        (np.array(spec.wave_resampled).reshape(-1) < wave_max))
+                    flux_mask = ((np.array(
+                        spec.count_resampled).reshape(-1) > np.nanpercentile(
+                            np.array(spec.count_resampled).reshape(-1)
+                            [wave_mask], 5) / 1.5) &
+                                 (np.array(spec.count_resampled).reshape(-1) <
+                                  np.nanpercentile(
+                                      np.array(spec.count_resampled).reshape(
+                                          -1)[wave_mask], 95) * 1.5))
                     flux_min = np.log10(
-                        np.nanmin(spec.count_resampled[flux_mask]))
+                        np.nanmin(
+                            np.array(
+                                spec.count_resampled).reshape(-1)[flux_mask]))
                     flux_max = np.log10(
-                        np.nanmax(spec.count_resampled[flux_mask]))
+                        np.nanmax(
+                            np.array(
+                                spec.count_resampled).reshape(-1)[flux_mask]))
 
                 fig_sci = go.Figure(
                     layout=dict(autosize=False,
@@ -6520,32 +6803,50 @@ class FluxCalibration(StandardLibrary):
 
             if self.flux_standard_calibrated:
 
-                wave_standard_mask = ((spec.wave_resampled > wave_min) &
-                                      (spec.wave_resampled < wave_max))
+                wave_standard_mask = (
+                    (np.array(spec.wave_resampled).reshape(-1) > wave_min) &
+                    (np.array(spec.wave_resampled).reshape(-1) < wave_max))
                 flux_standard_mask = (
-                    (spec.flux_resampled > np.nanpercentile(
-                        spec.flux_resampled[wave_standard_mask], 5) / 1.5) &
-                    (spec.flux_resampled < np.nanpercentile(
-                        spec.flux_resampled[wave_standard_mask], 95) * 1.5))
+                    (np.array(spec.flux_resampled).reshape(-1) >
+                     np.nanpercentile(
+                         np.array(spec.flux_resampled).reshape(-1)
+                         [wave_standard_mask], 5) / 1.5) &
+                    (np.array(spec.flux_resampled).reshape(-1) <
+                     np.nanpercentile(
+                         np.array(spec.flux_resampled).reshape(-1)
+                         [wave_standard_mask], 95) * 1.5))
                 flux_standard_min = np.log10(
-                    np.nanmin(spec.flux_resampled[flux_standard_mask]))
+                    np.nanmin(
+                        np.array(spec.flux_resampled).reshape(-1)
+                        [flux_standard_mask]))
                 flux_standard_max = np.log10(
-                    np.nanmax(spec.flux_resampled[flux_standard_mask]))
+                    np.nanmax(
+                        np.array(spec.flux_resampled).reshape(-1)
+                        [flux_standard_mask]))
 
             else:
 
                 warnings.warn('Flux calibration is not available.')
-                wave_standard_mask = ((spec.wave_resampled > wave_min) &
-                                      (spec.wave_resampled < wave_max))
+                wave_standard_mask = (
+                    (np.array(spec.wave_resampled).reshape(-1) > wave_min) &
+                    (np.array(spec.wave_resampled).reshape(-1) < wave_max))
                 flux_standard_mask = (
-                    (spec.count_resampled > np.nanpercentile(
-                        spec.count_resampled[wave_standard_mask], 5) / 1.5) &
-                    (spec.count_standard < np.nanpercentile(
-                        spec.count_resampled[wave_standard_mask], 95) * 1.5))
+                    (np.array(spec.count_resampled).reshape(-1) >
+                     np.nanpercentile(
+                         np.array(spec.count_resampled).reshape(-1)
+                         [wave_standard_mask], 5) / 1.5) &
+                    (np.array(spec.count_standard).reshape(-1) <
+                     np.nanpercentile(
+                         np.array(spec.count_resampled).reshape(-1)
+                         [wave_standard_mask], 95) * 1.5))
                 flux_standard_min = np.log10(
-                    np.nanmin(spec.count_resampled[flux_standard_mask]))
+                    np.nanmin(
+                        np.array(spec.count_resampled).reshape(-1)
+                        [flux_standard_mask]))
                 flux_standard_max = np.log10(
-                    np.nanmax(spec.count_resampled[flux_standard_mask]))
+                    np.nanmax(
+                        np.array(spec.count_resampled).reshape(-1)
+                        [flux_standard_mask]))
 
             fig_standard = go.Figure(layout=dict(updatemenus=list([
                 dict(
@@ -6720,9 +7021,45 @@ class FluxCalibration(StandardLibrary):
                     spec_id=None,
                     output='count+count_resampled+flux+flux_resampled',
                     stype='science+standard',
-                    empty_primary_hdu=True,
                     force=False,
+                    empty_primary_hdu=True,
                     return_id=False):
+        '''
+        Parameters
+        ----------
+        spec_id: int or None (default: None)
+            The ID corresponding to the spectrum1D object
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            trace: 2 HDUs
+                Trace, and trace width (pixel)
+            count: 5 HDUs
+                Count, uncertainty, sky, optimal flag, and weight (pixel)
+            arc_spec: 3 HDUs
+                1D arc spectrum, arc line pixels, and arc line effective pixels
+            wavecal: 1 HDU
+                Polynomial coefficients for wavelength calibration
+            wavelength: 1 HDU
+                Wavelength of each pixel
+            count_resampled: 3 HDUs
+                Resampled Count, uncertainty, and sky (wavelength)
+            flux: 4 HDUs
+                Flux, uncertainty, sky, and sensitivity (pixel)
+            flux_resampled: 4 HDUs
+                Flux, uncertainty, sky, and sensitivity (wavelength)
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        return_id: boolean (default: False)
+            Set to True to return the set of spec_id.
+
+        '''
 
         # Split the string into strings
         output_split = output.split('+')
@@ -6809,7 +7146,7 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
         output: String
             Type of data to be saved, the order is fixed (in the order of
@@ -6831,10 +7168,10 @@ class FluxCalibration(StandardLibrary):
             process/subprocess is execuated.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        to_disk: boolean
-            Default is True. If True, the fits object will be saved to disk.
-        to_memory: boolean
-            Default is False. If True, the fits object will be returned.
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
         overwrite: boolean
             Default is False.
 
@@ -6896,7 +7233,7 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
         output: String
             Type of data to be saved, the order is fixed (in the order of
@@ -7055,13 +7392,13 @@ class OneDSpec():
 
             self.fluxcal.add_wavecal(wavecal, s)
 
-        if 'science' in stype_split:
+            if s == 'science':
 
-            wavecal_science_imported = True
+                wavecal_science_imported = True
 
-        if 'standard' in stype_split:
+            if s == 'standard':
 
-            wavecal_standard_imported = True
+                wavecal_standard_imported = True
 
     def add_wavelength(self,
                        wave,
@@ -7175,6 +7512,12 @@ class OneDSpec():
 
     def apply_twodspec_mask(self, stype='science+standard'):
         '''
+        * Experimental *
+        Apply both the spec_mask and spatial_mask that are already stroed in
+        the object.
+
+        parameters
+        ----------
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7192,6 +7535,12 @@ class OneDSpec():
 
     def apply_spec_mask(self, spec_mask, stype='science+standard'):
         '''
+        * Experimental *
+        Apply to use only the valid x-range of the chip (i.e. dispersion
+        direction)
+
+        parameters
+        ----------
         spec_mask: 1D numpy array (M)
             Mask in the spectral direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
@@ -7205,6 +7554,12 @@ class OneDSpec():
 
     def apply_spatial_mask(self, spatial_mask, stype='science+standard'):
         '''
+        * Experimental *
+        Apply to use only the valid y-range of the chip (i.e. spatial
+        direction)
+
+        parameters
+        ----------
         spatial_mask: 1D numpy array (N)
             Mask in the spatial direction, can be the indices of the pixels
             to be included (size <N) or a 1D numpy array of True/False (size N)
@@ -7299,14 +7654,14 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        trace: list (N)
+        trace: list or numpy.ndarray (N)
             The spatial pixel value (can be sub-pixel) of the trace at each
             spectral position.
-        trace_sigma: list (N)
+        trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        pixel_list: list or numpy array
+        pixel_list: list or numpy.narray
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(len(spec.trace[0])), for example, in the case of accounting
@@ -7333,11 +7688,11 @@ class OneDSpec():
                                             spec_id=spec_id,
                                             pixel_list=pixel_list)
 
-    def add_polyfit(self,
-                    fit_coeff,
-                    fit_type=['poly'],
-                    spec_id=None,
-                    stype='science+standard'):
+    def add_fit_coeff(self,
+                      fit_coeff,
+                      fit_type=['poly'],
+                      spec_id=None,
+                      stype='science+standard'):
         '''
         Parameters
         ----------
@@ -7357,15 +7712,15 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            self.wavecal_science.add_polyfit(spec_id=spec_id,
-                                             fit_coeff=fit_coeff,
-                                             fit_type=fit_type)
+            self.wavecal_science.add_fit_coeff(spec_id=spec_id,
+                                               fit_coeff=fit_coeff,
+                                               fit_type=fit_type)
 
         if 'standard' in stype_split:
 
-            self.wavecal_standard.add_polyfit(spec_id=spec_id,
-                                              fit_coeff=fit_coeff,
-                                              fit_type=fit_type)
+            self.wavecal_standard.add_fit_coeff(spec_id=spec_id,
+                                                fit_coeff=fit_coeff,
+                                                fit_type=fit_type)
 
     def extract_arc_spec(self,
                          spec_id=None,
@@ -7381,29 +7736,26 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        display: boolean
+        display: boolean (default: False)
             Set to True to display disgnostic plot.
-        return_jsonstring: boolean
+        return_jsonstring: boolean (default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        renderer: string
+        renderer: string (default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
-            in any support language.
-        save_iframe: boolean
+        save_iframe: boolean (default: False)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: boolean (default: False)
             Open the save_iframe in the default browser if set to True.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
@@ -7458,44 +7810,44 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        background: int
+        background: int or None (default: None)
             User-supplied estimated background level
-        percentile: float
+        percentile: float (default: 25.)
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
             is None. [Count]
-        prominence: float
+        prominence: float (default: 10.)
             The minimum prominence to be considered as a peak
-        distance: float
+        distance: float (default: 5.)
             Minimum separation between peaks
-        refine: boolean
+        refine: boolean (default: True)
             Set to true to fit a gaussian to get the peak at sub-pixel
             precision
-        refine_window_width: boolean
+        refine_window_width: int or float (default: 5)
             The number of pixels (on each side of the existing peaks) to be
             fitted with gaussian profiles over.
-        display: boolean
+        display: boolean (default: False)
             Set to True to display disgnostic plot.
-        renderer: string
-            plotly renderer options.
-        width: int/float
+        width: int/float (default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
+        return_jsonstring: boolean (default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
+        renderer: string (default: 'default')
+            plotly renderer options.
+        save_iframe: boolean (default: False)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: boolean (default: False)
             Open the save_iframe in the default browser if set to True.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         Returns
@@ -7551,13 +7903,13 @@ class OneDSpec():
 
         Parameters
         ----------
-        spec_id: int (default: None)
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        peaks: list (default: None)
+        peaks: list, numpy.ndarray or None (default: None)
             The pixel values of the peaks (start from zero)
-        spectrum: list
+        spectrum: list, numpy.ndarray or None (default: None)
             The spectral intensity as a function of pixel.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -7586,7 +7938,7 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int (default: None)
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
         num_pix: int (default: None)
             The number of pixels in the dispersion direction
@@ -7596,10 +7948,12 @@ class OneDSpec():
             range(num_pix), for example, in the case of accounting
             for chip gaps (10 pixels) in a 3-CCD setting, you should provide
             [0,1,2,...90, 100,101,...190, 200,201,...290]
-        plotting_library : string (default: 'matplotlib')
+        plotting_library : string (default: 'plotly')
             Choose between matplotlib and plotly.
         log_level : string (default: 'info')
             Choose {critical, error, warning, info, debug, notset}.
+        stype: string (default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
 
@@ -7656,6 +8010,8 @@ class OneDSpec():
             A toleranceold (Ansgtroms) which defines some padding around the
             range tolerance to allow for non-linearity. This should be the
             maximum expected excursion from linearity.
+        stype: string (default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
 
@@ -7706,7 +8062,8 @@ class OneDSpec():
         spec_id: int (default: None)
             The ID corresponding to the spectrum1D object
         sample_size: int (default: 5)
-            €£$
+            Number of pixel-wavelength hough pairs to be used for each arc line
+            being picked.
         top_n_candidate: int (default: 5)
             Top ranked lines to be fitted.
         linear: boolean (default: True)
@@ -7724,6 +8081,8 @@ class OneDSpec():
             Set to use the hough space to weigh the fit. The theoretical
             optimal weighting is unclear. The larger the value, the heavily it
             relies on the overdensity in the hough space for a good fit.
+        stype: string (default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
 
@@ -7768,7 +8127,7 @@ class OneDSpec():
             serve purely as anchor points.
         wave : numeric value, list or numpy 1D array (N) (default: None)
             The matching wavelength for each of the pix.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -7813,27 +8172,29 @@ class OneDSpec():
         elements : list
             Element (required). Preferably a standard (i.e. periodic table)
             name for convenience with built-in atlases
-        wavelengths : list
+        wavelengths : list or None (default: None)
             Wavelength to add (Angstrom)
-        intensities : list
+        intensities : list or None (default: None)
             Relative line intensities
-        candidate_tolerance: float (default: 15)
+        candidate_tolerance: float (default: 10.)
             toleranceold  (Angstroms) for considering a point to be an inlier
             during candidate peak/line selection. This should be reasonable
             small as we want to search for candidate points which are
             *locally* linear.
-        constrain_poly: boolean
+        constrain_poly: boolean (default: False)
             Apply a polygonal constraint on possible peak/atlas pairs
-        vacuum: boolean
+        vacuum: boolean (default: False)
             Set to true to convert the input wavelength to air-wavelengths
             based on the given pressure, temperature and humidity.
-        pressure: float
+        pressure: float (default: 101325)
             Pressure when the observation took place, in Pascal.
             If it is not known, assume 10% decrement per 1000 meter altitude
-        temperature: float
+        temperature: float (default: 273.15)
             Temperature when the observation took place, in Kelvin.
-        relative_humidity: float
+        relative_humidity: float (default: 0)
             In percentage.
+        stype: string (default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
 
@@ -7901,14 +8262,17 @@ class OneDSpec():
             *locally* linear.
         constrain_poly: boolean
             Apply a polygonal constraint on possible peak/atlas pairs
-        pressure: float
+        vacuum: boolean (default: False)
+            Set to true to convert the input wavelength to air-wavelengths
+            based on the given pressure, temperature and humidity.
+        pressure: float (default: 101325)
             Pressure when the observation took place, in Pascal.
             If it is not known, assume 10% decrement per 1000 meter altitude
-        temperature: float
+        temperature: float (default: 273.15)
             Temperature when the observation took place, in Kelvin.
-        relative_humidity: float
+        relative_humidity: float (default: 0)
             In percentage.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -7922,8 +8286,8 @@ class OneDSpec():
                 spec_id=spec_id,
                 min_atlas_wavelength=min_atlas_wavelength,
                 max_atlas_wavelength=max_atlas_wavelength,
-                min_atlas_intensity=min_intensity,
-                min_atlas_distance=min_distance,
+                min_intensity=min_intensity,
+                min_distance=min_distance,
                 candidate_tolerance=candidate_tolerance,
                 constrain_poly=constrain_poly,
                 vacuum=vacuum,
@@ -7938,8 +8302,8 @@ class OneDSpec():
                 spec_id=spec_id,
                 min_atlas_wavelength=min_atlas_wavelength,
                 max_atlas_wavelength=max_atlas_wavelength,
-                min_atlas_intensity=min_intensity,
-                min_atlas_distance=min_distance,
+                min_intensity=min_intensity,
+                min_distance=min_distance,
                 candidate_tolerance=candidate_tolerance,
                 constrain_poly=constrain_poly,
                 vacuum=vacuum,
@@ -7953,7 +8317,7 @@ class OneDSpec():
         ----------
         spec_id: int (default: None)
             The ID corresponding to the spectrum1D object
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -7984,9 +8348,9 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        max_tries: int
+        max_tries: int (default: 5000)
             Number of trials of polynomial fitting.
         fit_deg: int (default: 4)
             The degree of the polynomial to be fitted.
@@ -8001,16 +8365,16 @@ class OneDSpec():
         brute_force: boolean (default: False)
             Set to True to try all possible combination in the given parameter
             space
-        progress: boolean
+        progress: boolean (default: False)
             Set to show the progress using tdqm (if imported).
-        display: boolean
+        display: boolean (default: False)
             Set to show diagnostic plot.
-        savefig: string
+        savefig: boolean (default: False)
             Set to save figure.
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -8064,30 +8428,30 @@ class OneDSpec():
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        fit_coeff : list
+        fit_coeff: list or None (default: None)
             List of polynomial fit coefficients.
-        n_delta : int (default: None)
+        n_delta: int (default: None)
             The number of the highest polynomial order to be adjusted
-        refine : boolean (default: True)
+        refine: boolean (default: True)
             Set to True to refine solution.
         tolerance : float (default: 10.)
             Absolute difference between fit and model in the unit of nm.
-        method : string (default: 'Nelder-Mead')
+        method: string (default: 'Nelder-Mead')
             scipy.optimize.minimize method.
-        convergence : float (default: 1e-6)
+        convergence: float (default: 1e-6)
             scipy.optimize.minimize tol.
-        robust_refit : boolean (default: True)
+        robust_refit: boolean (default: True)
             Set to True to fit all the detected peaks with the given polynomial
             solution.
-        fit_deg : int (default: length of the input coefficients)
+        fit_deg: int (default: length of the input coefficients - 1)
             Order of polynomial fit with all the detected peaks.
-        display: boolean
+        display: boolean (default: False)
             Set to show diagnostic plot.
-        savefig: string
+        savefig: boolean (default: False)
             Set to save figure.
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
         stype: string
@@ -8136,15 +8500,15 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        wave_start: float
+        wave_start: float or None (default: None)
             Provide the minimum wavelength for resampling.
-        wave_end: float
+        wave_end: float or None (default: None)
             Provide the maximum wavelength for resampling
-        wave_bin: float
+        wave_bin: float or None (default: None)
             Provide the resampling bin size
-        stype: string
+        stype: string or None (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -8172,7 +8536,7 @@ class OneDSpec():
         target: str
             Name of the standard star
         cutoff: float (default: 0.4)
-            The similarity toleranceold [0 (completely different) - 1 (identical)]
+            The similarity toleranceold [0=completely different, 1=identical]
 
         '''
 
@@ -8210,24 +8574,24 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        display: boolean
+        display: boolean (default: True)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
+        return_jsonstring: boolean (default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
+        save_iframe: boolean (default: False)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: boolean (default: False)
             Open the save_iframe in the default browser if set to True.
 
         Returns
@@ -8257,22 +8621,23 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        kind: string or integer [1,2,3,4,5 only]
+        kind: string or integer [1,2,3,4,5 only] (default: 3)
             interpolation kind is one of [‘linear’, ‘nearest’, ‘zero’,
              ‘slinear’, ‘quadratic’, ‘cubic’, ‘previous’, ‘next’]
-        smooth: boolean
+        smooth: boolean (default: False)
             set to smooth the input spectrum with scipy.signal.savgol_filter
-        slength: int
+        slength: int (default: 5)
             SG-filter window size
-        sorder: int
+        sorder: int (default: 3)
             SG-filter polynomial order
         mask_range: None or list of list
+            (default: 6850-6960, 7575-7700, 8925-9050, 9265-9750)
             Masking out regions not suitable for fitting the sensitivity curve.
             None for no mask. List of list has the pattern
             [[min1, max1], [min2, max2],...]
-        mask_fit_order: int
+        mask_fit_order: int (default: 1)
             Order of polynomial to be fitted over the masked regions
-        mask_fit_size: int
+        mask_fit_size: int (default: 1)
             Number of "pixels" to be fitted on each side of the masked regions.
 
         '''
@@ -8291,6 +8656,7 @@ class OneDSpec():
         ----------
         filename: str
             Filename for the output interpolated sensivity curve.
+
         '''
 
         self.fluxcal.save_sensitivity_itp(filename=filename)
@@ -8303,6 +8669,7 @@ class OneDSpec():
             Interpolated sensivity curve object.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
+
         '''
 
         self.fluxcal.add_sensitivity_itp(sensitivity_itp=sensitivity_itp,
@@ -8320,24 +8687,24 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        display: boolean
+        display: boolean (default: True)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
+        return_jsonstring: boolean (default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
+        save_iframe: boolean (default: False)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: boolean (default: False)
             Open the save_iframe in the default browser if set to True.
 
         '''
@@ -8355,9 +8722,9 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
@@ -8394,40 +8761,40 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        wave_min: float
+        wave_min: float (default: 4000.)
             Minimum wavelength to display
-        wave_max: float
+        wave_max: float (default: 8000.)
             Maximum wavelength to display
-        display: boolean
-            Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (default: 720)
             Number of pixels in the vertical direction of the outputs
-        filename: str
+        filename: str or None (default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        save_png: boolean
+        save_png: boolean (default: False)
             Save an png image of the Plotly plot
-        save_jpg: boolean
+        save_jpg: boolean (default: False)
             Save an png image of the Plotly plot
-        save_svg: boolean
+        save_svg: boolean (default: False)
             Save an png image of the Plotly plot
-        save_pdf: boolean
+        save_pdf: boolean (default: False)
             Save a pdf of the Plotly plot
-        return_jsonstring: boolean
+        display: boolean (default: True)
+            Set to True to display disgnostic plot.
+        return_jsonstring: boolean (default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
+        save_iframe: boolean (default: False)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        open_iframe: boolean
+        open_iframe: boolean (default: False)
             Open the save_iframe in the default browser if set to True.
 
         '''
@@ -8453,8 +8820,8 @@ class OneDSpec():
                     spec_id=None,
                     output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                     stype='science+standard',
-                    empty_primary_hdu=True,
                     force=False,
+                    empty_primary_hdu=True,
                     return_id=False):
         '''
         Create a HDU list, with a choice of any combination of the
@@ -8462,9 +8829,10 @@ class OneDSpec():
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
         output: String
+            (default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strings are delimited by "+",
@@ -8485,17 +8853,14 @@ class OneDSpec():
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        filename: String
-            Disk location to be written to. Default is at where the
-            process/subprocess is execuated.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        to_disk: boolean
-            Default is True. If True, the fits object will be saved to disk.
-        to_memory: boolean
-            Default is False. If True, the fits object will be returned.
-        overwrite: boolean
-            Default is False.
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        return_id: boolean (default: False)
+            Set to True to return the set of spec_id
 
         '''
 
@@ -8616,8 +8981,8 @@ class OneDSpec():
                   output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                   filename='reduced',
                   stype='science+standard',
-                  empty_primary_hdu=True,
                   force=False,
+                  empty_primary_hdu=True,
                   overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -8625,9 +8990,10 @@ class OneDSpec():
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
         output: String
+            (default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strings are delimited by "+",
@@ -8648,16 +9014,16 @@ class OneDSpec():
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        filename: String
+        filename: String (default: 'reduced')
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        to_disk: boolean
-            Default is True. If True, the fits object will be saved to disk.
-        to_memory: boolean
-            Default is False. If True, the fits object will be returned.
-        overwrite: boolean
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        overwrite: boolean (default: False)
             Default is False.
 
         '''
@@ -8691,8 +9057,9 @@ class OneDSpec():
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
 
-                # If flux is not calibrated, but wavelength is calibrated
-                elif self.wavelength_science_calibrated:
+                # If flux is not calibrated, and weather or not the wavelength
+                # is calibrated.
+                else:
 
                     self.wavecal_science.spectrum_list[i].save_fits(
                         output=output,
@@ -8700,11 +9067,6 @@ class OneDSpec():
                         force=False,
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
-
-                # Should be trapped above so this line should never be run
-                else:
-
-                    raise Error('Neither wavelength nor flux is calibrated.')
 
         if 'standard' in stype_split:
 
@@ -8724,8 +9086,9 @@ class OneDSpec():
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
 
-            # If flux is not calibrated, but wavelength is calibrated
-            elif self.wavelength_standard_calibrated:
+            # If flux is not calibrated, and weather or not the wavelength
+            # is calibrated.
+            else:
 
                 self.wavecal_standard.spectrum_list[0].save_fits(
                     output=output,
@@ -8734,17 +9097,12 @@ class OneDSpec():
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
 
-            # Should be trapped above so this line should never be run
-            else:
-
-                raise Error('Neither wavelength nor flux is calibrated.')
-
     def save_csv(self,
                  spec_id=None,
                  output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                  filename='reduced',
                  stype='science+standard',
-                 force=True,
+                 force=False,
                  overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -8752,9 +9110,10 @@ class OneDSpec():
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int or None (default: None)
             The ID corresponding to the spectrum1D object
         output: String
+            (default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strings are delimited by "+",
@@ -8775,12 +9134,14 @@ class OneDSpec():
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        filename: String
+        filename: String (default: 'reduced')
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: string
+        stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        overwrite: boolean
+        force: boolean (default: False)
+            Set to True to force recreating the HDU 
+        overwrite: boolean (default: False)
             Default is False.
 
         '''
@@ -8813,19 +9174,15 @@ class OneDSpec():
                         force=force,
                         overwrite=overwrite)
 
-                # If flux is not calibrated, but wavelength is calibrated
-                elif self.wavelength_science_calibrated:
+                # If flux is not calibrated, and weather or not the wavelength
+                # is calibrated.
+                else:
 
                     self.wavecal_science.spectrum_list[i].save_csv(
                         output=output,
                         filename=filename_i,
                         force=force,
                         overwrite=overwrite)
-
-                # Should be trapped above so this line should never be run
-                else:
-
-                    raise Error('Neither wavelength nor flux is calibrated.')
 
         if 'standard' in stype_split:
 
@@ -8838,16 +9195,12 @@ class OneDSpec():
                     force=force,
                     overwrite=overwrite)
 
-            # If flux is not calibrated, but wavelength is calibrated
-            elif self.wavelength_standard_calibrated:
+            # If flux is not calibrated, and weather or not the wavelength
+            # is calibrated.
+            else:
 
                 self.wavecal_standard.spectrum_list[0].save_csv(
                     output=output,
                     filename=filename + '_standard',
                     force=force,
                     overwrite=overwrite)
-
-            # Should be trapped above so this line should never be run
-            else:
-
-                raise Error('Neither wavelength nor flux is calibrated.')
