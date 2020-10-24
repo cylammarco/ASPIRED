@@ -1,7 +1,7 @@
 .. _quickstart:
 
-Quickstart with default setting
-===============================
+Quickstart with LT/SPRAT
+========================
 
 Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
 
@@ -30,7 +30,7 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     object can be supplied For the science spectral image, the file list is
     contained in `examples/sprat_LHS6328.list`
 
-    .. literalinclude:: ../../../examples/sprat_LHS6328.list
+    .. literalinclude:: ../_static/sprat_LHS6328.list
 
     To reduce the image with the built-in reduction method ImageReduction,
     execute the following, the rederer options are those of `plotly's
@@ -48,7 +48,7 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     and for the standard spectral image, the file list is contained in
     `examples/sprat_Hiltner102.list`
 
-    .. literalinclude:: ../../../examples/sprat_Hiltner102.list
+    .. literalinclude:: ../_static/sprat_Hiltner102.list
 
     Similar to the science frame, execute the following:
 
@@ -93,69 +93,117 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
 
     .. code-block:: python
 
-      science2D.ap_extract(display=True)
-      standard2D.ap_extract(display=True)
+      science2D.ap_extract()
+      standard2D.ap_extract()
+
+    The two spectra from the science frame:
 
     .. raw:: html
-      :file: ../_static/5_science_extracted.html
+      :file: ../_static/5_science_extracted_0.html
+
+    .. raw:: html
+      :file: ../_static/5_science_extracted_1.html
+
+    and the spectrum of the standard frame:
 
     .. raw:: html
       :file: ../_static/6_standard_extracted.html
 
-5.  Next step is the perform the flux calibration, which requires comparing the
+5.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
+    and the extracted spectra from the TwoDSpec objects,
+
+    .. code-block:: python
+
+      onedspec = spectral_reduction.OneDSpec()
+      onedspec.from_twodspec(science2D, stype='science')
+      onedspec.from_twodspec(standard2D, stype='standard')
+
+6.  Add the arcs to the onedspec, whether it is an arc for the science or for 
+    the standard has to be specified, otherwise it will assume the same arc will
+    be used by both. The `extract_arc_spec()` automatrically apply the traces
+    from the TwoDSpec in order to extract the spectra of the arcs.
+
+    .. code-block:: python
+
+      onedspec.add_arc(science_frame, stype='science')
+      onedspec.add_arc(standard_frame, stype='standard')
+      onedspec.extract_arc_spec()
+
+    .. raw:: html
+      :file: ../_static/7_science_arc_spec.html
+
+    .. raw:: html
+      :file: ../_static/8_standard_arc_spec.html
+
+    .. code-block:: python
+
+      onedspec.find_arc_lines()
+
+    Then, the position of the peaks, which are the arc lines, can be found for
+    performing wavelength calibration for each trace.
+
+    .. raw:: html
+      :file: ../_static/9_science_arc_lines.html
+
+    .. raw:: html
+      :file: ../_static/10_standard_arc_lines.html
+
+7.  Initialise a calibrator and add element lines to prepare for wavelength
+    calibration, set the various calibrator, Hough transform and RANSAC
+    properties before performing the Hough Transform that is used for the
+    automated wavelength calibration. And finally fit for the solution and
+    apply to the spectra.
+
+    .. code-block:: python
+
+      onedspec.initialise_calibrator()
+      onedspec.add_atlas(
+          ['Xe'],
+          min_atlas_wavelength=3500.,
+          max_atlas_wavelength=8500.)
+      onedspec.set_hough_properties()
+      onedspec.set_ransac_properties()
+      onedspec.do_hough_transform()
+      onedspec.fit()
+      onedspec.apply_wavelength_calibration()
+
+8.  Next step is the perform the flux calibration, which requires comparing the
     spectrum of the standard to the literature values. To do this, first we need
     to load the literature template from the built-in library, which contains
     all the iraf and ESO standards.
 
     .. code-block:: python
 
-      fluxcal = spectral_reduction.StandardFlux(target='hiltner102', group='irafirs')
-      fluxcal.load_standard()
-      fluxcal.inspect_standard()
+      onedspec.load_standard(target='hiltner102')
+      onedspec.inspect_standard()
 
     .. raw:: html
-      :file: ../_static/7_standard.html
-
-6.  Finding arc lines and perform wavelength calibration for each trace
+      :file: ../_static/11_literature_standard.html
 
     .. code-block:: python
 
-      wavecal_science = spectral_reduction.WavelengthPolyFit(science2D, science_arc)
-      wavecal_science.find_arc_lines(display=True)
-      wavecal_science.fit(elements=["Xe"])
-      wavecal_science.refine_fit(elements=["Xe"], tolerance=5, display=True)
+      onedspec.compute_sensitivity()
+      onedspec.inspect_sensitivity()
 
     .. raw:: html
-      :file: ../_static/8_science_arc.html
+      :file: ../_static/12_sensitivity_curve.html
 
-    .. raw:: html
-      :file: ../_static/9_standard_arc.html
-
-7.  Collect all the calibrations to apply the wavelength calibration and then
-    compute and apply the sensitivity curve to all the spectra
+9.  Apply the fluxcalibration and inspect the reduced spectra.
 
     .. code-block:: python
 
-      science_reduced = spectral_reduction.OneDSpec(
-          science2D,
-          wavecal_science,
-          standard2D,
-          wavecal_standard,
-          fluxcal)
-      science_reduced.apply_wavelength_calibration('science+standard')
-      science_reduced.compute_sensitivity(display=True)
+      onedspec.apply_flux_calibration(
+      onedspec.inspect_reduced_spectrum()
+
+    The two science spectra:
 
     .. raw:: html
-      :file: ../_static/10_sensitivity_curve.html
-
-8.  Generate the reduced spectra.
-
-    .. code-block:: python
-
-      science_reduced.inspect_reduced_spectrum('science+standard', display=True)
+      :file: ../_static/13_science_spectrum_0.html
 
     .. raw:: html
-      :file: ../_static/11_science_spectrum.html
+      :file: ../_static/13_science_spectrum_1.html
+
+    and the standard spectrum:
 
     .. raw:: html
-      :file: ../_static/12_standard_spectrum.html
+      :file: ../_static/14_standard_spectrum.html

@@ -32,6 +32,7 @@ class _spectrum1D():
     extracted spectrum.
 
     '''
+
     def __init__(self, spec_id):
 
         # spectrum ID
@@ -734,6 +735,7 @@ class _spectrum1D():
         args = 'BUNIT', 'Angstroms'
 
         method_to_call(*args) becomes hdu[idx].header.set('BUNIT', 'Angstroms')
+
         '''
 
         method_to_call = getattr(hdulist[idx].header, method)
@@ -743,8 +745,14 @@ class _spectrum1D():
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
-        idx 0: trace
-            1: trace_sigma
+
+        +-----+---------------------+
+        | HDU | Data                |
+        +-----+---------------------+
+        |  0  | Trace (pixel)       |
+        |  1  | Trace width (pixel) |
+        +-----+---------------------+
+
         '''
 
         self._modify_imagehdu_header(self.trace_hdulist, idx, method, *args)
@@ -753,11 +761,17 @@ class _spectrum1D():
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
-        idx 0: count
-            1: count_err
-            2: count_sky
-            3: count_optimal
-            4: count_weight
+
+        +-----+---------------------------------+
+        | HDU | Data                            |
+        +-----+---------------------------------+
+        |  0  | Photoelectron count             |
+        |  1  | Photoelectron count uncertainty |
+        |  2  | Photoelectron count (sky)       |
+        |  3  | Optimal (boolean)               |
+        |  4  | Line spread function            |
+        +-----+---------------------------------+
+
         '''
 
         self._modify_imagehdu_header(self.count_hdulist, idx, method, *args)
@@ -766,9 +780,15 @@ class _spectrum1D():
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
-        idx 0: count_resampled
-            1: count_resampled_err
-            2: count_resampled_sky
+
+        +-----+---------------------------------+
+        | HDU | Data                            |
+        +-----+---------------------------------+
+        |  0  | Photoelectron count             |
+        |  1  | Photoelectron count uncertainty |
+        |  2  | Photoelectron count (sky)       |
+        +-----+---------------------------------+
+
         '''
 
         self._modify_imagehdu_header(self.count_resampled_hdulist, idx, method,
@@ -778,9 +798,15 @@ class _spectrum1D():
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
-        idx 0: arc_spec
-            1: peaks_raw
-            2: peaks_pixel
+
+        +-----+-------------------+
+        | HDU | Data              |
+        +-----+-------------------+
+        |  0  | Arc spectrum      |
+        |  1  | Peaks (pixel)     |
+        |  2  | Peaks (sub-pixel) |
+        +-----+-------------------+
+
         '''
 
         self._modify_imagehdu_header(self.arc_spec_hdulist, idx, method, *args)
@@ -790,6 +816,13 @@ class _spectrum1D():
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
         wavelength fits only has one ImageHDU so the idx is always 0
+
+        +-----+-----------------------+
+        | HDU | Data                  |
+        +-----+-----------------------+
+        |  0  | Best fit coefficients |
+        +-----+-----------------------+
+
         '''
 
         self._modify_imagehdu_header(self.wavecal_hdulist, 0, method, *args)
@@ -798,10 +831,16 @@ class _spectrum1D():
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
-        idx 0: flux
-            1: flux_err
-            2: flux_sky
-            3: sensitivity
+
+        +-----+------------------+
+        | HDU | Data             |
+        +-----+------------------+
+        |  0  | Flux             |
+        |  1  | Flux uncertainty |
+        |  2  | Flux (sky)       |
+        |  3  | Sensitivity      |
+        +-----+------------------+
+
         '''
 
         self._modify_imagehdu_header(self.flux_hdulist, idx, method, *args)
@@ -810,10 +849,16 @@ class _spectrum1D():
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
-        idx 0: flux
-            1: flux_err
-            2: flux_sky
-            3: sensitivity
+
+        +-----+------------------+
+        | HDU | Data             |
+        +-----+------------------+
+        |  0  | Flux             |
+        |  1  | Flux Uncertainty |
+        |  2  | Flux Sky         |
+        |  3  | Sensitivity      |
+        +-----+------------------+
+
         '''
 
         self._modify_imagehdu_header(self.flux_resampled_hdulist, idx, method,
@@ -824,6 +869,7 @@ class _spectrum1D():
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
         wavelength fits only has one ImageHDU so the idx is always 0
+
         '''
 
         self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
@@ -3633,9 +3679,10 @@ class WavelengthCalibration():
 
         # If it is an ImageReduction object
         elif isinstance(arc, ImageReduction):
-
-            self.arc = arc.arc_master
-
+            if arc.saxis == 1:
+                self.arc = arc.arc_master
+            else:
+                self.arc = np.transpose(arc.arc_master)
         else:
 
             raise TypeError(
@@ -3840,6 +3887,9 @@ class WavelengthCalibration():
 
         '''
 
+        if isinstance(fit_type, str):
+            fit_type = [fit_type]
+
         if spec_id in list(self.spectrum_list.keys()):
 
             if self.spectrum_list[spec_id].fit_coeff is not None:
@@ -3868,8 +3918,7 @@ class WavelengthCalibration():
                 self.spectrum_list[s].add_fit_coeff(fit_coeff[i])
 
             else:
-
-                self.spectrum_list[s].add_fit_type(fit_type)
+                self.spectrum_list[s].add_fit_type(fit_type[0])
                 self.spectrum_list[s].add_fit_coeff(fit_coeff)
 
     def from_twodspec(self, twodspec, pixel_list=None):
@@ -3911,9 +3960,9 @@ class WavelengthCalibration():
         self.spatial_mask = twodspec.spatial_mask
         self.spectrum_list = twodspec.spectrum_list
 
-    def apply_twodspec_mask(self):
+    def apply_twodspec_mask_to_arc(self):
         '''
-        * Experimental *
+        *EXPERIMENTAL*
         Apply both the spec_mask and spatial_mask that are already stroed in
         the object.
 
@@ -3927,12 +3976,12 @@ class WavelengthCalibration():
 
             self.arc = np.flip(self.arc)
 
-        self.apply_spec_mask(self.spec_mask)
-        self.apply_spatial_mask(self.spatial_mask)
+        self.apply_spec_mask_to_arc(self.spec_mask)
+        self.apply_spatial_mask_to_arc(self.spatial_mask)
 
-    def apply_spec_mask(self, spec_mask):
+    def apply_spec_mask_to_arc(self, spec_mask):
         '''
-        * Experimental *
+        *EXPERIMENTAL*
         Apply to use only the valid x-range of the chip (i.e. dispersion
         direction)
 
@@ -3955,9 +4004,9 @@ class WavelengthCalibration():
 
                 self.arc = self.arc[spec_mask]
 
-    def apply_spatial_mask(self, spatial_mask):
+    def apply_spatial_mask_to_arc(self, spatial_mask):
         '''
-        * Experimental *
+        *EXPERIMENTAL*
         Apply to use only the valid y-range of the chip (i.e. spatial
         direction)
 
@@ -4340,6 +4389,10 @@ class WavelengthCalibration():
             if peaks is None:
 
                 peaks = self.spectrum_list[i].peaks_raw
+
+            if spectrum is None:
+
+                spectrum = self.spectrum_list[i].count
 
             self.spectrum_list[i].calibrator = Calibrator(peaks=peaks,
                                                           spectrum=spectrum)
@@ -4814,15 +4867,9 @@ class WavelengthCalibration():
             savefig=False,
             filename=None):
         '''
-        A wrapper function to perform wavelength calibration with RASCAL.
-
-        As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
-        Hg and Th from NIST:
-
-            https://physics.nist.gov/PhysRefData/ASD/lines_form.html
-
-        If there is already a set of good coefficienes, use calibrate_polyfit()
-        instead.
+        A wrapper function to perform wavelength calibration with RASCAL. As of
+        14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
+        `NIST <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
 
         Parameters
         ----------
@@ -4912,14 +4959,9 @@ class WavelengthCalibration():
                    savefig=False,
                    filename=None):
         '''
-        * EXPERIMENTAL *
+        *EXPERIMENTAL*
         A wrapper function to fine tune wavelength calibration with RASCAL
         when there is already a set of good coefficienes.
-
-        As of 14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe,
-        Hg and Th from NIST:
-
-            https://physics.nist.gov/PhysRefData/ASD/lines_form.html
 
         Refine the polynomial fit coefficients. Recommended to use in it
         multiple calls to first refine the lowest order and gradually increase
@@ -5655,7 +5697,7 @@ class StandardLibrary:
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True
+        JSON strings if return_jsonstring is set to True.
 
         '''
 
@@ -7510,9 +7552,9 @@ class OneDSpec():
             self.wavecal_standard.from_twodspec(twodspec=twodspec,
                                                 pixel_list=pixel_list)
 
-    def apply_twodspec_mask(self, stype='science+standard'):
+    def apply_twodspec_mask_to_arc(self, stype='science+standard'):
         '''
-        * Experimental *
+        *EXPERIMENTAL*
         Apply both the spec_mask and spatial_mask that are already stroed in
         the object.
 
@@ -7527,15 +7569,15 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            self.wavecal_science.apply_twodspec_mask()
+            self.wavecal_science.apply_twodspec_mask_to_arc()
 
         if 'standard' in stype_split:
 
-            self.wavecal_standard.apply_twodspec_mask()
+            self.wavecal_standard.apply_twodspec_mask_to_arc()
 
-    def apply_spec_mask(self, spec_mask, stype='science+standard'):
+    def apply_spec_mask_to_arc(self, spec_mask, stype='science+standard'):
         '''
-        * Experimental *
+        *EXPERIMENTAL*
         Apply to use only the valid x-range of the chip (i.e. dispersion
         direction)
 
@@ -7550,11 +7592,11 @@ class OneDSpec():
 
         '''
 
-        self.apply_spec_mask(spec_mask=spec_mask)
+        self.apply_spec_mask_to_arc(spec_mask=spec_mask)
 
-    def apply_spatial_mask(self, spatial_mask, stype='science+standard'):
+    def apply_spatial_mask_to_arc(self, spatial_mask, stype='science+standard'):
         '''
-        * Experimental *
+        *EXPERIMENTAL*
         Apply to use only the valid y-range of the chip (i.e. spatial
         direction)
 
@@ -7569,7 +7611,7 @@ class OneDSpec():
 
         '''
 
-        self.apply_spatial_mask(spatial_mask=spatial_mask)
+        self.apply_spatial_mask_to_arc(spatial_mask=spatial_mask)
 
     def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
         '''

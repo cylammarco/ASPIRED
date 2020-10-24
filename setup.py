@@ -7,13 +7,13 @@ setup_requires = ['numpy>=1.16']
 
 install_requires = [
     'scipy>=1.5.2', 'astropy>=4.0', 'ccdproc>=2.1', 'astroscrappy>=1.0.8',
-    'plotly>=4.0', 'spectres>=2.1.1', 'rascal>=0.1'
+    'plotly>=4.0', 'spectres>=2.1.1', 'rascal=0.2'
 ]
 
 __packagename__ = "aspired"
 
 setup(name=__packagename__,
-      version='0.0.1',
+      version='0.1.0',
       packages=find_packages(),
       author='Marco Lam',
       author_email='cylammarco@gmail.com',

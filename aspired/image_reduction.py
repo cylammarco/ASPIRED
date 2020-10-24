@@ -194,7 +194,7 @@ class ImageReduction:
         if isinstance(self.filelist, str):
             self.filelist = np.genfromtxt(self.filelist,
                                           delimiter=self.delimiter,
-                                          dtype=None,
+                                          dtype=str,
                                           autostrip=True).astype('U')
 
             if np.shape(np.shape(self.filelist))[0] == 2:
@@ -223,8 +223,7 @@ class ImageReduction:
 
         for i, im in enumerate(self.impath):
             if not os.path.isabs(im):
-                self.impath[i] = os.path.join(self.filelist_abspath,
-                                              im)
+                self.impath[i] = os.path.join(self.filelist_abspath, im)
             print(im)
             print(self.impath[i])
 
@@ -703,9 +702,13 @@ class ImageReduction:
 
     def inspect(self,
                 log=True,
+                display=True,
                 renderer='default',
-                jsonstring=False,
-                iframe=False,
+                width=1280,
+                height=720,
+                return_jsonstring=False,
+                save_iframe=False,
+                filename=None,
                 open_iframe=False):
         '''
         Display the reduced image with a supported plotly renderer or export
@@ -715,40 +718,77 @@ class ImageReduction:
         ----------
         log: boolean
             Log the ADU count per second in the display. Default is True.
+        display: boolean
+            Set to True to display disgnostic plot.
         renderer: string
-            plotly renderer: jpg, png
-        jsonstring: boolean
-            set to True to return json string that can be rendered by Plot.ly
-            in any support language
-        iframe: boolean
-            Save as an iframe, can work concurrently with other renderer
-            apart from exporting jsonstring.
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
         open_iframe: boolean
-            Open the iframe in the default browser if set to True.
+            Open the save_iframe in the default browser if set to True.
 
         Returns
         -------
-        json string if jsonstring is True, otherwise only an image is displayed
+        JSON strings if return_jsonstring is set to True.
 
         '''
 
         if log:
+
             fig = go.Figure(data=go.Heatmap(z=np.log10(self.light_master),
                                             colorscale="Viridis"))
         else:
+
             fig = go.Figure(
                 data=go.Heatmap(z=self.light_master, colorscale="Viridis"))
-        if jsonstring:
-            return fig.to_json()
-        if iframe:
-            if open_iframe:
-                pio.write_html(fig, 'reduced_image.html')
+
+        fig.update_layout(yaxis_title='Spatial Direction / pixel',
+                          xaxis=dict(zeroline=False,
+                                     showgrid=False,
+                                     title='Spectral Direction / pixel'),
+                          bargap=0,
+                          hovermode='closest',
+                          showlegend=False,
+                          autosize=False,
+                          height=height,
+                          width=width,)
+
+        if save_iframe:
+
+            if filename is None:
+
+                pio.write_html(fig,
+                               'reduced_image.html',
+                               auto_open=open_iframe)
+
             else:
-                pio.write_html(fig, 'reduced_image.html', auto_open=False)
-        if renderer == 'default':
-            fig.show()
-        else:
-            fig.show(renderer)
+
+                pio.write_html(fig, filename + '.html', auto_open=open_iframe)
+
+        if display:
+
+            if renderer == 'default':
+
+                fig.show()
+
+            else:
+
+                fig.show(renderer)
+
+        if return_jsonstring:
+
+            return fig.to_json()
 
     def list_files(self):
         '''

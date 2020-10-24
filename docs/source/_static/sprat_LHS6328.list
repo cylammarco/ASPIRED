@@ -1,0 +1,8 @@
+#flat, sprat_LHS6328_Hiltner102_raw/v_slit_red_1.fits.gz
+dark, sprat_LHS6328_Hiltner102_raw/v_dark_1.fits.gz
+arc, sprat_LHS6328_Hiltner102_raw/v_a_20180810_13_1_0_1.fits.gz
+light, sprat_LHS6328_Hiltner102_raw/v_e_20180810_12_1_0_0.fits.gz
+light, sprat_LHS6328_Hiltner102_raw/v_e_20180810_12_2_0_0.fits.gz
+light, sprat_LHS6328_Hiltner102_raw/v_e_20180810_12_3_0_0.fits.gz
+light, sprat_LHS6328_Hiltner102_raw/v_e_20180810_12_4_0_0.fits.gz
+light, sprat_LHS6328_Hiltner102_raw/v_e_20180810_12_5_0_0.fits.gz

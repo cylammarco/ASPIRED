@@ -1,22 +1,27 @@
-.. _installation:
-
+Installation
+============
 
 Make sure your pip is linked to python 3.6+, you may need to use pip3 instead.
 
 PyPI
-=============
+----
 
 Install with pip by
 
 `pip install aspired`
 
-Github
-======
+see more at `PyPI <https://pypi.org/project/aspired/>`_.
 
-To install the stable version on the master, use
+
+Github
+------
+
+To install the stable version on the main branch, use
 
 `pip install git+https://github.com/cyalmmarco/ASPIRED.git`
 
-or the development branch with
+or the development (dec) branch with
 
 `pip install git+https://github.com/cyalmmarco/ASPIRED.git@dev`.
+
+See more at the `GitHub <https://github.com/cyalmmarco/ASPIRED>`_ page.

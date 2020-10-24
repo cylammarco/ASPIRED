@@ -6,7 +6,7 @@
 How to Use The ASPIRED Documentation
 ====================================
 
-To start, you're probably going to need to follow the :ref:`installation` guide to
+To start, you're probably going to need to follow the :ref:`Installation` guide to
 get ASPIRED installed on your computer.
 After you finish that, you can probably learn most of what you need from the
 tutorials listed below (you might want to start with
@@ -42,29 +42,25 @@ User Guide
    :caption: Tutorials
 
    tutorials/quickstart
-   tutorials/ltsprat
    tutorials/whtisis
 
 .. toctree::
    :maxdepth: 1
    :caption: Image Reduction API
 
-   modules/imagereduction
+   modules/imagereductionmodule
 
 .. toctree::
    :maxdepth: 1
    :caption: Spectral Reduction API
 
-   modules/twodspec
-   modules/standardflux
-   modules/wavelengthpolyfit
-   modules/onedspec
+   modules/spectralreductionmodule
 
 .. toctree::
    :maxdepth: 1
-   :caption: Standard List API
+   :caption: Standard List
 
-   modules/standardlist
+   modules/standardlistmodule
 
 
 Basic Usage
