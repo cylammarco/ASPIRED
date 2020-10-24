@@ -4869,7 +4869,7 @@ class WavelengthCalibration():
         '''
         A wrapper function to perform wavelength calibration with RASCAL. As of
         14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
-        NIST.
+        `NIST <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
 
         Parameters
         ----------
@@ -4880,7 +4880,7 @@ class WavelengthCalibration():
         fit_deg: int (default: 4)
             The degree of the polynomial to be fitted.
         fit_coeff: list (default: None)
-            * NOT CURRENTLY USED *
+            *NOT CURRENTLY USED*
             Set the baseline of the least square fit. If no fits outform this
             set of polynomial coefficients, this will be used as the best fit.
         fit_tolerance: float (default: 10)
