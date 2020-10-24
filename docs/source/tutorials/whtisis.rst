@@ -173,11 +173,6 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
           save_iframe=True,
           filename='arc_spec')
 
-    .. raw:: html
-      :file: ../_static/isis_arc_spec_0.html
-
-    .. code-block:: python
-
       pso_reduced.find_arc_lines(
           display=True,
           stype='science+standard',
@@ -224,11 +219,6 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
       pso_reduced.inspect_standard(
           save_iframe=True,
           filename='literature_standard')
-
-    .. raw:: html
-      :file: ../_static/isis_literature_standard.html
-
-    .. code-block:: python
 
       pso_reduced.compute_sensitivity(kind='cubic')
       pso_reduced.inspect_sensitivity(

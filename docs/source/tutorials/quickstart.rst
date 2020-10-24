@@ -128,15 +128,6 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
       onedspec.add_arc(science_frame, stype='science')
       onedspec.add_arc(standard_frame, stype='standard')
       onedspec.extract_arc_spec()
-
-    .. raw:: html
-      :file: ../_static/7_science_arc_spec.html
-
-    .. raw:: html
-      :file: ../_static/8_standard_arc_spec.html
-
-    .. code-block:: python
-
       onedspec.find_arc_lines()
 
     Then, the position of the peaks, which are the arc lines, can be found for
