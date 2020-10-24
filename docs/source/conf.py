@@ -56,6 +56,10 @@ apidoc_args = [
     '--output-dir=.',  # Directory to place all output
 ]
 
+autodoc_mock_imports = [
+    'astropy', 'astroscrappy', 'ccdprocs', 'rascal', 'plotly', 'spectres'
+]
+
 autoclass_content = 'both'
 
 # -- Options for HTML output -------------------------------------------------
