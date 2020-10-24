@@ -58,9 +58,6 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
       standard_frame.reduce()
       standard_frame.inspect()
 
-    .. raw:: html
-      :file: ../_static/2_standard_reduced.html
-
 2.  With the image reduced, we can start performing spectral reduction,
     starting from the 2D spectrum:
 
@@ -99,9 +96,6 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     The two spectra from the science frame:
 
     .. raw:: html
-      :file: ../_static/5_science_extracted_0.html
-
-    .. raw:: html
       :file: ../_static/5_science_extracted_1.html
 
     and the spectrum of the standard frame:
@@ -135,9 +129,6 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
 
     .. raw:: html
       :file: ../_static/9_science_arc_lines.html
-
-    .. raw:: html
-      :file: ../_static/10_standard_arc_lines.html
 
 7.  Initialise a calibrator and add element lines to prepare for wavelength
     calibration, set the various calibrator, Hough transform and RANSAC

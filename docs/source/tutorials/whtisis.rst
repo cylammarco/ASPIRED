@@ -59,9 +59,6 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
       standard_frame.reduce()
       standard_frame.inspect()
 
-    .. raw:: html
-      :file: ../_static/isis_reduced_image_g93m48.html
-
 2.  With the image reduced, we can start performing spectral reduction,
     starting from the 2D spectrum with the customised setting to provide
     the appropriate read noise, gain, seeing and spatial masking:
@@ -102,9 +99,6 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
     .. raw:: html
       :file: ../_static/isis_pso_trace.html
 
-    .. raw:: html
-      :file: ../_static/isis_g93_trace.html
-
 4.  And then extract the spectra from the traces by using the ap_extract()
     method. The science spectrum is optimally extracted with an aperture with
     the default size of 15 and 20 pixel on each side of the trace, the sky is 
@@ -134,15 +128,10 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
           save_iframe=True,
           filename='g93_extract')
 
-    The two spectra from the science frame:
+    The spectrum from the science frame:
 
     .. raw:: html
       :file: ../_static/isis_pso_extract_0.html
-
-    and the spectrum of the standard frame:
-
-    .. raw:: html
-      :file: ../_static/isis_g93_extract_0.html
 
 5.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
     and the extracted spectra from the TwoDSpec objects,
