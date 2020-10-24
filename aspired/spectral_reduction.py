@@ -4869,7 +4869,7 @@ class WavelengthCalibration():
         '''
         A wrapper function to perform wavelength calibration with RASCAL. As of
         14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
-        `NIST <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
+        NIST.
 
         Parameters
         ----------
