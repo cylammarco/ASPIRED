@@ -1,7 +1,7 @@
   {
     "name": "ASPIRED",
     "description": "",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "main": "index.js",
     "scripts": {
       "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,8 +11,8 @@
       "url": "https://github.com/cylammarco/ASPIRED.git"
     },
     "keywords": [],
-    "author": "",
-    "license": "GPL-2.0-or-later",
+    "author": "Marco Lam",
+    "license": "bsd-3-clause",
     "bugs": {},
     "homepage": {}
   }
