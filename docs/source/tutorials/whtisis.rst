@@ -41,9 +41,6 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
           filename='reduced_image_pso1801p6254',
           save_iframe=True)
 
-    .. raw:: html
-      :file: ../_static/isis_reduced_image_pso1801p6254.html
-
     and for the standard spectral image, the file list is contained in
     `isis_g93m48.list`
 
@@ -128,10 +125,15 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
           save_iframe=True,
           filename='g93_extract')
 
-    The spectrum from the science frame:
+    The two spectra from the science frame:
 
     .. raw:: html
       :file: ../_static/isis_pso_extract_0.html
+
+    and the spectrum of the standard frame:
+
+    .. raw:: html
+      :file: ../_static/isis_g93_extract_0.html
 
 5.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
     and the extracted spectra from the TwoDSpec objects,
@@ -171,6 +173,9 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
     Then, the position of the peaks, which are the arc lines, can be found for
     performing wavelength calibration for each trace.
 
+    .. raw:: html
+      :file: ../_static/isis_arc_lines_0.html
+
 7.  Initialise a calibrator and add element lines to prepare for wavelength
     calibration, set the various calibrator, Hough transform and RANSAC
     properties before performing the Hough Transform that is used for the
@@ -205,6 +210,11 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
       pso_reduced.inspect_standard(
           save_iframe=True,
           filename='literature_standard')
+
+    .. raw:: html
+      :file: ../_static/isis_literature_standard.html
+
+    .. code-block:: python
 
       pso_reduced.compute_sensitivity(kind='cubic')
       pso_reduced.inspect_sensitivity(
