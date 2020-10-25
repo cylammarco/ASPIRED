@@ -171,9 +171,6 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
     Then, the position of the peaks, which are the arc lines, can be found for
     performing wavelength calibration for each trace.
 
-    .. raw:: html
-      :file: ../_static/isis_arc_lines_0.html
-
 7.  Initialise a calibrator and add element lines to prepare for wavelength
     calibration, set the various calibrator, Hough transform and RANSAC
     properties before performing the Hough Transform that is used for the

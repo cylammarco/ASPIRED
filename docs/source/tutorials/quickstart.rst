@@ -4,6 +4,8 @@ Quickstart with LT/SPRAT
 ========================
 
 Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
+We are only showing one science spectrum until the end where all the reduced
+science and standard spectra are shown.
 
 0.  Import all the required libraries:
 
@@ -77,9 +79,6 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
     .. raw:: html
       :file: ../_static/3_science_traced.html
 
-    .. raw:: html
-      :file: ../_static/4_standard_traced.html
-
 4.  And then extract the spectra from the traces by using the ap_extract()
     method. The science spectrum is optimally extracted with an aperture with
     the default size of 7 pixel on each side of the trace, the sky is measured
@@ -99,9 +98,6 @@ Using the SPRAT instrument on the Liverpool Telescope as an example quickstart.
       :file: ../_static/5_science_extracted_1.html
 
     and the spectrum of the standard frame:
-
-    .. raw:: html
-      :file: ../_static/6_standard_extracted.html
 
 5.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
     and the extracted spectra from the TwoDSpec objects,
