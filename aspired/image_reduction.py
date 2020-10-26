@@ -194,7 +194,7 @@ class ImageReduction:
         if isinstance(self.filelist, str):
             self.filelist = np.genfromtxt(self.filelist,
                                           delimiter=self.delimiter,
-                                          dtype=str,
+                                          dtype=None,
                                           autostrip=True).astype('U')
 
             if np.shape(np.shape(self.filelist))[0] == 2:
