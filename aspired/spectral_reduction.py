@@ -3237,11 +3237,13 @@ class TwoDSpec:
 
                         warnings.warn('skydeg cannot be negative. sky '
                                       'background is set to zero.')
-                        count_sky[i] = np.zeros(len(xslice))
+                        count_sky[i] = 0.
 
                 else:
 
-                    count_sky[i] = np.zeros(len(xslice))
+                    # get the indexes of the sky regions
+                    z = [0.]
+                    count_sky[i] = 0.
 
                 # if optimal extraction
                 if optimal:
