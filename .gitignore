@@ -129,3 +129,6 @@ dmypy.json
 
 # Plotly figures
 iframe_figures/
+
+# VS Code
+.vscode

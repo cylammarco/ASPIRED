@@ -3685,6 +3685,26 @@ class WavelengthCalibration():
                 self.arc = arc.arc_master
             else:
                 self.arc = np.transpose(arc.arc_master)
+
+        # If a filepath is provided
+        elif isinstance(arc, str):
+
+            # If HDU number is provided
+            if arc[-1] == ']':
+
+                filepath, hdunum = arc.split('[')
+                hdunum = hdunum[:-1]
+
+            # If not, assume the HDU idnex is 0
+            else:
+
+                filepath = arc
+                hdunum = 0
+
+            # Load the file and dereference it afterwards
+            fitsfile_tmp = fits.open(filepath)[hdunum]
+            self.arc = fitsfile_tmp.data
+
         else:
 
             raise TypeError(
@@ -8860,6 +8880,7 @@ class OneDSpec():
             save_jpg=save_jpg,
             save_svg=save_svg,
             save_pdf=save_pdf,
+            display=display,
             return_jsonstring=return_jsonstring,
             save_iframe=save_iframe,
             open_iframe=open_iframe)
