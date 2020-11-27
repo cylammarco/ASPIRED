@@ -32,7 +32,6 @@ class _spectrum1D():
     extracted spectrum.
 
     '''
-
     def __init__(self, spec_id):
 
         # spectrum ID
@@ -379,7 +378,7 @@ class _spectrum1D():
                           (list, np.ndarray)), 'peaks_wave has to be a list'
         self.peaks_wave = peaks_wave
 
-    def remove_peaks_pixel(self):
+    def remove_peaks_wave(self):
 
         self.peaks_wave = None
 
@@ -397,7 +396,7 @@ class _spectrum1D():
 
         assert type(
             calibrator
-        ) == rascal.Calibrator, 'calibrator has to be a rascal.Calibrator '
+        ) == Calibrator, 'calibrator has to be a rascal.Calibrator '
         'object.'
         self.calibrator = calibrator
 
@@ -539,8 +538,8 @@ class _spectrum1D():
         self.ybins = None
         self.min_wavelength = None
         self.max_wavelength = None
-        self.range_tolerance = range_tolerance
-        self.linearity_tolerance = v
+        self.range_tolerance = None
+        self.linearity_tolerance = None
 
     def add_ransac_properties(self, sample_size, top_n_candidate, linear,
                               filter_close, ransac_tolerance,
@@ -915,7 +914,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1008,7 +1006,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1028,16 +1025,16 @@ class _spectrum1D():
 
                 # Put the data in ImageHDUs
                 count_resampled_ImageHDU = fits.ImageHDU(self.count_resampled)
-                count_resampled_err_ImageHDU = fits.ImageHDU(
-                    self.count_resampled_err)
-                count_resampled_sky_ImageHDU = fits.ImageHDU(
-                    self.count_resampled_sky)
+                count_err_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_err_resampled)
+                count_sky_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_sky_resampled)
 
                 # Create an empty HDU list and populate with ImageHDUs
                 self.count_resampled_hdulist = fits.HDUList()
                 self.count_resampled_hdulist += [count_resampled_ImageHDU]
-                self.count_resampled_hdulist += [count_resampled_err_ImageHDU]
-                self.count_resampled_hdulist += [count_resampled_sky_ImageHDU]
+                self.count_resampled_hdulist += [count_err_resampled_ImageHDU]
+                self.count_resampled_hdulist += [count_sky_resampled_ImageHDU]
 
                 # Add the resampled count
                 self.modify_count_resampled_header(0, 'set', 'LABEL',
@@ -1090,7 +1087,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1144,7 +1140,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1212,7 +1207,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1283,7 +1277,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1373,7 +1366,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1413,7 +1405,6 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e.__doc__)
                 warnings.warn(e)
 
                 # Set it to None if the above failed
@@ -1999,7 +1990,7 @@ class TwoDSpec:
 
                 if readnoise_keyword_matched.any():
 
-                    self.readnoise = data.header[self.readnoise_keyword[
+                    self.readnoise = self.header[self.readnoise_keyword[
                         np.where(readnoise_keyword_matched)[0][0]]]
 
                 else:
@@ -2065,7 +2056,7 @@ class TwoDSpec:
             if isinstance(seeing, str):
 
                 # use the supplied keyword
-                self.seeing = float(data.header[seeing])
+                self.seeing = float(self.header[seeing])
 
             elif np.isfinite(gain):
 
@@ -2298,7 +2289,7 @@ class TwoDSpec:
         # If it is a fits.hdu.header.Header object
         if isinstance(header, fits.header.Header):
 
-            self.header = data.header
+            self.header = header
 
         else:
 
@@ -2330,8 +2321,9 @@ class TwoDSpec:
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
-    def _identify_spectra(self, f_height, display, renderer, return_jsonstring,
-                          save_iframe, filename, open_iframe):
+    def _identify_spectra(self, f_height, display, renderer, height, width,
+                          return_jsonstring, save_iframe, filename,
+                          open_iframe):
         """
         Identify peaks assuming the spatial and spectral directions are
         aligned with the X and Y direction within a few degrees.
@@ -2369,10 +2361,10 @@ class TwoDSpec:
         ztot = np.nanmedian(self.img, axis=1)
 
         # get the height thershold
-        height = np.nanmax(ztot) * f_height
+        peak_height = np.nanmax(ztot) * f_height
 
         # identify peaks
-        peaks_y, heights_y = signal.find_peaks(ztot, height=height)
+        peaks_y, heights_y = signal.find_peaks(ztot, height=peak_height)
         heights_y = heights_y['peak_heights']
 
         # sort by strength
@@ -2862,11 +2854,10 @@ class TwoDSpec:
             ]
 
             non_nan_mask = np.isnan(spec_spatial[start_idx:end_idx]) == False
-            popt, pcov = curve_fit(
-                self._gaus,
-                np.arange(start_idx, end_idx)[non_nan_mask],
-                spec_spatial[start_idx:end_idx][non_nan_mask],
-                p0=pguess)
+            popt, _ = curve_fit(self._gaus,
+                                np.arange(start_idx, end_idx)[non_nan_mask],
+                                spec_spatial[start_idx:end_idx][non_nan_mask],
+                                p0=pguess)
             ap_sigma = popt[3] / resample_factor
 
             self.spectrum_list[i] = _spectrum1D(i)
@@ -3007,7 +2998,7 @@ class TwoDSpec:
 
         '''
 
-        if spec_id in spectrum_list:
+        if spec_id in self.spectrum_list:
 
             self.spectrum_list[spec_id].remove_trace()
 
@@ -5382,7 +5373,7 @@ class WavelengthCalibration():
 
             self.spectrum_list[i].save_csv(output=output,
                                            filename=filename_i,
-                                           force=Flase,
+                                           force=False,
                                            overwrite=overwrite)
 
 
@@ -6861,7 +6852,7 @@ class FluxCalibration(StandardLibrary):
 
                 if return_jsonstring:
 
-                    return fig_sci[j].to_json()
+                    return fig_sci[i].to_json()
 
         if 'standard' in stype_split:
 
@@ -7161,7 +7152,7 @@ class FluxCalibration(StandardLibrary):
 
             else:
 
-                raise Error('Flux is not calibrated.')
+                raise ValueError('Flux is not calibrated.')
 
             if isinstance(spec_id, int):
 
@@ -7179,7 +7170,7 @@ class FluxCalibration(StandardLibrary):
 
                 else:
 
-                    raise Error('Flux is not calibrated.')
+                    raise ValueError('Flux is not calibrated.')
 
             if return_id:
 
@@ -7196,7 +7187,7 @@ class FluxCalibration(StandardLibrary):
 
             else:
 
-                raise Error('Flux is not calibrated.')
+                raise ValueError('Flux is not calibrated.')
 
     def save_fits(self,
                   spec_id=None,
@@ -7245,6 +7236,9 @@ class FluxCalibration(StandardLibrary):
 
         # Fix the names and extensions
         filename = os.path.splitext(filename)[0]
+
+        # Split the string into strings
+        stype_split = stype.split('+')
 
         if 'science' in stype_split:
 
@@ -7340,8 +7334,8 @@ class FluxCalibration(StandardLibrary):
             spec_id = self.create_fits(spec_id=spec_id,
                                        output=output,
                                        stype='science',
-                                       empty_primary_hdu=empty_primary_hdu,
-                                       force=force,
+                                       empty_primary_hdu=False,
+                                       force=False,
                                        return_id=True)
 
             for i in spec_id:
@@ -7357,7 +7351,7 @@ class FluxCalibration(StandardLibrary):
                                                            overwrite=overwrite)
                 else:
 
-                    raise Error('Flux is not calibrated.')
+                    raise ValueError('Flux is not calibrated.')
 
         if 'standard' in stype_split:
 
@@ -7367,8 +7361,8 @@ class FluxCalibration(StandardLibrary):
             self.create_fits(spec_id=[0],
                              output=output,
                              stype='standard',
-                             empty_primary_hdu=empty_primary_hdu,
-                             force=force)
+                             empty_primary_hdu=False,
+                             force=False)
 
             # If flux is calibrated
             if self.flux_standard_calibrated:
@@ -7380,7 +7374,7 @@ class FluxCalibration(StandardLibrary):
                                                         overwrite=overwrite)
             else:
 
-                raise Error('Standard Flux is not calibrated.')
+                raise ValueError('Standard Flux is not calibrated.')
 
 
 class OneDSpec():
@@ -7460,11 +7454,11 @@ class OneDSpec():
 
             if s == 'science':
 
-                wavecal_science_imported = True
+                self.wavecal_science_imported = True
 
             if s == 'standard':
 
-                wavecal_standard_imported = True
+                self.wavecal_standard_imported = True
 
     def add_wavelength(self,
                        wave,
@@ -7618,7 +7612,9 @@ class OneDSpec():
 
         self.apply_spec_mask_to_arc(spec_mask=spec_mask)
 
-    def apply_spatial_mask_to_arc(self, spatial_mask, stype='science+standard'):
+    def apply_spatial_mask_to_arc(self,
+                                  spatial_mask,
+                                  stype='science+standard'):
         '''
         *EXPERIMENTAL*
         Apply to use only the valid y-range of the chip (i.e. spatial
@@ -8984,7 +8980,7 @@ class OneDSpec():
 
             else:
 
-                raise Error('Neither wavelength nor flux is calibrated.')
+                raise ValueError('Neither wavelength nor flux is calibrated.')
 
             if isinstance(spec_id, int):
 
@@ -9014,7 +9010,8 @@ class OneDSpec():
 
                 else:
 
-                    raise Error('Neither wavelength nor flux is calibrated.')
+                    raise ValueError(
+                        'Neither wavelength nor flux is calibrated.')
 
             if return_id:
 
@@ -9043,7 +9040,7 @@ class OneDSpec():
             # Should be trapped above so this line should never be run
             else:
 
-                raise Error('Neither wavelength nor flux is calibrated.')
+                raise ValueError('Neither wavelength nor flux is calibrated.')
 
     def save_fits(self,
                   spec_id=None,
