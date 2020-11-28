@@ -6888,14 +6888,10 @@ class FluxCalibration(StandardLibrary):
                     (np.array(spec.wave_resampled).reshape(-1) > wave_min) &
                     (np.array(spec.wave_resampled).reshape(-1) < wave_max))
                 flux_standard_mask = (
-                    (np.array(spec.count_resampled).reshape(-1) >
-                     np.nanpercentile(
-                         np.array(spec.count_resampled).reshape(-1)
-                         [wave_standard_mask], 5) / 1.5) &
-                    (np.array(spec.count_standard).reshape(-1) <
-                     np.nanpercentile(
-                         np.array(spec.count_resampled).reshape(-1)
-                         [wave_standard_mask], 95) * 1.5))
+                    np.array(spec.count_resampled).reshape(-1) >
+                    np.nanpercentile(
+                        np.array(spec.count_resampled).reshape(-1)
+                        [wave_standard_mask], 5) / 1.5)
                 flux_standard_min = np.log10(
                     np.nanmin(
                         np.array(spec.count_resampled).reshape(-1)
