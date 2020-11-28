@@ -19,7 +19,7 @@ Waxis = 1
 
 # Get the shape of the 2D spectrum and define upsampling ratio
 scaling = 10
-if Saxis is 1:
+if Saxis == 1:
     N_wave = len(data[0])
     N_spatial = len(data)
 else:
