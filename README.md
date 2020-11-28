@@ -1,5 +1,5 @@
 # Automated SpectroPhotometric Image REDuction (ASPIRED)
-[![Build Status](https://travis-ci.com/cylammarco/ASPIRED.svg?branch=dev)](https://travis-ci.com/cylammarco/ASPIRED)
+![Python package](https://github.com/cylammarco/ASPIRED/workflows/Python%20package/badge.svg)
 [![Readthedocs Status](https://readthedocs.org/projects/aspired/badge/?version=latest&style=flat)](https://aspired.readthedocs.io/en/latest/)
 [![GitHub version](https://badge.fury.io/gh/cylammarco%2Faspired.svg)](https://badge.fury.io/gh/cylammarco%2Faspired)
 [![PyPI version](https://badge.fury.io/py/aspired.svg)](https://badge.fury.io/py/aspired)
