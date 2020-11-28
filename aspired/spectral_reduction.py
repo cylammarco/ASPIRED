@@ -3769,7 +3769,7 @@ class WavelengthCalibration():
 
     def add_spec(self, count, count_err=None, count_sky=None, spec_id=None):
         '''
-        To provide user-supplied extracted spectrum for wavelegth calibration.
+        To provide user-supplied extracted spectrum for wavelength calibration.
 
         Parameters
         ----------
@@ -5215,7 +5215,7 @@ class WavelengthCalibration():
         for i in output.split('+'):
 
             if i not in [
-                    'trace', 'count', 'arc_spec', 'wavecal', 'wavelegth',
+                    'trace', 'count', 'arc_spec', 'wavecal', 'wavelength',
                     'count_resampled'
             ]:
 
@@ -8935,7 +8935,7 @@ class OneDSpec():
         for i in output.split('+'):
 
             if i not in [
-                    'trace', 'count', 'arc_spec', 'wavecal', 'wavelegth',
+                    'trace', 'count', 'arc_spec', 'wavecal', 'wavelength',
                     'count_resampled', 'flux', 'flux_resampled'
             ]:
 

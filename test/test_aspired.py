@@ -184,14 +184,14 @@ def test_full_run():
 
     # Save as FITS
     lhs6328_onedspec.save_fits(
-        output='flux_resampled+wavecal+flux+count',
+        output='flux_resampled+wavecal+wavelength+flux+count',
         filename='test/test_output/test_full_run',
         stype='science+standard',
         overwrite=True)
 
     # save as CSV
     lhs6328_onedspec.save_csv(
-        output='flux_resampled+wavecal+flux+count',
+        output='flux_resampled+wavecal+wavelength+flux+count',
         filename='test/test_output/test_full_run',
         stype='science+standard',
         overwrite=True)

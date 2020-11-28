@@ -123,7 +123,11 @@ class ImageReduction:
         else:
             self.filelist = os.path.abspath(filelist)
 
-        self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
+        # Check if running on Windows
+        if os.name == 'nt':
+            self.filelist_abspath = self.filelist.rsplit('\\', 1)[0]
+        else:
+            self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
 
         self.ftype = ftype
         if ftype == 'csv':
@@ -286,13 +290,15 @@ class ImageReduction:
                 self.saxis_keyword = 'SAXIS'
             else:
                 self.saxis_keyword = saxis_keyword
+            ''' To be implemented.
             try:
                 self.saxis = int(light.header[self.saxis_keyword])
             except:
                 if not self.silence:
                     warnings.warn('saxis keyword "' + self.saxis_keyword +
                                   '" is not in the header. saxis is set to 1.')
-                self.saxis = 1
+            '''
+            self.saxis = 1
         else:
             self.saxis = saxis
 
@@ -305,7 +311,7 @@ class ImageReduction:
         for i in range(self.light_list.size):
             # Open all the light frames
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
-            light_CCDData.append(CCDData(light.data, unit=u.adu))
+            light_CCDData.append(CCDData(light.data, unit=u.ct))
             self.light_header.append(light.header)
             self.light_filename.append(self.light_list[i].split('/')[-1])
 
@@ -365,7 +371,7 @@ class ImageReduction:
             for i in range(self.arc_list.size):
                 # Open all the light frames
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
-                arc_CCDData.append(CCDData(arc.data, unit=u.adu))
+                arc_CCDData.append(CCDData(arc.data, unit=u.ct))
 
                 self.arc_filename.append(self.arc_list[i].split('/')[-1])
 
@@ -387,7 +393,7 @@ class ImageReduction:
         for i in range(self.bias_list.size):
             # Open all the bias frames
             bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
-            bias_CCDData.append(CCDData(bias.data, unit=u.adu))
+            bias_CCDData.append(CCDData(bias.data, unit=u.ct))
 
             self.bias_filename.append(self.bias_list[i].split('/')[-1])
 
@@ -427,7 +433,7 @@ class ImageReduction:
         for i in range(self.dark_list.size):
             # Open all the dark frames
             dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
-            dark_CCDData.append(CCDData(dark.data, unit=u.adu))
+            dark_CCDData.append(CCDData(dark.data, unit=u.ct))
 
             self.dark_filename.append(self.dark_list[i].split('/')[-1])
 
@@ -486,7 +492,7 @@ class ImageReduction:
         for i in range(self.flat_list.size):
             # Open all the flatfield frames
             flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
-            flat_CCDData.append(CCDData(flat.data, unit=u.adu))
+            flat_CCDData.append(CCDData(flat.data, unit=u.ct))
 
             self.flat_filename.append(self.flat_list[i].split('/')[-1])
 
@@ -753,16 +759,18 @@ class ImageReduction:
             fig = go.Figure(
                 data=go.Heatmap(z=self.light_master, colorscale="Viridis"))
 
-        fig.update_layout(yaxis_title='Spatial Direction / pixel',
-                          xaxis=dict(zeroline=False,
-                                     showgrid=False,
-                                     title='Spectral Direction / pixel'),
-                          bargap=0,
-                          hovermode='closest',
-                          showlegend=False,
-                          autosize=False,
-                          height=height,
-                          width=width,)
+        fig.update_layout(
+            yaxis_title='Spatial Direction / pixel',
+            xaxis=dict(zeroline=False,
+                       showgrid=False,
+                       title='Spectral Direction / pixel'),
+            bargap=0,
+            hovermode='closest',
+            showlegend=False,
+            autosize=False,
+            height=height,
+            width=width,
+        )
 
         if save_iframe:
 
