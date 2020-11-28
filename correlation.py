@@ -137,7 +137,7 @@ vmax = np.nanpercentile(np.log10(data), 95)
 
 figure(1, figsize=(18, 9))
 clf()
-if Saxis is 1:
+if Saxis == 1:
     imshow(np.log10(data), vmin=vmin, vmax=vmax, aspect='auto', origin='lower')
 else:
     imshow(np.log10(np.transpose(data)),
