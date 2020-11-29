@@ -1,7 +1,6 @@
 import os
 import sys
 import numpy as np
-from astropy.io import fits
 import plotly.io as pio
 pio.renderers.default = 'notebook+jpg'
 
@@ -29,11 +28,6 @@ def test_spectral_extraction():
     dummy_data[53] *= 2.
     dummy_data += dummy_noise
 
-    dummy_arc = np.arange(30, 80, 10)
-
-    # Spectral direction
-    Saxis = 1
-
     # masking
     spec_mask = np.arange(10, 90)
     spatial_mask = np.arange(15, 85)
@@ -43,13 +37,15 @@ def test_spectral_extraction():
                                                  spatial_mask=spatial_mask,
                                                  spec_mask=spec_mask)
 
-    # Trace the spectrum, note that the first 15 rows were trimmed from the spatial_mask
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
     dummy_twodspec.ap_trace(ap_faint=0)
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
     assert trace == 35, 'Trace is at row ' + str(
         trace) + ', but it is expected to be at row 35.'
 
-    # Optimal extracting spectrum by summing over the aperture along the trace
+    # Optimal extracting spectrum by summing over the aperture along the
+    # trace
     dummy_twodspec.ap_extract(apwidth=5, optimal=False)
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     assert np.round(count).astype('int') == 47, 'Extracted count is ' + str(
@@ -102,25 +98,25 @@ def test_full_run():
         display=False,
         save_iframe=False)
 
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=5,
-                                skydeg=1,
-                                optimal=False,
-                                display=False,
-                                save_iframe=True,
-                                filename='test/test_output/test_full_run_extract')
+    lhs6328_twodspec.ap_extract(
+        apwidth=15,
+        skywidth=5,
+        skydeg=1,
+        optimal=False,
+        display=False,
+        save_iframe=True,
+        filename='test/test_output/test_full_run_extract')
 
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=5,
-                                skydeg=1,
-                                optimal=True,
-                                forced=True,
-                                variances=1000000.,
-                                display=False,
-                                save_iframe=True,
-                                filename='test/test_output/test_full_run_extract')
-    #lhs6328_twodspec.save_fits(
-    #    filename='example_output/example_01_a_science_traces', overwrite=True)
+    lhs6328_twodspec.ap_extract(
+        apwidth=15,
+        skywidth=5,
+        skydeg=1,
+        optimal=True,
+        forced=True,
+        variances=1000000.,
+        display=False,
+        save_iframe=True,
+        filename='test/test_output/test_full_run_extract')
 
     # Standard frame
     standard_frame = image_reduction.ImageReduction(
@@ -176,7 +172,9 @@ def test_full_run():
     lhs6328_onedspec.do_hough_transform()
 
     # Solve for the pixel-to-wavelength solution
-    lhs6328_onedspec.fit(max_tries=200, stype='science+standard', display=False)
+    lhs6328_onedspec.fit(max_tries=200,
+                         stype='science+standard',
+                         display=False)
 
     # Apply the wavelength calibration and display it
     lhs6328_onedspec.apply_wavelength_calibration(stype='science+standard')
@@ -186,7 +184,9 @@ def test_full_run():
     # Get the standard from the library
     lhs6328_onedspec.load_standard(target='hiltner102')
 
-    lhs6328_onedspec.compute_sensitivity(k=3, method='interpolate', mask_fit_size=1)
+    lhs6328_onedspec.compute_sensitivity(k=3,
+                                         method='interpolate',
+                                         mask_fit_size=1)
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
@@ -205,10 +205,7 @@ def test_full_run():
         overwrite=True)
 
     # save figure
-    lhs6328_onedspec.inspect_reduced_spectrum(filename='test/test_output/test_full_run',
-                                              save_png=True,
-                                              save_jpg=True,
-                                              save_svg=True,
-                                              save_pdf=True,
-                                              display=False,
-                                              save_iframe=True)
+    lhs6328_onedspec.inspect_reduced_spectrum(
+        filename='test/test_output/test_full_run',
+        display=False,
+        save_iframe=True)

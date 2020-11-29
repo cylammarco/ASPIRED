@@ -2,7 +2,6 @@ import difflib
 import json
 import os
 import pkg_resources
-import sys
 import warnings
 from itertools import chain
 
@@ -11,12 +10,10 @@ from astroscrappy import detect_cosmics
 from astropy.io import fits
 from astropy.stats import sigma_clip
 from rascal.calibrator import Calibrator
-from rascal.util import load_calibration_lines
 from rascal.util import refine_peaks
 from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import signal
-from scipy import stats
 from scipy import interpolate as itp
 from scipy.optimize import curve_fit
 from spectres import spectres
@@ -151,7 +148,8 @@ class _spectrum1D():
             'Pesampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, '
             'Resampled Sensitivity Curve',
             'count_resampled':
-            'Resampled Count, Resampled Count Uncertainty, Resampled Sky Count',
+            'Resampled Count, Resampled Count Uncertainty, '
+            'Resampled Sky Count',
             'arc_spec':
             '1D Arc Spectrum, Arc Line Position, Arc Line Effective Position',
             'wavecal':
@@ -1474,7 +1472,7 @@ class _spectrum1D():
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_hdu_list: boolean (default: False)
@@ -1642,7 +1640,7 @@ class _spectrum1D():
             Filename for the output, all of them will share the same name but
             will have different extension.
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
         empty_primary_hdu: boolean (default: True)
@@ -1687,7 +1685,7 @@ class _spectrum1D():
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
 
@@ -1834,7 +1832,7 @@ class TwoDSpec:
                        exptime=None,
                        silence=None):
         '''
-        The read noise, detector gain, seeing and exposure time will be 
+        The read noise, detector gain, seeing and exposure time will be
         automatically extracted from the FITS header if it conforms with the
         IAUFWG FITS standard.
 
@@ -2646,9 +2644,9 @@ class TwoDSpec:
         fit_deg: int
             Degree of the polynomial fit of the trace.
         ap_faint: float
-            The percentile toleranceold of Count aperture to be used for fitting
-            the trace. Note that this percentile is of the Count, not of the
-            number of subspectra.
+            The percentile toleranceold of Count aperture to be used for
+            fitting the trace. Note that this percentile is of the Count,
+            not of the number of subspectra.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
@@ -2671,7 +2669,8 @@ class TwoDSpec:
 
         Returns
         -------
-        json string if return_jsonstring is True, otherwise only an image is displayed
+        json string if return_jsonstring is True, otherwise only an image is
+        displayed
 
         '''
 
@@ -2853,7 +2852,7 @@ class TwoDSpec:
                 np.nanpercentile(spec_spatial, 10), ap_centre_idx, 3.
             ]
 
-            non_nan_mask = np.isnan(spec_spatial[start_idx:end_idx]) == False
+            non_nan_mask = np.isfinite(spec_spatial[start_idx:end_idx])
             popt, _ = curve_fit(self._gaus,
                                 np.arange(start_idx, end_idx)[non_nan_mask],
                                 spec_spatial[start_idx:end_idx][non_nan_mask],
@@ -3040,9 +3039,9 @@ class TwoDSpec:
                             will be used to construct the gaussian weight
                             function along the entire spectrum.
 
-        Nothing is returned unless return_jsonstring of the plotly graph is set to be
-        returned. The count, count_sky and count_err are stored as properties of the
-        TwoDSpec object.
+        Nothing is returned unless return_jsonstring of the plotly graph is
+        set to be returned. The count, count_sky and count_err are stored as
+        properties of the TwoDSpec object.
 
         count: 1-d array
             The summed count at each column about the trace. Note: is not
@@ -3309,13 +3308,14 @@ class TwoDSpec:
 
                 else:
 
-                    #-- finally, compute the error in this pixel
+                    # finally, compute the error in this pixel
                     sigB = np.nanstd(
                         z) * self.exptime  # standarddev in the background data
                     nB = len(y)  # number of bkgd pixels
                     nA = widthdn + widthup + 1  # number of aperture pixels
 
-                    # Based on aperture phot err description by F. Masci, Caltech:
+                    # Based on aperture phot err description by F. Masci,
+                    # Caltech:
                     # http://wise2.ipac.caltech.edu/staff/fmasci/ApPhotUncert.pdf
                     # All the counts are in per second already, so need to
                     count[i] = count_ap - count_sky[i]
@@ -3583,7 +3583,7 @@ class TwoDSpec:
             Filename for the output, all of them will share the same name but
             will have different extension.
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
         empty_primary_hdu: boolean (default: True)
@@ -4703,8 +4703,8 @@ class WavelengthCalibration():
                         relative_humidity=0.,
                         spec_id=None):
         '''
-        *Remove* all the arc lines loaded to the Calibrator and then use the user
-        supplied arc lines instead.
+        *Remove* all the arc lines loaded to the Calibrator and then use the
+        user supplied arc lines instead.
 
         The vacuum to air wavelength conversion is deafult to False because
         observatories usually provide the line lists in the respective air
@@ -4781,14 +4781,14 @@ class WavelengthCalibration():
         '''
         Adds an atlas of arc lines to the calibrator, given an element.
 
-        Arc lines are taken from a general list of NIST lines and can be filtered
-        using the minimum relative intensity (note this may not be accurate due to
-        instrumental effects such as detector response, dichroics, etc) and
-        minimum line separation.
+        Arc lines are taken from a general list of NIST lines and can be
+        filtered using the minimum relative intensity (note this may not be
+        accurate due to instrumental effects such as detector response,
+        dichroics, etc) and minimum line separation.
 
-        Lines are filtered first by relative intensity, then by separation. This
-        is to improve robustness in the case where there is a strong line very
-        close to a weak line (which is within the separation limit).
+        Lines are filtered first by relative intensity, then by separation.
+        This is to improve robustness in the case where there is a strong
+        line very close to a weak line (which is within the separation limit).
 
         The vacuum to air wavelength conversion is deafult to False because
         observatories usually provide the line lists in the respective air
@@ -4804,7 +4804,8 @@ class WavelengthCalibration():
         max_atlas_wavelength: float (default: None)
             Maximum wavelength of the arc lines.
         min_intensity: float (default: None)
-            Minimum intensity of the arc lines. Refer to NIST for the intensity.
+            Minimum intensity of the arc lines. Refer to NIST for the
+            intensity.
         min_distance: float (default: None)
             Minimum separation between neighbouring arc lines.
         candidate_tolerance: float (default: 10)
@@ -5054,15 +5055,16 @@ class WavelengthCalibration():
 
                 n_delta = len(fit_coeff) - 1
 
-            fit_coeff_new, _, _, residual, peak_utilisation = self.spectrum_list[
-                i].calibrator.match_peaks(fit_coeff,
-                                          n_delta=n_delta,
-                                          refine=refine,
-                                          tolerance=tolerance,
-                                          method=method,
-                                          convergence=convergence,
-                                          robust_refit=robust_refit,
-                                          fit_deg=fit_deg)
+            fit_coeff_new, _, _, residual, peak_utilisation =\
+                self.spectrum_list[i].calibrator.match_peaks(
+                    fit_coeff,
+                    n_delta=n_delta,
+                    refine=refine,
+                    tolerance=tolerance,
+                    method=method,
+                    convergence=convergence,
+                    robust_refit=robust_refit,
+                    fit_deg=fit_deg)
             rms = np.sqrt(np.nanmean(residual**2.))
 
             if display:
@@ -5203,7 +5205,7 @@ class WavelengthCalibration():
             count_resampled: 3 HDUs
                 Resampled Count, uncertainty, and sky (wavelength)
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_id: boolean (default: False)
@@ -5283,7 +5285,7 @@ class WavelengthCalibration():
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         overwrite: boolean
@@ -5349,7 +5351,7 @@ class WavelengthCalibration():
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
 
@@ -5467,8 +5469,8 @@ class StandardLibrary:
 
                 filename += 'a'
 
-            if ((filename == 'g24') or
-                (filename == 'g157')) and (extension == 'fg'):
+            if ((filename == 'g24' or filename == 'g157')
+                    and (extension == 'fg')):
 
                 filename += 'a'
 
@@ -5500,9 +5502,9 @@ class StandardLibrary:
 
             else:
 
-                l = line.strip().strip(':').split()
-                wave.append(l[0])
-                fluxmag.append(l[1])
+                li = line.strip().strip(':').split()
+                wave.append(li[0])
+                fluxmag.append(li[1])
 
         f.close()
         self.wave_standard_true = np.array(wave).astype('float')
@@ -5511,8 +5513,8 @@ class StandardLibrary:
         if self.ftype == 'flux':
 
             # Trap the ones without flux files
-            if ((extension == 'mas') | (filename == 'g24a.fg') |
-                (filename == 'g157a.fg') | (filename == 'h102a.sto')):
+            if (extension == 'mas' or filename == 'g24a.fg'
+                    or filename == 'g157a.fg' or filename == 'h102a.sto'):
 
                 self.fluxmag_standard_true = 10.**(
                     -(self.fluxmag_standard_true / 2.5)
@@ -5521,12 +5523,16 @@ class StandardLibrary:
             # convert milli-Jy into F_lambda
             if unit == 'mjy':
 
-                self.fluxmag_standard_true * 1e-3 * 3.33564095e4 * self.wave_standard_true**2
+                self.fluxmag_standard_true = (self.fluxmag_standard_true *
+                                              1e-3 * 3.33564095e4 *
+                                              self.wave_standard_true**2)
 
             # convert micro-Jy into F_lambda
             if unit == 'microjanskys':
 
-                self.fluxmag_standard_true * 1e-6 * 3.33564095e4 * self.wave_standard_true**2
+                self.fluxmag_standard_true = (self.fluxmag_standard_true *
+                                              1e-6 * 3.33564095e4 *
+                                              self.wave_standard_true**2)
 
     def _get_iraf_standard(self):
         # iraf is always in AB magnitude
@@ -5562,7 +5568,8 @@ class StandardLibrary:
         target: str
             Name of the standard star
         cutoff: float (default: 0.4)
-            The similarity toleranceold [0 (completely different) - 1 (identical)]
+            The similarity toleranceold
+            [0 (completely different) - 1 (identical)]
 
         '''
 
@@ -5572,7 +5579,10 @@ class StandardLibrary:
             libraries = self.uname_to_lib[target]
             return libraries, True
 
-        except:
+        except Exception as e:
+
+            warnings.warn(e)
+
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
             # difflib uses Gestalt pattern matching.
@@ -5758,8 +5768,8 @@ class StandardLibrary:
         fig.update_layout(
             title=self.library + ': ' + self.target + ' ' + self.ftype,
             xaxis_title=r'$\text{Wavelength / A}$',
-            yaxis_title=
-            r'$\text{Flux / ergs cm}^{-2} \text{s}^{-1} \text{A}^{-1}$',
+            yaxis_title=(r'$\text{Flux / ergs cm}^{-2} \text{s}^{-1}' +
+                         '\text{A}^{-1}$'),
             hovermode='closest',
             showlegend=False)
 
@@ -6171,7 +6181,7 @@ class FluxCalibration(StandardLibrary):
         else:
 
             flux_standard = spec.count
-            flux_err_standard = spec.count_err
+            # flux_err_standard = spec.count_err
             flux_standard_true = spectres(
                 np.array(spec.wave).reshape(-1),
                 np.array(self.wave_standard_true).reshape(-1),
@@ -6236,15 +6246,16 @@ class FluxCalibration(StandardLibrary):
                              np.log10(sensitivity_masked),
                              k=k)
 
-            sensitivity_func = lambda x: itp.splev(x, tck)
+            def sensitivity_func(x):
+                return itp.splev(x, tck)
 
         elif method == 'polynomial':
 
             coeff = np.polynomial.polynomial.polyfit(
                 wave_standard_masked, np.log10(sensitivity_masked), deg=7)
 
-            sensitivity_func = lambda x: np.polynomial.polynomial.polyval(
-                x, coeff)
+            def sensitivity_func(x):
+                return np.polynomial.polynomial.polyval(x, coeff)
 
         else:
 
@@ -7130,7 +7141,7 @@ class FluxCalibration(StandardLibrary):
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_id: boolean (default: False)
@@ -7167,7 +7178,8 @@ class FluxCalibration(StandardLibrary):
                         raise ValueError('The given spec_id does not exist.')
                 else:
 
-                    # if spec_id is None, contraints are applied to all calibrators
+                    # if spec_id is None, contraints are applied to all
+                    # calibrators
                     spec_id = list(self.spectrum_list_science.keys())
 
             else:
@@ -7248,7 +7260,7 @@ class FluxCalibration(StandardLibrary):
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
 
@@ -7262,9 +7274,9 @@ class FluxCalibration(StandardLibrary):
 
         if 'science' in stype_split:
 
-            # Create the FITS here to go through all the checks, the save_fits()
-            # below does not re-create the FITS. A warning will be given, but it
-            # can be ignored.
+            # Create the FITS here to go through all the checks, the
+            # save_fits() below does not re-create the FITS. A warning will
+            # be given, but it can be ignored.
             spec_id = self.create_fits(spec_id=spec_id,
                                        output=output,
                                        stype='science',
@@ -7285,9 +7297,9 @@ class FluxCalibration(StandardLibrary):
 
         if 'standard' in stype_split:
 
-            # Create the FITS here to go through all the checks, the save_fits()
-            # below does not re-create the FITS. A warning will be given, but it
-            # can be ignored.
+            # Create the FITS here to go through all the checks, the
+            # save_fits() below does not re-create the FITS. A warning will
+            # be given, but it can be ignored.
             self.create_fits(spec_id=[0],
                              output=output,
                              stype='standard',
@@ -7348,9 +7360,9 @@ class FluxCalibration(StandardLibrary):
 
         if 'science' in stype_split:
 
-            # Create the FITS here to go through all the checks, the save_fits()
-            # below does not re-create the FITS. A warning will be given, but it
-            # can be ignored.
+            # Create the FITS here to go through all the checks, the
+            # save_fits() below does not re-create the FITS. A warning will be
+            # given, but it can be ignored.
             spec_id = self.create_fits(spec_id=spec_id,
                                        output=output,
                                        stype='science',
@@ -7375,9 +7387,9 @@ class FluxCalibration(StandardLibrary):
 
         if 'standard' in stype_split:
 
-            # Create the FITS here to go through all the checks, the save_fits()
-            # below does not re-create the FITS. A warning will be given, but it
-            # can be ignored.
+            # Create the FITS here to go through all the checks, the
+            # save_fits() below does not re-create the FITS. A warning will be
+            # given, but it can be ignored.
             self.create_fits(spec_id=[0],
                              output=output,
                              stype='standard',
@@ -7448,9 +7460,10 @@ class OneDSpec():
             self.fluxcal = fluxcal
             self.flux_imported = True
 
-        except:
+        except Exception as e:
 
-            raise TypeError('Please provide a valid StandardFlux.')
+            raise TypeError(
+                'Please provide a valid StandardFlux: {}'.format(e))
 
     def add_wavelengthcalibration(self, wavecal, stype):
         '''
@@ -8241,8 +8254,8 @@ class OneDSpec():
                         relative_humidity=0.,
                         stype='science+standard'):
         '''
-        *Remove* all the arc lines loaded to the Calibrator and then use the user
-        supplied arc lines instead.
+        *Remove* all the arc lines loaded to the Calibrator and then use the
+        user supplied arc lines instead.
 
         The vacuum to air wavelength conversion is deafult to False because
         observatories usually provide the line lists in the respective air
@@ -8336,7 +8349,8 @@ class OneDSpec():
         max_atlas_wavelength: float (default: None)
             Maximum wavelength of the arc lines.
         min_intensity: float (default: None)
-            Minimum intensity of the arc lines. Refer to NIST for the intensity.
+            Minimum intensity of the arc lines. Refer to NIST for the
+            intensity.
         min_distance: float (default: None)
             Minimum separation between neighbouring arc lines.
         candidate_tolerance: float (default: 10)
@@ -8950,7 +8964,7 @@ class OneDSpec():
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_id: boolean (default: False)
@@ -8988,7 +9002,8 @@ class OneDSpec():
 
                 else:
 
-                    # if spec_id is None, contraints are applied to all calibrators
+                    # if spec_id is None, contraints are applied to all
+                    # calibrators
                     spec_id = list(self.fluxcal.spectrum_list_science.keys())
 
             elif self.wavelength_science_calibrated:
@@ -9004,7 +9019,8 @@ class OneDSpec():
 
                 else:
 
-                    # if spec_id is None, contraints are applied to all calibrators
+                    # if spec_id is None, contraints are applied to all
+                    # calibrators
                     spec_id = list(self.wavecal_science.spectrum_list.keys())
 
             else:
@@ -9115,7 +9131,7 @@ class OneDSpec():
         stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         overwrite: boolean (default: False)
@@ -9235,7 +9251,7 @@ class OneDSpec():
         stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         force: boolean (default: False)
-            Set to True to force recreating the HDU 
+            Set to True to force recreating the HDU
         overwrite: boolean (default: False)
             Default is False.
 
