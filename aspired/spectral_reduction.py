@@ -130,7 +130,7 @@ class _spectrum1D():
 
         self.sensitivity = None
         self.sensitivity_resampled = None
-        self.sensitivity_itp = None
+        self.sensitivity_func = None
         self.wave_literature = None
         self.flux_literature = None
 
@@ -663,13 +663,13 @@ class _spectrum1D():
         self.slength = None
         self.sorder = None
 
-    def add_sensitivity_itp(self, sensitivity_itp):
+    def add_sensitivity_func(self, sensitivity_func):
 
-        self.sensitivity_itp = sensitivity_itp
+        self.sensitivity_func = sensitivity_func
 
-    def remove_sensitivity_itp(self):
+    def remove_sensitivity_func(self):
 
-        self.sensitivity_itp = None
+        self.sensitivity_func = None
 
     def add_sensitivity(self, sensitivity):
 
@@ -6096,8 +6096,9 @@ class FluxCalibration(StandardLibrary):
                     setattr(self.spectrum_list_science[i], key, value)
 
     def compute_sensitivity(self,
-                            kind=3,
+                            k=3,
                             smooth=False,
+                            method='interpolate',
                             slength=5,
                             sorder=3,
                             mask_range=[[6850, 6960], [7575, 7700],
@@ -6118,11 +6119,15 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
-        kind: string or integer [1,2,3,4,5 only]
-            interpolation kind is one of [‘linear’, ‘nearest’, ‘zero’,
-             ‘slinear’, ‘quadratic’, ‘cubic’, ‘previous’, ‘next’]
+        k: integer [1,2,3,4,5 only]
+            The order of the spline.
         smooth: boolean
-            set to smooth the input spectrum with scipy.signal.savgol_filter
+            Set to smooth the input spectrum with scipy.signal.savgol_filter
+        method: str (Default: interpolate)
+            This should be either 'interpolate' of 'polynomial'. Note that the
+            polynomial is computed from the interpolated function. The
+            default is interpolate because it is much more stable at the
+            wavelength limits of a spectrum in an automated system.
         slength: int
             SG-filter window size
         sorder: int
@@ -6147,20 +6152,26 @@ class FluxCalibration(StandardLibrary):
         # resampled to match the lower resolution one.
         spec = self.spectrum_list_standard[0]
 
+        # If the median resolution of the observed spectrum is higher than
+        # the literature one
         if np.nanmedian(np.array(np.ediff1d(spec.wave))) < np.nanmedian(
                 np.array(np.ediff1d(self.wave_standard_true))):
 
-            flux_standard = spectres(np.array(
-                self.wave_standard_true).reshape(-1),
-                                     np.array(spec.wave).reshape(-1),
-                                     np.array(spec.count).reshape(-1),
-                                     verbose=False)
+            flux_standard, flux_err_standard = spectres(
+                np.array(self.wave_standard_true).reshape(-1),
+                np.array(spec.wave).reshape(-1),
+                np.array(spec.count).reshape(-1),
+                np.array(spec.count_err).reshape(-1),
+                verbose=False)
             flux_standard_true = self.fluxmag_standard_true
             wave_standard_true = self.wave_standard_true
 
+        # If the median resolution of the observed spectrum is lower than
+        # the literature one
         else:
 
             flux_standard = spec.count
+            flux_err_standard = spec.count_err
             flux_standard_true = spectres(
                 np.array(spec.wave).reshape(-1),
                 np.array(self.wave_standard_true).reshape(-1),
@@ -6220,23 +6231,37 @@ class FluxCalibration(StandardLibrary):
             # Set the smoothing parameters
             spec.add_smoothing(smooth, slength, sorder)
 
-        sensitivity_itp = itp.interp1d(wave_standard_masked,
-                                       np.log10(sensitivity_masked),
-                                       kind=kind,
-                                       fill_value='extrapolate')
+        if method == 'interpolate':
+            tck = itp.splrep(wave_standard_masked,
+                             np.log10(sensitivity_masked),
+                             k=k)
+
+            sensitivity_func = lambda x: itp.splev(x, tck)
+
+        elif method == 'polynomial':
+
+            coeff = np.polynomial.polynomial.polyfit(
+                wave_standard_masked, np.log10(sensitivity_masked), deg=7)
+
+            sensitivity_func = lambda x: np.polynomial.polynomial.polyval(
+                x, coeff)
+
+        else:
+
+            raise NotImplementedError('{} is not implemented.'.format(method))
 
         spec.add_sensitivity(sensitivity_masked)
         spec.add_literature_standard(wave_standard_masked,
                                      flux_standard_masked)
 
         # Add to each _spectrum1D object
-        self.add_sensitivity_itp(sensitivity_itp, stype='science+standard')
+        self.add_sensitivity_func(sensitivity_func, stype='science+standard')
 
-    def add_sensitivity_itp(self, sensitivity_itp, stype='science+standard'):
+    def add_sensitivity_func(self, sensitivity_func, stype='science+standard'):
         '''
         parameters
         ----------
-        sensitivity_itp: str
+        sensitivity_func: str
             Interpolated sensivity curve object.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
@@ -6248,8 +6273,8 @@ class FluxCalibration(StandardLibrary):
         if 'standard' in stype_split:
 
             # Add to both science and standard spectrum_list
-            self.spectrum_list_standard[0].add_sensitivity_itp(
-                sensitivity_itp=sensitivity_itp)
+            self.spectrum_list_standard[0].add_sensitivity_func(
+                sensitivity_func=sensitivity_func)
 
         if 'science' in stype_split:
 
@@ -6257,8 +6282,8 @@ class FluxCalibration(StandardLibrary):
 
             for i in spec_id:
                 # apply the flux calibration
-                self.spectrum_list_science[i].add_sensitivity_itp(
-                    sensitivity_itp=sensitivity_itp)
+                self.spectrum_list_science[i].add_sensitivity_func(
+                    sensitivity_func=sensitivity_func)
 
     def inspect_sensitivity(self,
                             display=True,
@@ -6349,7 +6374,7 @@ class FluxCalibration(StandardLibrary):
 
         fig.add_trace(
             go.Scatter(x=spec.wave_literature,
-                       y=10.**spec.sensitivity_itp(spec.wave_literature),
+                       y=10.**spec.sensitivity_func(spec.wave_literature),
                        yaxis='y2',
                        line=dict(color='black', width=2),
                        name='Best-fit Sensitivity Curve'))
@@ -6448,7 +6473,7 @@ class FluxCalibration(StandardLibrary):
                 spec = self.spectrum_list_science[i]
 
                 # apply the flux calibration
-                sensitivity = 10.**spec.sensitivity_itp(spec.wave)
+                sensitivity = 10.**spec.sensitivity_func(spec.wave)
 
                 flux = sensitivity * spec.count
 
@@ -6510,7 +6535,7 @@ class FluxCalibration(StandardLibrary):
             spec = self.spectrum_list_standard[0]
 
             # apply the flux calibration
-            sensitivity = 10.**spec.sensitivity_itp(spec.wave)
+            sensitivity = 10.**spec.sensitivity_func(spec.wave)
 
             flux = sensitivity * spec.count
 
@@ -6887,9 +6912,8 @@ class FluxCalibration(StandardLibrary):
                 wave_standard_mask = (
                     (np.array(spec.wave_resampled).reshape(-1) > wave_min) &
                     (np.array(spec.wave_resampled).reshape(-1) < wave_max))
-                flux_standard_mask = (
-                    np.array(spec.count_resampled).reshape(-1) >
-                    np.nanpercentile(
+                flux_standard_mask = (np.array(
+                    spec.count_resampled).reshape(-1) > np.nanpercentile(
                         np.array(spec.count_resampled).reshape(-1)
                         [wave_standard_mask], 5) / 1.5)
                 flux_standard_min = np.log10(
@@ -7058,7 +7082,7 @@ class FluxCalibration(StandardLibrary):
             raise ValueError('Unknown stype, please choose from (1) science; '
                              'and/or (2) standard. use + as delimiter.')
 
-    def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
+    def save_sensitivity_func(self, filename='sensitivity_func.npy'):
         '''
         Parameters
         ----------
@@ -7068,7 +7092,7 @@ class FluxCalibration(StandardLibrary):
 
         '''
 
-        np.save(filename, self.spectrum_list_standard[0].sensitivity_itp)
+        np.save(filename, self.spectrum_list_standard[0].sensitivity_func)
 
     def create_fits(self,
                     spec_id=None,
@@ -8670,8 +8694,9 @@ class OneDSpec():
                                       open_iframe=open_iframe)
 
     def compute_sensitivity(self,
-                            kind=3,
+                            k=3,
                             smooth=False,
+                            method='interpolate',
                             slength=5,
                             sorder=3,
                             mask_range=[[6850, 6960], [7575, 7700],
@@ -8681,11 +8706,18 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        kind: string or integer [1,2,3,4,5 only] (default: 3)
-            interpolation kind is one of [‘linear’, ‘nearest’, ‘zero’,
-             ‘slinear’, ‘quadratic’, ‘cubic’, ‘previous’, ‘next’]
+        k: integer [1,2,3,4,5 only]
+            The order of the spline.
         smooth: boolean (default: False)
             set to smooth the input spectrum with scipy.signal.savgol_filter
+        weighted: boolean (Default: True)
+            Set to weight the interpolation/polynomial fit by the
+            inverse uncertainty.
+        method: str (Default: interpolate)
+            This should be either 'interpolate' of 'polynomial'. Note that the
+            polynomial is computed from the interpolated function. The
+            default is interpolate because it is much more stable at the
+            wavelength limits of a spectrum in an automated system.
         slength: int (default: 5)
             SG-filter window size
         sorder: int (default: 3)
@@ -8702,15 +8734,16 @@ class OneDSpec():
 
         '''
 
-        self.fluxcal.compute_sensitivity(kind=kind,
+        self.fluxcal.compute_sensitivity(k=k,
                                          smooth=smooth,
+                                         method=method,
                                          slength=slength,
                                          sorder=sorder,
                                          mask_range=mask_range,
                                          mask_fit_order=mask_fit_order,
                                          mask_fit_size=mask_fit_size)
 
-    def save_sensitivity_itp(self, filename='sensitivity_itp.npy'):
+    def save_sensitivity_func(self, filename='sensitivity_func.npy'):
         '''
         Parameters
         ----------
@@ -8719,21 +8752,21 @@ class OneDSpec():
 
         '''
 
-        self.fluxcal.save_sensitivity_itp(filename=filename)
+        self.fluxcal.save_sensitivity_func(filename=filename)
 
-    def add_sensitivity_itp(self, sensitivity_itp, stype='science+standard'):
+    def add_sensitivity_func(self, sensitivity_func, stype='science+standard'):
         '''
         Parameters
         ----------
-        sensitivity_itp: str
+        sensitivity_func: str
             Interpolated sensivity curve object.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
 
-        self.fluxcal.add_sensitivity_itp(sensitivity_itp=sensitivity_itp,
-                                         stype=stype)
+        self.fluxcal.add_sensitivity_func(sensitivity_func=sensitivity_func,
+                                          stype=stype)
 
     def inspect_sensitivity(self,
                             display=True,
