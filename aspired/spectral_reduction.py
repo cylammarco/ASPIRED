@@ -912,7 +912,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('trace ImageHDU cannot be created.')
@@ -1004,7 +1004,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('count ImageHDU cannot be created.')
@@ -1085,7 +1085,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('count_resampled ImageHDU cannot be created.')
@@ -1138,7 +1138,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('arc_spec ImageHDU cannot be created.')
@@ -1205,7 +1205,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('wavecal ImageHDU cannot be created.')
@@ -1275,7 +1275,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('flux ImageHDU cannot be created.')
@@ -1364,7 +1364,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('flux_resampled ImageHDU cannot be created.')
@@ -1403,7 +1403,7 @@ class _spectrum1D():
 
             except Exception as e:
 
-                warnings.warn(e)
+                warnings.warn(str(e))
 
                 # Set it to None if the above failed
                 warnings.warn('wavelength ImageHDU cannot be created.')
@@ -5581,7 +5581,7 @@ class StandardLibrary:
 
         except Exception as e:
 
-            warnings.warn(e)
+            warnings.warn(str(e))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
@@ -6107,7 +6107,7 @@ class FluxCalibration(StandardLibrary):
 
     def compute_sensitivity(self,
                             k=3,
-                            smooth=False,
+                            smooth=True,
                             method='interpolate',
                             slength=5,
                             sorder=3,

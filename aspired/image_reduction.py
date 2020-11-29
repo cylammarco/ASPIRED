@@ -5,7 +5,6 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.nddata import CCDData
-from astropy.stats import sigma_clip
 from ccdproc import Combiner
 from plotly import graph_objects as go
 from plotly import io as pio
@@ -184,6 +183,9 @@ class ImageReduction:
         self.arc_master = None
         self.light_master = None
 
+        self.flat_reduced = None
+        self.light_reduced = None
+
         self.image_fits = None
 
         self.bias_filename = []
@@ -236,12 +238,14 @@ class ImageReduction:
         if np.shape(np.shape(self.filelist))[0] == 2:
             try:
                 self.hdunum = self.filelist[:, 2].astype('int')
-            except:
+            except Exception as e:
+                warnings.warn(str(e))
                 self.hdunum = np.zeros(len(self.impath)).astype('int')
         elif np.shape(np.shape(self.filelist))[0] == 1:
             try:
                 self.hdunum = self.filelist[2].astype('int')
-            except:
+            except Exception as e:
+                warnings.warn(str(e))
                 self.hdunum = 0
         else:
             raise TypeError('Please provide a file path to the file list or '
@@ -322,8 +326,8 @@ class ImageReduction:
                     light_time.append(light.header[exptime_light_keyword])
                 else:
                     # check if the exposure time keyword exists
-                    exptime_keyword_matched =\
-                    np.in1d(self.exptime_keyword, light.header)
+                    exptime_keyword_matched = np.in1d(self.exptime_keyword,
+                                                      light.header)
                     if exptime_keyword_matched.any():
                         light_time.append(light.header[self.exptime_keyword[
                             np.where(exptime_keyword_matched)[0][0]]])
@@ -416,7 +420,9 @@ class ImageReduction:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Bias subtract
-        self.light_master = self.light_master.subtract(self.bias_master)
+        self.light_redcued = self.light_master.subtract(self.bias_master)
+        if self.flat_master is not None:
+            self.flat_redcued = self.flat_master.subtract(self.bias_master)
 
         # Free memory
         del bias_CCDData
@@ -442,7 +448,8 @@ class ImageReduction:
                 try:
                     dark_time.append(dark.header[exptime])
                     break
-                except:
+                except Exception as e:
+                    warnings.warn(str(e))
                     continue
 
         # Put data into a Combiner
@@ -472,11 +479,18 @@ class ImageReduction:
             self.exptime_dark = 1.
 
         # Dark subtraction adjusted for exposure time
-        self.light_master =\
-            self.light_master.subtract(
+        self.light_reduced =\
+            self.light_reduced.subtract(
                 self.dark_master.multiply(
                     self.exptime_light / self.exptime_dark)
             )
+
+        if self.flat_master is not None:
+            self.flat_reduced =\
+                self.flat_reduced.subtract(
+                    self.dark_master.multiply(
+                        self.exptime_light / self.exptime_dark)
+                )
 
         # Free memory
         del dark_CCDData
@@ -515,7 +529,7 @@ class ImageReduction:
             raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Field-flattening
-        self.light_master = self.light_master.divide(self.flat_master)
+        self.light_reduced = self.light_reduced.divide(self.flat_master)
 
         # Free memory
         del flat_CCDData
@@ -525,6 +539,8 @@ class ImageReduction:
         '''
         Perform data reduction using the frames provided.
         '''
+
+        self.light_reduced = self.light_master
 
         # Bias subtraction
         if self.bias_list.size > 0:
@@ -552,15 +568,15 @@ class ImageReduction:
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:
-            self.light_master = np.rot90(self.light_master)
+            self.light_reduced = np.rot90(self.light_reduced)
 
         # Construct a FITS object of the reduced frame
-        self.light_master = np.array((self.light_master))
+        self.light_reduced = np.array((self.light_reduced))
 
     def _create_image_fits(self):
         # Put the reduced data in FITS format with an image header
         # Append header info to the *first* light frame header
-        self.image_fits = fits.ImageHDU(self.light_master)
+        self.image_fits = fits.ImageHDU(self.light_reduced)
 
         self.image_fits.header = self.light_header[0]
 
@@ -752,12 +768,12 @@ class ImageReduction:
 
         if log:
 
-            fig = go.Figure(data=go.Heatmap(z=np.log10(self.light_master),
+            fig = go.Figure(data=go.Heatmap(z=np.log10(self.light_reduced),
                                             colorscale="Viridis"))
         else:
 
             fig = go.Figure(
-                data=go.Heatmap(z=self.light_master, colorscale="Viridis"))
+                data=go.Heatmap(z=self.light_reduced, colorscale="Viridis"))
 
         fig.update_layout(
             yaxis_title='Spatial Direction / pixel',
