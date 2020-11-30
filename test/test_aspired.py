@@ -72,6 +72,8 @@ def test_full_run():
     lhs6328_frame = image_reduction.ImageReduction(
         'test/test_data/sprat_LHS6328.list')
     lhs6328_frame.reduce()
+    lhs6328_frame.save_fits('test/test_output/test_full_run_standard_image',
+                            overwrite=True)
 
     lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
                                                    spatial_mask=spatial_mask,
@@ -122,6 +124,8 @@ def test_full_run():
     standard_frame = image_reduction.ImageReduction(
         'test/test_data/sprat_Hiltner102.list')
     standard_frame.reduce()
+    standard_frame.save_fits('test/test_output/test_full_run_standard_image',
+                             overwrite=True)
 
     hilt102_twodspec = spectral_reduction.TwoDSpec(standard_frame,
                                                    cosmicray=True,
@@ -143,6 +147,14 @@ def test_full_run():
     lhs6328_onedspec = spectral_reduction.OneDSpec()
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
+
+    # Save the trace and count as FITS BEFORE flux and wavelength calibration
+    # This is an uncommon operation, but it should work.
+    lhs6328_onedspec.save_fits(
+        output='trace+count',
+        filename='test/test_output/test_full_run',
+        stype='science+standard',
+        overwrite=True)
 
     # Add a 2D arc image
     lhs6328_onedspec.add_arc(lhs6328_frame, stype='science')
@@ -192,14 +204,14 @@ def test_full_run():
 
     # Save as FITS
     lhs6328_onedspec.save_fits(
-        output='flux_resampled+wavecal+wavelength+flux+count',
+        output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+flux_resampled',
         filename='test/test_output/test_full_run',
         stype='science+standard',
         overwrite=True)
 
     # save as CSV
     lhs6328_onedspec.save_csv(
-        output='flux_resampled+wavecal+wavelength+flux+count',
+        output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+flux_resampled',
         filename='test/test_output/test_full_run',
         stype='science+standard',
         overwrite=True)

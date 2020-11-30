@@ -1516,7 +1516,7 @@ class _spectrum1D():
             self.create_flux_resampled_fits(force)
 
         # If the requested list of HDUs is already good to go
-        if set(self.hdu_content) == set(output_split):
+        if set([k for k, v in self.hdu_content.items() if v]) == set(output_split):
 
             # If there is an empty primary HDU, but requested without
             if (self.empty_primary_hdu & (not empty_primary_hdu)):
@@ -1702,16 +1702,37 @@ class _spectrum1D():
             if output_type in output_split:
 
                 end = start + self.n_hdu[output_type]
-                output_data = np.column_stack(
-                    [hdu.data for hdu in self.hdu_output[start:end]])
+                if output_type != 'arc_spec':
+                    output_data = np.column_stack(
+                        [hdu.data for hdu in self.hdu_output[start:end]])
 
-                if overwrite or (not os.path.exists(filename + '_' +
-                                                    output_type + '.csv')):
+                    if overwrite or (not os.path.exists(filename + '_' +
+                                                        output_type + '.csv')):
 
-                    np.savetxt(filename + '_' + output_type + '.csv',
-                               output_data,
-                               delimiter=',',
-                               header=self.header[output_type])
+                        np.savetxt(filename + '_' + output_type + '.csv',
+                                output_data,
+                                delimiter=',',
+                                header=self.header[output_type])
+
+                else:
+
+                    output_data_arc_spec = self.hdu_output[start].data
+                    output_data_arc_peaks = np.column_stack(
+                        [hdu.data for hdu in self.hdu_output[start+1:end]])
+
+                    if overwrite or (not os.path.exists(filename + '_arc_spec.csv')):
+
+                        np.savetxt(filename + '_arc_spec.csv',
+                                output_data,
+                                delimiter=',',
+                                header=self.header[output_type])
+
+                    if overwrite or (not os.path.exists(filename + '_arc_peaks.csv')):
+
+                        np.savetxt(filename + '_arc_peaks.csv',
+                                output_data,
+                                delimiter=',',
+                                header=self.header[output_type])
 
                 start = end
 
@@ -8974,8 +8995,9 @@ class OneDSpec():
 
         # Split the string into strings
         stype_split = stype.split('+')
+        output_split = output.split('+')
 
-        for i in output.split('+'):
+        for i in output_split:
 
             if i not in [
                     'trace', 'count', 'arc_spec', 'wavecal', 'wavelength',
@@ -9023,9 +9045,45 @@ class OneDSpec():
                     # calibrators
                     spec_id = list(self.wavecal_science.spectrum_list.keys())
 
+            elif ('trace' in output_split) or ('count' in output_split):
+
+                try:
+                    print('loading from fluxcal')
+                    print(self.fluxcal.spectrum_list_science.keys())
+
+                    if spec_id is not None:
+                        print('spec_id is not None.')
+                        if spec_id not in list(
+                                self.fluxcal.spectrum_list_science.keys()):
+
+                            raise ValueError('The given spec_id does not exist.')
+
+                    else:
+                        print('spec_id is None.')
+
+                        # if spec_id is None, contraints are applied to all
+                        # calibrators
+                        spec_id = list(self.fluxcal.spectrum_list_science.keys())
+
+                except Exception as e:
+
+                    if spec_id is not None:
+
+                        if spec_id not in list(
+                                self.wavecal_science.spectrum_list.keys()):
+
+                            raise ValueError('The given spec_id does not exist.')
+
+                    else:
+
+                        # if spec_id is None, contraints are applied to all
+                        # calibrators
+                        spec_id = list(self.wavecal_science.spectrum_list.keys())
+
             else:
 
-                raise ValueError('Neither wavelength nor flux is calibrated.')
+                raise ValueError('Trace or Count cannot be found. Neither '
+                    'wavelength nor flux is calibrated.')
 
             if isinstance(spec_id, int):
 
@@ -9051,12 +9109,26 @@ class OneDSpec():
                         force=force,
                         empty_primary_hdu=empty_primary_hdu)
 
-                # Should be trapped above so this line should never be run
+                elif ('trace' in output_split) or ('count' in output_split):
 
+                    try:
+
+                        self.fluxcal.spectrum_list_science[i].create_fits(
+                            output=output,
+                            force=force,
+                            empty_primary_hdu=empty_primary_hdu)
+
+                    except:
+
+                        self.wavecal_science.spectrum_list[i].create_fits(
+                            output=output,
+                            force=force,
+                            empty_primary_hdu=empty_primary_hdu)
+
+                # Should be trapped above so this line should never be run
                 else:
 
-                    raise ValueError(
-                        'Neither wavelength nor flux is calibrated.')
+                    raise RuntimeError('This should not happen, please submit an issue.')
 
             if return_id:
 
@@ -9082,10 +9154,26 @@ class OneDSpec():
                     force=force,
                     empty_primary_hdu=empty_primary_hdu)
 
+            elif ('trace' in output_split) or ('count' in output_split):
+
+                try:
+
+                    self.fluxcal.spectrum_list_standard[0].create_fits(
+                        output=output,
+                        force=force,
+                        empty_primary_hdu=empty_primary_hdu)
+
+                except:
+
+                    self.wavecal_standard.spectrum_list[0].create_fits(
+                        output=output,
+                        force=force,
+                        empty_primary_hdu=empty_primary_hdu)
+
             # Should be trapped above so this line should never be run
             else:
 
-                raise ValueError('Neither wavelength nor flux is calibrated.')
+                raise RuntimeError('This should not happen, please submit an issue.')
 
     def save_fits(self,
                   spec_id=None,
@@ -9170,7 +9258,7 @@ class OneDSpec():
 
                 # If flux is not calibrated, and weather or not the wavelength
                 # is calibrated.
-                else:
+                elif self.wavelength_science_calibrated:
 
                     self.wavecal_science.spectrum_list[i].save_fits(
                         output=output,
@@ -9178,6 +9266,28 @@ class OneDSpec():
                         force=False,
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
+
+                # This is probably saving trace or count before flux and/or
+                # wavelength calibration.
+                else:
+
+                    try:
+
+                        self.fluxcal.spectrum_list_science[i].save_fits(
+                            output=output,
+                            filename=filename_i,
+                            force=False,
+                            overwrite=overwrite,
+                            empty_primary_hdu=empty_primary_hdu)
+
+                    except:
+
+                        self.wavecal_science.spectrum_list[i].save_fits(
+                            output=output,
+                            filename=filename_i,
+                            force=False,
+                            overwrite=overwrite,
+                            empty_primary_hdu=empty_primary_hdu)
 
         if 'standard' in stype_split:
 
@@ -9199,7 +9309,7 @@ class OneDSpec():
 
             # If flux is not calibrated, and weather or not the wavelength
             # is calibrated.
-            else:
+            elif self.wavelength_standard_calibrated:
 
                 self.wavecal_standard.spectrum_list[0].save_fits(
                     output=output,
@@ -9207,6 +9317,28 @@ class OneDSpec():
                     force=force,
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
+
+            # This is probably saving trace or count before flux and/or
+            # wavelength calibration.
+            else:
+
+                try:
+
+                    self.fluxcal.spectrum_list_standard[0].save_fits(
+                        output=output,
+                        filename=filename + '_standard',
+                        force=force,
+                        overwrite=overwrite,
+                        empty_primary_hdu=empty_primary_hdu)
+
+                except:
+
+                    self.wavecal_standard.spectrum_list[0].save_fits(
+                        output=output,
+                        filename=filename + '_standard',
+                        force=force,
+                        overwrite=overwrite,
+                        empty_primary_hdu=empty_primary_hdu)
 
     def save_csv(self,
                  spec_id=None,
