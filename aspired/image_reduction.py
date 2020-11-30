@@ -447,6 +447,8 @@ class ImageReduction:
             for exptime in self.exptime_keyword:
                 try:
                     dark_time.append(dark.header[exptime])
+                    print("Keyword '{}' is used for exposure time.".format(
+                        exptime))
                     break
                 except Exception as e:
                     warnings.warn(str(e))
@@ -717,7 +719,8 @@ class ImageReduction:
             filename = filename[:-4]
 
         self._create_image_fits()
-        self.image_fits = fits.PrimaryHDU(self.image_fits)
+        self.image_fits = fits.PrimaryHDU(self.image_fits.data,
+                                          self.image_fits.header)
         # Save file to disk
         self.image_fits.writeto(filename + '.' + extension,
                                 overwrite=overwrite)
