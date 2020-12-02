@@ -158,6 +158,8 @@ class _spectrum1D():
             'The pixel-to-wavelength mapping',
             'flux':
             'Flux, Flux Uncertainty, Sky Flux, Sensitivity Curve',
+            'weight_map':
+            'Weight map of the extration (variance)',
             'count':
             'Count, Count Uncertainty, Sky Count',
             'trace':
@@ -171,24 +173,27 @@ class _spectrum1D():
             'wavecal': 1,
             'wavelength': 1,
             'flux': 4,
-            'count': 4,
+            'weight_map': 1,
+            'count': 3,
             'trace': 2
         }
 
         self.hdu_order = {
             'trace': 0,
             'count': 1,
-            'arc_spec': 2,
-            'wavecal': 3,
-            'wavelength': 4,
-            'count_resampled': 5,
-            'flux': 6,
-            'flux_resampled': 7
+            'weight_map': 2,
+            'arc_spec': 3,
+            'wavecal': 4,
+            'wavelength': 5,
+            'count_resampled': 6,
+            'flux': 7,
+            'flux_resampled': 8
         }
 
         self.hdu_content = {
             'trace': False,
             'count': False,
+            'weight_map': False,
             'arc_spec': False,
             'wavecal': False,
             'wavelength': False,
@@ -765,13 +770,27 @@ class _spectrum1D():
         |  0  | Photoelectron count             |
         |  1  | Photoelectron count uncertainty |
         |  2  | Photoelectron count (sky)       |
-        |  3  | Optimal (boolean)               |
-        |  4  | Line spread function            |
         +-----+---------------------------------+
 
         '''
 
         self._modify_imagehdu_header(self.count_hdulist, idx, method, *args)
+
+    def modify_weight_map_header(self, idx, method, *args):
+        '''
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+----------------------+
+        | HDU | Data                 |
+        +-----+----------------------+
+        |  0  | Line spread function |
+        +-----+----------------------+
+
+        '''
+
+        self._modify_imagehdu_header(self.weight_map_hdulist, idx, method,
+                                     *args)
 
     def modify_count_resampled_header(self, idx, method, *args):
         '''
@@ -871,548 +890,466 @@ class _spectrum1D():
 
         self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
 
-    def create_trace_fits(self, force=True):
-
-        if (self.trace_hdulist is None) or force:
-
-            try:
-
-                # Put the data in ImageHDUs
-                trace_ImageHDU = fits.ImageHDU(self.trace)
-                trace_sigma_ImageHDU = fits.ImageHDU(self.trace_sigma)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.trace_hdulist = fits.HDUList()
-                self.trace_hdulist += [trace_ImageHDU]
-                self.trace_hdulist += [trace_sigma_ImageHDU]
-
-                # Add the trace
-                self.modify_trace_header(0, 'set', 'LABEL', 'Trace')
-                self.modify_trace_header(0, 'set', 'CRPIX1', 1)
-                self.modify_trace_header(0, 'set', 'CDELT1', 1)
-                self.modify_trace_header(0, 'set', 'CRVAL1',
-                                         self.pixel_list[0])
-                self.modify_trace_header(0, 'set', 'CTYPE1',
-                                         'Pixel (Dispersion)')
-                self.modify_trace_header(0, 'set', 'CUNIT1', 'Pixel')
-                self.modify_trace_header(0, 'set', 'BUNIT', 'Pixel (Spatial)')
-
-                # Add the trace_sigma
-                self.modify_trace_header(1, 'set', 'LABEL',
-                                         'Trace width/sigma')
-                self.modify_trace_header(1, 'set', 'CRPIX1', 1)
-                self.modify_trace_header(1, 'set', 'CDELT1', 1)
-                self.modify_trace_header(1, 'set', 'CRVAL1',
-                                         self.pixel_list[0])
-                self.modify_trace_header(1, 'set', 'CTYPE1',
-                                         'Pixel (Dispersion)')
-                self.modify_trace_header(1, 'set', 'CUNIT1',
-                                         'Number of Pixels')
-                self.modify_trace_header(1, 'set', 'BUNIT', 'Pixel (Spatial)')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('trace ImageHDU cannot be created.')
-                self.trace_hdulist = None
-
-        else:
-
-            warnings.warn('trace ImageHDU already exists, set force to True '
-                          'to create a new one.')
-
-    def create_count_fits(self, force=True):
-
-        if (self.count_hdulist is None) or force:
-
-            try:
-
-                # Put the data in ImageHDUs
-                count_ImageHDU = fits.ImageHDU(self.count)
-                count_err_ImageHDU = fits.ImageHDU(self.count_err)
-                count_sky_ImageHDU = fits.ImageHDU(self.count_sky)
-                count_weight_ImageHDU = fits.ImageHDU(self.var)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.count_hdulist = fits.HDUList()
-                self.count_hdulist += [count_ImageHDU]
-                self.count_hdulist += [count_err_ImageHDU]
-                self.count_hdulist += [count_sky_ImageHDU]
-                self.count_hdulist += [count_weight_ImageHDU]
-
-                # Add the count
-                self.modify_count_header(0, 'set', 'WIDTHDN', self.widthdn)
-                self.modify_count_header(0, 'set', 'WIDTHUP', self.widthup)
-                self.modify_count_header(0, 'set', 'SEPDN', self.sepdn)
-                self.modify_count_header(0, 'set', 'SEPUP', self.sepup)
-                self.modify_count_header(0, 'set', 'SKYDN', self.skywidthdn)
-                self.modify_count_header(0, 'set', 'SKYUP', self.skywidthup)
-                self.modify_count_header(0, 'set', 'BKGRND', self.background)
-                self.modify_count_header(0, 'set', 'XTYPE',
-                                         self.extraction_type)
-                self.modify_count_header(0, 'set', 'LABEL', 'Electron Count')
-                self.modify_count_header(0, 'set', 'CRPIX1', 1)
-                self.modify_count_header(0, 'set', 'CDELT1', 1)
-                self.modify_count_header(0, 'set', 'CRVAL1',
-                                         self.pixel_list[0])
-                self.modify_count_header(0, 'set', 'CTYPE1',
-                                         ' Pixel (Dispersion)')
-                self.modify_count_header(0, 'set', 'CUNIT1', 'Pixel')
-                self.modify_count_header(0, 'set', 'BUNIT', 'electron')
-
-                # Add the uncertainty count
-                self.modify_count_header(1, 'set', 'LABEL',
-                                         'Electron Count (Uncertainty)')
-                self.modify_count_header(1, 'set', 'CRPIX1', 1)
-                self.modify_count_header(1, 'set', 'CDELT1', 1)
-                self.modify_count_header(1, 'set', 'CRVAL1',
-                                         self.pixel_list[0])
-                self.modify_count_header(1, 'set', 'CTYPE1',
-                                         'Pixel (Dispersion)')
-                self.modify_count_header(1, 'set', 'CUNIT1', 'Pixel')
-                self.modify_count_header(1, 'set', 'BUNIT', 'electron')
-
-                # Add the sky count
-                self.modify_count_header(2, 'set', 'LABEL',
-                                         'Electron Count (Sky)')
-                self.modify_count_header(2, 'set', 'CRPIX1', 1)
-                self.modify_count_header(2, 'set', 'CDELT1', 1)
-                self.modify_count_header(2, 'set', 'CRVAL1',
-                                         self.pixel_list[0])
-                self.modify_count_header(2, 'set', 'CTYPE1',
-                                         'Pixel (Dispersion)')
-                self.modify_count_header(2, 'set', 'CUNIT1', 'Pixel')
-                self.modify_count_header(2, 'set', 'BUNIT', 'electron')
-
-                # Add the extraction weights
-                self.modify_count_header(3, 'set', 'LABEL',
-                                         'Optimal Extraction Profile')
-                if self.var is not None:
-                    self.modify_count_header(3, 'set', 'CRVAL1', len(self.var))
-                    self.modify_count_header(3, 'set', 'CRPIX1', 1)
-                    self.modify_count_header(3, 'set', 'CDELT1', 1)
-                    self.modify_count_header(3, 'set', 'CTYPE1',
-                                             'Pixel (Spatial)')
-                    self.modify_count_header(3, 'set', 'CUNIT1', 'Pixel')
-                    self.modify_count_header(3, 'set', 'BUNIT', 'weights')
-                else:
-                    self.modify_count_header(
-                        3, 'set', 'COMMENT',
-                        'Extraction Profile is not available.')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('count ImageHDU cannot be created.')
-                self.count_hdulist = None
-
-        else:
-
-            warnings.warn('count ImageHDU already exists, set force to True '
-                          'to create a new one.')
-
-    def create_count_resampled_fits(self, force=True):
-
-        if (self.count_resampled_hdulist is None) or force:
-
-            try:
-
-                # Put the data in ImageHDUs
-                count_resampled_ImageHDU = fits.ImageHDU(self.count_resampled)
-                count_err_resampled_ImageHDU = fits.ImageHDU(
-                    self.count_err_resampled)
-                count_sky_resampled_ImageHDU = fits.ImageHDU(
-                    self.count_sky_resampled)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.count_resampled_hdulist = fits.HDUList()
-                self.count_resampled_hdulist += [count_resampled_ImageHDU]
-                self.count_resampled_hdulist += [count_err_resampled_ImageHDU]
-                self.count_resampled_hdulist += [count_sky_resampled_ImageHDU]
-
-                # Add the resampled count
-                self.modify_count_resampled_header(0, 'set', 'LABEL',
-                                                   'Resampled Electron Count')
-                self.modify_count_resampled_header(0, 'set', 'CRPIX1',
-                                                   1.00E+00)
-                self.modify_count_resampled_header(0, 'set', 'CDELT1',
-                                                   self.wave_bin)
-                self.modify_count_resampled_header(0, 'set', 'CRVAL1',
-                                                   self.wave_start)
-                self.modify_count_resampled_header(0, 'set', 'CTYPE1',
-                                                   'Wavelength')
-                self.modify_count_resampled_header(0, 'set', 'CUNIT1',
-                                                   'Angstroms')
-                self.modify_count_resampled_header(0, 'set', 'BUNIT',
-                                                   'electron')
-
-                # Add the resampled uncertainty count
-                self.modify_count_resampled_header(
-                    1, 'set', 'LABEL',
-                    'Resampled Electron Count (Uncertainty)')
-                self.modify_count_resampled_header(1, 'set', 'CRPIX1',
-                                                   1.00E+00)
-                self.modify_count_resampled_header(1, 'set', 'CDELT1',
-                                                   self.wave_bin)
-                self.modify_count_resampled_header(1, 'set', 'CRVAL1',
-                                                   self.wave_start)
-                self.modify_count_resampled_header(1, 'set', 'CTYPE1',
-                                                   'Wavelength')
-                self.modify_count_resampled_header(1, 'set', 'CUNIT1',
-                                                   'Angstroms')
-                self.modify_count_resampled_header(1, 'set', 'BUNIT',
-                                                   'electron')
-
-                # Add the resampled sky count
-                self.modify_count_resampled_header(
-                    2, 'set', 'LABEL', 'Resampled Electron Count (Sky)')
-                self.modify_count_resampled_header(2, 'set', 'CRPIX1',
-                                                   1.00E+00)
-                self.modify_count_resampled_header(2, 'set', 'CDELT1',
-                                                   self.wave_bin)
-                self.modify_count_resampled_header(2, 'set', 'CRVAL1',
-                                                   self.wave_start)
-                self.modify_count_resampled_header(2, 'set', 'CTYPE1',
-                                                   'Wavelength')
-                self.modify_count_resampled_header(2, 'set', 'CUNIT1',
-                                                   'Angstroms')
-                self.modify_count_resampled_header(2, 'set', 'BUNIT',
-                                                   'electron')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('count_resampled ImageHDU cannot be created.')
-                self.count_resampled_hdulist = None
-
-        else:
-
-            warnings.warn(
-                'count_resampled ImageHDU already exists, set force to True '
-                'to create a new one.')
-
-    def create_arc_spec_fits(self, force=True):
-
-        if (self.arc_spec_hdulist is None) or force:
-
-            try:
-
-                # Put the data in ImageHDUs
-                arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
-                peaks_raw_ImageHDU = fits.ImageHDU(self.peaks_raw)
-                peaks_pixel_ImageHDU = fits.ImageHDU(self.peaks_pixel)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.arc_spec_hdulist = fits.HDUList()
-                self.arc_spec_hdulist += [arc_spec_ImageHDU]
-                self.arc_spec_hdulist += [peaks_raw_ImageHDU]
-                self.arc_spec_hdulist += [peaks_pixel_ImageHDU]
-
-                # Add the arc spectrum
-                self.modify_arc_spec_header(0, 'set', 'LABEL',
-                                            'Electron Count')
-                self.modify_arc_spec_header(0, 'set', 'CRPIX1', 1)
-                self.modify_arc_spec_header(0, 'set', 'CDELT1', 1)
-                self.modify_arc_spec_header(0, 'set', 'CRVAL1',
-                                            self.pixel_list[0])
-                self.modify_arc_spec_header(0, 'set', 'CTYPE1',
-                                            'Pixel (Dispersion)')
-                self.modify_arc_spec_header(0, 'set', 'CUNIT1', 'Pixel')
-                self.modify_arc_spec_header(0, 'set', 'BUNIT', 'electron')
-
-                # Add the peaks in native pixel value
-                self.modify_arc_spec_header(1, 'set', 'LABEL',
-                                            'Peaks (Detector Pixel)')
-                self.modify_arc_spec_header(1, 'set', 'BUNIT', 'Pixel')
-
-                # Add the peaks in effective pixel value
-                self.modify_arc_spec_header(2, 'set', 'LABEL',
-                                            'Peaks (Effective Pixel)')
-                self.modify_arc_spec_header(2, 'set', 'BUNIT', 'Pixel')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('arc_spec ImageHDU cannot be created.')
-                self.arc_spec_hdulist = None
-
-        else:
-
-            warnings.warn(
-                'arc_spec ImageHDU already exists, set force to True '
-                'to create a new one.')
-
-    def create_wavecal_fits(self, force=True):
-
-        if (self.wavecal_hdulist is None) or force:
-
-            try:
-
-                # Put the data in an ImageHDU
-                wavecal_ImageHDU = fits.ImageHDU(self.fit_coeff)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.wavecal_hdulist = fits.HDUList()
-                self.wavecal_hdulist += [wavecal_ImageHDU]
-
-                # Add the wavelength calibration header info
-                self.modify_wavecal_header('set', 'FTYPE', self.fit_type)
-                self.modify_wavecal_header('set', 'FDEG', self.fit_deg)
-                self.modify_wavecal_header('set', 'FFRMS', self.rms)
-                self.modify_wavecal_header('set', 'ATLWMIN',
-                                           self.min_atlas_wavelength)
-                self.modify_wavecal_header('set', 'ATLWMAX',
-                                           self.max_atlas_wavelength)
-                self.modify_wavecal_header('set', 'NSLOPES', self.num_slopes)
-                self.modify_wavecal_header('set', 'RNGTOL',
-                                           self.range_tolerance)
-                self.modify_wavecal_header('set', 'FITTOL', self.fit_tolerance)
-                self.modify_wavecal_header('set', 'CANTHRE',
-                                           self.candidate_tolerance)
-                self.modify_wavecal_header('set', 'LINTHRE',
-                                           self.linearity_tolerance)
-                self.modify_wavecal_header('set', 'RANTHRE',
-                                           self.ransac_tolerance)
-                self.modify_wavecal_header('set', 'NUMCAN',
-                                           self.num_candidates)
-                self.modify_wavecal_header('set', 'XBINS', self.xbins)
-                self.modify_wavecal_header('set', 'YBINS', self.ybins)
-                self.modify_wavecal_header('set', 'BRUTE', self.brute_force)
-                self.modify_wavecal_header('set', 'SAMSIZE', self.sample_size)
-                self.modify_wavecal_header('set', 'TOPN', self.top_n)
-                self.modify_wavecal_header('set', 'MAXTRY', self.max_tries)
-                self.modify_wavecal_header('set', 'INCOEFF', self.intput_coeff)
-                self.modify_wavecal_header('set', 'LINEAR', self.linear)
-                self.modify_wavecal_header('set', 'W8ED', self.weighted)
-                self.modify_wavecal_header('set', 'FILTER', self.filter_close)
-                self.modify_wavecal_header('set', 'PUSAGE',
-                                           self.peak_utilisation)
-                self.modify_wavecal_header('set', 'LABEL', 'Electron Count')
-                self.modify_wavecal_header('set', 'CRPIX1', 1.00E+00)
-                self.modify_wavecal_header('set', 'CDELT1', self.wave_bin)
-                self.modify_wavecal_header('set', 'CRVAL1', self.wave_start)
-                self.modify_wavecal_header('set', 'CTYPE1', 'Wavelength')
-                self.modify_wavecal_header('set', 'CUNIT1', 'Angstroms')
-                self.modify_wavecal_header('set', 'BUNIT', 'electron')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('wavecal ImageHDU cannot be created.')
-                self.wavecal_hdulist = None
-
-        else:
-
-            warnings.warn(
-                'wave_cal ImageHDU already exists, set force to True '
-                'to create a new one.')
-
-    def create_flux_fits(self, force=True):
-
-        if (self.flux_hdulist is None) or force:
-
-            try:
-
-                # Put the data in ImageHDUs
-                flux_ImageHDU = fits.ImageHDU(self.flux)
-                flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
-                flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
-                sensitivity_ImageHDU = fits.ImageHDU(self.sensitivity)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.flux_hdulist = fits.HDUList()
-                self.flux_hdulist += [flux_ImageHDU]
-                self.flux_hdulist += [flux_err_ImageHDU]
-                self.flux_hdulist += [flux_sky_ImageHDU]
-                self.flux_hdulist += [sensitivity_ImageHDU]
-
-                # Note that wave_start is the centre of the starting bin
-                self.modify_flux_header(0, 'set', 'LABEL', 'Flux')
-                self.modify_flux_header(0, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_header(0, 'set', 'CDELT1', 1)
-                self.modify_flux_header(0, 'set', 'CRVAL1', self.pixel_list[0])
-                self.modify_flux_header(0, 'set', 'CTYPE1', 'Pixel')
-                self.modify_flux_header(0, 'set', 'CUNIT1', 'Pixel')
-                self.modify_flux_header(0, 'set', 'BUNIT',
-                                        'erg/(s*cm**2*Angstrom)')
-
-                self.modify_flux_header(1, 'set', 'LABEL', 'Flux')
-                self.modify_flux_header(1, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_header(1, 'set', 'CDELT1', 1)
-                self.modify_flux_header(1, 'set', 'CRVAL1', self.pixel_list[0])
-                self.modify_flux_header(1, 'set', 'CTYPE1', 'Pixel')
-                self.modify_flux_header(1, 'set', 'CUNIT1', 'Pixel')
-                self.modify_flux_header(1, 'set', 'BUNIT',
-                                        'erg/(s*cm**2*Angstrom)')
-
-                self.modify_flux_header(2, 'set', 'LABEL', 'Flux')
-                self.modify_flux_header(2, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_header(2, 'set', 'CDELT1', 1)
-                self.modify_flux_header(2, 'set', 'CRVAL1', self.pixel_list[0])
-                self.modify_flux_header(2, 'set', 'CTYPE1', 'Pixel')
-                self.modify_flux_header(2, 'set', 'CUNIT1', 'Pixel')
-                self.modify_flux_header(2, 'set', 'BUNIT',
-                                        'erg/(s*cm**2*Angstrom)')
-
-                self.modify_flux_header(3, 'set', 'LABEL', 'Sensitivity')
-                self.modify_flux_header(3, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_header(3, 'set', 'CDELT1', 1)
-                self.modify_flux_header(3, 'set', 'CRVAL1', self.pixel_list[0])
-                self.modify_flux_header(3, 'set', 'CTYPE1', 'Pixel')
-                self.modify_flux_header(3, 'set', 'CUNIT1', 'Pixel')
-                self.modify_flux_header(3, 'set', 'BUNIT',
-                                        'erg/(s*cm**2*Angstrom)/Count')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('flux ImageHDU cannot be created.')
-                self.flux_hdulist = None
-
-        else:
-
-            warnings.warn('flux ImageHDU already exists, set force to True '
-                          'to create a new one.')
-
-    def create_flux_resampled_fits(self, force=True):
-
-        if (self.flux_resampled_hdulist is None) or force:
-
-            try:
-
-                # Put the data in ImageHDUs
-                flux_resampled_ImageHDU = fits.ImageHDU(self.flux_resampled)
-                flux_err_resampled_ImageHDU = fits.ImageHDU(
-                    self.flux_err_resampled)
-                flux_sky_resampled_ImageHDU = fits.ImageHDU(
-                    self.flux_sky_resampled)
-                sensitivity_resampled_ImageHDU = fits.ImageHDU(
-                    self.sensitivity_resampled)
-
-                # Create an empty HDU list and populate with ImageHDUs
-                self.flux_resampled_hdulist = fits.HDUList()
-                self.flux_resampled_hdulist += [flux_resampled_ImageHDU]
-                self.flux_resampled_hdulist += [flux_err_resampled_ImageHDU]
-                self.flux_resampled_hdulist += [flux_sky_resampled_ImageHDU]
-                self.flux_resampled_hdulist += [sensitivity_resampled_ImageHDU]
-
-                # Note that wave_start is the centre of the starting bin
-                self.modify_flux_resampled_header(0, 'set', 'LABEL', 'Flux')
-                self.modify_flux_resampled_header(0, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_resampled_header(0, 'set', 'CDELT1',
-                                                  self.wave_bin)
-                self.modify_flux_resampled_header(0, 'set', 'CRVAL1',
-                                                  self.wave_start)
-                self.modify_flux_resampled_header(0, 'set', 'CTYPE1',
-                                                  'Wavelength')
-                self.modify_flux_resampled_header(0, 'set', 'CUNIT1',
-                                                  'Angstroms')
-                self.modify_flux_resampled_header(0, 'set', 'BUNIT',
-                                                  'erg/(s*cm**2*Angstrom)')
-
-                self.modify_flux_resampled_header(1, 'set', 'LABEL', 'Flux')
-                self.modify_flux_resampled_header(1, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_resampled_header(1, 'set', 'CDELT1',
-                                                  self.wave_bin)
-                self.modify_flux_resampled_header(1, 'set', 'CRVAL1',
-                                                  self.wave_start)
-                self.modify_flux_resampled_header(1, 'set', 'CTYPE1',
-                                                  'Wavelength')
-                self.modify_flux_resampled_header(1, 'set', 'CUNIT1',
-                                                  'Angstroms')
-                self.modify_flux_resampled_header(1, 'set', 'BUNIT',
-                                                  'erg/(s*cm**2*Angstrom)')
-
-                self.modify_flux_resampled_header(2, 'set', 'LABEL', 'Flux')
-                self.modify_flux_resampled_header(2, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_resampled_header(2, 'set', 'CDELT1',
-                                                  self.wave_bin)
-                self.modify_flux_resampled_header(2, 'set', 'CRVAL1',
-                                                  self.wave_start)
-                self.modify_flux_resampled_header(2, 'set', 'CTYPE1',
-                                                  'Wavelength')
-                self.modify_flux_resampled_header(2, 'set', 'CUNIT1',
-                                                  'Angstroms')
-                self.modify_flux_resampled_header(2, 'set', 'BUNIT',
-                                                  'erg/(s*cm**2*Angstrom)')
-
-                self.modify_flux_resampled_header(3, 'set', 'LABEL',
-                                                  'Sensitivity')
-                self.modify_flux_resampled_header(3, 'set', 'CRPIX1', 1.00E+00)
-                self.modify_flux_resampled_header(3, 'set', 'CDELT1',
-                                                  self.wave_bin)
-                self.modify_flux_resampled_header(3, 'set', 'CRVAL1',
-                                                  self.wave_start)
-                self.modify_flux_resampled_header(3, 'set', 'CTYPE1',
-                                                  'Wavelength')
-                self.modify_flux_resampled_header(3, 'set', 'CUNIT1',
-                                                  'Angstroms')
-                self.modify_flux_resampled_header(
-                    3, 'set', 'BUNIT', 'erg/(s*cm**2*Angstrom)/Count')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('flux_resampled ImageHDU cannot be created.')
-                self.flux_resampled_hdulist = None
-
-        else:
-
-            warnings.warn(
-                'flux_resampled ImageHDU already exists, set force to True '
-                'to create a new one.')
-
-    def create_wavelength_fits(self, force=True):
-
-        if (self.wavelength_hdulist is None) or force:
-
-            try:
-
-                # Put the data in an ImageHDU
-                wavelength_ImageHDU = fits.ImageHDU(self.wave)
-
-                # Create an empty HDU list and populate with the ImageHDU
-                self.wavelength_hdulist = fits.HDUList()
-                self.wavelength_hdulist += [wavelength_ImageHDU]
-
-                # Add the calibrated wavelength
-                self.modify_wavelength_header('set', 'LABEL',
-                                              'Pixel-Wavelength Mapping')
-                self.modify_wavelength_header('set', 'CRPIX1', 1)
-                self.modify_wavelength_header('set', 'CDELT1', 1)
-                self.modify_wavelength_header('set', 'CRVAL1',
-                                              self.pixel_list[0])
-                self.modify_wavelength_header('set', 'CTYPE1',
-                                              'Pixel (Dispersion)')
-                self.modify_wavelength_header('set', 'CUNIT1', 'Pixel')
-                self.modify_wavelength_header('set', 'BUNIT', 'Angstroms')
-
-            except Exception as e:
-
-                warnings.warn(str(e))
-
-                # Set it to None if the above failed
-                warnings.warn('wavelength ImageHDU cannot be created.')
-                self.wavelength_hdulist = None
-        else:
-
-            warnings.warn(
-                'wavelength ImageHDU already exists, set force to True '
-                'to create a new one.')
+    def create_trace_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            trace_ImageHDU = fits.ImageHDU(self.trace)
+            trace_sigma_ImageHDU = fits.ImageHDU(self.trace_sigma)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.trace_hdulist = fits.HDUList()
+            self.trace_hdulist += [trace_ImageHDU]
+            self.trace_hdulist += [trace_sigma_ImageHDU]
+
+            # Add the trace
+            self.modify_trace_header(0, 'set', 'LABEL', 'Trace')
+            self.modify_trace_header(0, 'set', 'CRPIX1', 1)
+            self.modify_trace_header(0, 'set', 'CDELT1', 1)
+            self.modify_trace_header(0, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_trace_header(0, 'set', 'CTYPE1', 'Pixel (Dispersion)')
+            self.modify_trace_header(0, 'set', 'CUNIT1', 'Pixel')
+            self.modify_trace_header(0, 'set', 'BUNIT', 'Pixel (Spatial)')
+
+            # Add the trace_sigma
+            self.modify_trace_header(1, 'set', 'LABEL', 'Trace width/sigma')
+            self.modify_trace_header(1, 'set', 'CRPIX1', 1)
+            self.modify_trace_header(1, 'set', 'CDELT1', 1)
+            self.modify_trace_header(1, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_trace_header(1, 'set', 'CTYPE1', 'Pixel (Dispersion)')
+            self.modify_trace_header(1, 'set', 'CUNIT1', 'Number of Pixels')
+            self.modify_trace_header(1, 'set', 'BUNIT', 'Pixel (Spatial)')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('trace ImageHDU cannot be created.')
+            self.trace_hdulist = None
+
+    def create_count_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            count_ImageHDU = fits.ImageHDU(self.count)
+            count_err_ImageHDU = fits.ImageHDU(self.count_err)
+            count_sky_ImageHDU = fits.ImageHDU(self.count_sky)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.count_hdulist = fits.HDUList()
+            self.count_hdulist += [count_ImageHDU]
+            self.count_hdulist += [count_err_ImageHDU]
+            self.count_hdulist += [count_sky_ImageHDU]
+
+            # Add the count
+            self.modify_count_header(0, 'set', 'WIDTHDN', self.widthdn)
+            self.modify_count_header(0, 'set', 'WIDTHUP', self.widthup)
+            self.modify_count_header(0, 'set', 'SEPDN', self.sepdn)
+            self.modify_count_header(0, 'set', 'SEPUP', self.sepup)
+            self.modify_count_header(0, 'set', 'SKYDN', self.skywidthdn)
+            self.modify_count_header(0, 'set', 'SKYUP', self.skywidthup)
+            self.modify_count_header(0, 'set', 'BKGRND', self.background)
+            self.modify_count_header(0, 'set', 'XTYPE', self.extraction_type)
+            self.modify_count_header(0, 'set', 'LABEL', 'Electron Count')
+            self.modify_count_header(0, 'set', 'CRPIX1', 1)
+            self.modify_count_header(0, 'set', 'CDELT1', 1)
+            self.modify_count_header(0, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_count_header(0, 'set', 'CTYPE1', ' Pixel (Dispersion)')
+            self.modify_count_header(0, 'set', 'CUNIT1', 'Pixel')
+            self.modify_count_header(0, 'set', 'BUNIT', 'electron')
+
+            # Add the uncertainty count
+            self.modify_count_header(1, 'set', 'LABEL',
+                                     'Electron Count (Uncertainty)')
+            self.modify_count_header(1, 'set', 'CRPIX1', 1)
+            self.modify_count_header(1, 'set', 'CDELT1', 1)
+            self.modify_count_header(1, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_count_header(1, 'set', 'CTYPE1', 'Pixel (Dispersion)')
+            self.modify_count_header(1, 'set', 'CUNIT1', 'Pixel')
+            self.modify_count_header(1, 'set', 'BUNIT', 'electron')
+
+            # Add the sky count
+            self.modify_count_header(2, 'set', 'LABEL', 'Electron Count (Sky)')
+            self.modify_count_header(2, 'set', 'CRPIX1', 1)
+            self.modify_count_header(2, 'set', 'CDELT1', 1)
+            self.modify_count_header(2, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_count_header(2, 'set', 'CTYPE1', 'Pixel (Dispersion)')
+            self.modify_count_header(2, 'set', 'CUNIT1', 'Pixel')
+            self.modify_count_header(2, 'set', 'BUNIT', 'electron')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('count ImageHDU cannot be created.')
+            self.count_hdulist = None
+
+    def create_weight_map_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            weight_map_ImageHDU = fits.ImageHDU(self.var)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.weight_map_hdulist = fits.HDUList()
+            self.weight_map_hdulist += [weight_map_ImageHDU]
+
+            # Add the extraction weights
+            self.modify_weight_map_header(0, 'set', 'LABEL',
+                                          'Optimal Extraction Profile')
+            if self.var is not None:
+                self.modify_weight_map_header(0, 'set', 'CRVAL1',
+                                              len(self.var))
+                self.modify_weight_map_header(0, 'set', 'CRPIX1', 1)
+                self.modify_weight_map_header(0, 'set', 'CDELT1', 1)
+                self.modify_weight_map_header(0, 'set', 'CTYPE1',
+                                              'Pixel (Spatial)')
+                self.modify_weight_map_header(0, 'set', 'CUNIT1', 'Pixel')
+                self.modify_weight_map_header(0, 'set', 'BUNIT', 'weights')
+            else:
+                self.modify_weight_map_header(
+                    0, 'set', 'COMMENT',
+                    'Extraction Profile is not available.')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('A weight map ImageHDU cannot be created.')
+            self.weight_map_hdulist = None
+
+    def create_count_resampled_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            count_resampled_ImageHDU = fits.ImageHDU(self.count_resampled)
+            count_err_resampled_ImageHDU = fits.ImageHDU(
+                self.count_err_resampled)
+            count_sky_resampled_ImageHDU = fits.ImageHDU(
+                self.count_sky_resampled)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.count_resampled_hdulist = fits.HDUList()
+            self.count_resampled_hdulist += [count_resampled_ImageHDU]
+            self.count_resampled_hdulist += [count_err_resampled_ImageHDU]
+            self.count_resampled_hdulist += [count_sky_resampled_ImageHDU]
+
+            # Add the resampled count
+            self.modify_count_resampled_header(0, 'set', 'LABEL',
+                                               'Resampled Electron Count')
+            self.modify_count_resampled_header(0, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_count_resampled_header(0, 'set', 'CDELT1',
+                                               self.wave_bin)
+            self.modify_count_resampled_header(0, 'set', 'CRVAL1',
+                                               self.wave_start)
+            self.modify_count_resampled_header(0, 'set', 'CTYPE1',
+                                               'Wavelength')
+            self.modify_count_resampled_header(0, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_count_resampled_header(0, 'set', 'BUNIT', 'electron')
+
+            # Add the resampled uncertainty count
+            self.modify_count_resampled_header(
+                1, 'set', 'LABEL', 'Resampled Electron Count (Uncertainty)')
+            self.modify_count_resampled_header(1, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_count_resampled_header(1, 'set', 'CDELT1',
+                                               self.wave_bin)
+            self.modify_count_resampled_header(1, 'set', 'CRVAL1',
+                                               self.wave_start)
+            self.modify_count_resampled_header(1, 'set', 'CTYPE1',
+                                               'Wavelength')
+            self.modify_count_resampled_header(1, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_count_resampled_header(1, 'set', 'BUNIT', 'electron')
+
+            # Add the resampled sky count
+            self.modify_count_resampled_header(
+                2, 'set', 'LABEL', 'Resampled Electron Count (Sky)')
+            self.modify_count_resampled_header(2, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_count_resampled_header(2, 'set', 'CDELT1',
+                                               self.wave_bin)
+            self.modify_count_resampled_header(2, 'set', 'CRVAL1',
+                                               self.wave_start)
+            self.modify_count_resampled_header(2, 'set', 'CTYPE1',
+                                               'Wavelength')
+            self.modify_count_resampled_header(2, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_count_resampled_header(2, 'set', 'BUNIT', 'electron')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('count_resampled ImageHDU cannot be created.')
+            self.count_resampled_hdulist = None
+
+    def create_arc_spec_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
+            peaks_raw_ImageHDU = fits.ImageHDU(self.peaks_raw)
+            peaks_pixel_ImageHDU = fits.ImageHDU(self.peaks_pixel)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.arc_spec_hdulist = fits.HDUList()
+            self.arc_spec_hdulist += [arc_spec_ImageHDU]
+            self.arc_spec_hdulist += [peaks_raw_ImageHDU]
+            self.arc_spec_hdulist += [peaks_pixel_ImageHDU]
+
+            # Add the arc spectrum
+            self.modify_arc_spec_header(0, 'set', 'LABEL', 'Electron Count')
+            self.modify_arc_spec_header(0, 'set', 'CRPIX1', 1)
+            self.modify_arc_spec_header(0, 'set', 'CDELT1', 1)
+            self.modify_arc_spec_header(0, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_arc_spec_header(0, 'set', 'CTYPE1',
+                                        'Pixel (Dispersion)')
+            self.modify_arc_spec_header(0, 'set', 'CUNIT1', 'Pixel')
+            self.modify_arc_spec_header(0, 'set', 'BUNIT', 'electron')
+
+            # Add the peaks in native pixel value
+            self.modify_arc_spec_header(1, 'set', 'LABEL',
+                                        'Peaks (Detector Pixel)')
+            self.modify_arc_spec_header(1, 'set', 'BUNIT', 'Pixel')
+
+            # Add the peaks in effective pixel value
+            self.modify_arc_spec_header(2, 'set', 'LABEL',
+                                        'Peaks (Effective Pixel)')
+            self.modify_arc_spec_header(2, 'set', 'BUNIT', 'Pixel')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('arc_spec ImageHDU cannot be created.')
+            self.arc_spec_hdulist = None
+
+    def create_wavecal_fits(self):
+
+        try:
+
+            # Put the data in an ImageHDU
+            wavecal_ImageHDU = fits.ImageHDU(self.fit_coeff)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.wavecal_hdulist = fits.HDUList()
+            self.wavecal_hdulist += [wavecal_ImageHDU]
+
+            # Add the wavelength calibration header info
+            self.modify_wavecal_header('set', 'FTYPE', self.fit_type)
+            self.modify_wavecal_header('set', 'FDEG', self.fit_deg)
+            self.modify_wavecal_header('set', 'FFRMS', self.rms)
+            self.modify_wavecal_header('set', 'ATLWMIN',
+                                       self.min_atlas_wavelength)
+            self.modify_wavecal_header('set', 'ATLWMAX',
+                                       self.max_atlas_wavelength)
+            self.modify_wavecal_header('set', 'NSLOPES', self.num_slopes)
+            self.modify_wavecal_header('set', 'RNGTOL', self.range_tolerance)
+            self.modify_wavecal_header('set', 'FITTOL', self.fit_tolerance)
+            self.modify_wavecal_header('set', 'CANTHRE',
+                                       self.candidate_tolerance)
+            self.modify_wavecal_header('set', 'LINTHRE',
+                                       self.linearity_tolerance)
+            self.modify_wavecal_header('set', 'RANTHRE', self.ransac_tolerance)
+            self.modify_wavecal_header('set', 'NUMCAN', self.num_candidates)
+            self.modify_wavecal_header('set', 'XBINS', self.xbins)
+            self.modify_wavecal_header('set', 'YBINS', self.ybins)
+            self.modify_wavecal_header('set', 'BRUTE', self.brute_force)
+            self.modify_wavecal_header('set', 'SAMSIZE', self.sample_size)
+            self.modify_wavecal_header('set', 'TOPN', self.top_n)
+            self.modify_wavecal_header('set', 'MAXTRY', self.max_tries)
+            self.modify_wavecal_header('set', 'INCOEFF', self.intput_coeff)
+            self.modify_wavecal_header('set', 'LINEAR', self.linear)
+            self.modify_wavecal_header('set', 'W8ED', self.weighted)
+            self.modify_wavecal_header('set', 'FILTER', self.filter_close)
+            self.modify_wavecal_header('set', 'PUSAGE', self.peak_utilisation)
+            self.modify_wavecal_header('set', 'LABEL', 'Electron Count')
+            self.modify_wavecal_header('set', 'CRPIX1', 1.00E+00)
+            self.modify_wavecal_header('set', 'CDELT1', self.wave_bin)
+            self.modify_wavecal_header('set', 'CRVAL1', self.wave_start)
+            self.modify_wavecal_header('set', 'CTYPE1', 'Wavelength')
+            self.modify_wavecal_header('set', 'CUNIT1', 'Angstroms')
+            self.modify_wavecal_header('set', 'BUNIT', 'electron')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('wavecal ImageHDU cannot be created.')
+            self.wavecal_hdulist = None
+
+    def create_flux_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            flux_ImageHDU = fits.ImageHDU(self.flux)
+            flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
+            flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
+            sensitivity_ImageHDU = fits.ImageHDU(self.sensitivity)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.flux_hdulist = fits.HDUList()
+            self.flux_hdulist += [flux_ImageHDU]
+            self.flux_hdulist += [flux_err_ImageHDU]
+            self.flux_hdulist += [flux_sky_ImageHDU]
+            self.flux_hdulist += [sensitivity_ImageHDU]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_flux_header(0, 'set', 'LABEL', 'Flux')
+            self.modify_flux_header(0, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_header(0, 'set', 'CDELT1', 1)
+            self.modify_flux_header(0, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_flux_header(0, 'set', 'CTYPE1', 'Pixel')
+            self.modify_flux_header(0, 'set', 'CUNIT1', 'Pixel')
+            self.modify_flux_header(0, 'set', 'BUNIT',
+                                    'erg/(s*cm**2*Angstrom)')
+
+            self.modify_flux_header(1, 'set', 'LABEL', 'Flux')
+            self.modify_flux_header(1, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_header(1, 'set', 'CDELT1', 1)
+            self.modify_flux_header(1, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_flux_header(1, 'set', 'CTYPE1', 'Pixel')
+            self.modify_flux_header(1, 'set', 'CUNIT1', 'Pixel')
+            self.modify_flux_header(1, 'set', 'BUNIT',
+                                    'erg/(s*cm**2*Angstrom)')
+
+            self.modify_flux_header(2, 'set', 'LABEL', 'Flux')
+            self.modify_flux_header(2, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_header(2, 'set', 'CDELT1', 1)
+            self.modify_flux_header(2, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_flux_header(2, 'set', 'CTYPE1', 'Pixel')
+            self.modify_flux_header(2, 'set', 'CUNIT1', 'Pixel')
+            self.modify_flux_header(2, 'set', 'BUNIT',
+                                    'erg/(s*cm**2*Angstrom)')
+
+            self.modify_flux_header(3, 'set', 'LABEL', 'Sensitivity')
+            self.modify_flux_header(3, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_header(3, 'set', 'CDELT1', 1)
+            self.modify_flux_header(3, 'set', 'CRVAL1', self.pixel_list[0])
+            self.modify_flux_header(3, 'set', 'CTYPE1', 'Pixel')
+            self.modify_flux_header(3, 'set', 'CUNIT1', 'Pixel')
+            self.modify_flux_header(3, 'set', 'BUNIT',
+                                    'erg/(s*cm**2*Angstrom)/Count')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('flux ImageHDU cannot be created.')
+            self.flux_hdulist = None
+
+    def create_flux_resampled_fits(self):
+
+        try:
+
+            # Put the data in ImageHDUs
+            flux_resampled_ImageHDU = fits.ImageHDU(self.flux_resampled)
+            flux_err_resampled_ImageHDU = fits.ImageHDU(
+                self.flux_err_resampled)
+            flux_sky_resampled_ImageHDU = fits.ImageHDU(
+                self.flux_sky_resampled)
+            sensitivity_resampled_ImageHDU = fits.ImageHDU(
+                self.sensitivity_resampled)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.flux_resampled_hdulist = fits.HDUList()
+            self.flux_resampled_hdulist += [flux_resampled_ImageHDU]
+            self.flux_resampled_hdulist += [flux_err_resampled_ImageHDU]
+            self.flux_resampled_hdulist += [flux_sky_resampled_ImageHDU]
+            self.flux_resampled_hdulist += [sensitivity_resampled_ImageHDU]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_flux_resampled_header(0, 'set', 'LABEL', 'Flux')
+            self.modify_flux_resampled_header(0, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_resampled_header(0, 'set', 'CDELT1',
+                                              self.wave_bin)
+            self.modify_flux_resampled_header(0, 'set', 'CRVAL1',
+                                              self.wave_start)
+            self.modify_flux_resampled_header(0, 'set', 'CTYPE1', 'Wavelength')
+            self.modify_flux_resampled_header(0, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_flux_resampled_header(0, 'set', 'BUNIT',
+                                              'erg/(s*cm**2*Angstrom)')
+
+            self.modify_flux_resampled_header(1, 'set', 'LABEL', 'Flux')
+            self.modify_flux_resampled_header(1, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_resampled_header(1, 'set', 'CDELT1',
+                                              self.wave_bin)
+            self.modify_flux_resampled_header(1, 'set', 'CRVAL1',
+                                              self.wave_start)
+            self.modify_flux_resampled_header(1, 'set', 'CTYPE1', 'Wavelength')
+            self.modify_flux_resampled_header(1, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_flux_resampled_header(1, 'set', 'BUNIT',
+                                              'erg/(s*cm**2*Angstrom)')
+
+            self.modify_flux_resampled_header(2, 'set', 'LABEL', 'Flux')
+            self.modify_flux_resampled_header(2, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_resampled_header(2, 'set', 'CDELT1',
+                                              self.wave_bin)
+            self.modify_flux_resampled_header(2, 'set', 'CRVAL1',
+                                              self.wave_start)
+            self.modify_flux_resampled_header(2, 'set', 'CTYPE1', 'Wavelength')
+            self.modify_flux_resampled_header(2, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_flux_resampled_header(2, 'set', 'BUNIT',
+                                              'erg/(s*cm**2*Angstrom)')
+
+            self.modify_flux_resampled_header(3, 'set', 'LABEL', 'Sensitivity')
+            self.modify_flux_resampled_header(3, 'set', 'CRPIX1', 1.00E+00)
+            self.modify_flux_resampled_header(3, 'set', 'CDELT1',
+                                              self.wave_bin)
+            self.modify_flux_resampled_header(3, 'set', 'CRVAL1',
+                                              self.wave_start)
+            self.modify_flux_resampled_header(3, 'set', 'CTYPE1', 'Wavelength')
+            self.modify_flux_resampled_header(3, 'set', 'CUNIT1', 'Angstroms')
+            self.modify_flux_resampled_header(3, 'set', 'BUNIT',
+                                              'erg/(s*cm**2*Angstrom)/Count')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('flux_resampled ImageHDU cannot be created.')
+            self.flux_resampled_hdulist = None
+
+    def create_wavelength_fits(self):
+
+        try:
+
+            # Put the data in an ImageHDU
+            wavelength_ImageHDU = fits.ImageHDU(self.wave)
+
+            # Create an empty HDU list and populate with the ImageHDU
+            self.wavelength_hdulist = fits.HDUList()
+            self.wavelength_hdulist += [wavelength_ImageHDU]
+
+            # Add the calibrated wavelength
+            self.modify_wavelength_header('set', 'LABEL',
+                                          'Pixel-Wavelength Mapping')
+            self.modify_wavelength_header('set', 'CRPIX1', 1)
+            self.modify_wavelength_header('set', 'CDELT1', 1)
+            self.modify_wavelength_header('set', 'CRVAL1', self.pixel_list[0])
+            self.modify_wavelength_header('set', 'CTYPE1',
+                                          'Pixel (Dispersion)')
+            self.modify_wavelength_header('set', 'CUNIT1', 'Pixel')
+            self.modify_wavelength_header('set', 'BUNIT', 'Angstroms')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('wavelength ImageHDU cannot be created.')
+            self.wavelength_hdulist = None
 
     def remove_trace_fits(self):
 
@@ -1444,7 +1381,6 @@ class _spectrum1D():
 
     def create_fits(self,
                     output,
-                    force=False,
                     empty_primary_hdu=True,
                     return_hdu_list=False):
         '''
@@ -1457,8 +1393,10 @@ class _spectrum1D():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
-                Count, uncertainty, sky, optimal flag, and weight (pixel)
+            count: 3 HDUs
+                Count, uncertainty, and sky (pixel)
+            weight_map: 1 HDU
+                Weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
             wavecal: 1 HDU
@@ -1471,8 +1409,6 @@ class _spectrum1D():
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_hdu_list: boolean (default: False)
@@ -1485,38 +1421,43 @@ class _spectrum1D():
         # Will check if the HDUs need to be (re)created inside the functions
         if 'trace' in output_split:
 
-            self.create_trace_fits(force)
+            self.create_trace_fits()
 
         if 'count' in output_split:
 
-            self.create_count_fits(force)
+            self.create_count_fits()
+
+        if 'weight_map' in output_split:
+
+            self.create_count_fits()
 
         if 'arc_spec' in output_split:
 
-            self.create_arc_spec_fits(force)
+            self.create_arc_spec_fits()
 
         if 'wavecal' in output_split:
 
-            self.create_wavecal_fits(force)
+            self.create_wavecal_fits()
 
         if 'wavelength' in output_split:
 
-            self.create_wavelength_fits(force)
+            self.create_wavelength_fits()
 
         if 'count_resampled' in output_split:
 
-            self.create_count_resampled_fits(force)
+            self.create_count_resampled_fits()
 
         if 'flux' in output_split:
 
-            self.create_flux_fits(force)
+            self.create_flux_fits()
 
         if 'flux_resampled' in output_split:
 
-            self.create_flux_resampled_fits(force)
+            self.create_flux_resampled_fits()
 
         # If the requested list of HDUs is already good to go
-        if set([k for k, v in self.hdu_content.items() if v]) == set(output_split):
+        if set([k for k, v in self.hdu_content.items()
+                if v]) == set(output_split):
 
             # If there is an empty primary HDU, but requested without
             if (self.empty_primary_hdu & (not empty_primary_hdu)):
@@ -1539,6 +1480,8 @@ class _spectrum1D():
         else:
 
             self.hdu_output = None
+            for k, v in self.hdu_content.items():
+                self.hdu_content[k] = False
 
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()
@@ -1549,42 +1492,51 @@ class _spectrum1D():
                 hdu_output.append(fits.PrimaryHDU())
 
             # Join the list(s)
-            if 'trace' in output_split:
+            if 'trace' in output_split and not self.hdu_content['trace']:
 
                 hdu_output += self.trace_hdulist
                 self.hdu_content['trace'] = True
 
-            if 'count' in output_split:
+            if 'count' in output_split and not self.hdu_content['count']:
 
                 hdu_output += self.count_hdulist
                 self.hdu_content['count'] = True
 
-            if 'arc_spec' in output_split:
+            if 'weight_map' in output_split and not self.hdu_content[
+                    'weight_map']:
+
+                hdu_output += self.count_hdulist
+                self.hdu_content['weight_map'] = True
+
+            if 'arc_spec' in output_split and not self.hdu_content['arc_spec']:
 
                 hdu_output += self.arc_spec_hdulist
                 self.hdu_content['arc_spec'] = True
 
-            if 'wavecal' in output_split:
+            if 'wavecal' in output_split and not self.hdu_content['wavecal']:
 
                 hdu_output += self.wavecal_hdulist
                 self.hdu_content['wavecal'] = True
 
-            if 'wavelength' in output_split:
+            if 'wavelength' in output_split and not self.hdu_content[
+                    'wavelength']:
 
                 hdu_output += self.wavelength_hdulist
                 self.hdu_content['wavelength'] = True
 
-            if 'count_resampled' in output_split:
+            if 'count_resampled' in output_split and not self.hdu_content[
+                    'count_resampled']:
 
                 hdu_output += self.count_resampled_hdulist
                 self.hdu_content['count_resampled'] = True
 
-            if 'flux' in output_split:
+            if 'flux' in output_split and not self.hdu_content['flux']:
 
                 hdu_output += self.flux_hdulist
                 self.hdu_content['flux'] = True
 
-            if 'flux_resampled' in output_split:
+            if 'flux_resampled' in output_split and not self.hdu_content[
+                    'flux_resampled']:
 
                 hdu_output += self.flux_resampled_hdulist
                 self.hdu_content['flux_resampled'] = True
@@ -1609,7 +1561,6 @@ class _spectrum1D():
     def save_fits(self,
                   output,
                   filename,
-                  force=False,
                   overwrite=False,
                   empty_primary_hdu=True):
         '''
@@ -1622,8 +1573,10 @@ class _spectrum1D():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
-                Count, uncertainty, sky, optimal flag, and weight (pixel)
+            count: 3 HDUs
+                Count, uncertainty, and sky (pixel)
+            weight_map: 1 HDU
+                Weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
             wavecal: 1 HDU
@@ -1639,8 +1592,6 @@ class _spectrum1D():
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
         empty_primary_hdu: boolean (default: True)
@@ -1648,12 +1599,12 @@ class _spectrum1D():
 
         '''
 
-        self.create_fits(output, force, empty_primary_hdu)
+        self.create_fits(output, empty_primary_hdu)
 
         # Save file to disk
         self.hdu_output.writeto(filename + '.fits', overwrite=overwrite)
 
-    def save_csv(self, output, filename, force, overwrite):
+    def save_csv(self, output, filename, overwrite):
         '''
         Save the reduced data to disk, with a choice of any combination of the
         5 sets of data, see below the 'output' parameters for details.
@@ -1667,8 +1618,10 @@ class _spectrum1D():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
-                Count, uncertainty, sky, optimal flag, and weight (pixel)
+            count: 4 HDUs
+                Count, uncertainty, sky, and optimal flag (pixel)
+            weight_map: 1 HDU
+                Weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
             wavecal: 1 HDU
@@ -1684,14 +1637,12 @@ class _spectrum1D():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
 
         '''
 
-        self.create_fits(output, force, empty_primary_hdu=False)
+        self.create_fits(output, empty_primary_hdu=False)
 
         output_split = output.split('+')
 
@@ -1702,7 +1653,9 @@ class _spectrum1D():
             if output_type in output_split:
 
                 end = start + self.n_hdu[output_type]
+
                 if output_type != 'arc_spec':
+
                     output_data = np.column_stack(
                         [hdu.data for hdu in self.hdu_output[start:end]])
 
@@ -1710,29 +1663,31 @@ class _spectrum1D():
                                                         output_type + '.csv')):
 
                         np.savetxt(filename + '_' + output_type + '.csv',
-                                output_data,
-                                delimiter=',',
-                                header=self.header[output_type])
+                                   output_data,
+                                   delimiter=',',
+                                   header=self.header[output_type])
 
                 else:
 
                     output_data_arc_spec = self.hdu_output[start].data
                     output_data_arc_peaks = np.column_stack(
-                        [hdu.data for hdu in self.hdu_output[start+1:end]])
+                        [hdu.data for hdu in self.hdu_output[start + 1:end]])
 
-                    if overwrite or (not os.path.exists(filename + '_arc_spec.csv')):
+                    if overwrite or (
+                            not os.path.exists(filename + '_arc_spec.csv')):
 
                         np.savetxt(filename + '_arc_spec.csv',
-                                output_data,
-                                delimiter=',',
-                                header=self.header[output_type])
+                                   output_data_arc_spec,
+                                   delimiter=',',
+                                   header=self.header[output_type])
 
-                    if overwrite or (not os.path.exists(filename + '_arc_peaks.csv')):
+                    if overwrite or (
+                            not os.path.exists(filename + '_arc_peaks.csv')):
 
                         np.savetxt(filename + '_arc_peaks.csv',
-                                output_data,
-                                delimiter=',',
-                                header=self.header[output_type])
+                                   output_data_arc_peaks,
+                                   delimiter=',',
+                                   header=self.header[output_type])
 
                 start = end
 
@@ -3582,7 +3537,6 @@ class TwoDSpec:
     def save_fits(self,
                   output='trace+count',
                   filename='TwoDSpecExtracted',
-                  force=False,
                   overwrite=False,
                   empty_primary_hdu=True):
         '''
@@ -3603,8 +3557,6 @@ class TwoDSpec:
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
         empty_primary_hdu: boolean (default: True)
@@ -3628,7 +3580,6 @@ class TwoDSpec:
             self.spectrum_list[i].save_fits(
                 output=output,
                 filename=filename_i,
-                force=force,
                 overwrite=overwrite,
                 empty_primary_hdu=empty_primary_hdu)
 
@@ -5197,7 +5148,6 @@ class WavelengthCalibration():
     def create_fits(self,
                     spec_id=None,
                     output='arc_spec+wavecal+count_resampled',
-                    force=False,
                     empty_primary_hdu=True,
                     return_id=False):
         '''
@@ -5215,8 +5165,10 @@ class WavelengthCalibration():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
-                Count, uncertainty, sky, optimal flag, and weight (pixel)
+            count: 3 HDUs
+                Count, uncertainty, sky, and optimal flag (pixel)
+            weight_map: 1 HDU
+                Weight map of the extraction.
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
             wavecal: 1 HDU
@@ -5225,8 +5177,6 @@ class WavelengthCalibration():
                 Wavelength of each pixel
             count_resampled: 3 HDUs
                 Resampled Count, uncertainty, and sky (wavelength)
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_id: boolean (default: False)
@@ -5238,8 +5188,8 @@ class WavelengthCalibration():
         for i in output.split('+'):
 
             if i not in [
-                    'trace', 'count', 'arc_spec', 'wavecal', 'wavelength',
-                    'count_resampled'
+                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
+                    'wavelength', 'count_resampled'
             ]:
 
                 raise ValueError('%s is not a valid output.' % i)
@@ -5262,9 +5212,7 @@ class WavelengthCalibration():
         for i in spec_id:
 
             self.spectrum_list[i].create_fits(
-                output=output,
-                force=force,
-                empty_primary_hdu=empty_primary_hdu)
+                output=output, empty_primary_hdu=empty_primary_hdu)
 
         if return_id:
 
@@ -5274,7 +5222,6 @@ class WavelengthCalibration():
                   spec_id=None,
                   output='arc_spec+wavecal+count_resampled',
                   filename='wavecal',
-                  force=False,
                   empty_primary_hdu=True,
                   overwrite=False):
         '''
@@ -5292,7 +5239,7 @@ class WavelengthCalibration():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
@@ -5305,8 +5252,6 @@ class WavelengthCalibration():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         overwrite: boolean
@@ -5323,7 +5268,6 @@ class WavelengthCalibration():
         spec_id = self.create_fits(spec_id=spec_id,
                                    output=output,
                                    empty_primary_hdu=empty_primary_hdu,
-                                   force=force,
                                    return_id=True)
 
         for i in spec_id:
@@ -5333,7 +5277,6 @@ class WavelengthCalibration():
             self.spectrum_list[i].save_fits(
                 output=output,
                 filename=filename_i,
-                force=False,
                 overwrite=overwrite,
                 empty_primary_hdu=empty_primary_hdu)
 
@@ -5341,7 +5284,6 @@ class WavelengthCalibration():
                  spec_id=None,
                  output='arc_spec+wavecal+count_resampled',
                  filename='wavecal',
-                 force=False,
                  overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -5358,7 +5300,7 @@ class WavelengthCalibration():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
@@ -5371,8 +5313,6 @@ class WavelengthCalibration():
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
 
@@ -5387,7 +5327,6 @@ class WavelengthCalibration():
         spec_id = self.create_fits(spec_id=spec_id,
                                    output=output,
                                    empty_primary_hdu=False,
-                                   force=force,
                                    return_id=True)
 
         for i in spec_id:
@@ -5396,7 +5335,6 @@ class WavelengthCalibration():
 
             self.spectrum_list[i].save_csv(output=output,
                                            filename=filename_i,
-                                           force=False,
                                            overwrite=overwrite)
 
 
@@ -7130,7 +7068,6 @@ class FluxCalibration(StandardLibrary):
                     spec_id=None,
                     output='count+count_resampled+flux+flux_resampled',
                     stype='science+standard',
-                    force=False,
                     empty_primary_hdu=True,
                     return_id=False):
         '''
@@ -7145,7 +7082,7 @@ class FluxCalibration(StandardLibrary):
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
@@ -7161,8 +7098,6 @@ class FluxCalibration(StandardLibrary):
                 Flux, uncertainty, sky, and sensitivity (wavelength)
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_id: boolean (default: False)
@@ -7217,9 +7152,7 @@ class FluxCalibration(StandardLibrary):
 
                     # If flux is calibrated
                     self.spectrum_list_science[i].create_fits(
-                        output=output,
-                        force=force,
-                        empty_primary_hdu=empty_primary_hdu)
+                        output=output, empty_primary_hdu=empty_primary_hdu)
 
                 else:
 
@@ -7234,9 +7167,7 @@ class FluxCalibration(StandardLibrary):
             if self.flux_standard_calibrated:
 
                 self.spectrum_list_standard[0].create_fits(
-                    output=output,
-                    force=force,
-                    empty_primary_hdu=empty_primary_hdu)
+                    output=output, empty_primary_hdu=empty_primary_hdu)
 
             else:
 
@@ -7248,7 +7179,6 @@ class FluxCalibration(StandardLibrary):
                   filename='fluxcal',
                   stype='science+standard',
                   empty_primary_hdu=True,
-                  force=False,
                   overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -7263,7 +7193,7 @@ class FluxCalibration(StandardLibrary):
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             count_resampled: 3 HDUs
                 Resampled Count, uncertainty, and sky (wavelength)
@@ -7280,8 +7210,6 @@ class FluxCalibration(StandardLibrary):
             'science' and/or 'standard' to indicate type, use '+' as delimiter
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         overwrite: boolean
             Default is False.
 
@@ -7302,7 +7230,6 @@ class FluxCalibration(StandardLibrary):
                                        output=output,
                                        stype='science',
                                        empty_primary_hdu=empty_primary_hdu,
-                                       force=force,
                                        return_id=True)
 
             for i in spec_id:
@@ -7312,7 +7239,6 @@ class FluxCalibration(StandardLibrary):
                 self.spectrum_list_science[i].save_fits(
                     output=output,
                     filename=filename_i,
-                    force=False,
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
 
@@ -7324,13 +7250,11 @@ class FluxCalibration(StandardLibrary):
             self.create_fits(spec_id=[0],
                              output=output,
                              stype='standard',
-                             empty_primary_hdu=empty_primary_hdu,
-                             force=force)
+                             empty_primary_hdu=empty_primary_hdu)
 
             self.spectrum_list_standard[0].save_fits(
                 output=output,
                 filename=filename + '_standard',
-                force=False,
                 overwrite=overwrite,
                 empty_primary_hdu=empty_primary_hdu)
 
@@ -7353,7 +7277,7 @@ class FluxCalibration(StandardLibrary):
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             count_resampled: 3 HDUs
                 Resampled Count, uncertainty, and sky (wavelength)
@@ -7388,7 +7312,6 @@ class FluxCalibration(StandardLibrary):
                                        output=output,
                                        stype='science',
                                        empty_primary_hdu=False,
-                                       force=False,
                                        return_id=True)
 
             for i in spec_id:
@@ -7400,7 +7323,6 @@ class FluxCalibration(StandardLibrary):
 
                     self.spectrum_list_science[i].save_csv(output=output,
                                                            filename=filename_i,
-                                                           force=False,
                                                            overwrite=overwrite)
                 else:
 
@@ -7414,8 +7336,7 @@ class FluxCalibration(StandardLibrary):
             self.create_fits(spec_id=[0],
                              output=output,
                              stype='standard',
-                             empty_primary_hdu=False,
-                             force=False)
+                             empty_primary_hdu=False)
 
             # If flux is calibrated
             if self.flux_standard_calibrated:
@@ -7423,7 +7344,6 @@ class FluxCalibration(StandardLibrary):
                 self.spectrum_list_standard[0].save_csv(output=output,
                                                         filename=filename +
                                                         '_standard',
-                                                        force=False,
                                                         overwrite=overwrite)
             else:
 
@@ -8949,7 +8869,6 @@ class OneDSpec():
                     spec_id=None,
                     output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                     stype='science+standard',
-                    force=False,
                     empty_primary_hdu=True,
                     return_id=False):
         '''
@@ -8968,7 +8887,7 @@ class OneDSpec():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
@@ -8984,8 +8903,6 @@ class OneDSpec():
                 Flux, uncertainty, sky, and sensitivity (wavelength)
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         return_id: boolean (default: False)
@@ -9000,8 +8917,8 @@ class OneDSpec():
         for i in output_split:
 
             if i not in [
-                    'trace', 'count', 'arc_spec', 'wavecal', 'wavelength',
-                    'count_resampled', 'flux', 'flux_resampled'
+                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
+                    'wavelength', 'count_resampled', 'flux', 'flux_resampled'
             ]:
 
                 raise ValueError('%s is not a valid output.' % i)
@@ -9045,7 +8962,7 @@ class OneDSpec():
                     # calibrators
                     spec_id = list(self.wavecal_science.spectrum_list.keys())
 
-            elif ('trace' in output_split) or ('count' in output_split):
+            else:
 
                 try:
                     print('loading from fluxcal')
@@ -9056,34 +8973,35 @@ class OneDSpec():
                         if spec_id not in list(
                                 self.fluxcal.spectrum_list_science.keys()):
 
-                            raise ValueError('The given spec_id does not exist.')
+                            raise ValueError(
+                                'The given spec_id does not exist.')
 
                     else:
                         print('spec_id is None.')
 
                         # if spec_id is None, contraints are applied to all
                         # calibrators
-                        spec_id = list(self.fluxcal.spectrum_list_science.keys())
+                        spec_id = list(
+                            self.fluxcal.spectrum_list_science.keys())
 
                 except Exception as e:
+
+                    warnings.warn(str(e))
 
                     if spec_id is not None:
 
                         if spec_id not in list(
                                 self.wavecal_science.spectrum_list.keys()):
 
-                            raise ValueError('The given spec_id does not exist.')
+                            raise ValueError(
+                                'The given spec_id does not exist.')
 
                     else:
 
                         # if spec_id is None, contraints are applied to all
                         # calibrators
-                        spec_id = list(self.wavecal_science.spectrum_list.keys())
-
-            else:
-
-                raise ValueError('Trace or Count cannot be found. Neither '
-                    'wavelength nor flux is calibrated.')
+                        spec_id = list(
+                            self.wavecal_science.spectrum_list.keys())
 
             if isinstance(spec_id, int):
 
@@ -9095,9 +9013,7 @@ class OneDSpec():
                 if self.flux_science_calibrated:
 
                     self.fluxcal.spectrum_list_science[i].create_fits(
-                        output=output,
-                        force=force,
-                        empty_primary_hdu=empty_primary_hdu)
+                        output=output, empty_primary_hdu=empty_primary_hdu)
 
                 # If flux is not calibrated, but wavelength is calibrated
                 # Note that wavecal ONLY has sepctrum_list, it is not science
@@ -9105,34 +9021,24 @@ class OneDSpec():
                 elif self.wavelength_science_calibrated:
 
                     self.wavecal_science.spectrum_list[i].create_fits(
-                        output=output,
-                        force=force,
-                        empty_primary_hdu=empty_primary_hdu)
+                        output=output, empty_primary_hdu=empty_primary_hdu)
 
-                elif ('trace' in output_split) or ('count' in output_split):
+                else:
 
+                    # This is when exporting before any calibration, we
+                    # can't be sure whether there is data in the fluxcal
+                    # or in the wavecal.
                     try:
 
                         self.fluxcal.spectrum_list_science[i].create_fits(
-                            output=output,
-                            force=force,
-                            empty_primary_hdu=empty_primary_hdu)
+                            output=output, empty_primary_hdu=empty_primary_hdu)
 
-                    except:
+                    except Exception as e:
+
+                        warnings.warn(str(e))
 
                         self.wavecal_science.spectrum_list[i].create_fits(
-                            output=output,
-                            force=force,
-                            empty_primary_hdu=empty_primary_hdu)
-
-                # Should be trapped above so this line should never be run
-                else:
-
-                    raise RuntimeError('This should not happen, please submit an issue.')
-
-            if return_id:
-
-                return spec_id
+                            output=output, empty_primary_hdu=empty_primary_hdu)
 
         if 'standard' in stype_split:
 
@@ -9140,9 +9046,7 @@ class OneDSpec():
             if self.flux_standard_calibrated:
 
                 self.fluxcal.spectrum_list_standard[0].create_fits(
-                    output=output,
-                    force=force,
-                    empty_primary_hdu=empty_primary_hdu)
+                    output=output, empty_primary_hdu=empty_primary_hdu)
 
             # If flux is not calibrated, but wavelength is calibrated
             # Note that wavecal ONLY has sepctrum_list, it is not science
@@ -9150,37 +9054,131 @@ class OneDSpec():
             elif self.wavelength_standard_calibrated:
 
                 self.wavecal_standard.spectrum_list[0].create_fits(
-                    output=output,
-                    force=force,
-                    empty_primary_hdu=empty_primary_hdu)
+                    output=output, empty_primary_hdu=empty_primary_hdu)
 
-            elif ('trace' in output_split) or ('count' in output_split):
+            else:
 
+                # This is when exporting before any calibration, we
+                # can't be sure whether there is data in the fluxcal
+                # or in the wavecal.
                 try:
 
                     self.fluxcal.spectrum_list_standard[0].create_fits(
-                        output=output,
-                        force=force,
-                        empty_primary_hdu=empty_primary_hdu)
+                        output=output, empty_primary_hdu=empty_primary_hdu)
 
-                except:
+                except Exception as e:
+
+                    warnings.warn(str(e))
 
                     self.wavecal_standard.spectrum_list[0].create_fits(
-                        output=output,
-                        force=force,
-                        empty_primary_hdu=empty_primary_hdu)
+                        output=output, empty_primary_hdu=empty_primary_hdu)
+
+        if return_id:
+
+            return spec_id
+
+    def modify_trace_header(self,
+                            idx,
+                            method,
+                            spec_id=None,
+                            stype='science+standard',
+                            *args):
+
+        # Split the string into strings
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.flux_science_calibrated:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(
+                            self.fluxcal.spectrum_list_science.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, contraints are applied to all
+                    # calibrators
+                    spec_id = list(self.fluxcal.spectrum_list_science.keys())
+
+            elif self.wavelength_science_calibrated:
+
+                # Note that wavecal ONLY has sepctrum_list, it is not science
+                # and standard specified.
+                if spec_id is not None:
+
+                    if spec_id not in list(
+                            self.wavecal_science.spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, contraints are applied to all
+                    # calibrators
+                    spec_id = list(self.wavecal_science.spectrum_list.keys())
+
+            else:
+
+                raise ValueError('Trace or Count cannot be found. Neither '
+                                 'wavelength nor flux is calibrated.')
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            for i in spec_id:
+
+                # If flux is calibrated
+                if self.flux_science_calibrated:
+
+                    self.fluxcal.spectrum_list_science[i].modify_trace_header(
+                        idx, method, *args)
+
+                # If flux is not calibrated, but wavelength is calibrated
+                # Note that wavecal ONLY has sepctrum_list, it is not science
+                # and standard specified.
+                elif self.wavelength_science_calibrated:
+
+                    self.wavecal_science.spectrum_list[i].modify_trace_header(
+                        idx, method, *args)
+
+                # Should be trapped above so this line should never be run
+                else:
+
+                    raise RuntimeError(
+                        'This should not happen, please submit an issue.')
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.flux_standard_calibrated:
+
+                self.fluxcal.spectrum_list_standard[0].modify_trace_header(
+                    idx, method, *args)
+
+            # If flux is not calibrated, but wavelength is calibrated
+            # Note that wavecal ONLY has sepctrum_list, it is not science
+            # and standard specified.
+            elif self.wavelength_standard_calibrated:
+
+                self.wavecal_standard.spectrum_list[0].modify_trace_header(
+                    idx, method, *args)
 
             # Should be trapped above so this line should never be run
             else:
 
-                raise RuntimeError('This should not happen, please submit an issue.')
+                raise RuntimeError(
+                    'This should not happen, please submit an issue.')
 
     def save_fits(self,
                   spec_id=None,
                   output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                   filename='reduced',
                   stype='science+standard',
-                  force=False,
                   empty_primary_hdu=True,
                   overwrite=False):
         '''
@@ -9199,7 +9197,7 @@ class OneDSpec():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
@@ -9218,8 +9216,6 @@ class OneDSpec():
             process/subprocess is execuated.
         stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         empty_primary_hdu: boolean (default: True)
             Set to True to leave the Primary HDU blank (default: True)
         overwrite: boolean (default: False)
@@ -9239,7 +9235,6 @@ class OneDSpec():
                                        output=output,
                                        stype='science',
                                        empty_primary_hdu=empty_primary_hdu,
-                                       force=force,
                                        return_id=True)
 
             for i in spec_id:
@@ -9252,7 +9247,6 @@ class OneDSpec():
                     self.fluxcal.spectrum_list_science[i].save_fits(
                         output=output,
                         filename=filename_i,
-                        force=False,
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
 
@@ -9263,7 +9257,6 @@ class OneDSpec():
                     self.wavecal_science.spectrum_list[i].save_fits(
                         output=output,
                         filename=filename_i,
-                        force=False,
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
 
@@ -9276,16 +9269,16 @@ class OneDSpec():
                         self.fluxcal.spectrum_list_science[i].save_fits(
                             output=output,
                             filename=filename_i,
-                            force=False,
                             overwrite=overwrite,
                             empty_primary_hdu=empty_primary_hdu)
 
-                    except:
+                    except Exception as e:
+
+                        warnings.warn(str(e))
 
                         self.wavecal_science.spectrum_list[i].save_fits(
                             output=output,
                             filename=filename_i,
-                            force=False,
                             overwrite=overwrite,
                             empty_primary_hdu=empty_primary_hdu)
 
@@ -9294,8 +9287,7 @@ class OneDSpec():
             self.create_fits(spec_id=[0],
                              output=output,
                              stype='standard',
-                             empty_primary_hdu=empty_primary_hdu,
-                             force=force)
+                             empty_primary_hdu=empty_primary_hdu)
 
             # If flux is calibrated
             if self.flux_standard_calibrated:
@@ -9303,7 +9295,6 @@ class OneDSpec():
                 self.fluxcal.spectrum_list_standard[0].save_fits(
                     output=output,
                     filename=filename + '_standard',
-                    force=force,
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
 
@@ -9314,7 +9305,6 @@ class OneDSpec():
                 self.wavecal_standard.spectrum_list[0].save_fits(
                     output=output,
                     filename=filename + '_standard',
-                    force=force,
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
 
@@ -9327,16 +9317,16 @@ class OneDSpec():
                     self.fluxcal.spectrum_list_standard[0].save_fits(
                         output=output,
                         filename=filename + '_standard',
-                        force=force,
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
 
-                except:
+                except Exception as e:
+
+                    warnings.warn(str(e))
 
                     self.wavecal_standard.spectrum_list[0].save_fits(
                         output=output,
                         filename=filename + '_standard',
-                        force=force,
                         overwrite=overwrite,
                         empty_primary_hdu=empty_primary_hdu)
 
@@ -9345,7 +9335,6 @@ class OneDSpec():
                  output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                  filename='reduced',
                  stype='science+standard',
-                 force=False,
                  overwrite=False):
         '''
         Save the reduced data to disk, with a choice of any combination of the
@@ -9363,7 +9352,7 @@ class OneDSpec():
 
             trace: 2 HDUs
                 Trace, and trace width (pixel)
-            count: 5 HDUs
+            count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
             arc_spec: 3 HDUs
                 1D arc spectrum, arc line pixels, and arc line effective pixels
@@ -9382,8 +9371,6 @@ class OneDSpec():
             process/subprocess is execuated.
         stype: string (default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        force: boolean (default: False)
-            Set to True to force recreating the HDU
         overwrite: boolean (default: False)
             Default is False.
 
@@ -9401,7 +9388,6 @@ class OneDSpec():
                                        output=output,
                                        stype='science',
                                        empty_primary_hdu=False,
-                                       force=force,
                                        return_id=True)
 
             for i in spec_id:
@@ -9414,7 +9400,6 @@ class OneDSpec():
                     self.fluxcal.spectrum_list_science[i].save_csv(
                         output=output,
                         filename=filename_i,
-                        force=force,
                         overwrite=overwrite)
 
                 # If flux is not calibrated, and weather or not the wavelength
@@ -9424,7 +9409,6 @@ class OneDSpec():
                     self.wavecal_science.spectrum_list[i].save_csv(
                         output=output,
                         filename=filename_i,
-                        force=force,
                         overwrite=overwrite)
 
         if 'standard' in stype_split:
@@ -9435,7 +9419,6 @@ class OneDSpec():
                 self.fluxcal.spectrum_list_standard[0].save_csv(
                     output=output,
                     filename=filename + '_standard',
-                    force=force,
                     overwrite=overwrite)
 
             # If flux is not calibrated, and weather or not the wavelength
@@ -9445,5 +9428,4 @@ class OneDSpec():
                 self.wavecal_standard.spectrum_list[0].save_csv(
                     output=output,
                     filename=filename + '_standard',
-                    force=force,
                     overwrite=overwrite)

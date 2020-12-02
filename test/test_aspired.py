@@ -1,16 +1,10 @@
 import os
-import sys
 import numpy as np
-import plotly.io as pio
-pio.renderers.default = 'notebook+jpg'
+from aspired import image_reduction
+from aspired import spectral_reduction
 
 base_dir = os.path.dirname(__file__)
 abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
-
-sys.path.insert(0, abs_dir)
-
-from aspired import image_reduction
-from aspired import spectral_reduction
 
 
 def test_spectral_extraction():
@@ -150,11 +144,10 @@ def test_full_run():
 
     # Save the trace and count as FITS BEFORE flux and wavelength calibration
     # This is an uncommon operation, but it should work.
-    lhs6328_onedspec.save_fits(
-        output='trace+count',
-        filename='test/test_output/test_full_run',
-        stype='science+standard',
-        overwrite=True)
+    lhs6328_onedspec.save_fits(output='trace+count',
+                               filename='test/test_output/test_full_run',
+                               stype='science+standard',
+                               overwrite=True)
 
     # Add a 2D arc image
     lhs6328_onedspec.add_arc(lhs6328_frame, stype='science')
@@ -202,16 +195,24 @@ def test_full_run():
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
-    # Save as FITS
+    # Create FITS
+    lhs6328_onedspec.create_fits(output='trace+count')
+
+    # Modify FITS header for the trace
+    lhs6328_onedspec.modify_trace_header(0, 'set', 'COMMENT', 'Hello World!')
+
+    # Save as FITS (and create the ones that were not created earlier)
     lhs6328_onedspec.save_fits(
-        output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+flux_resampled',
+        output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+'
+        'flux_resampled',
         filename='test/test_output/test_full_run',
         stype='science+standard',
         overwrite=True)
 
     # save as CSV
     lhs6328_onedspec.save_csv(
-        output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+flux_resampled',
+        output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+'
+        'flux_resampled',
         filename='test/test_output/test_full_run',
         stype='science+standard',
         overwrite=True)

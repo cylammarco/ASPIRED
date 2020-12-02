@@ -1,5 +1,5 @@
   {
-    "name": "ASPIRED",
+    "name": "aspired",
     "description": "",
     "version": "0.1.1",
     "main": "index.js",
@@ -14,5 +14,5 @@
     "author": "Marco Lam",
     "license": "bsd-3-clause",
     "bugs": {},
-    "homepage": {}
+    "homepage": "https://aspired.readthedocs.io/"
   }
