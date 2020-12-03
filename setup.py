@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setup_requires = ['numpy>=1.16']
 
 install_requires = [
-    'scipy>=1.5.2', 'astropy>=4.0,<4.2', 'ccdproc>=2.1', 'astroscrappy>=1.0.8',
+    'scipy>=1.5.2', 'astropy>=4.0,<4.3', 'ccdproc>=2.1', 'astroscrappy>=1.0.8',
     'plotly>=4.0', 'spectres>=2.1.1', 'rascal==0.2'
 ]
 
