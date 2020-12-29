@@ -38,4 +38,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest --disable-warnings -p no:warnings test/test_aspired.py
+        pytest --disable-warnings -p no:warnings test/test_extraction.py
+        pytest --disable-warnings -p no:warnings test/test_wavecal.py
+        pytest --disable-warnings -p no:warnings test/test_fluxcal.py
+        pytest --disable-warnings -p no:warnings test/test_full_run.py
