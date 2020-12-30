@@ -36,7 +36,7 @@ class ImageReduction:
                  sigma_clipping_flat=True,
                  clip_low_flat=5,
                  clip_high_flat=5,
-                 silence=False):
+                 verbose=True):
         '''
         This class is not intented for quality data reduction, it exists for
         completeness such that users can produce a minimal pipeline with
@@ -113,7 +113,7 @@ class ImageReduction:
             lower threshold of the sigma clipping
         clip_high_flat: float
             upper threshold of the sigma clipping
-        silence: boolean
+        verbose: boolean
             Set to True to suppress all verbose warnings.
         '''
 
@@ -169,7 +169,7 @@ class ImageReduction:
         self.clip_low_flat = clip_low_flat
         self.clip_high_flat = clip_high_flat
 
-        self.silence = silence
+        self.verbose = verbose
 
         self.bias_list = None
         self.dark_list = None
@@ -298,7 +298,7 @@ class ImageReduction:
             try:
                 self.saxis = int(light.header[self.saxis_keyword])
             except:
-                if not self.silence:
+                if self.verbose:
                     warnings.warn('saxis keyword "' + self.saxis_keyword +
                                   '" is not in the header. saxis is set to 1.')
             '''
@@ -365,7 +365,7 @@ class ImageReduction:
         # to supply the exposure time, use 1 second
         if len(light_time) == 0:
             self.light_time = 1.
-            if not self.silence:
+            if self.verbose:
                 warnings.warn('Light frame exposure time cannot be found. '
                               '1 second is used as the exposure time.')
 
@@ -475,7 +475,7 @@ class ImageReduction:
 
         # If exposure time cannot be found from the header, use 1 second
         if len(dark_time) == 0:
-            if not self.silence:
+            if self.verbose:
                 warnings.warn('Dark frame exposure time cannot be found. '
                               '1 second is used as the exposure time.')
             self.exptime_dark = 1.
@@ -548,7 +548,7 @@ class ImageReduction:
         if self.bias_list.size > 0:
             self._bias_subtract()
         else:
-            if not self.silence:
+            if self.verbose:
                 warnings.warn('No bias frames. Bias subtraction is not '
                               'performed.')
 
@@ -556,7 +556,7 @@ class ImageReduction:
         if self.dark_list.size > 0:
             self._dark_subtract()
         else:
-            if not self.silence:
+            if self.verbose:
                 warnings.warn('No dark frames. Dark subtraction is not '
                               'performed.')
 
@@ -564,7 +564,7 @@ class ImageReduction:
         if self.flat_list.size > 0:
             self._flatfield()
         else:
-            if not self.silence:
+            if self.verbose:
                 warnings.warn('No flat frames. Field-flattening is not '
                               'performed.')
 

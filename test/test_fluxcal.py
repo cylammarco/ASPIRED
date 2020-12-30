@@ -37,6 +37,7 @@ def test_sensitivity():
                   filename='test/test_output/test_sensitivity',
                   overwrite=True)
 
+
 def test_fluxcalibration():
 
     hiltner_spectrum1D = Spectrum1D()
@@ -45,12 +46,14 @@ def test_fluxcalibration():
     fluxcalibrator = FluxCalibration()
 
     # Science and Standard counts
-    standard_count = np.loadtxt('test/test_data/test_full_run_standard_count.csv',
-                       delimiter=',',
-                       skiprows=1)[:, 0]
-    science_count = np.loadtxt('test/test_data/test_full_run_science_0_count.csv',
-                       delimiter=',',
-                       skiprows=1)[:, 0]
+    standard_count = np.loadtxt(
+        'test/test_data/test_full_run_standard_count.csv',
+        delimiter=',',
+        skiprows=1)[:, 0]
+    science_count = np.loadtxt(
+        'test/test_data/test_full_run_science_0_count.csv',
+        delimiter=',',
+        skiprows=1)[:, 0]
     wavelength = np.loadtxt(
         'test/test_data/test_full_run_standard_wavelength.csv', skiprows=1)
 

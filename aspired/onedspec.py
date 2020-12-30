@@ -6,7 +6,7 @@ from .fluxcalibration import FluxCalibration
 
 
 class OneDSpec():
-    def __init__(self, silence=False):
+    def __init__(self, verbose=True):
         '''
         This class applies the wavelength calibrations and compute & apply the
         flux calibration to the extracted 1D spectra. The standard TwoDSpec
@@ -15,7 +15,7 @@ class OneDSpec():
 
         Parameters
         ----------
-        silence: boolean
+        verbose: boolean
             Set to True to suppress all verbose warnings.
 
         '''
@@ -30,10 +30,9 @@ class OneDSpec():
         self.arc_lines_standard_imported = False
         self.flux_imported = False
 
-        self.wavecal_science = WavelengthCalibration(silence)
-        self.wavecal_standard = WavelengthCalibration(silence)
-        self.fluxcal = FluxCalibration(silence)
-        self.sensitivity = Sensitivity(silence)
+        self.wavecal_science = WavelengthCalibration(verbose)
+        self.wavecal_standard = WavelengthCalibration(verbose)
+        self.fluxcal = FluxCalibration(verbose)
 
         self.wavelength_science_calibrated = False
         self.wavelength_standard_calibrated = False
@@ -1323,7 +1322,7 @@ class OneDSpec():
                     np.array(wave_resampled).reshape(-1),
                     np.array(wave).reshape(-1),
                     np.array(spec.count).reshape(-1),
-                    verbose=False)
+                    verbose=True)
 
                 if spec.count_err is not None:
 
@@ -1331,7 +1330,7 @@ class OneDSpec():
                         np.array(wave_resampled).reshape(-1),
                         np.array(wave).reshape(-1),
                         np.array(spec.count_err).reshape(-1),
-                        verbose=False)
+                        verbose=True)
 
                 if spec.count_sky is not None:
 
@@ -1339,7 +1338,7 @@ class OneDSpec():
                         np.array(wave_resampled).reshape(-1),
                         np.array(wave).reshape(-1),
                         np.array(spec.count_sky).reshape(-1),
-                        verbose=False)
+                        verbose=True)
 
                 spec.add_wavelength(wave)
                 spec.add_wavelength_resampled(wave_bin, wave_start, wave_end,

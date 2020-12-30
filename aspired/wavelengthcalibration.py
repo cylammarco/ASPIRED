@@ -11,7 +11,7 @@ from .spectrum1D import Spectrum1D
 
 
 class WavelengthCalibration():
-    def __init__(self, silence=False):
+    def __init__(self, verbose=True):
         '''
         This is a wrapper for using RASCAL to perform wavelength calibration,
         which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
@@ -29,12 +29,12 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        silence: boolean
+        verbose: boolean
             Set to True to suppress all verbose warnings.
 
         '''
 
-        self.silence = silence
+        self.verbose = verbose
         self.spectrum1D = Spectrum1D()
 
     def from_spectrum1D(self, spectrum1D, overwrite=False):

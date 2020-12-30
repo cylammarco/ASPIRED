@@ -107,7 +107,7 @@ class TwoDSpec:
         self.seeing = 1.
         self.exptime = 1.
 
-        self.silence = False
+        self.verbose = False
 
         # Default keywords to be searched in the order in the list
         self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
@@ -130,7 +130,7 @@ class TwoDSpec:
                        gain=None,
                        seeing=None,
                        exptime=None,
-                       silence=None):
+                       verbose=None):
         '''
         The read noise, detector gain, seeing and exposure time will be
         automatically extracted from the FITS header if it conforms with the
@@ -203,7 +203,7 @@ class TwoDSpec:
             Esposure time for the observation, not important if absolute flux
             calibration is not needed.
             (Deafult is None, which will be replaced with 1.0)
-        silence: boolean
+        verbose: boolean
             Set to True to suppress all verbose warnings.
 
         '''
@@ -441,9 +441,9 @@ class TwoDSpec:
                               'Exposure Time value is not provided. ' +
                               'It is set to 1.')
 
-        if silence is not None:
+        if verbose is not None:
 
-            self.silence = silence
+            self.verbose = verbose
 
         self.img = self.img / self.exptime
 
@@ -1736,8 +1736,10 @@ class TwoDSpec:
                     # finally, compute the error in this pixel
                     sigB = np.nanstd(
                         z) * self.exptime  # standarddev in the background data
-                    nB = len(y)  # number of bkgd pixels
-                    nA = widthdn + widthup + 1  # number of aperture pixels
+                    # number of bkgd pixels
+                    nB = len(y)
+                    # number of aperture pixels
+                    nA = widthdn + widthup + 1
 
                     # Based on aperture phot err description by F. Masci,
                     # Caltech:
@@ -1767,7 +1769,7 @@ class TwoDSpec:
             # If more than a third of the spectrum is extracted suboptimally
             if np.sum(suboptimal) / i > 0.333:
 
-                if not self.silence:
+                if self.verbose:
 
                     print(
                         'Signal extracted is likely to be suboptimal, please '
@@ -1776,15 +1778,212 @@ class TwoDSpec:
 
             if save_iframe or display or return_jsonstring:
 
-                self.inspect_extracted_spectrum(
-                    display=display,
-                    renderer=renderer,
-                    width=width,
-                    height=height,
-                    return_jsonstring=return_jsonstring,
-                    save_iframe=save_iframe,
-                    filename=filename,
-                    open_iframe=open_iframe)
+                min_trace = int(min(self.spectrum_list[j].trace) + 0.5)
+                max_trace = int(max(self.spectrum_list[j].trace) + 0.5)
+
+                fig = go.Figure(
+                    layout=dict(autosize=False, height=height, width=width))
+                # the 3 is to show a little bit outside the extraction regions
+                img_display = np.log10(self.img[
+                    max(0, min_trace - widthdn - sepdn - skywidthdn -
+                        3):min(max_trace + widthup + sepup +
+                               skywidthup, len(self.img[0])) + 3, :])
+
+                # show the image on the top
+                # the 3 is the show a little bit outside the extraction regions
+                fig.add_trace(
+                    go.Heatmap(
+                        x=np.arange(len_trace),
+                        y=np.arange(
+                            max(0,
+                                min_trace - widthdn - sepdn - skywidthdn - 3),
+                            min(max_trace + widthup + sepup + skywidthup + 3,
+                                len(self.img[0]))),
+                        z=img_display,
+                        colorscale="Viridis",
+                        zmin=self.zmin,
+                        zmax=self.zmax,
+                        xaxis='x',
+                        yaxis='y',
+                        colorbar=dict(title='log( e- / s )')))
+
+                # Middle black box on the image
+                fig.add_trace(
+                    go.Scatter(
+                        x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                        y=list(
+                            np.concatenate(
+                                (np.array(self.spectrum_list[j].trace) -
+                                 widthdn - 1,
+                                 np.array(self.spectrum_list[j].trace[::-1]) +
+                                 widthup + 1,
+                                 np.ones(1) * (self.spectrum_list[j].trace[0] -
+                                               widthdn - 1)))),
+                        xaxis='x',
+                        yaxis='y',
+                        mode='lines',
+                        line_color='black',
+                        showlegend=False))
+
+                # Lower red box on the image
+                lower_redbox_upper_bound = np.array(
+                    self.spectrum_list[j].trace) - widthdn - sepdn - 1
+                lower_redbox_lower_bound = np.array(
+                    self.spectrum_list[j].trace)[::-1] - widthdn - sepdn - max(
+                        skywidthdn, (y1 - y0) - 1)
+
+                if (itrace - widthdn >= 0) & (skywidthdn > 0):
+
+                    fig.add_trace(
+                        go.Scatter(x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                                   y=list(
+                                       np.concatenate(
+                                           (lower_redbox_upper_bound,
+                                            lower_redbox_lower_bound,
+                                            np.ones(1) *
+                                            lower_redbox_upper_bound[0]))),
+                                   line_color='red',
+                                   xaxis='x',
+                                   yaxis='y',
+                                   mode='lines',
+                                   showlegend=False))
+
+                # Upper red box on the image
+                upper_redbox_upper_bound = np.array(
+                    self.spectrum_list[j].trace) + widthup + sepup + min(
+                        skywidthup, (y3 - y2) + 1)
+                upper_redbox_lower_bound = np.array(
+                    self.spectrum_list[j].trace)[::-1] + widthup + sepup + 1
+
+                if (itrace + widthup <= self.spatial_size) & (skywidthup > 0):
+
+                    fig.add_trace(
+                        go.Scatter(x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                                   y=list(
+                                       np.concatenate(
+                                           (upper_redbox_upper_bound,
+                                            upper_redbox_lower_bound,
+                                            np.ones(1) *
+                                            upper_redbox_upper_bound[0]))),
+                                   xaxis='x',
+                                   yaxis='y',
+                                   mode='lines',
+                                   line_color='red',
+                                   showlegend=False))
+
+                # plot the SNR
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=count / count_err,
+                               xaxis='x2',
+                               yaxis='y3',
+                               line=dict(color='slategrey'),
+                               name='Signal-to-Noise Ratio'))
+
+                # extrated source, sky and uncertainty
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=count_sky,
+                               xaxis='x2',
+                               yaxis='y2',
+                               line=dict(color='firebrick'),
+                               name='Sky count / (e- / s)'))
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=count_err,
+                               xaxis='x2',
+                               yaxis='y2',
+                               line=dict(color='orange'),
+                               name='Uncertainty count / (e- / s)'))
+                fig.add_trace(
+                    go.Scatter(x=np.arange(len_trace),
+                               y=count,
+                               xaxis='x2',
+                               yaxis='y2',
+                               line=dict(color='royalblue'),
+                               name='Target count / (e- / s)'))
+
+                # Decorative stuff
+                fig.update_layout(
+                    xaxis=dict(showticklabels=False),
+                    yaxis=dict(zeroline=False,
+                               domain=[0.5, 1],
+                               showgrid=False,
+                               title='Spatial Direction / pixel'),
+                    yaxis2=dict(
+                        range=[
+                            min(
+                                np.nanmin(
+                                    sigma_clip(count, sigma=5., masked=False)),
+                                np.nanmin(
+                                    sigma_clip(count_err,
+                                               sigma=5.,
+                                               masked=False)),
+                                np.nanmin(
+                                    sigma_clip(count_sky,
+                                               sigma=5.,
+                                               masked=False)), 1),
+                            max(np.nanmax(count), np.nanmax(count_sky))
+                        ],
+                        zeroline=False,
+                        domain=[0, 0.5],
+                        showgrid=True,
+                        title='Count / s',
+                    ),
+                    yaxis3=dict(title='S/N ratio',
+                                anchor="x2",
+                                overlaying="y2",
+                                side="right"),
+                    xaxis2=dict(title='Spectral Direction / pixel',
+                                anchor="y2",
+                                matches="x"),
+                    legend=go.layout.Legend(x=0,
+                                            y=0.45,
+                                            traceorder="normal",
+                                            font=dict(family="sans-serif",
+                                                      size=12,
+                                                      color="black"),
+                                            bgcolor='rgba(0,0,0,0)'),
+                    bargap=0,
+                    hovermode='closest',
+                    showlegend=True)
+
+                if save_iframe:
+
+                    if filename is None:
+
+                        pio.write_html(fig,
+                                       'ap_extract_' + str(j) + '.html',
+                                       auto_open=open_iframe)
+
+                    else:
+
+                        pio.write_html(fig,
+                                       filename + '_' + str(j) + '.html',
+                                       auto_open=open_iframe)
+
+                if display:
+
+                    if renderer == 'default':
+
+                        fig.show()
+
+                    else:
+
+                        fig.show(renderer)
+
+                if return_jsonstring:
+
+                    return fig.to_json()
 
     def inspect_extracted_spectrum(self,
                                    spec_id=None,
@@ -1813,103 +2012,15 @@ class TwoDSpec:
 
         for j in spec_id:
 
-            len_trace = len(self.spectrum_list[j].trace)
-            min_trace = int(min(self.spectrum_list[j].trace) + 0.5)
-            max_trace = int(max(self.spectrum_list[j].trace) + 0.5)
+            spec = self.spectrum_list[j]
+
+            len_trace = len(spec.trace)
+            count = spec.count
+            count_err = spec.count_err
+            count_sky = spec.count_sky
 
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width))
-            # the 3 is to show a little bit outside the extraction regions
-            img_display = np.log10(
-                self.img[max(0, min_trace - widthdn - sepdn - skywidthdn -
-                             3):min(max_trace + widthup + sepup +
-                                    skywidthup, len(self.img[0])) + 3, :])
-
-            # show the image on the top
-            # the 3 is the show a little bit outside the extraction regions
-            fig.add_trace(
-                go.Heatmap(
-                    x=np.arange(len_trace),
-                    y=np.arange(
-                        max(0, min_trace - widthdn - sepdn - skywidthdn - 3),
-                        min(max_trace + widthup + sepup + skywidthup + 3,
-                            len(self.img[0]))),
-                    z=img_display,
-                    colorscale="Viridis",
-                    zmin=self.zmin,
-                    zmax=self.zmax,
-                    xaxis='x',
-                    yaxis='y',
-                    colorbar=dict(title='log( e- / s )')))
-
-            # Middle black box on the image
-            fig.add_trace(
-                go.Scatter(
-                    x=list(
-                        np.concatenate(
-                            (np.arange(len_trace), np.arange(len_trace)[::-1],
-                             np.zeros(1)))),
-                    y=list(
-                        np.concatenate(
-                            (np.array(self.spectrum_list[j].trace) - widthdn -
-                             1, np.array(self.spectrum_list[j].trace[::-1]) +
-                             widthup + 1, np.ones(1) *
-                             (self.spectrum_list[j].trace[0] - widthdn - 1)))),
-                    xaxis='x',
-                    yaxis='y',
-                    mode='lines',
-                    line_color='black',
-                    showlegend=False))
-
-            # Lower red box on the image
-            lower_redbox_upper_bound = np.array(
-                self.spectrum_list[j].trace) - widthdn - sepdn - 1
-            lower_redbox_lower_bound = np.array(
-                self.spectrum_list[j].trace)[::-1] - widthdn - sepdn - max(
-                    skywidthdn, (y1 - y0) - 1)
-
-            if (itrace - widthdn >= 0) & (skywidthdn > 0):
-
-                fig.add_trace(
-                    go.Scatter(x=list(
-                        np.concatenate(
-                            (np.arange(len_trace), np.arange(len_trace)[::-1],
-                             np.zeros(1)))),
-                               y=list(
-                                   np.concatenate(
-                                       (lower_redbox_upper_bound,
-                                        lower_redbox_lower_bound, np.ones(1) *
-                                        lower_redbox_upper_bound[0]))),
-                               line_color='red',
-                               xaxis='x',
-                               yaxis='y',
-                               mode='lines',
-                               showlegend=False))
-
-            # Upper red box on the image
-            upper_redbox_upper_bound = np.array(
-                self.spectrum_list[j].trace) + widthup + sepup + min(
-                    skywidthup, (y3 - y2) + 1)
-            upper_redbox_lower_bound = np.array(
-                self.spectrum_list[j].trace)[::-1] + widthup + sepup + 1
-
-            if (itrace + widthup <= self.spatial_size) & (skywidthup > 0):
-
-                fig.add_trace(
-                    go.Scatter(x=list(
-                        np.concatenate(
-                            (np.arange(len_trace), np.arange(len_trace)[::-1],
-                             np.zeros(1)))),
-                               y=list(
-                                   np.concatenate(
-                                       (upper_redbox_upper_bound,
-                                        upper_redbox_lower_bound, np.ones(1) *
-                                        upper_redbox_upper_bound[0]))),
-                               xaxis='x',
-                               yaxis='y',
-                               mode='lines',
-                               line_color='red',
-                               showlegend=False))
 
             # plot the SNR
             fig.add_trace(
@@ -1944,46 +2055,39 @@ class TwoDSpec:
                            name='Target count / (e- / s)'))
 
             # Decorative stuff
-            fig.update_layout(
-                xaxis=dict(showticklabels=False),
-                yaxis=dict(zeroline=False,
-                           domain=[0.5, 1],
-                           showgrid=False,
-                           title='Spatial Direction / pixel'),
-                yaxis2=dict(
-                    range=[
-                        min(
-                            np.nanmin(sigma_clip(count, sigma=5.,
-                                                 masked=False)),
-                            np.nanmin(
-                                sigma_clip(count_err, sigma=5., masked=False)),
-                            np.nanmin(
-                                sigma_clip(count_sky, sigma=5., masked=False)),
-                            1),
-                        max(np.nanmax(count), np.nanmax(count_sky))
-                    ],
-                    zeroline=False,
-                    domain=[0, 0.5],
-                    showgrid=True,
-                    title='Count / s',
-                ),
-                yaxis3=dict(title='S/N ratio',
-                            anchor="x2",
-                            overlaying="y2",
-                            side="right"),
-                xaxis2=dict(title='Spectral Direction / pixel',
-                            anchor="y2",
-                            matches="x"),
-                legend=go.layout.Legend(x=0,
-                                        y=0.45,
-                                        traceorder="normal",
-                                        font=dict(family="sans-serif",
-                                                  size=12,
-                                                  color="black"),
-                                        bgcolor='rgba(0,0,0,0)'),
-                bargap=0,
-                hovermode='closest',
-                showlegend=True)
+            fig.update_layout(yaxis2=dict(
+                range=[
+                    min(
+                        np.nanmin(sigma_clip(count, sigma=5., masked=False)),
+                        np.nanmin(sigma_clip(count_err, sigma=5.,
+                                             masked=False)),
+                        np.nanmin(sigma_clip(count_sky, sigma=5.,
+                                             masked=False)), 1),
+                    max(np.nanmax(count), np.nanmax(count_sky))
+                ],
+                zeroline=False,
+                domain=[0, 1.0],
+                showgrid=True,
+                title='Count / s',
+            ),
+                              yaxis3=dict(title='S/N ratio',
+                                          anchor="x2",
+                                          overlaying="y2",
+                                          side="right"),
+                              xaxis2=dict(title='Spectral Direction / pixel',
+                                          anchor="y2",
+                                          matches="x"),
+                              legend=go.layout.Legend(x=0,
+                                                      y=0.45,
+                                                      traceorder="normal",
+                                                      font=dict(
+                                                          family="sans-serif",
+                                                          size=12,
+                                                          color="black"),
+                                                      bgcolor='rgba(0,0,0,0)'),
+                              bargap=0,
+                              hovermode='closest',
+                              showlegend=True)
 
             if save_iframe:
 

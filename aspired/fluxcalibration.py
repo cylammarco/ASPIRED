@@ -17,7 +17,7 @@ base_dir = os.path.dirname(__file__)
 
 
 class StandardLibrary:
-    def __init__(self, silence=False):
+    def __init__(self, verbose=True):
         '''
         This class handles flux calibration by comparing the extracted and
         wavelength-calibrated standard observation to the "ground truth"
@@ -34,12 +34,12 @@ class StandardLibrary:
 
         Parameters
         ----------
-        silence: boolean
+        verbose: boolean
             Set to True to suppress all verbose warnings.
 
         '''
 
-        self.silence = silence
+        self.verbose = verbose
 
         self._load_standard_dictionary()
 
@@ -228,7 +228,7 @@ class StandardLibrary:
 
             if len(target_list) > 0:
 
-                if not self.silence:
+                if not self.verbose:
 
                     warnings.warn(
                         'Requested standard star cannot be found, a list of ' +
@@ -282,7 +282,7 @@ class StandardLibrary:
 
                 self.library = libraries[0]
 
-                if not self.silence:
+                if not self.verbose:
 
                     warnings.warn(
                         'The requested standard star cannot be found in the '
@@ -296,17 +296,17 @@ class StandardLibrary:
             libraries, _ = self.lookup_standard_libraries(self.target)
             self.library = libraries[0]
 
-            if not self.silence:
+            if not self.verbose:
 
                 print('The requested library does not exist, ' + self.library +
                       ' is used because it has the closest matching name.')
 
-        if not self.silence:
+        if not self.verbose:
 
             if library is None:
 
                 # Use the default library order
-                if not self.silence:
+                if not self.verbose:
 
                     print('Standard library is not given, ' + self.library +
                           ' is used.')
@@ -436,20 +436,20 @@ class StandardLibrary:
 
 
 class FluxCalibration(StandardLibrary):
-    def __init__(self, silence=False):
+    def __init__(self, verbose=True):
         '''
         Initialise a FluxCalibration object.
 
         Parameters
         ----------
-        silence: boolean
+        verbose: boolean
             Set to True to suppress all verbose warnings.
 
         '''
 
         # Load the dictionary
         super().__init__()
-        self.silence = silence
+        self.verbose = verbose
         self.spectrum1D = Spectrum1D()
         self.target_spec_id = None
 
@@ -461,292 +461,26 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D = Spectrum1D()
         self.spectrum1D_imported = False
 
-    """
-    def add_spec(self,
-                 count,
-                 spec_id=None,
-                 count_err=None,
-                 count_sky=None,
-                 stype='science+standard'):
+    def add_standard(self, wavelength, count, count_err=None, count_sky=None):
         '''
-        Add spectrum (count, count_err & count_sky) one at a time.
+        Add spectrum (wavelength, count, count_err & count_sky).
 
         Parameters
         ----------
+        wavelength: 1-d array
+            The wavelength at each pixel of the trace.
         count: 1-d array
             The summed count at each column about the trace.
-        spec_id: int
-            The ID corresponding to the spectrum1D object
         count_err: 1-d array
             the uncertainties of the count values
         count_sky: 1-d array
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
 
-        stype_split = stype.split('+')
-
-        if 'standard' in stype_split:
-
-            if len(self.spectrum_list_standard.keys()) == 0:
-
-                self.spectrum_list_standard[0] = Spectrum1D(0)
-
-            if spec_id in list(self.spectrum_list_standard.keys()):
-
-                if self.spectrum_list_standard[spec_id].count is not None:
-                    warnings.warn(
-                        'The given spec_id is in use already, the given '
-                        'trace, trace_sigma and pixel_list will overwrite the '
-                        'current data.')
-
-            if spec_id is None:
-
-                # If spectrum_list is not empty
-                if not self.spectrum_list_standard:
-
-                    spec_id = max(self.spectrum_list_standard.keys()) + 1
-
-                else:
-
-                    spec_id = 0
-
-            self.spectrum_list_standard[spec_id].add_count(
-                count, count_err, count_sky)
-
-        elif 'science' in stype_split:
-
-            if len(self.spectrum_list_science.keys()) == 0:
-
-                self.spectrum_list_science[0] = Spectrum1D(0)
-
-            if spec_id in list(self.spectrum_list_science.keys()):
-
-                if self.spectrum_list_science[spec_id].count is not None:
-                    warnings.warn(
-                        'The given spec_id is in use already, the given '
-                        'trace, trace_sigma and pixel_list will overwrite the '
-                        'current data.')
-
-            if spec_id is None:
-
-                # If spectrum_list is not empty
-                if not self.spectrum_list_science:
-
-                    spec_id = max(self.spectrum_list_science.keys()) + 1
-
-                else:
-
-                    spec_id = 0
-
-            self.spectrum_list_science[spec_id].add_count(
-                count, count_err, count_sky)
-
-        else:
-
-            if stype not in ['science', 'standard']:
-
-                raise ValueError('Unknown stype, please choose from '
-                                 '(1) science; and/or (2) standard.')
-
-    def add_wavelength(self,
-                       wave=None,
-                       wave_resampled=None,
-                       spec_id=None,
-                       stype='science+standard'):
-        '''
-        Add wavelength (must be same length as the spectrum), one at a time.
-
-        Parameters
-        ----------
-        wave : numeric value, list or numpy 1D array (N) (default: None)
-            The wavelength of each pixels of the spectrum.
-        wave_resampled:
-            The resampled wavelength of each pixels of the spectrum.
-        spec_id: int
-            The ID corresponding to the spectrum1D object
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        '''
-
-        if (wave is None) & (wave_resampled is None):
-            raise ValueError('wave and wave_resampled cannot be None at '
-                             'at the same time.')
-
-        elif wave_resampled is None:
-            wave_resampled = wave
-
-        elif wave is None:
-            wave = wave_resampled
-
-        stype_split = stype.split('+')
-
-        if 'standard' in stype_split:
-
-            if len(self.spectrum_list_standard.keys()) == 0:
-                self.spectrum_list_standard[0] = Spectrum1D(0)
-
-            spec = self.spectrum_list_standard[0]
-
-            spec.add_wavelength(wave)
-            spec.add_wavelength_resampled(
-                wave_bin=np.nanmedian(np.array(np.ediff1d(wave_resampled))),
-                wave_start=wave_resampled[0],
-                wave_end=wave_resampled[-1],
-                wave_resampled=wave_resampled,
-            )
-
-        elif 'science' in stype_split:
-
-            if spec_id is not None:
-                if spec_id not in list(self.spectrum_list_science.keys()):
-                    warnings.warn(
-                        'The spec_id provided is not in the '
-                        'spectrum_list_science, new Spectrum1D with the ID '
-                        'is created.')
-                    self.spectrum_list_science[spec_id] = Spectrum1D(spec_id)
-            else:
-                if not self.spectrum_list_science:
-                    self.spectrum_list_science[0] = Spectrum1D(0)
-                spec_id = list(self.spectrum_list_science.keys())
-
-            if isinstance(spec_id, int):
-                spec_id = [spec_id]
-
-            for i, s in enumerate(spec_id):
-
-                spec = self.spectrum_list_science[s]
-
-                if (len(np.shape(np.array(wave))) == 2):
-
-                    spec.add_wavelength(wave[i])
-
-                else:
-
-                    spec.add_wavelength(wave)
-
-                if (len(np.shape(np.array(wave))) == 2):
-
-                    spec.add_wavelength_resampled(
-                        wave_bin=np.nanmedian(
-                            np.array(np.ediff1d(wave_resampled[i]))),
-                        wave_start=wave_resampled[i][0],
-                        wave_end=wave_resampled[i][-1],
-                        wave_resampled=wave_resampled[i],
-                    )
-
-                else:
-
-                    spec.add_wavelength_resampled(
-                        wave_bin=np.nanmedian(
-                            np.array(np.ediff1d(wave_resampled))),
-                        wave_start=wave_resampled[0],
-                        wave_end=wave_resampled[-1],
-                        wave_resampled=wave_resampled,
-                    )
-
-    def from_twodspec(self,
-                      twodspec,
-                      pixel_list=None,
-                      stype='science+standard'):
-        '''
-        To add a TwoDSpec object or numpy array to provide the traces, line
-        spread function of the traces, optionally the pixel values
-        correcponding to the traces.
-
-        Science type twodspec can contain more than 1 spectrum.
-
-        Parameters
-        ----------
-        twodspec: TwoDSpec object
-            TwoDSpec of the science/standard image containin the trace(s)
-        pixel_list: list or numpy array
-            The pixel position of the trace in the dispersion direction.
-            This should be provided if you wish to override the default
-            range(len(spec.trace[0])), for example, in the case of accounting
-            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
-            [0,1,2,...90, 100,101,...190, 200,201,...290]
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        '''
-
-        stype_split = stype.split('+')
-
-        if 'standard' in stype_split:
-
-            # Loop through the twodspec.spectrum_list to update the
-            # spectrum_list_standard
-            if not self.spectrum_list_standard:
-
-                self.spectrum_list_standard[0] = Spectrum1D(spec_id=0)
-
-            for key, value in twodspec.spectrum_list[0].__dict__.items():
-
-                setattr(self.spectrum_list_standard[0], key, value)
-
-        if 'science' in stype_split:
-
-            # Loop through the spec_id in twodspec
-            for i in twodspec.spectrum_list.keys():
-
-                # Loop through the twodspec.spectrum_list to update the
-                # spectrum_list_standard
-                if i not in self.spectrum_list_science:
-
-                    self.spectrum_list_science[i] = Spectrum1D(spec_id=i)
-
-                for key, value in twodspec.spectrum_list[i].__dict__.items():
-
-                    setattr(self.spectrum_list_science[i], key, value)
-
-    def add_wavecal(self, wavecal, stype='science+standard'):
-        '''
-        Copy the spectrum_list from the WavelengthCalibration object to here.
-
-        Parameters
-        ----------
-        wavecal: WavelengthPolyFit object
-            The WavelengthPolyFit object for the science target, flux will
-            not be calibrated if this is not provided.
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        '''
-
-        stype_split = stype.split('+')
-
-        if 'standard' in stype_split:
-
-            # Loop through the wavecal.spectrum_list to update the
-            # spectrum_list_standard
-            for key, value in wavecal.spectrum_list[0].__dict__.items():
-
-                if not self.spectrum_list_standard[0]:
-
-                    self.spectrum_list_standard[0] = Spectrum1D(spec_id=0)
-
-                setattr(self.spectrum_list_standard[0], key, value)
-
-        if 'science' in stype_split:
-
-            # Loop through the spec_id in wavecal
-            for i in wavecal.spectrum_list.keys():
-
-                # Loop through the wavecal.spectrum_list to update the
-                # spectrum_list_science
-                for key, value in wavecal.spectrum_list[i].__dict__.items():
-
-                    if not self.spectrum_list_science[i]:
-
-                        self.spectrum_list_science[i] = Spectrum1D(spec_id=i)
-
-                    setattr(self.spectrum_list_science[i], key, value)
-    """
+        self.spectrum1D.add_wavelength(wavelength)
+        self.spectrum1D.add_count(count, count_err, count_sky)
 
     def compute_sensitivity(self,
                             k=3,
@@ -818,7 +552,7 @@ class FluxCalibration(StandardLibrary):
                 np.array(wave).reshape(-1),
                 np.array(count).reshape(-1),
                 np.array(count_err).reshape(-1),
-                verbose=False)
+                verbose=True)
             flux_standard_true = self.fluxmag_standard_true
             wave_standard_true = self.wave_standard_true
 
@@ -832,7 +566,7 @@ class FluxCalibration(StandardLibrary):
                 np.array(wave).reshape(-1),
                 np.array(self.wave_standard_true).reshape(-1),
                 np.array(self.fluxmag_standard_true).reshape(-1),
-                verbose=False)
+                verbose=True)
             wave_standard_true = wave
 
         # Get the sensitivity curve
@@ -1094,22 +828,22 @@ class FluxCalibration(StandardLibrary):
             return fig.to_json()
 
     def apply_flux_calibration(self,
-                              target_spectrum1D,
-                              inspect=False,
-                              wave_min=4000.,
-                              wave_max=8000.,
-                              display=True,
-                              renderer='default',
-                              width=1280,
-                              height=720,
-                              filename=None,
-                              save_png=False,
-                              save_jpg=False,
-                              save_svg=False,
-                              save_pdf=False,
-                              return_jsonstring=False,
-                              save_iframe=False,
-                              open_iframe=False):
+                               target_spectrum1D,
+                               inspect=False,
+                               wave_min=4000.,
+                               wave_max=8000.,
+                               display=True,
+                               renderer='default',
+                               width=1280,
+                               height=720,
+                               filename=None,
+                               save_png=False,
+                               save_jpg=False,
+                               save_svg=False,
+                               save_pdf=False,
+                               return_jsonstring=False,
+                               save_iframe=False,
+                               open_iframe=False):
         '''
         Apply the computed sensitivity curve. And resample the spectra to
         match the highest resolution (the smallest wavelength bin) part of the
@@ -1182,7 +916,7 @@ class FluxCalibration(StandardLibrary):
         flux_resampled = spectres(np.array(wave_resampled).reshape(-1),
                                   np.array(wave).reshape(-1),
                                   np.array(flux).reshape(-1),
-                                  verbose=False)
+                                  verbose=True)
 
         if count_err is None:
 
@@ -1194,7 +928,7 @@ class FluxCalibration(StandardLibrary):
             flux_err_resampled = spectres(np.array(wave_resampled).reshape(-1),
                                           np.array(wave).reshape(-1),
                                           np.array(flux_err).reshape(-1),
-                                          verbose=False)
+                                          verbose=True)
 
         if count_sky is None:
 
@@ -1206,13 +940,13 @@ class FluxCalibration(StandardLibrary):
             flux_sky_resampled = spectres(np.array(wave_resampled).reshape(-1),
                                           np.array(wave).reshape(-1),
                                           np.array(flux_sky).reshape(-1),
-                                          verbose=False)
+                                          verbose=True)
 
         # Only computed for diagnostic
         sensitivity_resampled = spectres(np.array(wave_resampled).reshape(-1),
                                          np.array(wave).reshape(-1),
                                          np.array(sensitivity).reshape(-1),
-                                         verbose=False)
+                                         verbose=True)
 
         target_spectrum1D.add_flux(flux, flux_err, flux_sky)
         target_spectrum1D.add_flux_resampled(flux_resampled,
