@@ -37,7 +37,13 @@ class WavelengthCalibration():
         self.verbose = verbose
         self.spectrum1D = Spectrum1D()
 
-    def from_spectrum1D(self, spectrum1D, overwrite=False):
+        self.polyval = {
+            'poly': np.polynomial.polynomial.polyval,
+            'leg': np.polynomial.legendre.legval,
+            'cheb': np.polynomial.chebyshev.chebval
+        }
+
+    def from_spectrum1D(self, spectrum1D, merge=False, overwrite=False):
         '''
         This function copies all the info from the spectrum1D, because users
         may supply different level/combination of reduction, everything is
@@ -45,9 +51,19 @@ class WavelengthCalibration():
         will be passed. Only those are not None will be used to set the
         properties of a calibrator.
 
+        Note: This is passing object by reference by default, so it directly
+        modifies the spectrum1D supplied.
+
         '''
 
-        self.spectrum1D.merge(spectrum1D, overwrite)
+        # This DOES NOT modify the spectrum1D outside of WavelengthCalibration
+        if merge:
+            self.spectrum1D.merge(spectrum1D, overwrite=overwrite)
+        # This DOES modify the spectrum1D outside of WavelengthCalibration
+        else:
+            self.spectrum1D = spectrum1D
+
+        print('wavecal.from_spectrum1D: ', hex(id(self.spectrum1D)))
 
     def add_arc_lines(self, peaks):
         '''
@@ -127,8 +143,7 @@ class WavelengthCalibration():
                        return_jsonstring=False,
                        save_iframe=False,
                        filename=None,
-                       open_iframe=False,
-                       return_values=False):
+                       open_iframe=False):
         '''
         This function identifies the arc lines (peaks) with
         scipy.signal.find_peaks(), where only the distance and the prominence
@@ -138,7 +153,6 @@ class WavelengthCalibration():
         hence, the sepration between two clearly resolved peaks are ~5 pixels
         apart). A crude estimate of the background can exclude random noise
         which look like small peaks.
-
         Parameters
         ----------
         background: int
@@ -180,7 +194,6 @@ class WavelengthCalibration():
         Returns
         -------
         JSON strings if return_jsonstring is set to True
-
         '''
 
         if arc_spec is None:
@@ -277,21 +290,7 @@ class WavelengthCalibration():
 
             if return_jsonstring:
 
-                if return_values:
-
-                    return (getattr(self.spectrum1D, 'peaks_raw'),
-                            getattr(self.spectrum1D,
-                                    'peaks_pixel'), fig.to_json())
-
-                else:
-
-                    return fig.to_json()
-
-        if return_values:
-
-            return getattr(self.spectrum1D,
-                           'peaks_raw'), getattr(self.spectrum1D,
-                                                 'peaks_pixel')
+                return fig.to_json()
 
     def initialise_calibrator(self, peaks=None, arc_spec=None):
         '''
@@ -350,6 +349,7 @@ class WavelengthCalibration():
 
             self.spectrum1D.add_arc_spec(arc_spec)
 
+        print(hex(id(self.spectrum1D)))
         self.spectrum1D.add_calibrator(
             Calibrator(peaks=peaks, spectrum=arc_spec))
 
@@ -420,7 +420,8 @@ class WavelengthCalibration():
             maximum expected excursion from linearity.
 
         '''
-
+        print('setting hough properties.')
+        print(self.spectrum1D.calibrator)
         self.spectrum1D.calibrator.set_hough_properties(
             num_slopes=num_slopes,
             xbins=xbins,

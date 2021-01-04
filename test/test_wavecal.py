@@ -46,9 +46,6 @@ def test_wavecal():
     # Just getting the calibrator
     wavecal.get_calibrator()
 
-    # Get back the spectrum1D and merge
-    lhs6328_spectrum1D.merge(wavecal.get_spectrum1D())
-
     # Save a FITS file
     wavecal.save_fits(output='wavecal',
                       filename='test/test_output/test_wavecal',

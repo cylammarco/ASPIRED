@@ -91,6 +91,8 @@ class TwoDSpec:
                 'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
                 'ImageReduction object.')
 
+        self.spectrum_list = {}
+
         self.saxis = 1
         self.waxis = 0
 
@@ -486,8 +488,6 @@ class TwoDSpec:
         img_log_finite = img_log[np.isfinite(img_log)]
         self.zmin = np.nanpercentile(img_log_finite, 5)
         self.zmax = np.nanpercentile(img_log_finite, 95)
-
-        self.spectrum_list = {}
 
     def add_arc(self, arc):
         '''

@@ -1,5 +1,4 @@
 from astropy.io import fits
-from rascal.calibrator import Calibrator
 from scipy import interpolate as itp
 import warnings
 
@@ -426,10 +425,6 @@ class Spectrum1D():
 
     def add_calibrator(self, calibrator):
 
-        assert type(
-            calibrator
-        ) == Calibrator, 'calibrator has to be a rascal.Calibrator '
-        'object.'
         self.calibrator = calibrator
 
     def remove_calibrator(self):

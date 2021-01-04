@@ -453,8 +453,16 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D = Spectrum1D()
         self.target_spec_id = None
 
-    def from_spectrum1D(self, spectrum1D):
-        self.spectrum1D.merge(spectrum1D)
+    def from_spectrum1D(self, spectrum1D, merge=False):
+        '''
+        Note: This is passing object by reference by default, so it directly
+        modifies the spectrum1D supplied.
+        '''
+        if merge:
+            self.spectrum1D.merge(spectrum1D)
+        else:
+            self.spectrum1D = spectrum1D
+
         self.spectrum1D_imported = True
 
     def remove_spectrum1D(self):

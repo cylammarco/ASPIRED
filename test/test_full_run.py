@@ -98,31 +98,37 @@ def test_full_run():
                                 display=False,
                                 save_iframe=False)
 
+    # Add a 2D arc image
+    lhs6328_twodspec.add_arc(lhs6328_frame)
+    hilt102_twodspec.add_arc(standard_frame)
+
+    lhs6328_twodspec.apply_twodspec_mask_to_arc()
+    hilt102_twodspec.apply_twodspec_mask_to_arc()
+
+    # Extract the 1D arc by aperture sum of the traces provided
+    lhs6328_twodspec.extract_arc_spec(display=False)
+    hilt102_twodspec.extract_arc_spec(display=False)
+
     # Handle 1D Science spectrum
     lhs6328_onedspec = spectral_reduction.OneDSpec()
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
 
+    '''
     # Save the trace and count as FITS BEFORE flux and wavelength calibration
     # This is an uncommon operation, but it should work.
     lhs6328_onedspec.save_fits(output='trace+count',
                                filename='test/test_output/test_full_run',
                                stype='science+standard',
                                overwrite=True)
-
-    # Add a 2D arc image
-    lhs6328_onedspec.add_arc(lhs6328_frame, stype='science')
-    lhs6328_onedspec.add_arc(standard_frame, stype='standard')
-    lhs6328_onedspec.apply_twodspec_mask_to_arc()
-
-    # Extract the 1D arc by aperture sum of the traces provided
-    lhs6328_onedspec.extract_arc_spec(display=False, stype='science+standard')
+    '''
 
     # Find the peaks of the arc
     lhs6328_onedspec.find_arc_lines(display=False, stype='science+standard')
 
     # Configure the wavelength calibrator
     lhs6328_onedspec.initialise_calibrator(stype='science+standard')
+
     lhs6328_onedspec.set_hough_properties(num_slopes=1000,
                                           xbins=200,
                                           ybins=200,
@@ -145,8 +151,6 @@ def test_full_run():
     # Apply the wavelength calibration and display it
     lhs6328_onedspec.apply_wavelength_calibration(stype='science+standard')
 
-    lhs6328_onedspec.wavecal_science.spectrum_list[0].create_wavelength_fits()
-
     # Get the standard from the library
     lhs6328_onedspec.load_standard(target='hiltner102')
 
@@ -157,11 +161,12 @@ def test_full_run():
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
     # Create FITS
-    lhs6328_onedspec.create_fits(output='trace+count')
+    #lhs6328_onedspec.create_fits(output='trace+count')
 
     # Modify FITS header for the trace
     lhs6328_onedspec.modify_trace_header(0, 'set', 'COMMENT', 'Hello World!')
 
+    '''
     # Save as FITS (and create the ones that were not created earlier)
     lhs6328_onedspec.save_fits(
         output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+'
@@ -183,3 +188,4 @@ def test_full_run():
         filename='test/test_output/test_full_run',
         display=False,
         save_iframe=True)
+    '''
