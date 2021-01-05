@@ -57,8 +57,8 @@ class Spectrum1D():
 
         # Wavelength calibration properties
         self.arc_spec = None
-        self.peaks_raw = None
-        self.peaks_pixel = None
+        self.peaks = None
+        self.peaks_refined = None
 
         # fit constrains
         self.calibrator = None
@@ -383,25 +383,24 @@ class Spectrum1D():
 
         self.pixel_mapping_itp = None
 
-    def add_peaks_raw(self, peaks_raw):
+    def add_peaks(self, peaks):
 
-        assert isinstance(peaks_raw,
-                          (list, np.ndarray)), 'peaks_raw has to be a list'
-        self.peaks_raw = peaks_raw
+        assert isinstance(peaks, (list, np.ndarray)), 'peaks has to be a list'
+        self.peaks = peaks
 
-    def remove_peaks_raw(self):
+    def remove_peaks(self):
 
-        self.peaks_raw = None
+        self.peaks = None
 
-    def add_peaks_pixel(self, peaks_pixel):
+    def add_peaks_refined(self, peaks_refined):
 
-        assert isinstance(peaks_pixel,
-                          (list, np.ndarray)), 'peaks_pixel has to be a list'
-        self.peaks_pixel = peaks_pixel
+        assert isinstance(peaks_refined,
+                          (list, np.ndarray)), 'peaks_refined has to be a list'
+        self.peaks_refined = peaks_refined
 
-    def remove_peaks_pixel(self):
+    def remove_peaks_refined(self):
 
-        self.peaks_pixel = None
+        self.peaks_refined = None
 
     def add_peaks_wave(self, peaks_wave):
 
@@ -1149,14 +1148,14 @@ class Spectrum1D():
 
             # Put the data in ImageHDUs
             arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
-            peaks_raw_ImageHDU = fits.ImageHDU(self.peaks_raw)
-            peaks_pixel_ImageHDU = fits.ImageHDU(self.peaks_pixel)
+            peaks_ImageHDU = fits.ImageHDU(self.peaks)
+            peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.arc_spec_hdulist = fits.HDUList()
             self.arc_spec_hdulist += [arc_spec_ImageHDU]
-            self.arc_spec_hdulist += [peaks_raw_ImageHDU]
-            self.arc_spec_hdulist += [peaks_pixel_ImageHDU]
+            self.arc_spec_hdulist += [peaks_ImageHDU]
+            self.arc_spec_hdulist += [peaks_refined_ImageHDU]
 
             # Add the arc spectrum
             self.modify_arc_spec_header(0, 'set', 'LABEL', 'Electron Count')
@@ -1781,8 +1780,9 @@ class Spectrum1D():
                 else:
 
                     output_data_arc_spec = self.hdu_output[start].data
-                    output_data_arc_peaks = np.column_stack(
-                        [hdu.data for hdu in self.hdu_output[start + 1:end]])
+                    output_data_arc_peaks = self.hdu_output[start + 1].data
+                    output_data_arc_peaks_refined = self.hdu_output[start +
+                                                                    2].data
 
                     if overwrite or (
                             not os.path.exists(filename + '_arc_spec.csv')):
@@ -1797,6 +1797,15 @@ class Spectrum1D():
 
                         np.savetxt(filename + '_arc_peaks.csv',
                                    output_data_arc_peaks,
+                                   delimiter=',',
+                                   header=self.header[output_type])
+
+                    if overwrite or (
+                            not os.path.exists(filename +
+                                               '_arc_peaks_refined.csv')):
+
+                        np.savetxt(filename + '_arc_peaks_refined.csv',
+                                   output_data_arc_peaks_refined,
                                    delimiter=',',
                                    header=self.header[output_type])
 

@@ -81,14 +81,14 @@ class StandardLibrary:
 
         f = np.loadtxt(filepath)
 
-        self.wave_standard_true = f[:, 0]
-        self.fluxmag_standard_true = f[:, 1]
+        self.standard_wave_true = f[:, 0]
+        self.standard_fluxmag_true = f[:, 1]
 
         if self.ftype == 'flux':
 
             if self.library != 'esoxshooter':
 
-                self.fluxmag_standard_true *= 1e-16
+                self.standard_fluxmag_true *= 1e-16
 
     def _get_ing_standard(self):
 
@@ -144,8 +144,8 @@ class StandardLibrary:
                 fluxmag.append(li[1])
 
         f.close()
-        self.wave_standard_true = np.array(wave).astype('float')
-        self.fluxmag_standard_true = np.array(fluxmag).astype('float')
+        self.standard_wave_true = np.array(wave).astype('float')
+        self.standard_fluxmag_true = np.array(fluxmag).astype('float')
 
         if self.ftype == 'flux':
 
@@ -153,23 +153,23 @@ class StandardLibrary:
             if (extension == 'mas' or filename == 'g24a.fg'
                     or filename == 'g157a.fg' or filename == 'h102a.sto'):
 
-                self.fluxmag_standard_true = 10.**(
-                    -(self.fluxmag_standard_true / 2.5)
-                ) * 3630.780548 / 3.33564095e4 / self.wave_standard_true**2
+                self.standard_fluxmag_true = 10.**(
+                    -(self.standard_fluxmag_true / 2.5)
+                ) * 3630.780548 / 3.33564095e4 / self.standard_wave_true**2
 
             # convert milli-Jy into F_lambda
             if unit == 'mjy':
 
-                self.fluxmag_standard_true = (self.fluxmag_standard_true *
+                self.standard_fluxmag_true = (self.standard_fluxmag_true *
                                               1e-3 * 3.33564095e4 *
-                                              self.wave_standard_true**2)
+                                              self.standard_wave_true**2)
 
             # convert micro-Jy into F_lambda
             if unit == 'microjanskys':
 
-                self.fluxmag_standard_true = (self.fluxmag_standard_true *
+                self.standard_fluxmag_true = (self.standard_fluxmag_true *
                                               1e-6 * 3.33564095e4 *
-                                              self.wave_standard_true**2)
+                                              self.standard_wave_true**2)
 
     def _get_iraf_standard(self):
         # iraf is always in AB magnitude
@@ -183,15 +183,15 @@ class StandardLibrary:
 
         f = np.loadtxt(filepath, skiprows=1)
 
-        self.wave_standard_true = f[:, 0]
-        self.fluxmag_standard_true = f[:, 1]
+        self.standard_wave_true = f[:, 0]
+        self.standard_fluxmag_true = f[:, 1]
 
         if self.ftype == 'flux':
 
             # Convert from AB mag to flux
-            self.fluxmag_standard_true = 10.**(
-                -(self.fluxmag_standard_true / 2.5)
-            ) * 3630.780548 / 3.33564095e4 / self.wave_standard_true**2
+            self.standard_fluxmag_true = 10.**(
+                -(self.standard_fluxmag_true / 2.5)
+            ) * 3630.780548 / 3.33564095e4 / self.standard_wave_true**2
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
@@ -398,8 +398,8 @@ class StandardLibrary:
 
         # show the image on the top
         fig.add_trace(
-            go.Scatter(x=self.wave_standard_true,
-                       y=self.fluxmag_standard_true,
+            go.Scatter(x=self.standard_wave_true,
+                       y=self.standard_fluxmag_true,
                        line=dict(color='royalblue', width=4)))
 
         fig.update_layout(
@@ -452,6 +452,8 @@ class FluxCalibration(StandardLibrary):
         self.verbose = verbose
         self.spectrum1D = Spectrum1D()
         self.target_spec_id = None
+        self.standard_wave_true = None
+        self.standard_fluxmag_true = None
 
     def from_spectrum1D(self, spectrum1D, merge=False):
         '''
@@ -553,32 +555,32 @@ class FluxCalibration(StandardLibrary):
         # If the median resolution of the observed spectrum is higher than
         # the literature one
         if np.nanmedian(np.array(np.ediff1d(wave))) < np.nanmedian(
-                np.array(np.ediff1d(self.wave_standard_true))):
+                np.array(np.ediff1d(self.standard_wave_true))):
 
-            flux_standard, flux_err_standard = spectres(
-                np.array(self.wave_standard_true).reshape(-1),
+            standard_flux, standard_flux_err = spectres(
+                np.array(self.standard_wave_true).reshape(-1),
                 np.array(wave).reshape(-1),
                 np.array(count).reshape(-1),
                 np.array(count_err).reshape(-1),
                 verbose=True)
-            flux_standard_true = self.fluxmag_standard_true
-            wave_standard_true = self.wave_standard_true
+            standard_flux_true = self.standard_fluxmag_true
+            standard_wave_true = self.standard_wave_true
 
         # If the median resolution of the observed spectrum is lower than
         # the literature one
         else:
 
-            flux_standard = count
-            # flux_err_standard = count_err
-            flux_standard_true = spectres(
+            standard_flux = count
+            # standard_flux_err = count_err
+            standard_flux_true = spectres(
                 np.array(wave).reshape(-1),
-                np.array(self.wave_standard_true).reshape(-1),
-                np.array(self.fluxmag_standard_true).reshape(-1),
+                np.array(self.standard_wave_true).reshape(-1),
+                np.array(self.standard_fluxmag_true).reshape(-1),
                 verbose=True)
-            wave_standard_true = wave
+            standard_wave_true = wave
 
         # Get the sensitivity curve
-        sensitivity = flux_standard_true / flux_standard
+        sensitivity = standard_flux_true / standard_flux
         sensitivity_masked = sensitivity.copy()
 
         if mask_range is not None:
@@ -586,21 +588,21 @@ class FluxCalibration(StandardLibrary):
             for m in mask_range:
 
                 # If the mask is partially outside the spectrum, ignore
-                if (m[0] < min(wave_standard_true)) or (
-                        m[1] > max(wave_standard_true)):
+                if (m[0] < min(standard_wave_true)) or (
+                        m[1] > max(standard_wave_true)):
 
                     continue
 
                 # Get the indices for the two sides of the masking region
-                left_end = int(max(np.where(wave_standard_true <= m[0])[0]))
+                left_end = int(max(np.where(standard_wave_true <= m[0])[0]))
                 left_start = int(left_end - mask_fit_size)
-                right_start = int(min(np.where(wave_standard_true >= m[1])[0]))
+                right_start = int(min(np.where(standard_wave_true >= m[1])[0]))
                 right_end = int(right_start + mask_fit_size)
 
                 # Get the wavelengths of the two sides
                 wave_temp = np.concatenate(
-                    (wave_standard_true[left_start:left_end],
-                     wave_standard_true[right_start:right_end]))
+                    (standard_wave_true[left_start:left_end],
+                     standard_wave_true[right_start:right_end]))
 
                 # Get the sensitivity of the two sides
                 sensitivity_temp = np.concatenate(
@@ -614,12 +616,12 @@ class FluxCalibration(StandardLibrary):
                 # Replace the snsitivity values with the fitted values
                 sensitivity_masked[
                     left_end:right_start] = np.polynomial.polynomial.polyval(
-                        wave_standard_true[left_end:right_start], coeff)
+                        standard_wave_true[left_end:right_start], coeff)
 
         mask = np.isfinite(sensitivity_masked)
         sensitivity_masked = sensitivity_masked[mask]
-        wave_standard_masked = wave_standard_true[mask]
-        flux_standard_masked = flux_standard_true[mask]
+        standard_wave_masked = standard_wave_true[mask]
+        standard_flux_masked = standard_flux_true[mask]
 
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
@@ -630,7 +632,7 @@ class FluxCalibration(StandardLibrary):
             self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
         if method == 'interpolate':
-            tck = itp.splrep(wave_standard_masked,
+            tck = itp.splrep(standard_wave_masked,
                              np.log10(sensitivity_masked),
                              k=k)
 
@@ -640,7 +642,7 @@ class FluxCalibration(StandardLibrary):
         elif method == 'polynomial':
 
             coeff = np.polynomial.polynomial.polyfit(
-                wave_standard_masked, np.log10(sensitivity_masked), deg=7)
+                standard_wave_masked, np.log10(sensitivity_masked), deg=7)
 
             def sensitivity_func(x):
                 return np.polynomial.polynomial.polyval(x, coeff)
@@ -650,8 +652,8 @@ class FluxCalibration(StandardLibrary):
             raise NotImplementedError('{} is not implemented.'.format(method))
 
         self.spectrum1D.add_sensitivity(sensitivity_masked)
-        self.spectrum1D.add_literature_standard(wave_standard_masked,
-                                                flux_standard_masked)
+        self.spectrum1D.add_literature_standard(standard_wave_masked,
+                                                standard_flux_masked)
 
         # Add to each Spectrum1D object
         self.spectrum1D.add_sensitivity_func(sensitivity_func)

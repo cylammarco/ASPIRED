@@ -13,7 +13,7 @@ install_requires = [
 __packagename__ = "aspired"
 
 setup(name=__packagename__,
-      version='0.1.1',
+      version='0.3.0',
       packages=find_packages(),
       author='Marco Lam',
       author_email='cylammarco@gmail.com',

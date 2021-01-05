@@ -2217,11 +2217,11 @@ class TwoDSpec:
                                 colorbar=dict(title='log( e- / s )')))
 
                 # note that the image is not adjusted for the chip gaps
-                # peaks_raw are plotted instead of the peaks
+                # peaks are plotted instead of the peaks
                 trace = np.nanmean(self.spectrum_list[i].trace)
                 trace_width = np.nanmean(self.spectrum_list[i].trace_sigma) * 3
 
-                for j in peaks_raw:
+                for j in peaks:
 
                     fig.add_trace(
                         go.Scatter(x=[j, j],
@@ -2268,7 +2268,7 @@ class TwoDSpec:
 
                 if return_jsonstring:
 
-                    return peaks_raw, fig.to_json()
+                    return peaks, fig.to_json()
 
             """
             # note that the display is adjusted for the chip gaps

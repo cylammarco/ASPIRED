@@ -1,7 +1,8 @@
 import copy
 import numpy as np
-from rascal.util import refine_peaks
-from scipy import signal
+import os
+from plotly import graph_objects as go
+from plotly import io as pio
 from spectres import spectres
 
 from .wavelengthcalibration import WavelengthCalibration
@@ -37,11 +38,11 @@ class OneDSpec():
         self.standard_wavecal = WavelengthCalibration(verbose)
         self.fluxcal = FluxCalibration(verbose)
 
-        self.wavelength_science_calibrated = False
-        self.wavelength_standard_calibrated = False
+        self.science_wavelength_calibrated = False
+        self.standard_wavelength_calibrated = False
 
-        self.flux_science_calibrated = False
-        self.flux_standard_calibrated = False
+        self.science_flux_calibrated = False
+        self.standard_flux_calibrated = False
 
         self.spectrum_list = {}
 
@@ -357,7 +358,8 @@ class OneDSpec():
                 self.science_spectrum_list = twodspec.spectrum_list
 
             self.science_wavecal =\
-                [copy.deepcopy(self.science_wavecal[0]) for i in range(len(self.science_spectrum_list))]
+                [copy.deepcopy(self.science_wavecal[0]) for i in range(
+                    len(self.science_spectrum_list))]
 
             if spec_id is not None:
 
@@ -374,7 +376,7 @@ class OneDSpec():
 
                 spec_id = [spec_id]
 
-            # reference the corresponding spectrum1D to the WavelengthCalibration
+            # reference the spectrum1D to the WavelengthCalibration
             for i in spec_id:
 
                 # By reference
@@ -582,7 +584,7 @@ class OneDSpec():
 
                     if peaks is None:
 
-                        peaks = self.science_spectrum_list[i].peaks_raw
+                        peaks = self.science_spectrum_list[i].peaks
 
                     if arc_spec is None:
 
@@ -605,7 +607,7 @@ class OneDSpec():
 
                 if peaks is None:
 
-                    peaks = self.standard_spectrum_list[0].peaks_raw
+                    peaks = self.standard_spectrum_list[0].peaks
 
                 if arc_spec is None:
 
@@ -1535,7 +1537,7 @@ class OneDSpec():
                                              count_err_resampled,
                                              count_sky_resampled)
 
-                self.wavelength_science_calibrated = True
+                self.science_wavelength_calibrated = True
 
             else:
 
@@ -1595,13 +1597,13 @@ class OneDSpec():
                 spec.add_count_resampled(count_resampled, count_err_resampled,
                                          count_sky_resampled)
 
-                self.wavelength_standard_calibrated = True
+                self.standard_wavelength_calibrated = True
 
             else:
 
                 raise RuntimeError('Standard spectrum is not imported.')
 
-            self.wavelength_standard_calibrated = True
+            self.standard_wavelength_calibrated = True
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
@@ -1837,14 +1839,14 @@ class OneDSpec():
                 self.fluxcal.apply_flux_calibration(
                     target_spectrum1D=self.science_spectrum_list[i])
 
-            self.flux_science_calibrated = True
+            self.science_flux_calibrated = True
 
         if 'standard' in stype_split:
 
             self.fluxcal.apply_flux_calibration(
                 target_spectrum1D=self.standard_spectrum_list[0])
 
-            self.flux_standard_calibrated = True
+            self.standard_flux_calibrated = True
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
@@ -1904,25 +1906,425 @@ class OneDSpec():
 
         '''
 
-        self.fluxcal.inspect_reduced_spectrum(
-            spec_id=spec_id,
-            stype=stype,
-            wave_min=wave_min,
-            wave_max=wave_max,
-            renderer=renderer,
-            width=width,
-            height=height,
-            filename=filename,
-            save_png=save_png,
-            save_jpg=save_jpg,
-            save_svg=save_svg,
-            save_pdf=save_pdf,
-            display=display,
-            return_jsonstring=return_jsonstring,
-            save_iframe=save_iframe,
-            open_iframe=open_iframe)
+        stype_split = stype.split('+')
 
-    """
+        if 'science' in stype_split:
+
+            if spec_id is not None:
+
+                if spec_id not in list(self.science_spectrum_list.keys()):
+
+                    raise ValueError('The given spec_id does not exist.')
+
+            else:
+
+                # if spec_id is None, contraints are applied to all calibrators
+                spec_id = list(self.science_spectrum_list.keys())
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            for i in spec_id:
+
+                spec = self.science_spectrum_list[i]
+
+                if self.science_flux_calibrated:
+
+                    wave_mask = (
+                        (np.array(spec.wave_resampled).reshape(-1) > wave_min)
+                        &
+                        (np.array(spec.wave_resampled).reshape(-1) < wave_max))
+
+                    flux_low = np.nanpercentile(
+                        np.array(spec.flux_resampled).reshape(-1)[wave_mask],
+                        5) / 1.5
+                    flux_high = np.nanpercentile(
+                        np.array(spec.flux_resampled).reshape(-1)[wave_mask],
+                        95) * 1.5
+                    flux_mask = (
+                        (np.array(spec.flux_resampled).reshape(-1) > flux_low)
+                        &
+                        (np.array(spec.flux_resampled).reshape(-1) < flux_high)
+                    )
+                    flux_min = np.log10(
+                        np.nanmin(
+                            np.array(
+                                spec.flux_resampled).reshape(-1)[flux_mask]))
+                    flux_max = np.log10(
+                        np.nanmax(
+                            np.array(
+                                spec.flux_resampled).reshape(-1)[flux_mask]))
+
+                else:
+
+                    wave_mask = (
+                        (np.array(spec.wave_resampled).reshape(-1) > wave_min)
+                        &
+                        (np.array(spec.wave_resampled).reshape(-1) < wave_max))
+                    flux_mask = ((np.array(
+                        spec.count_resampled).reshape(-1) > np.nanpercentile(
+                            np.array(spec.count_resampled).reshape(-1)
+                            [wave_mask], 5) / 1.5) &
+                                 (np.array(spec.count_resampled).reshape(-1) <
+                                  np.nanpercentile(
+                                      np.array(spec.count_resampled).reshape(
+                                          -1)[wave_mask], 95) * 1.5))
+                    flux_min = np.log10(
+                        np.nanmin(
+                            np.array(
+                                spec.count_resampled).reshape(-1)[flux_mask]))
+                    flux_max = np.log10(
+                        np.nanmax(
+                            np.array(
+                                spec.count_resampled).reshape(-1)[flux_mask]))
+
+                fig_sci = go.Figure(
+                    layout=dict(autosize=False,
+                                height=height,
+                                width=width,
+                                updatemenus=list([
+                                    dict(
+                                        active=0,
+                                        buttons=list([
+                                            dict(label='Log Scale',
+                                                 method='update',
+                                                 args=[{
+                                                     'visible': [True, True]
+                                                 }, {
+                                                     'title': 'Log scale',
+                                                     'yaxis': {
+                                                         'type': 'log'
+                                                     }
+                                                 }]),
+                                            dict(label='Linear Scale',
+                                                 method='update',
+                                                 args=[{
+                                                     'visible': [True, False]
+                                                 }, {
+                                                     'title': 'Linear scale',
+                                                     'yaxis': {
+                                                         'type': 'linear'
+                                                     }
+                                                 }])
+                                        ]),
+                                    )
+                                ]),
+                                title='Log scale'))
+
+                # show the image on the top
+
+                if self.science_flux_calibrated:
+
+                    fig_sci.add_trace(
+                        go.Scatter(x=spec.wave_resampled,
+                                   y=spec.flux_resampled,
+                                   line=dict(color='royalblue'),
+                                   name='Flux'))
+
+                    if spec.flux_err is not None:
+
+                        fig_sci.add_trace(
+                            go.Scatter(x=spec.wave_resampled,
+                                       y=spec.flux_err_resampled,
+                                       line=dict(color='firebrick'),
+                                       name='Flux Uncertainty'))
+
+                    if spec.flux_sky is not None:
+
+                        fig_sci.add_trace(
+                            go.Scatter(x=spec.wave_resampled,
+                                       y=spec.flux_sky_resampled,
+                                       line=dict(color='orange'),
+                                       name='Sky Flux'))
+
+                else:
+
+                    fig_sci.add_trace(
+                        go.Scatter(x=spec.wave_resampled,
+                                   y=spec.count_resampled,
+                                   line=dict(color='royalblue'),
+                                   name='Count / (e- / s)'))
+
+                    if spec.count_err is not None:
+
+                        fig_sci.add_trace(
+                            go.Scatter(x=spec.wave_resampled,
+                                       y=spec.count_err_resampled,
+                                       line=dict(color='firebrick'),
+                                       name='Count Uncertainty / (e- / s)'))
+
+                    if spec.count_sky is not None:
+
+                        fig_sci.add_trace(
+                            go.Scatter(x=spec.wave_resampled,
+                                       y=spec.count_sky_resampled,
+                                       line=dict(color='orange'),
+                                       name=r'Sky Count / (e- / s)'))
+
+                fig_sci.update_layout(hovermode='closest',
+                                      showlegend=True,
+                                      xaxis=dict(title='Wavelength / A',
+                                                 range=[wave_min, wave_max]),
+                                      yaxis=dict(title='Flux',
+                                                 range=[flux_min, flux_max],
+                                                 type='log'),
+                                      legend=go.layout.Legend(
+                                          x=0,
+                                          y=1,
+                                          traceorder="normal",
+                                          font=dict(family="sans-serif",
+                                                    size=12,
+                                                    color="black"),
+                                          bgcolor='rgba(0,0,0,0)'))
+
+                if filename is None:
+
+                    filename_output = "spectrum_" + str(i)
+
+                else:
+
+                    filename_output = os.path.splitext(
+                        filename)[0] + "_" + str(i)
+
+                if save_iframe:
+
+                    pio.write_html(fig_sci,
+                                   filename_output + '.html',
+                                   auto_open=open_iframe)
+
+                if display:
+
+                    if renderer == 'default':
+
+                        fig_sci.show()
+
+                    else:
+
+                        fig_sci.show(renderer)
+
+                if save_jpg:
+
+                    fig_sci.write_image(filename_output + '.jpg', format='jpg')
+
+                if save_png:
+
+                    fig_sci.write_image(filename_output + '.png', format='png')
+
+                if save_svg:
+
+                    fig_sci.write_image(filename_output + '.svg', format='svg')
+
+                if save_pdf:
+
+                    fig_sci.write_image(filename_output + '.pdf', format='pdf')
+
+                if return_jsonstring:
+
+                    return fig_sci[i].to_json()
+
+        if 'standard' in stype_split:
+
+            spec = self.standard_spectrum_list[0]
+
+            if self.standard_flux_calibrated:
+
+                standard_wave_mask = (
+                    (np.array(spec.wave_resampled).reshape(-1) > wave_min) &
+                    (np.array(spec.wave_resampled).reshape(-1) < wave_max))
+                standard_flux_mask = (
+                    (np.array(spec.flux_resampled).reshape(-1) >
+                     np.nanpercentile(
+                         np.array(spec.flux_resampled).reshape(-1)
+                         [standard_wave_mask], 5) / 1.5) &
+                    (np.array(spec.flux_resampled).reshape(-1) <
+                     np.nanpercentile(
+                         np.array(spec.flux_resampled).reshape(-1)
+                         [standard_wave_mask], 95) * 1.5))
+                standard_flux_min = np.log10(
+                    np.nanmin(
+                        np.array(spec.flux_resampled).reshape(-1)
+                        [standard_flux_mask]))
+                standard_flux_max = np.log10(
+                    np.nanmax(
+                        np.array(spec.flux_resampled).reshape(-1)
+                        [standard_flux_mask]))
+
+            else:
+
+                standard_wave_mask = (
+                    (np.array(spec.wave_resampled).reshape(-1) > wave_min) &
+                    (np.array(spec.wave_resampled).reshape(-1) < wave_max))
+                standard_flux_mask = (np.array(
+                    spec.count_resampled).reshape(-1) > np.nanpercentile(
+                        np.array(spec.count_resampled).reshape(-1)
+                        [standard_wave_mask], 5) / 1.5)
+                standard_flux_min = np.log10(
+                    np.nanmin(
+                        np.array(spec.count_resampled).reshape(-1)
+                        [standard_flux_mask]))
+                standard_flux_max = np.log10(
+                    np.nanmax(
+                        np.array(spec.count_resampled).reshape(-1)
+                        [standard_flux_mask]))
+
+            fig_standard = go.Figure(layout=dict(updatemenus=list([
+                dict(
+                    active=0,
+                    buttons=list([
+                        dict(label='Log Scale',
+                             method='update',
+                             args=[{
+                                 'visible': [True, True]
+                             }, {
+                                 'title': 'Log scale',
+                                 'yaxis': {
+                                     'type': 'log'
+                                 }
+                             }]),
+                        dict(label='Linear Scale',
+                             method='update',
+                             args=[{
+                                 'visible': [True, False]
+                             }, {
+                                 'title': 'Linear scale',
+                                 'yaxis': {
+                                     'type': 'linear'
+                                 }
+                             }])
+                    ]),
+                )
+            ]),
+                                                 autosize=False,
+                                                 height=height,
+                                                 width=width,
+                                                 title='Log scale'))
+
+            # show the image on the top
+            if self.standard_flux_calibrated:
+
+                fig_standard.add_trace(
+                    go.Scatter(x=spec.wave_resampled,
+                               y=spec.flux_resampled,
+                               line=dict(color='royalblue'),
+                               name='Flux'))
+
+                if spec.flux_err_resampled is not None:
+
+                    fig_standard.add_trace(
+                        go.Scatter(x=spec.wave_resampled,
+                                   y=spec.flux_err_resampled,
+                                   line=dict(color='firebrick'),
+                                   name='Flux Uncertainty'))
+
+                if spec.flux_sky_resampled is not None:
+
+                    fig_standard.add_trace(
+                        go.Scatter(x=spec.wave_resampled,
+                                   y=spec.flux_sky_resampled,
+                                   line=dict(color='orange'),
+                                   name='Sky Flux'))
+
+                if self.fluxcal.standard_fluxmag_true is not None:
+
+                    fig_standard.add_trace(
+                        go.Scatter(x=self.fluxcal.standard_wave_true,
+                                   y=self.fluxcal.standard_fluxmag_true,
+                                   line=dict(color='black'),
+                                   name='Standard'))
+
+            else:
+
+                fig_standard.add_trace(
+                    go.Scatter(x=spec.wave_resampled,
+                               y=spec.count_resampled,
+                               line=dict(color='royalblue'),
+                               name='Counts / (e- / s)'))
+
+                if spec.count_err_resampled is not None:
+
+                    fig_standard.add_trace(
+                        go.Scatter(x=spec.wave_resampled,
+                                   y=spec.count_err_resampled,
+                                   line=dict(color='firebrick'),
+                                   name='Counts Uncertainty / (e- / s)'))
+
+                if spec.count_sky_resampled is not None:
+
+                    fig_standard.add_trace(
+                        go.Scatter(x=spec.wave_resampled,
+                                   y=spec.count_sky_resampled,
+                                   line=dict(color='orange'),
+                                   name='Sky Counts / (e- / s)'))
+
+            fig_standard.update_layout(
+                hovermode='closest',
+                showlegend=True,
+                xaxis=dict(title='Wavelength / A', range=[wave_min, wave_max]),
+                yaxis=dict(title='Flux',
+                           range=[standard_flux_min, standard_flux_max],
+                           type='log'),
+                legend=go.layout.Legend(x=0,
+                                        y=1,
+                                        traceorder="normal",
+                                        font=dict(family="sans-serif",
+                                                  size=12,
+                                                  color="black"),
+                                        bgcolor='rgba(0,0,0,0)'))
+
+            if filename is None:
+
+                filename_output = "spectrum_standard"
+
+            else:
+
+                filename_output = os.path.splitext(filename)[0]
+
+            if save_iframe:
+
+                pio.write_html(fig_standard,
+                               filename_output + '.html',
+                               auto_open=open_iframe)
+
+            if display:
+
+                if renderer == 'default':
+
+                    fig_standard.show(height=height, width=width)
+
+                else:
+
+                    fig_standard.show(renderer, height=height, width=width)
+
+            if save_jpg:
+
+                fig_standard.write_image(filename_output + '.jpg',
+                                         format='jpg')
+
+            if save_png:
+
+                fig_standard.write_image(filename_output + '.png',
+                                         format='png')
+
+            if save_svg:
+
+                fig_standard.write_image(filename_output + '.svg',
+                                         format='svg')
+
+            if save_pdf:
+
+                fig_standard.write_image(filename_output + '.pdf',
+                                         format='pdf')
+
+            if return_jsonstring:
+
+                return fig_standard.to_json()
+
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
+
     def create_fits(self,
                     spec_id=None,
                     output='arc_spec+wavecal+wavelength+flux+flux_resampled',
@@ -1988,153 +2390,35 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.flux_science_calibrated:
+            if self.science_imported:
 
                 if spec_id is not None:
 
-                    if spec_id not in list(
-                            self.fluxcal.spectrum_list_science.keys()):
+                    if spec_id not in list(self.science_spectrum_list.keys()):
 
                         raise ValueError('The given spec_id does not exist.')
 
                 else:
 
                     # if spec_id is None, contraints are applied to all
-                    # calibrators
-                    spec_id = list(self.fluxcal.spectrum_list_science.keys())
+                    #  calibrators
+                    spec_id = list(self.science_spectrum_list.keys())
 
-            elif self.wavelength_science_calibrated:
+                if isinstance(spec_id, int):
 
-                # Note that wavecal ONLY has sepctrum_list, it is not science
-                # and standard specified.
-                if spec_id is not None:
+                    spec_id = [spec_id]
 
-                    if spec_id not in list(
-                            self.wavecal_science.spectrum_list.keys()):
+                for i in spec_id:
 
-                        raise ValueError('The given spec_id does not exist.')
-
-                else:
-
-                    # if spec_id is None, contraints are applied to all
-                    # calibrators
-                    spec_id = list(self.wavecal_science.spectrum_list.keys())
-
-            else:
-
-                try:
-                    print('loading from fluxcal')
-                    print(self.fluxcal.spectrum_list_science.keys())
-
-                    if spec_id is not None:
-                        print('spec_id is not None.')
-                        if spec_id not in list(
-                                self.fluxcal.spectrum_list_science.keys()):
-
-                            raise ValueError(
-                                'The given spec_id does not exist.')
-
-                    else:
-                        print('spec_id is None.')
-
-                        # if spec_id is None, contraints are applied to all
-                        # calibrators
-                        spec_id = list(
-                            self.fluxcal.spectrum_list_science.keys())
-
-                except Exception as e:
-
-                    warnings.warn(str(e))
-
-                    if spec_id is not None:
-
-                        if spec_id not in list(
-                                self.wavecal_science.spectrum_list.keys()):
-
-                            raise ValueError(
-                                'The given spec_id does not exist.')
-
-                    else:
-
-                        # if spec_id is None, contraints are applied to all
-                        # calibrators
-                        spec_id = list(
-                            self.wavecal_science.spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
-
-            for i in spec_id:
-
-                # If flux is calibrated
-                if self.flux_science_calibrated:
-
-                    self.fluxcal.spectrum_list_science[i].create_fits(
+                    self.science_spectrum_list[i].create_fits(
                         output=output, empty_primary_hdu=empty_primary_hdu)
-
-                # If flux is not calibrated, but wavelength is calibrated
-                # Note that wavecal ONLY has sepctrum_list, it is not science
-                # and standard specified.
-                elif self.wavelength_science_calibrated:
-
-                    self.wavecal_science.spectrum_list[i].create_fits(
-                        output=output, empty_primary_hdu=empty_primary_hdu)
-
-                else:
-
-                    # This is when exporting before any calibration, we
-                    # can't be sure whether there is data in the fluxcal
-                    # or in the wavecal.
-                    try:
-
-                        self.fluxcal.spectrum_list_science[i].create_fits(
-                            output=output, empty_primary_hdu=empty_primary_hdu)
-
-                    except Exception as e:
-
-                        warnings.warn(str(e))
-
-                        self.wavecal_science.spectrum_list[i].create_fits(
-                            output=output, empty_primary_hdu=empty_primary_hdu)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.flux_standard_calibrated:
+            if self.standard_imported:
 
-                self.fluxcal.spectrum_list_standard[0].create_fits(
+                self.standard_spectrum_list[0].create_fits(
                     output=output, empty_primary_hdu=empty_primary_hdu)
-
-            # If flux is not calibrated, but wavelength is calibrated
-            # Note that wavecal ONLY has sepctrum_list, it is not science
-            # and standard specified.
-            elif self.wavelength_standard_calibrated:
-
-                self.wavecal_standard.spectrum_list[0].create_fits(
-                    output=output, empty_primary_hdu=empty_primary_hdu)
-
-            else:
-
-                # This is when exporting before any calibration, we
-                # can't be sure whether there is data in the fluxcal
-                # or in the wavecal.
-                try:
-
-                    self.fluxcal.spectrum_list_standard[0].create_fits(
-                        output=output, empty_primary_hdu=empty_primary_hdu)
-
-                except Exception as e:
-
-                    warnings.warn(str(e))
-
-                    self.wavecal_standard.spectrum_list[0].create_fits(
-                        output=output, empty_primary_hdu=empty_primary_hdu)
-
-        if return_id:
-
-            return spec_id
-    """
 
     def modify_trace_header(self,
                             idx,
@@ -2214,7 +2498,7 @@ class OneDSpec():
         if 'standard' in stype_split:
 
             # If flux is calibrated
-            if self.flux_standard_calibrated:
+            if self.standard_flux_calibrated:
 
                 self.fluxcal.spectrum_list_standard[0].modify_trace_header(
                     idx, method, *args)
@@ -2233,7 +2517,6 @@ class OneDSpec():
                 raise RuntimeError(
                     'This should not happen, please submit an issue.')
 
-    """
     def save_fits(self,
                   spec_id=None,
                   output='arc_spec+wavecal+wavelength+flux+flux_resampled',
@@ -2288,107 +2571,61 @@ class OneDSpec():
 
         # Split the string into strings
         stype_split = stype.split('+')
+        output_split = output.split('+')
+
+        for i in output_split:
+
+            if i not in [
+                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
+                    'wavelength', 'count_resampled', 'flux', 'flux_resampled'
+            ]:
+
+                raise ValueError('%s is not a valid output.' % i)
+
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
 
         if 'science' in stype_split:
 
-            spec_id = self.create_fits(spec_id=spec_id,
-                                       output=output,
-                                       stype='science',
-                                       empty_primary_hdu=empty_primary_hdu,
-                                       return_id=True)
+            if self.science_imported:
 
-            for i in spec_id:
+                if spec_id is not None:
 
-                filename_i = filename + '_science_' + str(i)
+                    if spec_id not in list(self.science_spectrum_list.keys()):
 
-                # If flux is calibrated
-                if self.flux_science_calibrated:
+                        raise ValueError('The given spec_id does not exist.')
 
-                    self.fluxcal.spectrum_list_science[i].save_fits(
-                        output=output,
-                        filename=filename_i,
-                        overwrite=overwrite,
-                        empty_primary_hdu=empty_primary_hdu)
-
-                # If flux is not calibrated, and weather or not the wavelength
-                # is calibrated.
-                elif self.wavelength_science_calibrated:
-
-                    self.wavecal_science.spectrum_list[i].save_fits(
-                        output=output,
-                        filename=filename_i,
-                        overwrite=overwrite,
-                        empty_primary_hdu=empty_primary_hdu)
-
-                # This is probably saving trace or count before flux and/or
-                # wavelength calibration.
                 else:
 
-                    try:
+                    # if spec_id is None, contraints are applied to all
+                    #  calibrators
+                    spec_id = list(self.science_spectrum_list.keys())
 
-                        self.fluxcal.spectrum_list_science[i].save_fits(
-                            output=output,
-                            filename=filename_i,
-                            overwrite=overwrite,
-                            empty_primary_hdu=empty_primary_hdu)
+                if isinstance(spec_id, int):
 
-                    except Exception as e:
+                    spec_id = [spec_id]
 
-                        warnings.warn(str(e))
+                for i in spec_id:
 
-                        self.wavecal_science.spectrum_list[i].save_fits(
-                            output=output,
-                            filename=filename_i,
-                            overwrite=overwrite,
-                            empty_primary_hdu=empty_primary_hdu)
+                    filename_i = filename + '_science_' + str(i)
+
+                    self.science_spectrum_list[i].save_fits(
+                        output=output,
+                        filename=filename_i,
+                        overwrite=overwrite,
+                        empty_primary_hdu=empty_primary_hdu)
 
         if 'standard' in stype_split:
 
-            self.create_fits(spec_id=[0],
-                             output=output,
-                             stype='standard',
-                             empty_primary_hdu=empty_primary_hdu)
+            if self.standard_imported:
 
-            # If flux is calibrated
-            if self.flux_standard_calibrated:
-
-                self.fluxcal.spectrum_list_standard[0].save_fits(
+                self.standard_spectrum_list[0].save_fits(
                     output=output,
                     filename=filename + '_standard',
                     overwrite=overwrite,
                     empty_primary_hdu=empty_primary_hdu)
-
-            # If flux is not calibrated, and weather or not the wavelength
-            # is calibrated.
-            elif self.wavelength_standard_calibrated:
-
-                self.wavecal_standard.spectrum_list[0].save_fits(
-                    output=output,
-                    filename=filename + '_standard',
-                    overwrite=overwrite,
-                    empty_primary_hdu=empty_primary_hdu)
-
-            # This is probably saving trace or count before flux and/or
-            # wavelength calibration.
-            else:
-
-                try:
-
-                    self.fluxcal.spectrum_list_standard[0].save_fits(
-                        output=output,
-                        filename=filename + '_standard',
-                        overwrite=overwrite,
-                        empty_primary_hdu=empty_primary_hdu)
-
-                except Exception as e:
-
-                    warnings.warn(str(e))
-
-                    self.wavecal_standard.spectrum_list[0].save_fits(
-                        output=output,
-                        filename=filename + '_standard',
-                        overwrite=overwrite,
-                        empty_primary_hdu=empty_primary_hdu)
 
     def save_csv(self,
                  spec_id=None,
@@ -2441,52 +2678,56 @@ class OneDSpec():
 
         # Split the string into strings
         stype_split = stype.split('+')
+        output_split = output.split('+')
+
+        for i in output_split:
+
+            if i not in [
+                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
+                    'wavelength', 'count_resampled', 'flux', 'flux_resampled'
+            ]:
+
+                raise ValueError('%s is not a valid output.' % i)
+
+        if ('science' not in stype_split) and ('standard' not in stype_split):
+
+            raise ValueError('Unknown stype, please choose from (1) science; '
+                             'and/or (2) standard. use + as delimiter.')
 
         if 'science' in stype_split:
 
-            spec_id = self.create_fits(spec_id=spec_id,
-                                       output=output,
-                                       stype='science',
-                                       empty_primary_hdu=False,
-                                       return_id=True)
+            if self.science_imported:
 
-            for i in spec_id:
+                if spec_id is not None:
 
-                filename_i = filename + '_science_' + str(i)
+                    if spec_id not in list(self.science_spectrum_list.keys()):
 
-                # If flux is calibrated
-                if self.flux_science_calibrated:
+                        raise ValueError('The given spec_id does not exist.')
 
-                    self.fluxcal.spectrum_list_science[i].save_csv(
-                        output=output,
-                        filename=filename_i,
-                        overwrite=overwrite)
-
-                # If flux is not calibrated, and weather or not the wavelength
-                # is calibrated.
                 else:
 
-                    self.wavecal_science.spectrum_list[i].save_csv(
-                        output=output,
-                        filename=filename_i,
-                        overwrite=overwrite)
+                    # if spec_id is None, contraints are applied to all
+                    #  calibrators
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    filename_i = filename + '_science_' + str(i)
+
+                    self.science_spectrum_list[i].save_csv(output=output,
+                                                           filename=filename_i,
+                                                           overwrite=overwrite)
 
         if 'standard' in stype_split:
 
             # If flux is calibrated
-            if self.flux_standard_calibrated:
+            if self.standard_imported:
 
-                self.fluxcal.spectrum_list_standard[0].save_csv(
-                    output=output,
-                    filename=filename + '_standard',
-                    overwrite=overwrite)
-
-            # If flux is not calibrated, and weather or not the wavelength
-            # is calibrated.
-            else:
-
-                self.wavecal_standard.spectrum_list[0].save_csv(
-                    output=output,
-                    filename=filename + '_standard',
-                    overwrite=overwrite)
-    """
+                self.standard_spectrum_list[0].save_csv(output=output,
+                                                        filename=filename +
+                                                        '_standard',
+                                                        overwrite=overwrite)

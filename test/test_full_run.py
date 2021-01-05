@@ -114,14 +114,17 @@ def test_full_run():
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
 
-    '''
+    # Create the trace and count as FITS BEFORE flux and wavelength calibration
+    # This is an uncommon operation, but it should work.
+    lhs6328_onedspec.create_fits(output='trace+count',
+                                 stype='science+standard')
+
     # Save the trace and count as FITS BEFORE flux and wavelength calibration
     # This is an uncommon operation, but it should work.
     lhs6328_onedspec.save_fits(output='trace+count',
                                filename='test/test_output/test_full_run',
                                stype='science+standard',
                                overwrite=True)
-    '''
 
     # Find the peaks of the arc
     lhs6328_onedspec.find_arc_lines(display=False, stype='science+standard')
@@ -161,12 +164,11 @@ def test_full_run():
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
     # Create FITS
-    #lhs6328_onedspec.create_fits(output='trace+count')
+    lhs6328_onedspec.create_fits(output='trace+count')
 
     # Modify FITS header for the trace
     lhs6328_onedspec.modify_trace_header(0, 'set', 'COMMENT', 'Hello World!')
 
-    '''
     # Save as FITS (and create the ones that were not created earlier)
     lhs6328_onedspec.save_fits(
         output='trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+'
@@ -188,4 +190,3 @@ def test_full_run():
         filename='test/test_output/test_full_run',
         display=False,
         save_iframe=True)
-    '''

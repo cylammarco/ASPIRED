@@ -77,11 +77,11 @@ class WavelengthCalibration():
 
         '''
 
-        self.spectrum1D.add_peaks_pixel(peaks)
+        self.spectrum1D.add_peaks_refined(peaks)
 
     def remove_arc_lines(self):
 
-        self.spectrum1D.remove_peaks_pixel()
+        self.spectrum1D.remove_peaks_refined()
 
     def add_arc_spec(self, arc_spec):
         '''
@@ -217,7 +217,7 @@ class WavelengthCalibration():
 
             background = np.nanpercentile(self.spectrum1D.arc_spec, percentile)
 
-        self.spectrum1D.add_peaks_raw(
+        self.spectrum1D.add_peaks(
             signal.find_peaks(getattr(self.spectrum1D, 'arc_spec'),
                               distance=distance,
                               height=background,
@@ -225,23 +225,24 @@ class WavelengthCalibration():
 
         # Fine tuning
         if refine:
-            self.spectrum1D.add_peaks_raw(
+
+            self.spectrum1D.add_peaks(
                 refine_peaks(getattr(self.spectrum1D, 'arc_spec'),
-                             getattr(self.spectrum1D, 'peaks_raw'),
+                             getattr(self.spectrum1D, 'peaks'),
                              window_width=int(refine_window_width)))
 
         # Adjust for chip gaps
         if getattr(self.spectrum1D, 'pixel_mapping_itp') is not None:
 
-            self.spectrum1D.add_peaks_pixel(
+            self.spectrum1D.add_peaks_refined(
                 getattr(self.spectrum1D,
                         'pixel_mapping_itp')(getattr(self.spectrum1D,
-                                                     'peaks_raw')))
+                                                     'peaks')))
 
         else:
 
-            self.spectrum1D.add_peaks_pixel(
-                getattr(self.spectrum1D, 'peaks_raw'))
+            self.spectrum1D.add_peaks_refined(getattr(self.spectrum1D,
+                                                      'peaks'))
 
         if save_iframe or display or return_jsonstring:
 
@@ -309,24 +310,24 @@ class WavelengthCalibration():
 
         if peaks is None:
 
-            if getattr(self.spectrum1D, 'peaks_pixel') is not None:
+            if getattr(self.spectrum1D, 'peaks_refined') is not None:
 
-                peaks = getattr(self.spectrum1D, 'peaks_pixel')
+                peaks = getattr(self.spectrum1D, 'peaks_refined')
 
             else:
 
                 raise ValueError(
                     'arc_spec is not provided. Either provide when executing '
                     'this function or provide a spectrum1D that contains an '
-                    'peaks_pixel.')
+                    'peaks_refined.')
 
         else:
 
-            if getattr(self.spectrum1D, 'peaks_pixel') is not None:
+            if getattr(self.spectrum1D, 'peaks_refined') is not None:
 
-                warnings.warn('peaks_pixel is replaced with the new one.')
+                warnings.warn('peaks_refined is replaced with the new one.')
 
-            self.spectrum1D.add_peaks_pixel(peaks)
+            self.spectrum1D.add_peaks_refined(peaks)
 
         if arc_spec is None:
 
