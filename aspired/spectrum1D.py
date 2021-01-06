@@ -641,6 +641,7 @@ class Spectrum1D():
     def add_wavelength(self, wave):
 
         self.wave = wave
+        # Note that the native pixels have varing bin size.
         self.wave_bin = np.nanmedian(np.array(np.ediff1d(wave)))
         self.wave_start = np.min(wave)
         self.wave_end = np.max(wave)
@@ -649,12 +650,12 @@ class Spectrum1D():
 
         self.wave = None
 
-    def add_wavelength_resampled(self, wave_bin, wave_start, wave_end,
-                                 wave_resampled):
+    def add_wavelength_resampled(self, wave_resampled):
 
-        self.wave_bin = wave_bin
-        self.wave_start = wave_start
-        self.wave_end = wave_end
+        # We assume that the resampled spectrum has fixed bin size
+        self.wave_bin = np.nanmedian(np.array(np.ediff1d(wave_resampled)))
+        self.wave_start = np.min(wave_resampled)
+        self.wave_end = np.max(wave_resampled)
         self.wave_resampled = wave_resampled
 
     def remove_wavelength_resampled(self):
