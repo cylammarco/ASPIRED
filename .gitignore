@@ -134,4 +134,6 @@ iframe_figures/
 .vscode
 
 # test output files
-test/test_output/*
+test/test_output/*.csv
+test/test_output/*.fits
+test/test_output/*.html
