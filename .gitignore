@@ -132,3 +132,6 @@ iframe_figures/
 
 # VS Code
 .vscode
+
+# test output files
+test/test_output/*

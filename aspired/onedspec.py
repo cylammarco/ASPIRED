@@ -660,8 +660,7 @@ class OneDSpec():
                     spec_id = [spec_id]
 
                 for i in spec_id:
-                    print('onedspec.find_arc_lines: ', i,
-                          hex(id(self.science_wavecal[i].spectrum1D)))
+
                     self.science_wavecal[i].find_arc_lines(
                         background=background,
                         percentile=percentile,
@@ -763,8 +762,6 @@ class OneDSpec():
                         self.science_spectrum_list[i])
                     self.science_wavecal[i].initialise_calibrator(
                         peaks=peaks, arc_spec=arc_spec)
-                    print('onedspec.initialise_calibrator (science): ', i,
-                          hex(id(self.science_wavecal[i].spectrum1D)))
 
             else:
 
@@ -786,8 +783,6 @@ class OneDSpec():
                     self.standard_spectrum_list[0])
                 self.standard_wavecal.initialise_calibrator(peaks=peaks,
                                                             arc_spec=arc_spec)
-                print('onedspec.initialise_calibrator (standard): ',
-                      hex(id(self.standard_wavecal.spectrum1D)))
 
             else:
 
@@ -2496,6 +2491,7 @@ class OneDSpec():
                     spec_id=None,
                     output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                     stype='science+standard',
+                    recreate=True,
                     empty_primary_hdu=True,
                     return_id=False):
         '''
@@ -2578,117 +2574,499 @@ class OneDSpec():
                 for i in spec_id:
 
                     self.science_spectrum_list[i].create_fits(
-                        output=output, empty_primary_hdu=empty_primary_hdu)
+                        output=output,
+                        recreate=recreate,
+                        empty_primary_hdu=empty_primary_hdu)
 
         if 'standard' in stype_split:
 
             if self.standard_imported:
 
                 self.standard_spectrum_list[0].create_fits(
-                    output=output, empty_primary_hdu=empty_primary_hdu)
+                    output=output,
+                    recreate=recreate,
+                    empty_primary_hdu=empty_primary_hdu)
 
     def modify_trace_header(self,
                             idx,
                             method,
+                            *args,
                             spec_id=None,
-                            stype='science+standard',
-                            *args):
+                            stype='science+standard'):
 
         # Split the string into strings
+
         stype_split = stype.split('+')
 
         if 'science' in stype_split:
 
-            if self.flux_science_calibrated:
+            if self.science_imported:
 
                 if spec_id is not None:
 
-                    if spec_id not in list(
-                            self.fluxcal.spectrum_list_science.keys()):
+                    if spec_id not in list(self.science_spectrum_list.keys()):
 
                         raise ValueError('The given spec_id does not exist.')
 
                 else:
 
-                    # if spec_id is None, contraints are applied to all
-                    # calibrators
-                    spec_id = list(self.fluxcal.spectrum_list_science.keys())
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
 
-            elif self.wavelength_science_calibrated:
+                if isinstance(spec_id, int):
 
-                # Note that wavecal ONLY has sepctrum_list, it is not science
-                # and standard specified.
-                if spec_id is not None:
+                    spec_id = [spec_id]
 
-                    if spec_id not in list(
-                            self.wavecal_science.spectrum_list.keys()):
+                for i in spec_id:
 
-                        raise ValueError('The given spec_id does not exist.')
-
-                else:
-
-                    # if spec_id is None, contraints are applied to all
-                    # calibrators
-                    spec_id = list(self.wavecal_science.spectrum_list.keys())
-
-            else:
-
-                raise ValueError('Trace or Count cannot be found. Neither '
-                                 'wavelength nor flux is calibrated.')
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
-
-            for i in spec_id:
-
-                # If flux is calibrated
-                if self.flux_science_calibrated:
-
-                    self.fluxcal.spectrum_list_science[i].modify_trace_header(
+                    self.science_spectrum_list[i].modify_trace_header(
                         idx, method, *args)
-
-                # If flux is not calibrated, but wavelength is calibrated
-                # Note that wavecal ONLY has sepctrum_list, it is not science
-                # and standard specified.
-                elif self.wavelength_science_calibrated:
-
-                    self.wavecal_science.spectrum_list[i].modify_trace_header(
-                        idx, method, *args)
-
-                # Should be trapped above so this line should never be run
-                else:
-
-                    raise RuntimeError(
-                        'This should not happen, please submit an issue.')
 
         if 'standard' in stype_split:
 
             # If flux is calibrated
-            if self.standard_flux_calibrated:
+            if self.standard_imported:
 
-                self.fluxcal.spectrum_list_standard[0].modify_trace_header(
+                self.standard_spectrum_list[0].modify_trace_header(
                     idx, method, *args)
 
-            # If flux is not calibrated, but wavelength is calibrated
-            # Note that wavecal ONLY has sepctrum_list, it is not science
-            # and standard specified.
-            elif self.wavelength_standard_calibrated:
+    def modify_count_header(self,
+                            idx,
+                            method,
+                            *args,
+                            spec_id=None,
+                            stype='science+standard'):
 
-                self.wavecal_standard.spectrum_list[0].modify_trace_header(
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_count_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_count_header(
                     idx, method, *args)
 
-            # Should be trapped above so this line should never be run
-            else:
+    def modify_weight_map_header(self,
+                                 idx,
+                                 method,
+                                 *args,
+                                 spec_id=None,
+                                 stype='science+standard'):
 
-                raise RuntimeError(
-                    'This should not happen, please submit an issue.')
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_weight_map_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_weight_map_header(
+                    idx, method, *args)
+
+    def modify_count_resampled_header(self,
+                                      idx,
+                                      method,
+                                      *args,
+                                      spec_id=None,
+                                      stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[
+                        i].modify_count_resampled_header(idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_count_resampled_header(
+                    idx, method, *args)
+
+    def modify_arc_spec_header(self,
+                               idx,
+                               method,
+                               *args,
+                               spec_id=None,
+                               stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_arc_spec_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_arc_spec_header(
+                    idx, method, *args)
+
+    def modify_wavecal_header(self,
+                              idx,
+                              method,
+                              *args,
+                              spec_id=None,
+                              stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_wavecal_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_wavecal_header(
+                    idx, method, *args)
+
+    def modify_wavelength_header(self,
+                                 idx,
+                                 method,
+                                 *args,
+                                 spec_id=None,
+                                 stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_wavelength_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_wavelength_header(
+                    idx, method, *args)
+
+    def modify_sensitivity_header(self,
+                                  idx,
+                                  method,
+                                  *args,
+                                  spec_id=None,
+                                  stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_sensitivity_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_sensitivity_header(
+                    idx, method, *args)
+
+    def modify_flux_header(self,
+                           idx,
+                           method,
+                           *args,
+                           spec_id=None,
+                           stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_flux_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_flux_header(
+                    idx, method, *args)
+
+    def modify_sensitibity_resampled_header(self,
+                                            idx,
+                                            method,
+                                            *args,
+                                            spec_id=None,
+                                            stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[
+                        i].modify_sensitivity_resampled_header(
+                            idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[
+                    0].modify_sensitivity_resampled_header(idx, method, *args)
+
+    def modify_flux_resampled_header(self,
+                                     idx,
+                                     method,
+                                     *args,
+                                     spec_id=None,
+                                     stype='science+standard'):
+
+        # Split the string into strings
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_imported:
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        raise ValueError('The given spec_id does not exist.')
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].modify_flux_resampled_header(
+                        idx, method, *args)
+
+        if 'standard' in stype_split:
+
+            # If flux is calibrated
+            if self.standard_imported:
+
+                self.standard_spectrum_list[0].modify_flux_resampled_header(
+                    idx, method, *args)
 
     def save_fits(self,
                   spec_id=None,
                   output='arc_spec+wavecal+wavelength+flux+flux_resampled',
                   filename='reduced',
                   stype='science+standard',
+                  recreate=False,
                   empty_primary_hdu=True,
                   overwrite=False):
         '''
@@ -2782,6 +3160,7 @@ class OneDSpec():
                         output=output,
                         filename=filename_i,
                         overwrite=overwrite,
+                        recreate=recreate,
                         empty_primary_hdu=empty_primary_hdu)
 
         if 'standard' in stype_split:
@@ -2792,6 +3171,7 @@ class OneDSpec():
                     output=output,
                     filename=filename + '_standard',
                     overwrite=overwrite,
+                    recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu)
 
     def save_csv(self,

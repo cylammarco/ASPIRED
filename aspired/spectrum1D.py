@@ -24,8 +24,6 @@ class Spectrum1D():
                 'spec_id has to be of type int, {} is given.'.format(
                     type(spec_id)))
 
-        self.fits_array = []
-
         # Detector properties
         self.gain = None
         self.readnoise = None
@@ -867,6 +865,22 @@ class Spectrum1D():
 
         self._modify_imagehdu_header(self.wavecal_hdulist, 0, method, *args)
 
+    def modify_wavelength_header(self, method, *args):
+        '''
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+        wavelength fits only has one ImageHDU so the idx is always 0
+
+        +-----+------------------------------------------+
+        | HDU | Data                                     |
+        +-----+------------------------------------------+
+        |  0  | Wavelength value at each extracted pixel |
+        +-----+------------------------------------------+
+
+        '''
+
+        self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
+
     def modify_sensitivity_header(self, method, *args):
         '''
         for method 'set', it takes
@@ -934,16 +948,6 @@ class Spectrum1D():
 
         self._modify_imagehdu_header(self.flux_resampled_hdulist, idx, method,
                                      *args)
-
-    def modify_wavelength_header(self, method, *args):
-        '''
-        for method 'set', it takes
-        keyword, value=None, comment=None, before=None, after=None
-        wavelength fits only has one ImageHDU so the idx is always 0
-
-        '''
-
-        self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
 
     def create_trace_fits(self):
 
@@ -1241,6 +1245,36 @@ class Spectrum1D():
             warnings.warn('wavecal ImageHDU cannot be created.')
             self.wavecal_hdulist = None
 
+    def create_wavelength_fits(self):
+
+        try:
+
+            # Put the data in an ImageHDU
+            wavelength_ImageHDU = fits.ImageHDU(self.wave)
+
+            # Create an empty HDU list and populate with the ImageHDU
+            self.wavelength_hdulist = fits.HDUList()
+            self.wavelength_hdulist += [wavelength_ImageHDU]
+
+            # Add the calibrated wavelength
+            self.modify_wavelength_header('set', 'LABEL',
+                                          'Pixel-Wavelength Mapping')
+            self.modify_wavelength_header('set', 'CRPIX1', 1)
+            self.modify_wavelength_header('set', 'CDELT1', 1)
+            self.modify_wavelength_header('set', 'CRVAL1', self.pixel_list[0])
+            self.modify_wavelength_header('set', 'CTYPE1',
+                                          'Pixel (Dispersion)')
+            self.modify_wavelength_header('set', 'CUNIT1', 'Pixel')
+            self.modify_wavelength_header('set', 'BUNIT', 'Angstroms')
+
+        except Exception as e:
+
+            warnings.warn(str(e))
+
+            # Set it to None if the above failed
+            warnings.warn('wavelength ImageHDU cannot be created.')
+            self.wavelength_hdulist = None
+
     def create_sensitivity_fits(self):
 
         try:
@@ -1412,36 +1446,6 @@ class Spectrum1D():
             warnings.warn('flux_resampled ImageHDU cannot be created.')
             self.flux_resampled_hdulist = None
 
-    def create_wavelength_fits(self):
-
-        try:
-
-            # Put the data in an ImageHDU
-            wavelength_ImageHDU = fits.ImageHDU(self.wave)
-
-            # Create an empty HDU list and populate with the ImageHDU
-            self.wavelength_hdulist = fits.HDUList()
-            self.wavelength_hdulist += [wavelength_ImageHDU]
-
-            # Add the calibrated wavelength
-            self.modify_wavelength_header('set', 'LABEL',
-                                          'Pixel-Wavelength Mapping')
-            self.modify_wavelength_header('set', 'CRPIX1', 1)
-            self.modify_wavelength_header('set', 'CDELT1', 1)
-            self.modify_wavelength_header('set', 'CRVAL1', self.pixel_list[0])
-            self.modify_wavelength_header('set', 'CTYPE1',
-                                          'Pixel (Dispersion)')
-            self.modify_wavelength_header('set', 'CUNIT1', 'Pixel')
-            self.modify_wavelength_header('set', 'BUNIT', 'Angstroms')
-
-        except Exception as e:
-
-            warnings.warn(str(e))
-
-            # Set it to None if the above failed
-            warnings.warn('wavelength ImageHDU cannot be created.')
-            self.wavelength_hdulist = None
-
     def remove_trace_fits(self):
 
         self.trace_hdulist = None
@@ -1472,6 +1476,7 @@ class Spectrum1D():
 
     def create_fits(self,
                     output,
+                    recreate=False,
                     empty_primary_hdu=True,
                     return_hdu_list=False):
         '''
@@ -1509,51 +1514,6 @@ class Spectrum1D():
 
         output_split = output.split('+')
 
-        # Will check if the HDUs need to be (re)created inside the functions
-        if 'trace' in output_split:
-
-            self.create_trace_fits()
-
-        if 'count' in output_split:
-
-            self.create_count_fits()
-
-        if 'weight_map' in output_split:
-
-            self.create_count_fits()
-
-        if 'arc_spec' in output_split:
-
-            self.create_arc_spec_fits()
-
-        if 'wavecal' in output_split:
-
-            self.create_wavecal_fits()
-
-        if 'wavelength' in output_split:
-
-            self.create_wavelength_fits()
-
-        if 'count_resampled' in output_split:
-
-            self.create_count_resampled_fits()
-
-        if 'sensitivity' in output_split:
-
-            self.create_sensitivity_fits()
-
-        if 'flux' in output_split:
-
-            self.create_flux_fits()
-
-        if 'sensitivity_resampled' in output_split:
-
-            self.create_sensitivity_resampled_fits()
-
-        if 'flux_resampled' in output_split:
-
-            self.create_flux_resampled_fits()
-
         # If the requested list of HDUs is already good to go
         if set([k for k, v in self.hdu_content.items()
                 if v]) == set(output_split):
@@ -1579,8 +1539,9 @@ class Spectrum1D():
         else:
 
             self.hdu_output = None
-            for k, v in self.hdu_content.items():
-                self.hdu_content[k] = False
+            if recreate:
+                for k, v in self.hdu_content.items():
+                    self.hdu_content[k] = False
 
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()
@@ -1591,63 +1552,90 @@ class Spectrum1D():
                 hdu_output.append(fits.PrimaryHDU())
 
             # Join the list(s)
-            if 'trace' in output_split and not self.hdu_content['trace']:
+            if 'trace' in output_split:
+
+                if not self.hdu_content['trace']:
+                    self.create_trace_fits()
 
                 hdu_output += self.trace_hdulist
                 self.hdu_content['trace'] = True
 
-            if 'count' in output_split and not self.hdu_content['count']:
+            if 'count' in output_split:
+
+                if not self.hdu_content['count']:
+                    self.create_count_fits()
 
                 hdu_output += self.count_hdulist
                 self.hdu_content['count'] = True
 
-            if 'weight_map' in output_split and not self.hdu_content[
-                    'weight_map']:
+            if 'weight_map' in output_split:
+
+                if not self.hdu_content['weight_map']:
+                    self.create_count_fits()
 
                 hdu_output += self.count_hdulist
                 self.hdu_content['weight_map'] = True
 
-            if 'arc_spec' in output_split and not self.hdu_content['arc_spec']:
+            if 'arc_spec' in output_split:
+
+                if not self.hdu_content['arc_spec']:
+                    self.create_arc_spec_fits()
 
                 hdu_output += self.arc_spec_hdulist
                 self.hdu_content['arc_spec'] = True
 
-            if 'wavecal' in output_split and not self.hdu_content['wavecal']:
+            if 'wavecal' in output_split:
+
+                if not self.hdu_content['wavecal']:
+                    self.create_wavecal_fits()
 
                 hdu_output += self.wavecal_hdulist
                 self.hdu_content['wavecal'] = True
 
-            if 'wavelength' in output_split and not self.hdu_content[
-                    'wavelength']:
+            if 'wavelength' in output_split:
+
+                if not self.hdu_content['wavelength']:
+                    self.create_wavelength_fits()
 
                 hdu_output += self.wavelength_hdulist
                 self.hdu_content['wavelength'] = True
 
-            if 'count_resampled' in output_split and not self.hdu_content[
-                    'count_resampled']:
+            if 'count_resampled' in output_split:
+
+                if not self.hdu_content['count_resampled']:
+                    self.create_count_resampled_fits()
 
                 hdu_output += self.count_resampled_hdulist
                 self.hdu_content['count_resampled'] = True
 
-            if 'sensitivity' in output_split and not self.hdu_content[
-                    'sensitivity']:
+            if 'sensitivity' in output_split:
+
+                if not self.hdu_content['sensitivity']:
+                    self.create_sensitivity_fits()
 
                 hdu_output += self.sensitivity_hdulist
                 self.hdu_content['sensitivity'] = True
 
-            if 'flux' in output_split and not self.hdu_content['flux']:
+            if 'flux' in output_split:
+
+                if not self.hdu_content['flux']:
+                    self.create_flux_fits()
 
                 hdu_output += self.flux_hdulist
                 self.hdu_content['flux'] = True
 
-            if 'sensitivity_resampled' in output_split and not\
-                    self.hdu_content['sensitivity_resampled']:
+            if 'sensitivity_resampled' in output_split:
+
+                if not self.hdu_content['sensitivity_resampled']:
+                    self.create_sensitivity_resampled_fits()
 
                 hdu_output += self.sensitivity_resampled_hdulist
                 self.hdu_content['sensitivity_resampled'] = True
 
-            if 'flux_resampled' in output_split and not self.hdu_content[
-                    'flux_resampled']:
+            if 'flux_resampled' in output_split:
+
+                if not self.hdu_content['flux_resampled']:
+                    self.create_flux_resampled_fits()
 
                 hdu_output += self.flux_resampled_hdulist
                 self.hdu_content['flux_resampled'] = True
@@ -1673,6 +1661,7 @@ class Spectrum1D():
                   output,
                   filename,
                   overwrite=False,
+                  recreate=False,
                   empty_primary_hdu=True):
         '''
         Parameters
@@ -1710,7 +1699,7 @@ class Spectrum1D():
 
         '''
 
-        self.create_fits(output, empty_primary_hdu)
+        self.create_fits(output, recreate, empty_primary_hdu)
 
         # Save file to disk
         self.hdu_output.writeto(filename + '.fits', overwrite=overwrite)

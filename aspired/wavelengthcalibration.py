@@ -63,8 +63,6 @@ class WavelengthCalibration():
         else:
             self.spectrum1D = spectrum1D
 
-        print('wavecal.from_spectrum1D: ', hex(id(self.spectrum1D)))
-
     def add_arc_lines(self, peaks):
         '''
         Provide the pixel locations of the arc lines.
@@ -350,7 +348,6 @@ class WavelengthCalibration():
 
             self.spectrum1D.add_arc_spec(arc_spec)
 
-        print(hex(id(self.spectrum1D)))
         self.spectrum1D.add_calibrator(
             Calibrator(peaks=peaks, spectrum=arc_spec))
 
@@ -421,8 +418,7 @@ class WavelengthCalibration():
             maximum expected excursion from linearity.
 
         '''
-        print('setting hough properties.')
-        print(self.spectrum1D.calibrator)
+
         self.spectrum1D.calibrator.set_hough_properties(
             num_slopes=num_slopes,
             xbins=xbins,
