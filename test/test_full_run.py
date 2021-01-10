@@ -31,13 +31,14 @@ def test_full_run():
                             overwrite=True)
 
     lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
-                                                    spatial_mask=spatial_mask,
-                                                    spec_mask=spec_mask,
-                                                    cosmicray=True,
-                                                    readnoise=5.7)
+                                                   spatial_mask=spatial_mask,
+                                                   spec_mask=spec_mask,
+                                                   cosmicray=True,
+                                                   readnoise=5.7)
 
     lhs6328_twodspec.ap_trace(nspec=2, display=False)
 
+    # Optimal extraction to get the LSF for force extraction below
     lhs6328_twodspec.ap_extract(apwidth=15,
                                 skywidth=10,
                                 skydeg=1,
@@ -45,6 +46,7 @@ def test_full_run():
                                 display=False,
                                 save_iframe=False)
 
+    # Force extraction
     lhs6328_twodspec.ap_extract(
         apwidth=15,
         skywidth=10,
@@ -55,6 +57,7 @@ def test_full_run():
         display=False,
         save_iframe=False)
 
+    # Aperture extraction
     lhs6328_twodspec.ap_extract(
         apwidth=15,
         skywidth=5,
@@ -64,6 +67,7 @@ def test_full_run():
         save_iframe=True,
         filename='test/test_output/test_full_run_extract')
 
+    # Optimal extraction
     lhs6328_twodspec.ap_extract(
         apwidth=15,
         skywidth=5,
@@ -75,18 +79,22 @@ def test_full_run():
         save_iframe=True,
         filename='test/test_output/test_full_run_extract')
 
+    lhs6328_twodspec.save_fits(
+        filename='test/test_output/test_full_run_twospec',
+        overwrite=True)
+
     # Standard frame
     standard_frame = image_reduction.ImageReduction(
         'test/test_data/sprat_Hiltner102.list')
     standard_frame.reduce()
     standard_frame.save_fits('test/test_output/test_full_run_standard_image',
-                                overwrite=True)
+                             overwrite=True)
 
     hilt102_twodspec = spectral_reduction.TwoDSpec(standard_frame,
-                                                    cosmicray=True,
-                                                    spatial_mask=spatial_mask,
-                                                    spec_mask=spec_mask,
-                                                    readnoise=5.7)
+                                                   cosmicray=True,
+                                                   spatial_mask=spatial_mask,
+                                                   spec_mask=spec_mask,
+                                                   readnoise=5.7)
 
     hilt102_twodspec.ap_trace(nspec=1, resample_factor=10, display=False)
 
@@ -117,14 +125,14 @@ def test_full_run():
     # Create the trace and count as FITS BEFORE flux and wavelength calibration
     # This is an uncommon operation, but it should work.
     lhs6328_onedspec.create_fits(output='trace+count',
-                                    stype='science+standard')
+                                 stype='science+standard')
 
     # Save the trace and count as FITS BEFORE flux and wavelength calibration
     # This is an uncommon operation, but it should work.
     lhs6328_onedspec.save_fits(output='trace+count',
-                                filename='test/test_output/test_full_run',
-                                stype='science+standard',
-                                overwrite=True)
+                               filename='test/test_output/test_full_run',
+                               stype='science+standard',
+                               overwrite=True)
 
     # Find the peaks of the arc
     lhs6328_onedspec.find_arc_lines(display=False, stype='science+standard')
@@ -133,23 +141,23 @@ def test_full_run():
     lhs6328_onedspec.initialise_calibrator(stype='science+standard')
 
     lhs6328_onedspec.set_hough_properties(num_slopes=1000,
-                                            xbins=200,
-                                            ybins=200,
-                                            min_wavelength=3500,
-                                            max_wavelength=8500,
-                                            stype='science+standard')
+                                          xbins=200,
+                                          ybins=200,
+                                          min_wavelength=3500,
+                                          max_wavelength=8500,
+                                          stype='science+standard')
     lhs6328_onedspec.set_ransac_properties(filter_close=True,
-                                            stype='science+standard')
+                                           stype='science+standard')
 
     lhs6328_onedspec.load_user_atlas(elements=element,
-                                        wavelengths=atlas,
-                                        stype='science+standard')
+                                     wavelengths=atlas,
+                                     stype='science+standard')
     lhs6328_onedspec.do_hough_transform()
 
     # Solve for the pixel-to-wavelength solution
     lhs6328_onedspec.fit(max_tries=200,
-                            stype='science+standard',
-                            display=False)
+                         stype='science+standard',
+                         display=False)
 
     # Apply the wavelength calibration and display it
     lhs6328_onedspec.apply_wavelength_calibration(stype='science+standard')
@@ -158,8 +166,8 @@ def test_full_run():
     lhs6328_onedspec.load_standard(target='hiltner102')
 
     lhs6328_onedspec.compute_sensitivity(k=3,
-                                            method='interpolate',
-                                            mask_fit_size=1)
+                                         method='interpolate',
+                                         mask_fit_size=1)
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
@@ -172,10 +180,9 @@ def test_full_run():
     print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)
 
     # Create more FITS
-    lhs6328_onedspec.create_fits(
-        output='trace+count+arc_spec+wavecal',
-        stype='science+standard',
-        recreate=False)
+    lhs6328_onedspec.create_fits(output='trace+count+arc_spec+wavecal',
+                                 stype='science+standard',
+                                 recreate=False)
 
     # Check the modified headers are not overwritten
     print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)
@@ -193,10 +200,9 @@ def test_full_run():
     print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)
 
     # Create more FITS
-    lhs6328_onedspec.create_fits(
-        output='trace',
-        stype='science+standard',
-        recreate=True)
+    lhs6328_onedspec.create_fits(output='trace',
+                                 stype='science+standard',
+                                 recreate=True)
 
     # Now the FITS header should be back to default
     print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)

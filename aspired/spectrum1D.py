@@ -676,6 +676,11 @@ class Spectrum1D():
         self.count_err_resampled = None
         self.count_sky_resampled = None
 
+    def add_standard_star(self, library, target):
+
+        self.library = library
+        self.target = target
+
     def add_smoothing(self, smooth, slength, sorder):
 
         self.smooth = smooth

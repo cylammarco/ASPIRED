@@ -471,6 +471,14 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D = Spectrum1D()
         self.spectrum1D_imported = False
 
+    def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
+        super().load_standard(target=target,
+                              library=library,
+                              ftype=ftype,
+                              cutoff=cutoff)
+        # the best target and library found can be different from the input
+        self.spectrum1D.add_standard_star(library=self.library, target=self.target)
+
     def add_standard(self, wavelength, count, count_err=None, count_sky=None):
         '''
         Add spectrum (wavelength, count, count_err & count_sky).

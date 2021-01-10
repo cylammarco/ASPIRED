@@ -878,7 +878,8 @@ class TwoDSpec:
         detector unit, and not counts per second.
 
         Iterate to get the optimal signal. Following the algorithm on
-        Horne, 1986, PASP, 98, 609 (1986PASP...98..609H).
+        Horne, 1986, PASP, 98, 609 (1986PASP...98..609H). The 'steps' in the
+        inline comments are in reference to this article.
 
         Parameters
         ----------
@@ -1462,7 +1463,9 @@ class TwoDSpec:
         Optimal extraction: Float or 1-d array of the same size as the trace.
                             If a float is supplied, a fixed standard deviation
                             will be used to construct the gaussian weight
-                            function along the entire spectrum.
+                            function along the entire spectrum. Currently, it
+                            is only possible if the peak of the LSF is at least
+                            one pixel from the edge.
 
         Nothing is returned unless return_jsonstring of the plotly graph is
         set to be returned. The count, count_sky and count_err are stored as
@@ -1609,11 +1612,13 @@ class TwoDSpec:
                 # fix width if trace is too close to the edge
                 if (itrace + widthup > self.spatial_size):
 
+                    # ending at the last pixel
                     widthup = self.spatial_size - itrace - 1
 
                 if (itrace - widthdn < 0):
 
-                    widthdn = itrace - 1  # i.e. starting at pixel row 1
+                    # starting at pixel row 0
+                    widthdn = itrace - 1  
 
                 # simply add up the total count around the trace +/- width
                 xslice = self.img[itrace - widthdn:itrace + widthup + 1, i]
@@ -1680,7 +1685,7 @@ class TwoDSpec:
 
                             if np.isfinite(variances):
 
-                                var_i = np.ones(len(pix)) * variances
+                                var_i = np.ones(widthdn + widthup + 1) * variances
 
                             else:
 
@@ -1705,6 +1710,20 @@ class TwoDSpec:
 
                             var_i = variances[i]
 
+                            # If some of the spectrum is outside of the detector
+                            if itrace - apwidth < 0:
+
+                                var_i = var_i[apwidth - widthdn:]
+
+                            # If some of the spectrum is outside of the detector
+                            elif itrace + apwidth > self.spatial_size:
+
+                                var_i = var_i[:-(apwidth - widthup + 1)]
+
+                            else:
+
+                                pass
+
                         else:
 
                             var_i = np.ones(len(pix))
@@ -1717,8 +1736,7 @@ class TwoDSpec:
                     # Get the optimal signals
                     # pix is the native pixel position
                     # pos is the trace at the native pixel position
-                    count[i], count_err[i], suboptimal[i], var[
-                        i] = self._optimal_signal(
+                    count[i], count_err[i], suboptimal[i], var_temp = self._optimal_signal(
                             pix=pix,
                             xslice=xslice * self.exptime,
                             sky=sky * self.exptime,
