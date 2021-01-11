@@ -21,7 +21,7 @@ class TwoDSpec:
     This is a class for processing a 2D spectral image.
 
     '''
-    def __init__(self, data, header=None, **kwargs):
+    def __init__(self, data=None, header=None, **kwargs):
         '''
         The constructor takes the data and the header, and the the header
         infromation will be read automatically. See set_properties()
@@ -37,6 +37,47 @@ class TwoDSpec:
             see set_properties().
 
         '''
+
+        self.add_data(data, header)
+        self.spectrum_list = {}
+
+        self.saxis = 1
+        self.waxis = 0
+
+        self.spatial_mask = (1, )
+        self.spec_mask = (1, )
+        self.flip = False
+        self.cosmicray = False
+        self.cosmicray_sigma = 5.
+
+        # Default values if not supplied or cannot be automatically identified
+        # from the header
+        self.readnoise = 0.
+        self.gain = 1.
+        self.seeing = 1.
+        self.exptime = 1.
+
+        self.verbose = False
+
+        # Default keywords to be searched in the order in the list
+        self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
+        self.gain_keyword = ['GAIN']
+        self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
+        self.exptime_keyword = [
+            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+        ]
+
+        self.set_properties(**kwargs)
+
+    def add_data(self, data, header=None):
+        """
+        parameters
+        ----------
+        data: 2D numpy array (M x N) OR astropy.io.fits object
+            2D spectral image in either format
+        header: FITS header (deafult: None)
+            THIS WILL OVERRIDE the header from the astropy.io.fits object
+        """
 
         # If data provided is an numpy array
         if isinstance(data, np.ndarray):
@@ -84,42 +125,17 @@ class TwoDSpec:
             self.header = fitsfile_tmp.header
             fitsfile_tmp = None
 
+        elif data is None:
+
+            self.img = None
+            self.header = None
+
         else:
 
             raise TypeError(
                 'Please provide a numpy array, an ' +
                 'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +
                 'ImageReduction object.')
-
-        self.spectrum_list = {}
-
-        self.saxis = 1
-        self.waxis = 0
-
-        self.spatial_mask = (1, )
-        self.spec_mask = (1, )
-        self.flip = False
-        self.cosmicray = False
-        self.cosmicray_sigma = 5.
-
-        # Default values if not supplied or cannot be automatically identified
-        # from the header
-        self.readnoise = 0.
-        self.gain = 1.
-        self.seeing = 1.
-        self.exptime = 1.
-
-        self.verbose = False
-
-        # Default keywords to be searched in the order in the list
-        self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
-        self.gain_keyword = ['GAIN']
-        self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
-        self.exptime_keyword = [
-            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
-        ]
-
-        self.set_properties(**kwargs)
 
     def set_properties(self,
                        saxis=None,
@@ -447,47 +463,49 @@ class TwoDSpec:
 
             self.verbose = verbose
 
-        self.img = self.img / self.exptime
+        if self.img is not None:
 
-        # the valid y-range of the chip (i.e. spatial direction)
-        if (len(self.spatial_mask) > 1):
+            self.img = self.img / self.exptime
 
-            if self.saxis == 1:
+            # the valid y-range of the chip (i.e. spatial direction)
+            if (len(self.spatial_mask) > 1):
 
-                self.img = self.img[self.spatial_mask]
+                if self.saxis == 1:
 
-            else:
+                    self.img = self.img[self.spatial_mask]
 
-                self.img = self.img[:, self.spatial_mask]
+                else:
 
-        # the valid x-range of the chip (i.e. spectral direction)
-        if (len(self.spec_mask) > 1):
+                    self.img = self.img[:, self.spatial_mask]
 
-            if self.saxis == 1:
+            # the valid x-range of the chip (i.e. spectral direction)
+            if (len(self.spec_mask) > 1):
 
-                self.img = self.img[:, self.spec_mask]
+                if self.saxis == 1:
 
-            else:
+                    self.img = self.img[:, self.spec_mask]
 
-                self.img = self.img[self.spec_mask]
+                else:
 
-        # get the length in the spectral and spatial directions
-        self.spec_size = np.shape(self.img)[self.saxis]
-        self.spatial_size = np.shape(self.img)[self.waxis]
+                    self.img = self.img[self.spec_mask]
 
-        if self.saxis == 0:
+            # get the length in the spectral and spatial directions
+            self.spec_size = np.shape(self.img)[self.saxis]
+            self.spatial_size = np.shape(self.img)[self.waxis]
 
-            self.img = np.transpose(self.img)
+            if self.saxis == 0:
 
-        if self.flip:
+                self.img = np.transpose(self.img)
 
-            self.img = np.flip(self.img)
+            if self.flip:
 
-        # set the 2D histogram z-limits
-        img_log = np.log10(self.img)
-        img_log_finite = img_log[np.isfinite(img_log)]
-        self.zmin = np.nanpercentile(img_log_finite, 5)
-        self.zmax = np.nanpercentile(img_log_finite, 95)
+                self.img = np.flip(self.img)
+
+            # set the 2D histogram z-limits
+            img_log = np.log10(self.img)
+            img_log_finite = img_log[np.isfinite(img_log)]
+            self.zmin = np.nanpercentile(img_log_finite, 5)
+            self.zmax = np.nanpercentile(img_log_finite, 95)
 
     def add_arc(self, arc):
         '''

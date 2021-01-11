@@ -200,8 +200,8 @@ class ImageReduction:
         if isinstance(self.filelist, str):
             self.filelist = np.genfromtxt(self.filelist,
                                           delimiter=self.delimiter,
-                                          dtype=None,
-                                          autostrip=True).astype('U')
+                                          dtype='U',
+                                          autostrip=True)
 
             if np.shape(np.shape(self.filelist))[0] == 2:
                 self.imtype = self.filelist[:, 0].astype('object')

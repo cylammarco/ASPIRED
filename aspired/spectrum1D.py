@@ -1,5 +1,6 @@
 from astropy.io import fits
 from scipy import interpolate as itp
+import time
 import warnings
 
 import os
@@ -23,6 +24,9 @@ class Spectrum1D():
             raise ValueError(
                 'spec_id has to be of type int, {} is given.'.format(
                     type(spec_id)))
+
+        # Reduction Meta-data
+        self.time_of_reduction = time.asctime(time.localtime(time.time()))
 
         # Detector properties
         self.gain = None
@@ -134,7 +138,7 @@ class Spectrum1D():
 
         self.header = {
             'flux_resampled':
-            'Pesampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, '
+            'Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, '
             'Resampled Sensitivity Curve',
             'count_resampled':
             'Resampled Count, Resampled Count Uncertainty, '
@@ -154,7 +158,8 @@ class Spectrum1D():
             'count':
             'Count, Count Uncertainty, Sky Count',
             'trace':
-            'Pixel positions of the trace in the spatial direction'
+            'Pixel positions of the trace in the spatial direction, '
+            'Width of the trace'
         }
 
         self.n_hdu = {
@@ -518,11 +523,12 @@ class Spectrum1D():
 
         self.fit_type = None
 
-    def add_fit_coeff(self, fit_coeff):
+    def add_fit_coeff(self, fit_coeff, fit_type):
 
         assert isinstance(fit_coeff,
                           (list, np.ndarray)), 'fit_coeff has to be a list.'
         self.fit_coeff = fit_coeff
+        self.fit_type = fit_type
 
     def remove_fit_coeff(self):
 
@@ -532,9 +538,9 @@ class Spectrum1D():
                                   log_level):
 
         self.num_pix = num_pix
-        self.pixel_list = pixel_list
         self.plotting_library = plotting_library
         self.log_level = log_level
+        self.pixel_list = pixel_list
 
     def remove_calibrator_properties(self):
 

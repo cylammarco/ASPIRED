@@ -7,6 +7,7 @@ from spectres import spectres
 
 from .wavelengthcalibration import WavelengthCalibration
 from .fluxcalibration import FluxCalibration
+from .spectrum1D import Spectrum1D
 
 
 class OneDSpec():
@@ -41,7 +42,13 @@ class OneDSpec():
         self.science_flux_calibrated = False
         self.standard_flux_calibrated = False
 
-        self.spectrum_list = {}
+        self.science_spectrum_list = {0: Spectrum1D(0)}
+        self.standard_spectrum_list = {0: Spectrum1D(0)}
+
+        # Link them up
+        self.science_wavecal[0].from_spectrum1D(self.science_spectrum_list[0])
+        self.standard_wavecal.from_spectrum1D(self.standard_spectrum_list[0])
+        self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
 
     def add_fluxcalibration(self, fluxcal):
         '''
@@ -210,36 +217,36 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
+                self.science_spectrum_list[i].add_count(count=count,
+                                                        count_err=count_err,
+                                                        count_sky=count_sky)
 
-                    self.science_spectrum_list[i].add_spec(count=count,
-                                                           count_err=count_err,
-                                                           count_sky=count_sky)
+            self.science_imported = True
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            self.standard_spectrum_list[0].add_count(count=count,
+                                                     count_err=count_err,
+                                                     count_sky=count_sky)
 
-                self.standard_spectrum_list[0].add_spec(count=count,
-                                                        count_err=count_err,
-                                                        count_sky=count_sky)
+            self.standard_imported = True
 
     def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
         '''
@@ -437,7 +444,7 @@ class OneDSpec():
 
     def add_fit_coeff(self,
                       fit_coeff,
-                      fit_type=['poly'],
+                      fit_type='poly',
                       spec_id=None,
                       stype='science+standard'):
         '''
@@ -762,6 +769,8 @@ class OneDSpec():
                         self.science_spectrum_list[i])
                     self.science_wavecal[i].initialise_calibrator(
                         peaks=peaks, arc_spec=arc_spec)
+                    self.science_wavecal[i].set_hough_properties()
+                    self.science_wavecal[i].set_ransac_properties()
 
             else:
 
@@ -783,6 +792,8 @@ class OneDSpec():
                     self.standard_spectrum_list[0])
                 self.standard_wavecal.initialise_calibrator(peaks=peaks,
                                                             arc_spec=arc_spec)
+                self.standard_wavecal.set_hough_properties()
+                self.standard_wavecal.set_ransac_properties()
 
             else:
 
@@ -840,12 +851,11 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    self.science_wavcal[
-                        i].calibrator.set_calibrator_properties(
-                            num_pix=num_pix,
-                            pixel_list=pixel_list,
-                            plotting_library=plotting_library,
-                            log_level=log_level)
+                    self.science_wavcal[i].set_calibrator_properties(
+                        num_pix=num_pix,
+                        pixel_list=pixel_list,
+                        plotting_library=plotting_library,
+                        log_level=log_level)
 
             else:
 
@@ -1653,7 +1663,7 @@ class OneDSpec():
                     spec = self.science_spectrum_list[i]
 
                     # Adjust for pixel shift due to chip gaps
-                    wave = spec.calibrator.polyval(np.array(spec.pixel_list),
+                    wave = self.science_wavecal[i].polyval[spec.fit_type](np.array(spec.pixel_list),
                                                    spec.fit_coeff).reshape(-1)
 
                     # compute the new equally-spaced wavelength array
@@ -1713,7 +1723,7 @@ class OneDSpec():
                 spec = self.standard_spectrum_list[0]
 
                 # Adjust for pixel shift due to chip gaps
-                wave = spec.calibrator.polyval(np.array(spec.pixel_list),
+                wave = self.standard_wavecal.polyval[spec.fit_type](np.array(spec.pixel_list),
                                                spec.fit_coeff).reshape(-1)
 
                 # compute the new equally-spaced wavelength array
@@ -1908,7 +1918,7 @@ class OneDSpec():
 
         self.fluxcal.save_sensitivity_func(filename=filename)
 
-    def add_sensitivity_func(self, sensitivity_func, stype='science+standard'):
+    def add_sensitivity_func(self, sensitivity_func):
         '''
         Parameters
         ----------
@@ -1919,8 +1929,7 @@ class OneDSpec():
 
         '''
 
-        self.fluxcal.add_sensitivity_func(sensitivity_func=sensitivity_func,
-                                          stype=stype)
+        self.fluxcal.add_sensitivity_func(sensitivity_func=sensitivity_func)
 
     def inspect_sensitivity(self,
                             display=True,
