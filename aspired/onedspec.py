@@ -4,6 +4,7 @@ import os
 from plotly import graph_objects as go
 from plotly import io as pio
 from spectres import spectres
+import warnings
 
 from .wavelengthcalibration import WavelengthCalibration
 from .fluxcalibration import FluxCalibration
@@ -214,7 +215,7 @@ class OneDSpec():
                     self.science_spectrum_list[i].add_wavelength_resampled(
                         wave_resampled=wave_resampled)
 
-            self.science_wavelength_resampled = True
+                self.science_wavelength_resampled = True
 
         if 'standard' in stype_split:
 
@@ -223,7 +224,7 @@ class OneDSpec():
                 self.standard_spectrum_list[0].add_wavelength_resampled(
                     wave_resampled=wave_resampled)
 
-            self.standard_wavelength_resampled = True
+                self.standard_wavelength_resampled = True
 
     def add_spec(self,
                  count,
@@ -323,11 +324,15 @@ class OneDSpec():
                     self.science_spectrum_list[i].add_arc_spec(
                         arc_spec=arc_spec)
 
+                self.science_arc_spec_available = True
+
         if 'standard' in stype_split:
 
             if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec)
+
+                self.standard_arc_spec_available = True
 
     def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
         '''
@@ -368,7 +373,7 @@ class OneDSpec():
 
                     self.science_spectrum_list[i].add_arc_lines(peaks=peaks)
 
-            self.science_arc_lines_available = True
+                self.science_arc_lines_available = True
 
         if 'standard' in stype_split:
 
@@ -376,7 +381,7 @@ class OneDSpec():
 
                 self.standard_spectrum_list[0].add_arc_lines(peaks=peaks)
 
-            self.standard_arc_lines_available = True
+                self.standard_arc_lines_available = True
 
     def add_arc(self, arc, spec_id=None, stype='science+standard'):
         '''
@@ -746,7 +751,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc spectrum/a are not imported.')
+                warnings.warn('Science arc spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -772,7 +777,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc spectrum/a are not imported.')
+                warnings.warn('Standard arc spectrum/a are not imported.')
 
     def initialise_calibrator(self,
                               spec_id=None,
@@ -836,7 +841,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError(
+                warnings.warn(
                     'Science arc lines are not available.')
 
         if 'standard' in stype_split:
@@ -860,7 +865,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -922,7 +927,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc lines are not available.')
+                warnings.warn('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -936,7 +941,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -1010,7 +1015,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc lines are not available.')
+                warnings.warn('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1027,7 +1032,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -1108,7 +1113,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc lines are not available.')
+                warnings.warn('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1125,7 +1130,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def set_known_pairs(self,
                         spec_id=None,
@@ -1174,7 +1179,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc lines are not available.')
+                warnings.warn('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1184,7 +1189,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def load_user_atlas(self,
                         elements,
@@ -1276,7 +1281,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc lines are not available.')
+                warnings.warn('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1297,7 +1302,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def add_atlas(self,
                   elements,
@@ -1391,7 +1396,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science arc lines are not available.')
+                warnings.warn('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1414,7 +1419,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard arc lines are not available.')
+                warnings.warn('Standard arc lines are not available.')
 
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''
@@ -1456,7 +1461,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science atlas is not available.')
+                warnings.warn('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
@@ -1468,7 +1473,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard atlas is not available.')
+                warnings.warn('Standard atlas is not available.')
 
     def fit(self,
             spec_id=None,
@@ -1555,7 +1560,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science hough pairs are not available.')
+                warnings.warn('Science hough pairs are not available.')
 
         if 'standard' in stype_split:
 
@@ -1576,7 +1581,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                warnings.warn('Standard spectrum/a are not imported.')
 
     def refine_fit(self,
                    spec_id=None,
@@ -1666,7 +1671,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                warnings.warn('Science spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -1686,7 +1691,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                warnings.warn('Standard spectrum/a are not imported.')
 
     def apply_wavelength_calibration(self,
                                      spec_id=None,
@@ -1794,7 +1799,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                warnings.warn('Science spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -1854,7 +1859,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum is not imported.')
+                warnings.warn('Standard spectrum is not imported.')
 
             self.standard_wavelength_calibrated = True
 
