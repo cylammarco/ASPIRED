@@ -215,32 +215,30 @@ class WavelengthCalibration():
 
             background = np.nanpercentile(self.spectrum1D.arc_spec, percentile)
 
-        self.spectrum1D.add_peaks(
-            signal.find_peaks(getattr(self.spectrum1D, 'arc_spec'),
+        peaks = signal.find_peaks(getattr(self.spectrum1D, 'arc_spec'),
                               distance=distance,
                               height=background,
-                              prominence=prominence)[0])
+                              prominence=prominence)[0]
+        self.spectrum1D.add_peaks(peaks)
 
         # Fine tuning
         if refine:
 
-            self.spectrum1D.add_peaks(
-                refine_peaks(getattr(self.spectrum1D, 'arc_spec'),
+            peaks = refine_peaks(getattr(self.spectrum1D, 'arc_spec'),
                              getattr(self.spectrum1D, 'peaks'),
-                             window_width=int(refine_window_width)))
+                             window_width=int(refine_window_width))
+            self.spectrum1D.add_peaks(peaks)
 
         # Adjust for chip gaps
         if getattr(self.spectrum1D, 'pixel_mapping_itp') is not None:
 
             self.spectrum1D.add_peaks_refined(
                 getattr(self.spectrum1D,
-                        'pixel_mapping_itp')(getattr(self.spectrum1D,
-                                                     'peaks')))
+                        'pixel_mapping_itp')(peaks))
 
         else:
 
-            self.spectrum1D.add_peaks_refined(getattr(self.spectrum1D,
-                                                      'peaks'))
+            self.spectrum1D.add_peaks_refined(peaks)
 
         if save_iframe or display or return_jsonstring:
 
@@ -252,6 +250,11 @@ class WavelengthCalibration():
                            y=self.spectrum1D.arc_spec,
                            mode='lines',
                            line=dict(color='royalblue', width=1)))
+            fig.add_trace(
+                go.Scatter(x=peaks,
+                           y=np.array(self.spectrum1D.arc_spec)[np.rint(peaks).astype('int')],
+                           mode='markers',
+                           line=dict(color='firebrick', width=1)))
 
             fig.update_layout(
                 xaxis=dict(zeroline=False,

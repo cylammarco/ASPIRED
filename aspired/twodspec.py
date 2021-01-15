@@ -11,6 +11,7 @@ from plotly import io as pio
 from scipy import signal
 from scipy.optimize import curve_fit
 from spectres import spectres
+import time
 
 from .image_reduction import ImageReduction
 from .spectrum1D import Spectrum1D

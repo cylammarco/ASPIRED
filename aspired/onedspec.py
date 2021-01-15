@@ -25,23 +25,12 @@ class OneDSpec():
 
         '''
 
-        self.science_imported = False
-        self.standard_imported = False
-        self.arc_science_imported = False
-        self.arc_standard_imported = False
-        self.arc_lines_science_imported = False
-        self.arc_lines_standard_imported = False
-
+        # Initialise empty calibration objects
         self.science_wavecal = [WavelengthCalibration(verbose)]
         self.standard_wavecal = WavelengthCalibration(verbose)
         self.fluxcal = FluxCalibration(verbose)
 
-        self.science_wavelength_calibrated = False
-        self.standard_wavelength_calibrated = False
-
-        self.science_flux_calibrated = False
-        self.standard_flux_calibrated = False
-
+        # Create empty dictionary
         self.science_spectrum_list = {0: Spectrum1D(0)}
         self.standard_spectrum_list = {0: Spectrum1D(0)}
 
@@ -49,6 +38,45 @@ class OneDSpec():
         self.science_wavecal[0].from_spectrum1D(self.science_spectrum_list[0])
         self.standard_wavecal.from_spectrum1D(self.standard_spectrum_list[0])
         self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
+
+        # Tracking data availability
+        self.science_data_available = False
+        self.standard_data_available = False
+
+        self.science_arc_available = False
+        self.standard_arc_available = False
+
+        self.science_trace_available = False
+        self.standard_trace_available = False
+
+        self.science_arc_spec_available = False
+        self.standard_arc_spec_available = False
+
+        self.science_arc_lines_available = False
+        self.standard_arc_lines_available = False
+
+        self.science_atlas_available = False
+        self.standard_atlas_available = False
+
+        self.science_hough_pairs_available = False
+        self.standard_hough_pairs_available = False
+
+        self.science_wavecal_polynomial_available = False
+        self.standard_wavecal_polynomial_available = False
+
+        self.science_wavelength_calibrated = False
+        self.standard_wavelength_calibrated = False
+
+        self.science_wavelength_resampled = False
+        self.standard_wavelength_resampled = False
+
+        self.sensitivity_curve_available = False
+
+        self.science_flux_calibrated = False
+        self.standard_flux_calibrated = False
+
+        self.science_flux_resampled = False
+        self.standard_flux_calibrated = False
 
     def add_fluxcalibration(self, fluxcal):
         '''
@@ -113,7 +141,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_data_available:
 
                 if spec_id is not None:
 
@@ -134,11 +162,15 @@ class OneDSpec():
 
                     self.science_spectrum_list[i].add_wavelength(wave=wave)
 
+                self.science_wavelength_calibrated = True
+
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_wavelength(wave=wave)
+
+                self.standard_wavelength_calibrated = True
 
     def add_wavelength_resampled(self,
                                  wave_resampled,
@@ -160,7 +192,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_data_available:
 
                 if spec_id is not None:
 
@@ -182,12 +214,16 @@ class OneDSpec():
                     self.science_spectrum_list[i].add_wavelength_resampled(
                         wave_resampled=wave_resampled)
 
+            self.science_wavelength_resampled = True
+
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_wavelength_resampled(
                     wave_resampled=wave_resampled)
+
+            self.standard_wavelength_resampled = True
 
     def add_spec(self,
                  count,
@@ -238,7 +274,7 @@ class OneDSpec():
                                                         count_err=count_err,
                                                         count_sky=count_sky)
 
-            self.science_imported = True
+            self.science_data_available = True
 
         if 'standard' in stype_split:
 
@@ -246,52 +282,7 @@ class OneDSpec():
                                                      count_err=count_err,
                                                      count_sky=count_sky)
 
-            self.standard_imported = True
-
-    def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
-        '''
-        Parameters
-        ----------
-        spec_id: int
-            The ID corresponding to the spectrum1D object
-        peaks: list of list or list of arrays
-            The pixel locations of the arc lines. Multiple traces of the arc
-            can be provided as list of list or list of arrays.
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        '''
-
-        stype_split = stype.split('+')
-
-        if 'science' in stype_split:
-
-            if self.science_imported:
-
-                if spec_id is not None:
-
-                    if spec_id not in list(self.science_spectrum_list.keys()):
-
-                        raise ValueError('The given spec_id does not exist.')
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
-
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].add_arc_lines(peaks=peaks)
-
-        if 'standard' in stype_split:
-
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].add_arc_lines(peaks=peaks)
+            self.standard_data_available = True
 
     def add_arc_spec(self, spec_id, arc_spec, stype='science+standard'):
         '''
@@ -310,7 +301,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_data_available:
 
                 if spec_id is not None:
 
@@ -334,14 +325,19 @@ class OneDSpec():
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec)
 
-    def add_arc(self, arc, spec_id=None, stype='science+standard'):
+    def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
         '''
-        arc: 2D numpy array (M x N) OR astropy.io.fits object
-            2D spectral image in either format
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum1D object
+        peaks: list of list or list of arrays
+            The pixel locations of the arc lines. Multiple traces of the arc
+            can be provided as list of list or list of arrays.
         stype: string
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -351,7 +347,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_data_available:
 
                 if spec_id is not None:
 
@@ -370,13 +366,63 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    self.science_spectrum_list[i].add_arc(arc=arc)
+                    self.science_spectrum_list[i].add_arc_lines(peaks=peaks)
+
+            self.science_arc_lines_available = True
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
-                self.standard_spectrum_list[0].add_arc(arc=arc)
+                self.standard_spectrum_list[0].add_arc_lines(peaks=peaks)
+
+            self.standard_arc_lines_available = True
+
+    def add_arc(self, arc, spec_id=None, stype='science+standard'):
+        '''
+
+        The add_arc() can be used without science data if traces are added
+        manually with add_trace().
+
+        Parameters
+        ----------
+        arc: 2D numpy array (M x N) OR astropy.io.fits object
+            2D spectral image in either format
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if spec_id is not None:
+
+                if spec_id not in list(self.science_spectrum_list.keys()):
+
+                    raise ValueError('The given spec_id does not exist.')
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            for i in spec_id:
+
+                self.science_spectrum_list[i].add_arc(arc=arc)
+
+            self.science_arc_available = True
+
+        if 'standard' in stype_split:
+
+            self.standard_spectrum_list[0].add_arc(arc=arc)
+
+            self.standard_arc_available = True
 
     def add_trace(self,
                   trace,
@@ -409,7 +455,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_available:
 
                 if spec_id is not None:
 
@@ -433,14 +479,18 @@ class OneDSpec():
                         trace_sigma=trace_sigma,
                         pixel_list=pixel_list)
 
+            self.science_trace_available = True
+
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_available:
 
                 self.standard_spectrum_list[0].add_trace(
                     trace=trace,
                     trace_sigma=trace_sigma,
                     pixel_list=pixel_list)
+
+            self.standard_trace_available = True
 
     def add_fit_coeff(self,
                       fit_coeff,
@@ -466,7 +516,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_data_available:
 
                 if spec_id is not None:
 
@@ -488,12 +538,16 @@ class OneDSpec():
                     self.science_spectrum_list[i].add_fit_coeff(
                         fit_coeff=fit_coeff, fit_type=fit_type)
 
+            self.science_wavecal_polynomial_available = True
+
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_fit_coeff(
                     fit_coeff=fit_coeff, fit_type=fit_type)
+
+            self.standard_wavecal_polynomial_available = True
 
     def from_twodspec(self,
                       twodspec,
@@ -559,7 +613,9 @@ class OneDSpec():
                 self.science_wavecal[i].from_spectrum1D(
                     self.science_spectrum_list[i])
 
-            self.science_imported = True
+            self.science_data_available = True
+            self.science_arc_available = True
+            self.science_arc_spec_available = True
 
         if 'standard' in stype_split:
 
@@ -577,7 +633,9 @@ class OneDSpec():
                 self.standard_spectrum_list[0])
             self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
 
-            self.standard_imported = True
+            self.standard_data_available = True
+            self.standard_arc_available = True
+            self.standard_arc_spec_available = True
 
     def find_arc_lines(self,
                        spec_id=None,
@@ -649,7 +707,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_spec_available:
 
                 if spec_id is not None:
 
@@ -684,13 +742,15 @@ class OneDSpec():
                         filename=filename,
                         open_iframe=open_iframe)
 
+                self.science_arc_lines_available = True
+
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_spec_available:
 
                 self.standard_wavecal.find_arc_lines(
                     background=background,
@@ -708,9 +768,11 @@ class OneDSpec():
                     filename=filename,
                     open_iframe=open_iframe)
 
+                self.standard_arc_lines_available = True
+
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc spectrum/a are not imported.')
 
     def initialise_calibrator(self,
                               spec_id=None,
@@ -738,7 +800,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -774,11 +836,12 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError(
+                    'Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_lines_available:
 
                 if peaks is None:
 
@@ -797,7 +860,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum is not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -832,7 +895,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -859,11 +922,11 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_lines_available:
 
                 self.standard_wavecal.set_calibrator_properties(
                     num_pix=num_pix,
@@ -873,7 +936,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -917,7 +980,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -947,11 +1010,11 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_lines_available:
 
                 self.standard_wavecal.set_hough_properties(
                     num_slopes=num_slopes,
@@ -964,7 +1027,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -1015,7 +1078,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -1045,11 +1108,11 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_lines_available:
 
                 self.standard_wavecal.set_ransac_properties(
                     sample_size=sample_size,
@@ -1062,7 +1125,7 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def set_known_pairs(self,
                         spec_id=None,
@@ -1088,7 +1151,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -1111,17 +1174,17 @@ class OneDSpec():
 
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_arc_lines_available:
 
                 self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
 
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def load_user_atlas(self,
                         elements,
@@ -1179,7 +1242,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -1209,13 +1272,15 @@ class OneDSpec():
                         temperature=temperature,
                         relative_humidity=relative_humidity)
 
+                self.science_atlas_available = True
+
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
                 self.standard_wavecal.load_user_atlas(
                     elements=elements,
@@ -1228,9 +1293,11 @@ class OneDSpec():
                     temperature=temperature,
                     relative_humidity=relative_humidity)
 
+                self.standard_atlas_available = True
+
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def add_atlas(self,
                   elements,
@@ -1288,7 +1355,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_arc_lines_available:
 
                 if spec_id is not None:
 
@@ -1320,13 +1387,15 @@ class OneDSpec():
                         temperature=temperature,
                         relative_humidity=relative_humidity)
 
+                self.science_atlas_available = True
+
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_data_available:
 
                 self.standard_wavecal.add_atlas(
                     elements=elements,
@@ -1341,9 +1410,11 @@ class OneDSpec():
                     temperature=temperature,
                     relative_humidity=relative_humidity)
 
+                self.standard_atlas_available = True
+
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard arc lines are not available.')
 
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''
@@ -1360,7 +1431,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_atlas_available:
 
                 if spec_id is not None:
 
@@ -1381,19 +1452,23 @@ class OneDSpec():
 
                     self.science_wavecal[i].do_hough_transform()
 
+                self.science_hough_pairs_available = True
+
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_atlas_available:
 
                 self.standard_wavecal.do_hough_transform()
 
+                self.standard_hough_pairs_available = True
+
             else:
 
-                raise RuntimeError('Standard spectrum/a are not imported.')
+                raise RuntimeError('Standard atlas is not available.')
 
     def fit(self,
             spec_id=None,
@@ -1446,7 +1521,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_hough_pairs_available:
 
                 if spec_id is not None:
 
@@ -1476,13 +1551,15 @@ class OneDSpec():
                                                 savefig=savefig,
                                                 filename=filename)
 
+                self.science_wavecal_polynomial_available = True
+
             else:
 
-                raise RuntimeError('Science spectrum/a are not imported.')
+                raise RuntimeError('Science hough pairs are not available.')
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_hough_pairs_available:
 
                 self.standard_wavecal.fit(max_tries=max_tries,
                                           fit_deg=fit_deg,
@@ -1494,6 +1571,8 @@ class OneDSpec():
                                           display=display,
                                           savefig=savefig,
                                           filename=filename)
+
+                self.standard_wavecal_polynomial_available = True
 
             else:
 
@@ -1553,7 +1632,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_wavecal_polynomial_available:
 
                 if spec_id is not None:
 
@@ -1591,7 +1670,7 @@ class OneDSpec():
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_wavecal_polynomial_available:
 
                 self.standard_wavecal.refine_fit(fit_coeff=fit_coeff,
                                                  n_delta=n_delta,
@@ -1640,7 +1719,7 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if self.science_wavecal_polynomial_available:
 
                 if spec_id is not None:
 
@@ -1711,6 +1790,7 @@ class OneDSpec():
                                              count_sky_resampled)
 
                 self.science_wavelength_calibrated = True
+                self.science_wavelength_resampled = True
 
             else:
 
@@ -1718,7 +1798,7 @@ class OneDSpec():
 
         if 'standard' in stype_split:
 
-            if self.standard_imported:
+            if self.standard_wavecal_polynomial_available:
 
                 spec = self.standard_spectrum_list[0]
 
@@ -1770,6 +1850,7 @@ class OneDSpec():
                                          count_sky_resampled)
 
                 self.standard_wavelength_calibrated = True
+                self.standard_wavelength_resampled = True
 
             else:
 
@@ -1906,6 +1987,7 @@ class OneDSpec():
                                          mask_range=mask_range,
                                          mask_fit_order=mask_fit_order,
                                          mask_fit_size=mask_fit_size)
+        self.sensitivity_curve_available = True
 
     def save_sensitivity_func(self, filename='sensitivity_func.npy'):
         '''
@@ -1930,6 +2012,7 @@ class OneDSpec():
         '''
 
         self.fluxcal.add_sensitivity_func(sensitivity_func=sensitivity_func)
+        self.sensitivity_curve_available = True
 
     def inspect_sensitivity(self,
                             display=True,
@@ -1965,14 +2048,16 @@ class OneDSpec():
 
         '''
 
-        self.fluxcal.inspect_sensitivity(renderer=renderer,
-                                         width=width,
-                                         height=height,
-                                         return_jsonstring=return_jsonstring,
-                                         display=display,
-                                         save_iframe=save_iframe,
-                                         filename=filename,
-                                         open_iframe=open_iframe)
+        if self.sensitivity_curve_available:
+
+            self.fluxcal.inspect_sensitivity(renderer=renderer,
+                                            width=width,
+                                            height=height,
+                                            return_jsonstring=return_jsonstring,
+                                            display=display,
+                                            save_iframe=save_iframe,
+                                            filename=filename,
+                                            open_iframe=open_iframe)
 
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
         '''
@@ -1987,37 +2072,39 @@ class OneDSpec():
 
         stype_split = stype.split('+')
 
-        if 'science' in stype_split:
+        if self.sensitivity_curve_available:
 
-            if spec_id is not None:
+            if 'science' in stype_split:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if spec_id is not None:
 
-                    raise ValueError('The given spec_id does not exist.')
+                    if spec_id not in list(self.science_spectrum_list.keys()):
 
-            else:
+                        raise ValueError('The given spec_id does not exist.')
 
-                # if spec_id is None, contraints are applied to all
-                #  calibrators
-                spec_id = list(self.science_spectrum_list.keys())
+                else:
 
-            if isinstance(spec_id, int):
+                    # if spec_id is None, contraints are applied to all
+                    #  calibrators
+                    spec_id = list(self.science_spectrum_list.keys())
 
-                spec_id = [spec_id]
+                if isinstance(spec_id, int):
 
-            for i in spec_id:
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    self.fluxcal.apply_flux_calibration(
+                        target_spectrum1D=self.science_spectrum_list[i])
+
+                self.science_flux_calibrated = True
+
+            if 'standard' in stype_split:
 
                 self.fluxcal.apply_flux_calibration(
-                    target_spectrum1D=self.science_spectrum_list[i])
+                    target_spectrum1D=self.standard_spectrum_list[0])
 
-            self.science_flux_calibrated = True
-
-        if 'standard' in stype_split:
-
-            self.fluxcal.apply_flux_calibration(
-                target_spectrum1D=self.standard_spectrum_list[0])
-
-            self.standard_flux_calibrated = True
+                self.standard_flux_calibrated = True
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
@@ -2562,39 +2649,35 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, contraints are applied to all
+                #  calibrators
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, contraints are applied to all
-                    #  calibrators
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].create_fits(
-                        output=output,
-                        recreate=recreate,
-                        empty_primary_hdu=empty_primary_hdu)
-
-        if 'standard' in stype_split:
-
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].create_fits(
+                self.science_spectrum_list[i].create_fits(
                     output=output,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu)
+
+        if 'standard' in stype_split:
+
+            self.standard_spectrum_list[0].create_fits(
+                output=output,
+                recreate=recreate,
+                empty_primary_hdu=empty_primary_hdu)
 
     def modify_trace_header(self,
                             idx,
@@ -2609,35 +2692,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_trace_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_trace_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_trace_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_trace_header(
+                idx, method, *args)
 
     def modify_count_header(self,
                             idx,
@@ -2652,35 +2730,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_count_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_count_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_count_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_count_header(
+                idx, method, *args)
 
     def modify_weight_map_header(self,
                                  idx,
@@ -2695,35 +2768,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_weight_map_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_weight_map_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_weight_map_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_weight_map_header(
+                idx, method, *args)
 
     def modify_count_resampled_header(self,
                                       idx,
@@ -2738,35 +2806,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[
-                        i].modify_count_resampled_header(idx, method, *args)
+                self.science_spectrum_list[
+                    i].modify_count_resampled_header(idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_count_resampled_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_count_resampled_header(
+                idx, method, *args)
 
     def modify_arc_spec_header(self,
                                idx,
@@ -2781,35 +2844,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_arc_spec_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_arc_spec_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_arc_spec_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_arc_spec_header(
+                idx, method, *args)
 
     def modify_wavecal_header(self,
                               idx,
@@ -2824,35 +2882,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_wavecal_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_wavecal_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_wavecal_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_wavecal_header(
+                idx, method, *args)
 
     def modify_wavelength_header(self,
                                  idx,
@@ -2867,35 +2920,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_wavelength_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_wavelength_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_wavelength_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_wavelength_header(
+                idx, method, *args)
 
     def modify_sensitivity_header(self,
                                   idx,
@@ -2910,35 +2958,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_sensitivity_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_sensitivity_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_sensitivity_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_sensitivity_header(
+                idx, method, *args)
 
     def modify_flux_header(self,
                            idx,
@@ -2953,35 +2996,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_flux_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_flux_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_flux_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_flux_header(
+                idx, method, *args)
 
     def modify_sensitibity_resampled_header(self,
                                             idx,
@@ -2996,36 +3034,31 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[
-                        i].modify_sensitivity_resampled_header(
-                            idx, method, *args)
+                self.science_spectrum_list[
+                    i].modify_sensitivity_resampled_header(
+                        idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[
-                    0].modify_sensitivity_resampled_header(idx, method, *args)
+            self.standard_spectrum_list[
+                0].modify_sensitivity_resampled_header(idx, method, *args)
 
     def modify_flux_resampled_header(self,
                                      idx,
@@ -3040,35 +3073,30 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].modify_flux_resampled_header(
-                        idx, method, *args)
+                self.science_spectrum_list[i].modify_flux_resampled_header(
+                    idx, method, *args)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].modify_flux_resampled_header(
-                    idx, method, *args)
+            self.standard_spectrum_list[0].modify_flux_resampled_header(
+                idx, method, *args)
 
     def save_fits(self,
                   spec_id=None,
@@ -3143,45 +3171,41 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, contraints are applied to all
+                #  calibrators
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, contraints are applied to all
-                    #  calibrators
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
+                filename_i = filename + '_science_' + str(i)
 
-                    filename_i = filename + '_science_' + str(i)
-
-                    self.science_spectrum_list[i].save_fits(
-                        output=output,
-                        filename=filename_i,
-                        overwrite=overwrite,
-                        recreate=recreate,
-                        empty_primary_hdu=empty_primary_hdu)
-
-        if 'standard' in stype_split:
-
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].save_fits(
+                self.science_spectrum_list[i].save_fits(
                     output=output,
-                    filename=filename + '_standard',
+                    filename=filename_i,
                     overwrite=overwrite,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu)
+
+        if 'standard' in stype_split:
+
+            self.standard_spectrum_list[0].save_fits(
+                output=output,
+                filename=filename + '_standard',
+                overwrite=overwrite,
+                recreate=recreate,
+                empty_primary_hdu=empty_primary_hdu)
 
     def save_csv(self,
                  spec_id=None,
@@ -3252,38 +3276,33 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_imported:
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if spec_id not in list(self.science_spectrum_list.keys()):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    raise ValueError('The given spec_id does not exist.')
 
-                        raise ValueError('The given spec_id does not exist.')
+            else:
 
-                else:
+                # if spec_id is None, contraints are applied to all
+                #  calibrators
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, contraints are applied to all
-                    #  calibrators
-                    spec_id = list(self.science_spectrum_list.keys())
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
+                filename_i = filename + '_science_' + str(i)
 
-                    filename_i = filename + '_science_' + str(i)
-
-                    self.science_spectrum_list[i].save_csv(output=output,
-                                                           filename=filename_i,
-                                                           overwrite=overwrite)
+                self.science_spectrum_list[i].save_csv(output=output,
+                                                        filename=filename_i,
+                                                        overwrite=overwrite)
 
         if 'standard' in stype_split:
 
-            # If flux is calibrated
-            if self.standard_imported:
-
-                self.standard_spectrum_list[0].save_csv(output=output,
-                                                        filename=filename +
-                                                        '_standard',
-                                                        overwrite=overwrite)
+            self.standard_spectrum_list[0].save_csv(output=output,
+                                                    filename=filename +
+                                                    '_standard',
+                                                    overwrite=overwrite)
