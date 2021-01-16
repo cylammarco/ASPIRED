@@ -2320,7 +2320,7 @@ class OneDSpec():
         Towards completion, this function should allow atmospheric
         extinction correction on any meaningful combination of
         (1) science and/or standard spectrum/a, and (2) airmass of either
-        or both science and standard observations. 
+        or both science and standard observations.
 
         Parameters
         ----------
@@ -2330,8 +2330,8 @@ class OneDSpec():
             - A string input will be used as the header keyword of the airmass,
               if the keyword or header is not found, correction will not be
               performed.
-            - A floatpoint value will override the other two and directly be use
-              as the airmass
+            - A floatpoint value will override the other two and directly be
+              use as the airmass
         standard_airmass: float, str or None (Default: None)
             The same as science_airmass.
         spec_id: int or None (default: None)
@@ -2343,8 +2343,8 @@ class OneDSpec():
 
             logging.error(
                 "Atmospheric extinction correction is not configured, "
-                "sensitivity curve will be generated without extinction correction."
-            )
+                "sensitivity curve will be generated without extinction "
+                "correction.")
 
         else:
 
@@ -2356,23 +2356,25 @@ class OneDSpec():
 
                     if np.isfinite(standard_airmass):
 
-                        standard_am = airmass
+                        standard_am = standard_airmass
                         logging.info(
                             'Airmass is set to be {}.'.format(standard_am))
 
-                    if isinstance(airmass, str):
+                    if isinstance(standard_airmass, str):
 
                         try:
 
                             standard_am = standard_spec.spectrum_header[
                                 standard_airmass]
 
-                        except:
+                        except Exception as e:
+
+                            logging.warning(str(e))
 
                             standard_am = 1.0
                             logging.error(
-                                'Keyword for airmass: {} cannot be found in header.'
-                                .format(standard_airmass))
+                                'Keyword for airmass: {} cannot be found '
+                                'in header.'.format(standard_airmass))
                             logging.error('Airmass is set to be 1.0')
 
                 else:
@@ -2381,12 +2383,14 @@ class OneDSpec():
 
                         standard_am = standard_spec.spectrum_header['AIRMASS']
 
-                    except:
+                    except Exception as e:
+
+                        logging.warning(str(e))
 
                         standard_am = 1.0
                         logging.error(
-                            'Keyword for airmass: AIRMASS cannot be found in header.'
-                        )
+                            'Keyword for airmass: AIRMASS cannot be found '
+                            'in header.')
                         logging.error('Airmass is set to be 1.0')
 
                 if spec_id is not None:
@@ -2421,22 +2425,26 @@ class OneDSpec():
 
                             try:
 
-                                science_am = spec.spectrum_header[
+                                science_am = science_spec.spectrum_header[
                                     science_airmass]
 
-                            except:
+                            except Exception as e:
 
+                                logging.warning(str(e))
                                 science_am = 1.0
+
                     else:
 
                         if science_airmass is None:
 
                             try:
 
-                                science_am = spec.spectrum_header['AIRMASS']
+                                science_am =\
+                                    science_spec.spectrum_header['AIRMASS']
 
-                            except:
+                            except Exception as e:
 
+                                logging.warning(str(e))
                                 science_am = 1.0
 
                     if science_am is None:
@@ -2466,7 +2474,8 @@ class OneDSpec():
                         standard_flux_resampled_extinction_factor)
 
                     standard_spec.flux /= standard_flux_extinction_factor
-                    standard_spec.flux_resampled /= standard_flux_resampled_extinction_factor
+                    standard_spec.flux_resampled /=\
+                        standard_flux_resampled_extinction_factor
 
                 self.science_atmospheric_extinction_corrected = True
                 self.standard_atmospheric_extinction_corrected = True
