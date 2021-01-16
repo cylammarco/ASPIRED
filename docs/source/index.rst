@@ -1,8 +1,3 @@
-.. ASPIRED documentation master file, created by
-   sphinx-quickstart on Thu Jan  9 11:38:33 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 How to Use The ASPIRED Documentation
 ====================================
 

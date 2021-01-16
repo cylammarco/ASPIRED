@@ -167,9 +167,7 @@ class OneDSpec():
         self.standard_wavelength_resampled = False
 
         self.atmospheric_extinction_correction_available = False
-
-        self.science_atmospheric_extinction_corrected = False
-        self.standard_atmospheric_extinction_corrected = False
+        self.atmospheric_extinction_corrected = False
 
         self.sensitivity_curve_available = False
 
@@ -2473,12 +2471,7 @@ class OneDSpec():
                         science_flux_resampled_extinction_factor /
                         standard_flux_resampled_extinction_factor)
 
-                    standard_spec.flux /= standard_flux_extinction_factor
-                    standard_spec.flux_resampled /=\
-                        standard_flux_resampled_extinction_factor
-
-                self.science_atmospheric_extinction_corrected = True
-                self.standard_atmospheric_extinction_corrected = True
+                self.atmospheric_extinction_corrected = True
                 logging.info('Atmospheric extinction is corrected.')
 
     def inspect_reduced_spectrum(self,
