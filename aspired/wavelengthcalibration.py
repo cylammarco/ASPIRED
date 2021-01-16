@@ -38,6 +38,21 @@ class WavelengthCalibration():
         ----------
         verbose: boolean
             Set to True to suppress all verbose warnings.
+        logger_name: str (Default: OneDSpec)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARN)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity:
+            CRITICAL, DEBUG, INFO, WARNING, ERROR
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to logging.warning to screen
+            only.
 
         '''
 

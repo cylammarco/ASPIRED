@@ -194,6 +194,11 @@ class Spectrum1D():
         self.wave_literature = None
         self.flux_literature = None
 
+        self.standard_flux_extinction_fraction = None
+        self.standard_flux_resampled_extinction_fraction = None
+        self.science_flux_extinction_fraction = None
+        self.science_flux_resampled_extinction_fraction = None
+
         self.trace_hdulist = None
         self.count_hdulist = None
         self.arc_spec_hdulist = None

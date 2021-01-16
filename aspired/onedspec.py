@@ -2,11 +2,13 @@ import copy
 import datetime
 import logging
 import os
+import pkg_resources
 
 import numpy as np
 from plotly import graph_objects as go
 from plotly import io as pio
 from spectres import spectres
+from scipy.interpolate import interp1d
 
 from .wavelengthcalibration import WavelengthCalibration
 from .fluxcalibration import FluxCalibration
@@ -163,6 +165,11 @@ class OneDSpec():
 
         self.science_wavelength_resampled = False
         self.standard_wavelength_resampled = False
+
+        self.atmospheric_extinction_correction_available = False
+
+        self.science_atmospheric_extinction_corrected = False
+        self.standard_atmospheric_extinction_corrected = False
 
         self.sensitivity_curve_available = False
 
@@ -1996,6 +2003,43 @@ class OneDSpec():
 
             self.standard_wavelength_calibrated = True
 
+    def set_atmospheric_extinction(self, location='orm', extinction_itp=None):
+        '''
+        **EXPERIMENTAL&**
+
+        The ORM atmospheric extinction correction chart is taken from
+        http://www.ing.iac.es/astronomy/observing/manuals/ps/tech_notes/tn031.pdf
+
+        Parameters
+        ----------
+        location: str (Default: orm)
+            Location of the observatory, currently contains:
+            (1) ORM - Roque de los Muchachos Observatory (ORM)
+        extinction_itp: callable function (Default: None)
+            Input wavelength in Angstrom, output magnitude of extinction per
+            airmass. It will override the 'location'.
+
+        '''
+
+        if (extinction_itp is not None) and (callable(extinction_itp)):
+
+            self.extinction_itp = extinction_itp
+            logging.info('Manually extinction correction function is loaded.')
+
+        else:
+
+            filename = pkg_resources.resource_filename(
+                'aspired', 'extinction/{}_atm_extinct.txt'.format(location))
+            extinction_table = np.loadtxt(filename, delimiter=',')
+            self.extinction_itp = interp1d(extinction_table[:, 0],
+                                           extinction_table[:, 1],
+                                           kind='cubic',
+                                           fill_value='extrapolate')
+            logging.info('{} extinction correction function is loaded.'.format(
+                location))
+
+        self.atmospheric_extinction_correction_available = True
+
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
         Parameters
@@ -2085,7 +2129,10 @@ class OneDSpec():
                             mask_range=[[6850, 6960], [7575, 7700],
                                         [8925, 9050], [9265, 9750]],
                             mask_fit_order=1,
-                            mask_fit_size=1):
+                            mask_fit_size=1,
+                            extinction_correction=False,
+                            airmass=None,
+                            return_function=False):
         '''
         Parameters
         ----------
@@ -2117,15 +2164,25 @@ class OneDSpec():
 
         '''
 
-        self.fluxcal.compute_sensitivity(k=k,
-                                         smooth=smooth,
-                                         method=method,
-                                         slength=slength,
-                                         sorder=sorder,
-                                         mask_range=mask_range,
-                                         mask_fit_order=mask_fit_order,
-                                         mask_fit_size=mask_fit_size)
-        self.sensitivity_curve_available = True
+        if self.standard_wavelength_calibrated:
+
+            self.fluxcal.compute_sensitivity(k=k,
+                                             smooth=smooth,
+                                             method=method,
+                                             slength=slength,
+                                             sorder=sorder,
+                                             mask_range=mask_range,
+                                             mask_fit_order=mask_fit_order,
+                                             mask_fit_size=mask_fit_size,
+                                             return_function=return_function)
+            self.sensitivity_curve_available = True
+
+        else:
+
+            error_msg = "Standard star is not wavelength calibrated, " +\
+                "sensitivity curve cannot be computed."
+            logging.critial(error_msg)
+            raise RuntimeError(error_msg)
 
     def save_sensitivity_func(self, filename='sensitivity_func.npy'):
         '''
@@ -2250,6 +2307,170 @@ class OneDSpec():
                     self.standard_spectrum_list[0].spectrum_header)
 
                 self.standard_flux_calibrated = True
+
+    def apply_atmospheric_extinction_correction(self,
+                                                science_airmass=None,
+                                                standard_airmass=None,
+                                                spec_id=None):
+        '''
+        **EXPERIMENTAL&**
+        This is the first step in allowing atmospheric extinction correction
+        of the spectra. Currently it only works if both the science and
+        standard spectra are present and both airmass values are provided.
+        Towards completion, this function should allow atmospheric
+        extinction correction on any meaningful combination of
+        (1) science and/or standard spectrum/a, and (2) airmass of either
+        or both science and standard observations. 
+
+        Parameters
+        ----------
+        science_airmass: float, str or None (Default: None)
+            - If None, it will look for the airmass in the header, if the
+              keyword AIRMASS is not found, correction will not be performed.
+            - A string input will be used as the header keyword of the airmass,
+              if the keyword or header is not found, correction will not be
+              performed.
+            - A floatpoint value will override the other two and directly be use
+              as the airmass
+        standard_airmass: float, str or None (Default: None)
+            The same as science_airmass.
+        spec_id: int or None (default: None)
+            The ID corresponding to the spectrum1D object
+
+        '''
+
+        if not self.atmospheric_extinction_correction_available:
+
+            logging.error(
+                "Atmospheric extinction correction is not configured, "
+                "sensitivity curve will be generated without extinction correction."
+            )
+
+        else:
+
+            if self.science_flux_calibrated & self.standard_flux_calibrated:
+
+                standard_spec = self.standard_spectrum_list[0]
+
+                if standard_airmass is not None:
+
+                    if np.isfinite(standard_airmass):
+
+                        standard_am = airmass
+                        logging.info(
+                            'Airmass is set to be {}.'.format(standard_am))
+
+                    if isinstance(airmass, str):
+
+                        try:
+
+                            standard_am = standard_spec.spectrum_header[
+                                standard_airmass]
+
+                        except:
+
+                            standard_am = 1.0
+                            logging.error(
+                                'Keyword for airmass: {} cannot be found in header.'
+                                .format(standard_airmass))
+                            logging.error('Airmass is set to be 1.0')
+
+                else:
+
+                    try:
+
+                        standard_am = standard_spec.spectrum_header['AIRMASS']
+
+                    except:
+
+                        standard_am = 1.0
+                        logging.error(
+                            'Keyword for airmass: AIRMASS cannot be found in header.'
+                        )
+                        logging.error('Airmass is set to be 1.0')
+
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        logging.critical(error_msg)
+                        raise TypeError(error_msg)
+
+                else:
+
+                    # if spec_id is None, contraints are applied to all
+                    #  calibrators
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    science_spec = self.science_spectrum_list[i]
+
+                    if science_airmass is not None:
+
+                        if np.isfinite(science_airmass):
+
+                            science_am = science_airmass
+
+                        if isinstance(science_airmass, str):
+
+                            try:
+
+                                science_am = spec.spectrum_header[
+                                    science_airmass]
+
+                            except:
+
+                                science_am = 1.0
+                    else:
+
+                        if science_airmass is None:
+
+                            try:
+
+                                science_am = spec.spectrum_header['AIRMASS']
+
+                            except:
+
+                                science_am = 1.0
+
+                    if science_am is None:
+
+                        science_am = 1.0
+
+                    logging.info('Airmass is {}.'.format(science_am))
+
+                    # Get the atmospheric extinction correction factor
+                    science_flux_extinction_factor = 10.**(
+                        -(self.extinction_itp(science_spec.wave) * science_am)
+                        / 2.5)
+                    science_flux_resampled_extinction_factor = 10.**(
+                        -(self.extinction_itp(science_spec.wave_resampled) *
+                          science_am) / 2.5)
+                    standard_flux_extinction_factor = 10.**(
+                        -(self.extinction_itp(standard_spec.wave) *
+                          standard_am) / 2.5)
+                    standard_flux_resampled_extinction_factor = 10.**(
+                        -(self.extinction_itp(standard_spec.wave_resampled) *
+                          standard_am) / 2.5)
+
+                    science_spec.flux /= (science_flux_extinction_factor /
+                                          standard_flux_extinction_factor)
+                    science_spec.flux_resampled /= (
+                        science_flux_resampled_extinction_factor /
+                        standard_flux_resampled_extinction_factor)
+
+                    standard_spec.flux /= standard_flux_extinction_factor
+                    standard_spec.flux_resampled /= standard_flux_resampled_extinction_factor
+
+                self.science_atmospheric_extinction_corrected = True
+                self.standard_atmospheric_extinction_corrected = True
+                logging.info('Atmospheric extinction is corrected.')
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
