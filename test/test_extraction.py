@@ -22,9 +22,11 @@ def test_spectral_extraction():
     spatial_mask = np.arange(15, 85)
 
     # initialise the two spectral_reduction.TwoDSpec()
-    dummy_twodspec = spectral_reduction.TwoDSpec(dummy_data,
-                                                 spatial_mask=spatial_mask,
-                                                 spec_mask=spec_mask)
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_data,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_folder='test/test_output/')
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the
     # spatial_mask

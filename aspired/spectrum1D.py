@@ -1,10 +1,10 @@
+import datetime
+import logging
+import os
+
+import numpy as np
 from astropy.io import fits
 from scipy import interpolate as itp
-import datetime
-import warnings
-
-import os
-import numpy as np
 
 
 class Spectrum1D():
@@ -13,7 +13,70 @@ class Spectrum1D():
     extracted spectrum.
 
     '''
-    def __init__(self, spec_id=None):
+    def __init__(self,
+                 spec_id=None,
+                 verbose=True,
+                 logger_name='Spectrum1D',
+                 log_level='warn',
+                 log_file_folder='default',
+                 log_file_name='default'):
+        """
+        Parameters
+        ----------
+        verbose: boolean
+            Set to True to suppress all verbose warnings.
+        logger_name: str (Default: OneDSpec)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARN)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity:
+            CRITICAL, DEBUG, INFO, WARNING, ERROR
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to logging.warning to screen
+            only.
+
+        """
+
+        # Set-up logger
+        logger = logging.getLogger(logger_name)
+        if (log_level == "CRITICAL") or (not verbose):
+            logging.basicConfig(level=logging.CRITICAL)
+        if log_level == "ERROR":
+            logging.basicConfig(level=logging.ERROR)
+        if log_level == "WARNING":
+            logging.basicConfig(level=logging.WARNING)
+        if log_level == "INFO":
+            logging.basicConfig(level=logging.INFO)
+        if log_level == "DEBUG":
+            logging.basicConfig(level=logging.DEBUG)
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
+            '%(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S')
+
+        if log_file_name is None:
+            # Only logging.warning log to screen
+            handler = logging.StreamHandler()
+        else:
+            if log_file_name == 'default':
+                log_file_name = '{}_{}.log'.format(
+                    logger_name,
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+            # Save log to file
+            if log_file_folder == 'default':
+                log_file_folder = ''
+
+            handler = logging.FileHandler(
+                os.path.join(log_file_folder, log_file_name), 'a+')
+
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
         # spectrum ID
         if spec_id is None:
@@ -21,13 +84,19 @@ class Spectrum1D():
         elif type(spec_id) == int:
             self.spec_id = spec_id
         else:
-            raise ValueError(
-                'spec_id has to be of type int, {} is given.'.format(
-                    type(spec_id)))
+            error_msg = 'spec_id has to be of type int, ' +\
+                '{} is given.'.format(type(spec_id))
+            logging.critical(error_msg)
+            raise ValueError(error_msg)
 
         # Reduction Meta-data
         self.time_of_reduction = datetime.datetime.now().strftime(
             "%Y_%m_%d_%H_%M_%S")
+
+        # Raw image headers
+        self.spectrum_header = None
+        self.arc_header = None
+        self.standard_header = None
 
         # Detector properties
         self.gain = None
@@ -233,6 +302,30 @@ class Spectrum1D():
 
                         # if not overwrite, do nothing
                         pass
+
+    def add_spectrum_header(self, header):
+
+        self.spectrum_header = header
+
+    def remove_spectrum_header(self):
+
+        self.spectrum_header = None
+
+    def add_standard_header(self, header):
+
+        self.standard_header = header
+
+    def remove_standard_header(self):
+
+        self.standard_header = None
+
+    def add_arc_header(self, header):
+
+        self.arc_header = header
+
+    def remove_arc_header(self):
+
+        self.arc_header = None
 
     def add_trace(self, trace, trace_sigma, pixel_list=None):
 
@@ -969,6 +1062,11 @@ class Spectrum1D():
             trace_ImageHDU = fits.ImageHDU(self.trace)
             trace_sigma_ImageHDU = fits.ImageHDU(self.trace_sigma)
 
+            # Use the header of the spectrum
+            if self.spectrum_header is not None:
+                trace_ImageHDU.header += self.spectrum_header
+                trace_sigma_ImageHDU.header += self.spectrum_header
+
             # Create an empty HDU list and populate with ImageHDUs
             self.trace_hdulist = fits.HDUList()
             self.trace_hdulist += [trace_ImageHDU]
@@ -994,10 +1092,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('trace ImageHDU cannot be created.')
+            logging.error('trace ImageHDU cannot be created.')
             self.trace_hdulist = None
 
     def create_count_fits(self):
@@ -1008,6 +1106,12 @@ class Spectrum1D():
             count_ImageHDU = fits.ImageHDU(self.count)
             count_err_ImageHDU = fits.ImageHDU(self.count_err)
             count_sky_ImageHDU = fits.ImageHDU(self.count_sky)
+
+            # Use the header of the spectrum
+            if self.spectrum_header is not None:
+                count_ImageHDU.header += self.spectrum_header
+                count_err_ImageHDU.header += self.spectrum_header
+                count_sky_ImageHDU.header += self.spectrum_header
 
             # Create an empty HDU list and populate with ImageHDUs
             self.count_hdulist = fits.HDUList()
@@ -1053,10 +1157,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('count ImageHDU cannot be created.')
+            logging.error('count ImageHDU cannot be created.')
             self.count_hdulist = None
 
     def create_weight_map_fits(self):
@@ -1065,6 +1169,10 @@ class Spectrum1D():
 
             # Put the data in ImageHDUs
             weight_map_ImageHDU = fits.ImageHDU(self.var)
+
+            # Use the header of the spectrum
+            if self.spectrum_header is not None:
+                weight_map_ImageHDU.header += self.spectrum_header
 
             # Create an empty HDU list and populate with ImageHDUs
             self.weight_map_hdulist = fits.HDUList()
@@ -1089,10 +1197,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('A weight map ImageHDU cannot be created.')
+            logging.error('A weight map ImageHDU cannot be created.')
             self.weight_map_hdulist = None
 
     def create_count_resampled_fits(self):
@@ -1105,6 +1213,12 @@ class Spectrum1D():
                 self.count_err_resampled)
             count_sky_resampled_ImageHDU = fits.ImageHDU(
                 self.count_sky_resampled)
+
+            # Use the header of the spectrum
+            if self.spectrum_header is not None:
+                count_resampled_ImageHDU.header += self.spectrum_header
+                count_err_resampled_ImageHDU.header += self.spectrum_header
+                count_sky_resampled_ImageHDU.header += self.spectrum_header
 
             # Create an empty HDU list and populate with ImageHDUs
             self.count_resampled_hdulist = fits.HDUList()
@@ -1153,10 +1267,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('count_resampled ImageHDU cannot be created.')
+            logging.error('count_resampled ImageHDU cannot be created.')
             self.count_resampled_hdulist = None
 
     def create_arc_spec_fits(self):
@@ -1167,6 +1281,12 @@ class Spectrum1D():
             arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
             peaks_ImageHDU = fits.ImageHDU(self.peaks)
             peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined)
+
+            # Use the header of the arc
+            if self.arc_header is not None:
+                arc_spec_ImageHDU.header += self.arc_header
+                peaks_ImageHDU.header += self.arc_header
+                peaks_refined_ImageHDU.header += self.arc_header
 
             # Create an empty HDU list and populate with ImageHDUs
             self.arc_spec_hdulist = fits.HDUList()
@@ -1196,10 +1316,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('arc_spec ImageHDU cannot be created.')
+            logging.error('arc_spec ImageHDU cannot be created.')
             self.arc_spec_hdulist = None
 
     def create_wavecal_fits(self):
@@ -1208,6 +1328,10 @@ class Spectrum1D():
 
             # Put the data in an ImageHDU
             wavecal_ImageHDU = fits.ImageHDU(self.fit_coeff)
+
+            # Use the header of the arc
+            if self.arc_header is not None:
+                wavecal_ImageHDU.header.extend(self.arc_header)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.wavecal_hdulist = fits.HDUList()
@@ -1251,10 +1375,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('wavecal ImageHDU cannot be created.')
+            logging.error('wavecal ImageHDU cannot be created.')
             self.wavecal_hdulist = None
 
     def create_wavelength_fits(self):
@@ -1263,6 +1387,10 @@ class Spectrum1D():
 
             # Put the data in an ImageHDU
             wavelength_ImageHDU = fits.ImageHDU(self.wave)
+
+            # Use the header of the arc
+            if self.arc_header is not None:
+                wavelength_ImageHDU.header.extend(self.arc_header)
 
             # Create an empty HDU list and populate with the ImageHDU
             self.wavelength_hdulist = fits.HDUList()
@@ -1281,10 +1409,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('wavelength ImageHDU cannot be created.')
+            logging.error('wavelength ImageHDU cannot be created.')
             self.wavelength_hdulist = None
 
     def create_sensitivity_fits(self):
@@ -1293,6 +1421,10 @@ class Spectrum1D():
 
             # Put the data in ImageHDUs
             sensitivity_ImageHDU = fits.ImageHDU(self.sensitivity)
+
+            # Use the header of the standard
+            if self.standard_header is not None:
+                sensitivity_ImageHDU.header.extend(self.standard_header)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.sensitivity_hdulist = fits.HDUList()
@@ -1309,10 +1441,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('sensitivity ImageHDU cannot be created.')
+            logging.error('sensitivity ImageHDU cannot be created.')
             self.sensitivity_hdulist = None
 
     def create_flux_fits(self):
@@ -1323,6 +1455,27 @@ class Spectrum1D():
             flux_ImageHDU = fits.ImageHDU(self.flux)
             flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
             flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if self.standard_header is not None:
+                if header is None:
+                    header = self.standard_header
+                else:
+                    header += self.standard_header
+
+            if self.arc_header is not None:
+                if header is None:
+                    header = self.arc_header
+                else:
+                    header += self.arc_header
+
+            if header is not None:
+                flux_ImageHDU.header += header
+                flux_err_ImageHDU.header += header
+                flux_sky_ImageHDU.header += header
 
             # Create an empty HDU list and populate with ImageHDUs
             self.flux_hdulist = fits.HDUList()
@@ -1360,10 +1513,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('flux ImageHDU cannot be created.')
+            logging.error('flux ImageHDU cannot be created.')
             self.flux_hdulist = None
 
     def create_sensitivity_resampled_fits(self):
@@ -1393,10 +1546,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('sensitivity ImageHDU cannot be created.')
+            logging.error('sensitivity ImageHDU cannot be created.')
             self.sensitivity_resampled_hdulist = None
 
     def create_flux_resampled_fits(self):
@@ -1409,6 +1562,27 @@ class Spectrum1D():
                 self.flux_err_resampled)
             flux_sky_resampled_ImageHDU = fits.ImageHDU(
                 self.flux_sky_resampled)
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if self.standard_header is not None:
+                if header is None:
+                    header = self.standard_header
+                else:
+                    header += self.standard_header
+
+            if self.arc_header is not None:
+                if header is None:
+                    header = self.arc_header
+                else:
+                    header += self.arc_header
+
+            if header is not None:
+                flux_resampled_ImageHDU.header += header
+                flux_err_resampled_ImageHDU.header += header
+                flux_sky_resampled_ImageHDU.header += header
 
             # Create an empty HDU list and populate with ImageHDUs
             self.flux_resampled_hdulist = fits.HDUList()
@@ -1452,10 +1626,10 @@ class Spectrum1D():
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.error(str(e))
 
             # Set it to None if the above failed
-            warnings.warn('flux_resampled ImageHDU cannot be created.')
+            logging.error('flux_resampled ImageHDU cannot be created.')
             self.flux_resampled_hdulist = None
 
     def remove_trace_fits(self):
@@ -1583,9 +1757,9 @@ class Spectrum1D():
             if 'weight_map' in output_split:
 
                 if not self.hdu_content['weight_map']:
-                    self.create_count_fits()
+                    self.create_weight_map_fits()
 
-                hdu_output += self.count_hdulist
+                hdu_output += self.weight_map_hdulist
                 self.hdu_content['weight_map'] = True
 
             if 'arc_spec' in output_split:

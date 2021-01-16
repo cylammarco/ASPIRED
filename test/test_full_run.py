@@ -25,16 +25,19 @@ def test_full_run():
 
     # Science frame
     lhs6328_frame = image_reduction.ImageReduction(
-        'test/test_data/sprat_LHS6328.list')
+        'test/test_data/sprat_LHS6328.list',
+        log_file_folder='test/test_output/')
     lhs6328_frame.reduce()
     lhs6328_frame.save_fits('test/test_output/test_full_run_standard_image',
                             overwrite=True)
 
-    lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
-                                                   spatial_mask=spatial_mask,
-                                                   spec_mask=spec_mask,
-                                                   cosmicray=True,
-                                                   readnoise=5.7)
+    lhs6328_twodspec = spectral_reduction.TwoDSpec(
+        lhs6328_frame,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        cosmicray=True,
+        readnoise=5.7,
+        log_file_folder='test/test_output/')
 
     lhs6328_twodspec.ap_trace(nspec=2, display=False)
 
@@ -80,21 +83,23 @@ def test_full_run():
         filename='test/test_output/test_full_run_extract')
 
     lhs6328_twodspec.save_fits(
-        filename='test/test_output/test_full_run_twospec',
-        overwrite=True)
+        filename='test/test_output/test_full_run_twospec', overwrite=True)
 
     # Standard frame
     standard_frame = image_reduction.ImageReduction(
-        'test/test_data/sprat_Hiltner102.list')
+        'test/test_data/sprat_Hiltner102.list',
+        log_file_folder='test/test_output/')
     standard_frame.reduce()
     standard_frame.save_fits('test/test_output/test_full_run_standard_image',
                              overwrite=True)
 
-    hilt102_twodspec = spectral_reduction.TwoDSpec(standard_frame,
-                                                   cosmicray=True,
-                                                   spatial_mask=spatial_mask,
-                                                   spec_mask=spec_mask,
-                                                   readnoise=5.7)
+    hilt102_twodspec = spectral_reduction.TwoDSpec(
+        standard_frame,
+        cosmicray=True,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        readnoise=5.7,
+        log_file_folder='test/test_output/')
 
     hilt102_twodspec.ap_trace(nspec=1, resample_factor=10, display=False)
 
@@ -118,7 +123,8 @@ def test_full_run():
     hilt102_twodspec.extract_arc_spec(display=False)
 
     # Handle 1D Science spectrum
-    lhs6328_onedspec = spectral_reduction.OneDSpec()
+    lhs6328_onedspec = spectral_reduction.OneDSpec(
+        log_file_folder='test/test_output/')
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
 
@@ -177,7 +183,8 @@ def test_full_run():
     # Modify FITS header for the trace
     lhs6328_onedspec.modify_trace_header(0, 'set', 'COMMENT', 'Hello World!')
 
-    print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)
+    print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].
+          header['COMMENT'])
 
     # Create more FITS
     lhs6328_onedspec.create_fits(output='trace+count+arc_spec+wavecal',
@@ -185,7 +192,8 @@ def test_full_run():
                                  recreate=False)
 
     # Check the modified headers are not overwritten
-    print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)
+    print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].
+          header['COMMENT'])
 
     # Save as FITS (and create the ones that were not created earlier)
     lhs6328_onedspec.save_fits(
@@ -197,7 +205,8 @@ def test_full_run():
         overwrite=True)
 
     # Check the modified headers are still not overwritten
-    print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].header)
+    print(lhs6328_onedspec.science_spectrum_list[0].trace_hdulist[0].
+          header['COMMENT'])
 
     # Create more FITS
     lhs6328_onedspec.create_fits(output='trace',

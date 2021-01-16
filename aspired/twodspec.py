@@ -115,7 +115,11 @@ class TwoDSpec:
         self.seeing = 1.
         self.exptime = 1.
 
-        self.verbose = False
+        self.verbose = verbose
+        self.logger_name = logger_name
+        self.log_level = log_level
+        self.log_file_folder = log_file_folder
+        self.log_file_name = log_file_name
 
         # Default keywords to be searched in the order in the list
         self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
@@ -351,7 +355,7 @@ class TwoDSpec:
 
             else:
 
-                logging.warn(
+                logging.warning(
                     'readnoise has to be None, a numeric value or the ' +
                     'FITS header keyword, ' + str(readnoise) + ' is ' +
                     'given. It is set to 0.')
@@ -372,14 +376,14 @@ class TwoDSpec:
 
                 else:
 
-                    logging.warn('Read Noise value cannot be identified. ' +
-                                 'It is set to 0.')
+                    logging.warning('Read Noise value cannot be identified. ' +
+                                    'It is set to 0.')
 
             else:
 
-                logging.warn('Header is not provided. ' +
-                             'Read Noise value is not provided. ' +
-                             'It is set to 0.')
+                logging.warning('Header is not provided. ' +
+                                'Read Noise value is not provided. ' +
+                                'It is set to 0.')
 
         # Get the gain
         if gain is not None:
@@ -398,9 +402,10 @@ class TwoDSpec:
 
             else:
 
-                logging.warn('Gain has to be None, a numeric value or the ' +
-                             'FITS header keyword, ' + str(gain) + ' is ' +
-                             'given. It is set to 1.')
+                logging.warning(
+                    'Gain has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(gain) + ' is ' +
+                    'given. It is set to 1.')
         else:
 
             # if None is given and header is provided, check if the read noise
@@ -416,14 +421,14 @@ class TwoDSpec:
 
                 else:
 
-                    logging.warn('Gain value cannot be identified. ' +
-                                 'It is set to 1.')
+                    logging.warning('Gain value cannot be identified. ' +
+                                    'It is set to 1.')
 
             else:
 
-                logging.warn('Header is not provide. ' +
-                             'Gain value is not provided. ' +
-                             'It is set to 1.')
+                logging.warning('Header is not provide. ' +
+                                'Gain value is not provided. ' +
+                                'It is set to 1.')
 
         # Get the Seeing
         if seeing is not None:
@@ -442,9 +447,10 @@ class TwoDSpec:
 
             else:
 
-                logging.warn('Seeing has to be None, a numeric value or the ' +
-                             'FITS header keyword, ' + str(seeing) + ' is ' +
-                             'given. It is set to 1.')
+                logging.warning(
+                    'Seeing has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(seeing) + ' is ' +
+                    'given. It is set to 1.')
 
         else:
 
@@ -462,14 +468,14 @@ class TwoDSpec:
 
                 else:
 
-                    logging.warn('Seeing value cannot be identified. ' +
-                                 'It is set to 1.')
+                    logging.warning('Seeing value cannot be identified. ' +
+                                    'It is set to 1.')
 
             else:
 
-                logging.warn('Header is not provide. ' +
-                             'Seeing value is not provided. ' +
-                             'It is set to 1.')
+                logging.warning('Header is not provide. ' +
+                                'Seeing value is not provided. ' +
+                                'It is set to 1.')
 
         # Get the Exposure Time
         if exptime is not None:
@@ -488,7 +494,7 @@ class TwoDSpec:
 
             else:
 
-                logging.warn(
+                logging.warning(
                     'Exposure Time has to be None, a numeric value or the ' +
                     'FITS header keyword, ' + str(exptime) + ' is ' +
                     'given. It is set to 1.')
@@ -509,14 +515,15 @@ class TwoDSpec:
 
                 else:
 
-                    logging.warn('Exposure Time value cannot be identified. ' +
-                                 'It is set to 1.')
+                    logging.warning(
+                        'Exposure Time value cannot be identified. ' +
+                        'It is set to 1.')
 
             else:
 
-                logging.warn('Header is not provide. ' +
-                             'Exposure Time value is not provided. ' +
-                             'It is set to 1.')
+                logging.warning('Header is not provide. ' +
+                                'Exposure Time value is not provided. ' +
+                                'It is set to 1.')
 
         if verbose is not None:
 
@@ -566,7 +573,7 @@ class TwoDSpec:
             self.zmin = np.nanpercentile(img_log_finite, 5)
             self.zmax = np.nanpercentile(img_log_finite, 95)
 
-    def add_arc(self, arc):
+    def add_arc(self, arc, header=None):
         '''
         To provide an arc image. Make sure left (small index) is blue,
         right (large index) is red.
@@ -582,18 +589,22 @@ class TwoDSpec:
         if isinstance(arc, np.ndarray):
 
             self.arc = arc
+            self.arc_header = header
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
                 arc, fits.hdu.image.ImageHDU):
             self.arc = arc.data
+            self.arc_header = arc.header
 
         # If it is an ImageReduction object
         elif isinstance(arc, ImageReduction):
             if arc.saxis == 1:
                 self.arc = arc.arc_master
+                self.arc_header = arc.arc_header[0]
             else:
                 self.arc = np.transpose(arc.arc_master)
+                self.arc_header = arc.arc_header[0]
 
         # If a filepath is provided
         elif isinstance(arc, str):
@@ -618,6 +629,20 @@ class TwoDSpec:
             error_msg = 'Please provide a numpy array, an ' +\
                 'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +\
                 'aspired.ImageReduction object.'
+            logging.critical(error_msg)
+            raise TypeError(error_msg)
+
+    def set_arc_header(self, header):
+
+        # If it is a fits.hdu.header.Header object
+        if isinstance(header, fits.header.Header):
+
+            self.arc_header = header
+
+        else:
+
+            error_msg = 'Please provide an ' +\
+                'astropy.io.fits.header.Header object.'
             logging.critical(error_msg)
             raise TypeError(error_msg)
 
@@ -1364,7 +1389,13 @@ class TwoDSpec:
                                 p0=pguess)
             ap_sigma = popt[3] / resample_factor
 
-            self.spectrum_list[i] = Spectrum1D(i)
+            self.spectrum_list[i] = Spectrum1D(
+                spec_id=i,
+                verbose=self.verbose,
+                logger_name=self.logger_name,
+                log_level=self.log_level,
+                log_file_folder=self.log_file_folder,
+                log_file_name=self.log_file_name)
             self.spectrum_list[i].add_trace(list(ap), [ap_sigma] * len(ap))
 
             self.spectrum_list[i].add_gain(self.gain)
@@ -1490,7 +1521,13 @@ class TwoDSpec:
 
             else:
 
-                self.spectrum_list[i] = Spectrum1D(i)
+                self.spectrum_list[i] = Spectrum1D(
+                    spec_id=i,
+                    verbose=self.verbose,
+                    logger_name=self.logger_name,
+                    log_level=self.log_level,
+                    log_file_folder=self.log_file_folder,
+                    log_file_name=self.log_file_name)
                 self.spectrum_list[i].add_trace(trace, trace_sigma)
 
     def remove_trace(self, spec_id):
@@ -1631,7 +1668,8 @@ class TwoDSpec:
 
         for j in spec_id:
 
-            len_trace = len(self.spectrum_list[j].trace)
+            spec = self.spectrum_list[j]
+            len_trace = len(spec.trace)
             count_sky = np.zeros(len_trace)
             count_err = np.zeros(len_trace)
             count = np.zeros(len_trace)
@@ -1695,7 +1733,7 @@ class TwoDSpec:
                 skywidthdn = 5
                 skywidthup = 5
 
-            for i, pos in enumerate(self.spectrum_list[j].trace):
+            for i, pos in enumerate(spec.trace):
 
                 itrace = int(pos)
                 pix_frac = pos - itrace
@@ -1746,8 +1784,8 @@ class TwoDSpec:
 
                     else:
 
-                        logging.warn('skydeg cannot be negative. sky '
-                                     'background is set to zero.')
+                        logging.warning('skydeg cannot be negative. sky '
+                                        'background is set to zero.')
                         count_sky[i] = 0.
 
                 else:
@@ -1782,7 +1820,7 @@ class TwoDSpec:
                             else:
 
                                 var_i = np.ones(len(pix))
-                                logging.warn('Variances are set to 1.')
+                                logging.warning('Variances are set to 1.')
 
                         elif np.ndim(variances) == 1:
                             if len(variances) == len(pix):
@@ -1796,7 +1834,7 @@ class TwoDSpec:
                             else:
 
                                 var_i = np.ones(len(pix))
-                                logging.warn('Variances are set to 1.')
+                                logging.warning('Variances are set to 1.')
 
                         elif np.ndim(variances) == 2:
 
@@ -1819,7 +1857,7 @@ class TwoDSpec:
                         else:
 
                             var_i = np.ones(len(pix))
-                            logging.warn('Variances are set to 1.')
+                            logging.warning('Variances are set to 1.')
 
                     else:
 
@@ -1834,7 +1872,7 @@ class TwoDSpec:
                             xslice=xslice * self.exptime,
                             sky=sky * self.exptime,
                             mu=pos,
-                            sigma=self.spectrum_list[j].trace_sigma[i],
+                            sigma=spec.trace_sigma[i],
                             tol=tolerance,
                             max_iter=max_iter,
                             forced=forced,
@@ -1861,34 +1899,34 @@ class TwoDSpec:
                                            self.gain + (nA + nA**2. / nB) *
                                            (sigB**2.)) / self.exptime
 
-            self.spectrum_list[j].add_aperture(widthdn, widthup, sepdn, sepup,
-                                               skywidthdn, skywidthup)
-            self.spectrum_list[j].add_count(list(count), list(count_err),
-                                            list(count_sky))
-            self.spectrum_list[j].add_variances(var)
-            self.spectrum_list[j].gain = self.gain
-            self.spectrum_list[j].optimal_pixel = suboptimal
+            spec.add_aperture(widthdn, widthup, sepdn, sepup, skywidthdn,
+                              skywidthup)
+            spec.add_count(list(count), list(count_err), list(count_sky))
+            spec.add_variances(var)
+            spec.gain = self.gain
+            spec.optimal_pixel = suboptimal
+            spec.add_spectrum_header(self.header)
 
             if optimal:
 
-                self.spectrum_list[j].extraction_type = "Optimal"
+                spec.extraction_type = "Optimal"
 
             else:
 
-                self.spectrum_list[j].extraction_type = "Aperture"
+                spec.extraction_type = "Aperture"
 
             # If more than a third of the spectrum is extracted suboptimally
             if np.sum(suboptimal) / i > 0.333:
 
-                logging.warn(
+                logging.warning(
                     'Signal extracted is likely to be suboptimal, please '
                     'try a longer iteration, larger tolerance or revert '
                     'to top-hat extraction.')
 
             if save_iframe or display or return_jsonstring:
 
-                min_trace = int(min(self.spectrum_list[j].trace) + 0.5)
-                max_trace = int(max(self.spectrum_list[j].trace) + 0.5)
+                min_trace = int(min(spec.trace) + 0.5)
+                max_trace = int(max(spec.trace) + 0.5)
 
                 fig = go.Figure(
                     layout=dict(autosize=False, height=height, width=width))
@@ -1925,12 +1963,9 @@ class TwoDSpec:
                                  np.arange(len_trace)[::-1], np.zeros(1)))),
                         y=list(
                             np.concatenate(
-                                (np.array(self.spectrum_list[j].trace) -
-                                 widthdn - 1,
-                                 np.array(self.spectrum_list[j].trace[::-1]) +
-                                 widthup + 1,
-                                 np.ones(1) * (self.spectrum_list[j].trace[0] -
-                                               widthdn - 1)))),
+                                (np.array(spec.trace) - widthdn - 1,
+                                 np.array(spec.trace[::-1]) + widthup + 1,
+                                 np.ones(1) * (spec.trace[0] - widthdn - 1)))),
                         xaxis='x',
                         yaxis='y',
                         mode='lines',
@@ -1939,9 +1974,9 @@ class TwoDSpec:
 
                 # Lower red box on the image
                 lower_redbox_upper_bound = np.array(
-                    self.spectrum_list[j].trace) - widthdn - sepdn - 1
+                    spec.trace) - widthdn - sepdn - 1
                 lower_redbox_lower_bound = np.array(
-                    self.spectrum_list[j].trace)[::-1] - widthdn - sepdn - max(
+                    spec.trace)[::-1] - widthdn - sepdn - max(
                         skywidthdn, (y1 - y0) - 1)
 
                 if (itrace - widthdn >= 0) & (skywidthdn > 0):
@@ -1965,10 +2000,10 @@ class TwoDSpec:
 
                 # Upper red box on the image
                 upper_redbox_upper_bound = np.array(
-                    self.spectrum_list[j].trace) + widthup + sepup + min(
+                    spec.trace) + widthup + sepup + min(
                         skywidthup, (y3 - y2) + 1)
                 upper_redbox_lower_bound = np.array(
-                    self.spectrum_list[j].trace)[::-1] + widthup + sepup + 1
+                    spec.trace)[::-1] + widthup + sepup + 1
 
                 if (itrace + widthup <= self.spatial_size) & (skywidthup > 0):
 
@@ -2315,6 +2350,7 @@ class TwoDSpec:
             arc_spec = np.nanmedian(arc_trace, axis=0)
 
             spec.add_arc_spec(list(arc_spec))
+            spec.add_arc_header(self.arc_header)
 
             # note that the display is adjusted for the chip gaps
             if save_iframe or display or return_jsonstring:
@@ -2366,6 +2402,51 @@ class TwoDSpec:
 
                     return fig.to_json()
 
+    def create_fits(self,
+                    output,
+                    recreate=False,
+                    empty_primary_hdu=True,
+                    return_hdu_list=False):
+        '''
+        Parameters
+        ----------
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            trace: 2 HDUs
+                Trace, and trace width (pixel)
+            count: 3 HDUs
+                Count, uncertainty, and sky (pixel)
+            weight_map: 1 HDU
+                Weight (pixel)
+            arc_spec: 3 HDUs
+                1D arc spectrum, arc line pixels, and arc line effective pixels
+        empty_primary_hdu: boolean (default: True)
+            Set to True to leave the Primary HDU blank (default: True)
+        return_hdu_list: boolean (default: False)
+            Set to True to return the HDU List
+
+        '''
+
+        for i in output.split('+'):
+
+            if i not in ['trace', 'count']:
+
+                error_msg = '{} is not a valid output.'.format(i)
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
+
+        # Save each trace as a separate FITS file
+        for i in range(len(self.spectrum_list)):
+
+            self.spectrum_list[i].create_fits(
+                output=output,
+                recreate=recreate,
+                empty_primary_hdu=empty_primary_hdu,
+                return_hdu_list=return_hdu_list)
+
     def save_fits(self,
                   output='trace+count',
                   filename='TwoDSpecExtracted',
@@ -2381,11 +2462,14 @@ class TwoDSpec:
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            trace: 2 HDU
-                Pixel position of the trace in the spatial direction
-                and the best fit gaussian line spread function sigma
+            trace: 2 HDUs
+                Trace, and trace width (pixel)
             count: 3 HDUs
-                Flux, uncertainty and sky (bin width = per wavelength)
+                Count, uncertainty, and sky (pixel)
+            weight_map: 1 HDU
+                Weight (pixel)
+            arc_spec: 3 HDUs
+                1D arc spectrum, arc line pixels, and arc line effective pixels
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.

@@ -327,7 +327,7 @@ class ImageReduction:
             try:
                 self.hdunum = self.filelist[2].astype('int')
             except Exception as e:
-                logging.warn(str(e))
+                logging.warning(str(e))
                 self.hdunum = 0
         else:
             error_msg = 'Please provide a file path to the file list ' +\
@@ -471,9 +471,10 @@ class ImageReduction:
         # to supply the exposure time, use 1 second
         if len(light_time) == 0:
             self.light_time = 1.
-            logging.warn('Light frame exposure time cannot be found. '
-                         '1 second is used as the exposure time.')
+            logging.warning('Light frame exposure time cannot be found. '
+                            '1 second is used as the exposure time.')
 
+        self.arc_header = []
         if len(self.arc_list) > 0:
             # Combine the arcs
             arc_CCDData = []
@@ -483,6 +484,7 @@ class ImageReduction:
                 arc_CCDData.append(CCDData(arc.data, unit=u.ct))
 
                 self.arc_filename.append(self.arc_list[i].split('/')[-1])
+                self.arc_header.append(arc.header)
 
             # combine the arc frames
             arc_combiner = Combiner(arc_CCDData)
@@ -560,7 +562,7 @@ class ImageReduction:
                         exptime))
                     break
                 except Exception as e:
-                    logging.warn(str(e))
+                    logging.warning(str(e))
                     continue
 
         # Put data into a Combiner
@@ -583,8 +585,8 @@ class ImageReduction:
 
         # If exposure time cannot be found from the header, use 1 second
         if len(dark_time) == 0:
-            logging.warn('Dark frame exposure time cannot be found. '
-                         '1 second is used as the exposure time.')
+            logging.warning('Dark frame exposure time cannot be found. '
+                            '1 second is used as the exposure time.')
             self.exptime_dark = 1.
 
         # Dark subtraction adjusted for exposure time
@@ -686,22 +688,22 @@ class ImageReduction:
         if self.bias_list.size > 0:
             self._bias_subtract()
         else:
-            logging.warn('No bias frames. Bias subtraction is not '
-                         'performed.')
+            logging.warning('No bias frames. Bias subtraction is not '
+                            'performed.')
 
         # Dark subtraction
         if self.dark_list.size > 0:
             self._dark_subtract()
         else:
-            logging.warn('No dark frames. Dark subtraction is not '
-                         'performed.')
+            logging.warning('No dark frames. Dark subtraction is not '
+                            'performed.')
 
         # Field flattening
         if self.flat_list.size > 0:
             self._flatfield()
         else:
-            logging.warn('No flat frames. Field-flattening is not '
-                         'performed.')
+            logging.warning('No flat frames. Field-flattening is not '
+                            'performed.')
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:

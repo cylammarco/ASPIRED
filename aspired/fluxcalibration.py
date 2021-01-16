@@ -55,7 +55,8 @@ class StandardLibrary:
             Folder in which the file is save, set to default to save to the
             current path.
         log_file_name: None or str (Default: "default")
-            File name of the log, set to None to logging.warn to screen only.
+            File name of the log, set to None to logging.warning to screen
+            only.
 
         '''
 
@@ -77,7 +78,7 @@ class StandardLibrary:
             datefmt='%a, %d %b %Y %H:%M:%S')
 
         if log_file_name is None:
-            # Only logging.warn log to screen
+            # Only logging.warning log to screen
             handler = logging.StreamHandler()
         else:
             if log_file_name == 'default':
@@ -273,7 +274,7 @@ class StandardLibrary:
 
         except Exception as e:
 
-            logging.warn(str(e))
+            logging.warning(str(e))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
@@ -283,7 +284,7 @@ class StandardLibrary:
 
             if len(target_list) > 0:
 
-                logging.warn(
+                logging.warning(
                     'Requested standard star cannot be found, a list of ' +
                     'the closest matching names are returned: {}'.format(
                         target_list))
@@ -336,7 +337,7 @@ class StandardLibrary:
 
                 self.library = libraries[0]
 
-                logging.warn(
+                logging.warning(
                     'The requested standard star cannot be found in the '
                     'given library,  or the library is not specified. '
                     'ASPIRED is using ' + self.library + '.')
@@ -348,17 +349,17 @@ class StandardLibrary:
             libraries, _ = self.lookup_standard_libraries(self.target)
             self.library = libraries[0]
 
-            logging.warn('The requested library does not exist, ' +
-                         self.library +
-                         ' is used because it has the closest matching name.')
+            logging.warning(
+                'The requested library does not exist, ' + self.library +
+                ' is used because it has the closest matching name.')
 
         if not self.verbose:
 
             if library is None:
 
                 # Use the default library order
-                logging.warn('Standard library is not given, ' + self.library +
-                             ' is used.')
+                logging.warning('Standard library is not given, ' +
+                                self.library + ' is used.')
 
         if self.library.startswith('iraf'):
 
@@ -511,7 +512,8 @@ class FluxCalibration(StandardLibrary):
             Folder in which the file is save, set to default to save to the
             current path.
         log_file_name: None or str (Default: "default")
-            File name of the log, set to None to logging.warn to screen only.
+            File name of the log, set to None to logging.warning to screen
+            only.
 
         '''
 
@@ -533,7 +535,7 @@ class FluxCalibration(StandardLibrary):
             datefmt='%a, %d %b %Y %H:%M:%S')
 
         if log_file_name is None:
-            # Only logging.warn log to screen
+            # Only logging.warning log to screen
             handler = logging.StreamHandler()
         else:
             if log_file_name == 'default':
@@ -550,14 +552,25 @@ class FluxCalibration(StandardLibrary):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
-        # Load the dictionary
-        super().__init__(verbose=verbose,
-                         logger_name=logger_name,
-                         log_level=log_level,
-                         log_file_folder=log_file_folder,
-                         log_file_name=log_file_name)
         self.verbose = verbose
-        self.spectrum1D = Spectrum1D()
+        self.logger_name = logger_name
+        self.log_level = log_level
+        self.log_file_folder = log_file_folder
+        self.log_file_name = log_file_name
+
+        # Load the dictionary
+        super().__init__(verbose=self.verbose,
+                         logger_name=self.logger_name,
+                         log_level=self.log_level,
+                         log_file_folder=self.log_file_folder,
+                         log_file_name=self.log_file_name)
+        self.verbose = verbose
+        self.spectrum1D = Spectrum1D(spec_id=0,
+                                     verbose=self.verbose,
+                                     logger_name=self.logger_name,
+                                     log_level=self.log_level,
+                                     log_file_folder=self.log_file_folder,
+                                     log_file_name=self.log_file_name)
         self.target_spec_id = None
         self.standard_wave_true = None
         self.standard_fluxmag_true = None
@@ -575,7 +588,12 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D_imported = True
 
     def remove_spectrum1D(self):
-        self.spectrum1D = Spectrum1D()
+        self.spectrum1D = Spectrum1D(spec_id=0,
+                                     verbose=self.verbose,
+                                     logger_name=self.logger_name,
+                                     log_level=self.log_level,
+                                     log_file_folder=self.log_file_folder,
+                                     log_file_name=self.log_file_name)
         self.spectrum1D_imported = False
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):

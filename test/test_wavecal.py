@@ -14,8 +14,8 @@ def test_wavecal():
     ]
     element = ['Xe'] * len(atlas)
 
-    lhs6328_spectrum1D = Spectrum1D()
-    wavecal = WavelengthCalibration()
+    lhs6328_spectrum1D = Spectrum1D(log_file_folder='test/test_output/')
+    wavecal = WavelengthCalibration(log_file_folder='test/test_output/')
 
     # Science arc_spec
     arc_spec = np.loadtxt(

@@ -59,7 +59,7 @@ class WavelengthCalibration():
             datefmt='%a, %d %b %Y %H:%M:%S')
 
         if log_file_name is None:
-            # Only logging.warn log to screen
+            # Only logging.warning log to screen
             handler = logging.StreamHandler()
         else:
             if log_file_name == 'default':
@@ -77,7 +77,17 @@ class WavelengthCalibration():
         logger.addHandler(handler)
 
         self.verbose = verbose
-        self.spectrum1D = Spectrum1D()
+        self.logger_name = logger_name
+        self.log_level = log_level
+        self.log_file_folder = log_file_folder
+        self.log_file_name = log_file_name
+
+        self.spectrum1D = Spectrum1D(spec_id=0,
+                                     verbose=self.verbose,
+                                     logger_name=self.logger_name,
+                                     log_level=self.log_level,
+                                     log_file_folder=self.log_file_folder,
+                                     log_file_name=self.log_file_name)
 
         self.polyval = {
             'poly': np.polynomial.polynomial.polyval,
@@ -250,7 +260,7 @@ class WavelengthCalibration():
 
             if getattr(self.spectrum1D, 'arc_spec') is not None:
 
-                logging.warn('arc_spec is replaced with the new one.')
+                logging.warning('arc_spec is replaced with the new one.')
 
             setattr(self.spectrum1D, 'arc_spec', arc_spec)
 
@@ -370,7 +380,7 @@ class WavelengthCalibration():
 
             if getattr(self.spectrum1D, 'peaks_refined') is not None:
 
-                logging.warn('peaks_refined is replaced with the new one.')
+                logging.warning('peaks_refined is replaced with the new one.')
 
             self.spectrum1D.add_peaks_refined(peaks)
 
@@ -392,7 +402,7 @@ class WavelengthCalibration():
 
             if getattr(self.spectrum1D, 'arc_spec') is not None:
 
-                logging.warn('arc_spec is replaced with the new one.')
+                logging.warning('arc_spec is replaced with the new one.')
 
             self.spectrum1D.add_arc_spec(arc_spec)
 

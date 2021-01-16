@@ -82,29 +82,51 @@ class OneDSpec():
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
+        self.verbose = verbose
+        self.logger_name = logger_name
+        self.log_level = log_level
+        self.log_file_folder = log_file_folder
+        self.log_file_name = log_file_name
+
         # Initialise empty calibration objects
         self.science_wavecal = [
-            WavelengthCalibration(verbose=verbose,
-                                  logger_name=logger_name,
-                                  log_level=log_level,
-                                  log_file_folder=log_file_folder,
-                                  log_file_name=log_file_name)
+            WavelengthCalibration(verbose=self.verbose,
+                                  logger_name=self.logger_name,
+                                  log_level=self.log_level,
+                                  log_file_folder=self.log_file_folder,
+                                  log_file_name=self.log_file_name)
         ]
         self.standard_wavecal = WavelengthCalibration(
-            verbose=verbose,
-            logger_name=logger_name,
-            log_level=log_level,
-            log_file_folder=log_file_folder,
-            log_file_name=log_file_name)
-        self.fluxcal = FluxCalibration(verbose=verbose,
-                                       logger_name=logger_name,
-                                       log_level=log_level,
-                                       log_file_folder=log_file_folder,
-                                       log_file_name=log_file_name)
+            verbose=self.verbose,
+            logger_name=self.logger_name,
+            log_level=self.log_level,
+            log_file_folder=self.log_file_folder,
+            log_file_name=self.log_file_name)
+        self.fluxcal = FluxCalibration(verbose=self.verbose,
+                                       logger_name=self.logger_name,
+                                       log_level=self.log_level,
+                                       log_file_folder=self.log_file_folder,
+                                       log_file_name=self.log_file_name)
 
         # Create empty dictionary
-        self.science_spectrum_list = {0: Spectrum1D(0)}
-        self.standard_spectrum_list = {0: Spectrum1D(0)}
+        self.science_spectrum_list = {
+            0:
+            Spectrum1D(spec_id=0,
+                       verbose=self.verbose,
+                       logger_name=self.logger_name,
+                       log_level=self.log_level,
+                       log_file_folder=self.log_file_folder,
+                       log_file_name=self.log_file_name)
+        }
+        self.standard_spectrum_list = {
+            0:
+            Spectrum1D(spec_id=0,
+                       verbose=self.verbose,
+                       logger_name=self.logger_name,
+                       log_level=self.log_level,
+                       log_file_folder=self.log_file_folder,
+                       log_file_name=self.log_file_name)
+        }
 
         # Link them up
         self.science_wavecal[0].from_spectrum1D(self.science_spectrum_list[0])
@@ -842,7 +864,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc spectrum/a are not imported.')
+                logging.warning('Science arc spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -868,7 +890,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc spectrum/a are not imported.')
+                logging.warning('Standard arc spectrum/a are not imported.')
 
     def initialise_calibrator(self,
                               spec_id=None,
@@ -934,7 +956,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -957,7 +979,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -1021,7 +1043,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1035,7 +1057,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -1111,7 +1133,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1128,7 +1150,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -1211,7 +1233,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1228,7 +1250,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def set_known_pairs(self,
                         spec_id=None,
@@ -1279,7 +1301,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1289,7 +1311,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def load_user_atlas(self,
                         elements,
@@ -1383,7 +1405,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1404,7 +1426,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def add_atlas(self,
                   elements,
@@ -1500,7 +1522,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science arc lines are not available.')
+                logging.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1523,7 +1545,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard arc lines are not available.')
+                logging.warning('Standard arc lines are not available.')
 
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''
@@ -1567,7 +1589,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science atlas is not available.')
+                logging.warning('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
@@ -1579,7 +1601,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard atlas is not available.')
+                logging.warning('Standard atlas is not available.')
 
     def fit(self,
             spec_id=None,
@@ -1668,7 +1690,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science hough pairs are not available.')
+                logging.warning('Science hough pairs are not available.')
 
         if 'standard' in stype_split:
 
@@ -1689,7 +1711,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard spectrum/a are not imported.')
+                logging.warning('Standard spectrum/a are not imported.')
 
     def refine_fit(self,
                    spec_id=None,
@@ -1780,7 +1802,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science spectrum/a are not imported.')
+                logging.warning('Science spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -1800,7 +1822,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard spectrum/a are not imported.')
+                logging.warning('Standard spectrum/a are not imported.')
 
     def apply_wavelength_calibration(self,
                                      spec_id=None,
@@ -1910,7 +1932,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Science spectrum/a are not imported.')
+                logging.warning('Science spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -1970,7 +1992,7 @@ class OneDSpec():
 
             else:
 
-                logging.warn('Standard spectrum is not imported.')
+                logging.warning('Standard spectrum is not imported.')
 
             self.standard_wavelength_calibrated = True
 
@@ -2215,6 +2237,8 @@ class OneDSpec():
 
                     self.fluxcal.apply_flux_calibration(
                         target_spectrum1D=self.science_spectrum_list[i])
+                    self.science_spectrum_list[i].add_standard_header(
+                        self.standard_spectrum_list[0].spectrum_header)
 
                 self.science_flux_calibrated = True
 
@@ -2222,6 +2246,8 @@ class OneDSpec():
 
                 self.fluxcal.apply_flux_calibration(
                     target_spectrum1D=self.standard_spectrum_list[0])
+                self.standard_spectrum_list[0].add_standard_header(
+                    self.standard_spectrum_list[0].spectrum_header)
 
                 self.standard_flux_calibrated = True
 

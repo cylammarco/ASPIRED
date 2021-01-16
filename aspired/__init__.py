@@ -7,7 +7,6 @@ __all__ = [
     'spectral_reduction',
     'standard_list',
 ]
-__version__ = '0.3.0'
 
 __author__ = "Marco C Lam", "Robert J Smith"
 __credits__ = [
