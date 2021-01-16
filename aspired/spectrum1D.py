@@ -1,6 +1,6 @@
 from astropy.io import fits
 from scipy import interpolate as itp
-import time
+import datetime
 import warnings
 
 import os
@@ -26,7 +26,8 @@ class Spectrum1D():
                     type(spec_id)))
 
         # Reduction Meta-data
-        self.time_of_reduction = time.asctime(time.localtime(time.time()))
+        self.time_of_reduction = datetime.datetime.now().strftime(
+            "%Y_%m_%d_%H_%M_%S")
 
         # Detector properties
         self.gain = None

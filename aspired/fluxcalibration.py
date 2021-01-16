@@ -1,8 +1,9 @@
+import datetime
 import difflib
 import json
+import logging
 import os
 import pkg_resources
-import warnings
 
 import numpy as np
 from plotly import graph_objects as go
@@ -17,7 +18,12 @@ base_dir = os.path.dirname(__file__)
 
 
 class StandardLibrary:
-    def __init__(self, verbose=True):
+    def __init__(self,
+                 verbose=True,
+                 logger_name='StandardLibrary',
+                 log_level='warn',
+                 log_file_folder='default',
+                 log_file_name='default'):
         '''
         This class handles flux calibration by comparing the extracted and
         wavelength-calibrated standard observation to the "ground truth"
@@ -36,8 +42,57 @@ class StandardLibrary:
         ----------
         verbose: boolean
             Set to True to suppress all verbose warnings.
+        logger_name: str (Default: OneDSpec)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARN)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity:
+            CRITICAL, DEBUG, INFO, WARNING, ERROR
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to logging.warn to screen only.
 
         '''
+
+        # Set-up logger
+        logger = logging.getLogger(logger_name)
+        if (log_level == "CRITICAL") or (not verbose):
+            logging.basicConfig(level=logging.CRITICAL)
+        if log_level == "ERROR":
+            logging.basicConfig(level=logging.ERROR)
+        if log_level == "WARNING":
+            logging.basicConfig(level=logging.WARNING)
+        if log_level == "INFO":
+            logging.basicConfig(level=logging.INFO)
+        if log_level == "DEBUG":
+            logging.basicConfig(level=logging.DEBUG)
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
+            '%(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S')
+
+        if log_file_name is None:
+            # Only logging.warn log to screen
+            handler = logging.StreamHandler()
+        else:
+            if log_file_name == 'default':
+                log_file_name = '{}_{}.log'.format(
+                    logger_name,
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+            # Save log to file
+            if log_file_folder == 'default':
+                log_file_folder = ''
+
+            handler = logging.FileHandler(
+                os.path.join(log_file_folder, log_file_name), 'a+')
+
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
         self.verbose = verbose
 
@@ -218,7 +273,7 @@ class StandardLibrary:
 
         except Exception as e:
 
-            warnings.warn(str(e))
+            logging.warn(str(e))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
@@ -228,20 +283,19 @@ class StandardLibrary:
 
             if len(target_list) > 0:
 
-                if not self.verbose:
-
-                    warnings.warn(
-                        'Requested standard star cannot be found, a list of ' +
-                        'the closest matching names are returned:' +
-                        str(target_list))
+                logging.warn(
+                    'Requested standard star cannot be found, a list of ' +
+                    'the closest matching names are returned: {}'.format(
+                        target_list))
 
                 return target_list, False
 
             else:
-
-                raise ValueError(
-                    'Please check the name of your standard star, nothing '
-                    'share a similarity above ' + str(cutoff) + '.')
+                error_msg = 'Please check the name of your standard ' +\
+                    'star, nothing share a similarity above {}.'.format(
+                        cutoff)
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
         '''
@@ -282,12 +336,10 @@ class StandardLibrary:
 
                 self.library = libraries[0]
 
-                if not self.verbose:
-
-                    warnings.warn(
-                        'The requested standard star cannot be found in the '
-                        'given library,  or the library is not specified. '
-                        'ASPIRED is using ' + self.library + '.')
+                logging.warn(
+                    'The requested standard star cannot be found in the '
+                    'given library,  or the library is not specified. '
+                    'ASPIRED is using ' + self.library + '.')
 
         else:
 
@@ -296,20 +348,17 @@ class StandardLibrary:
             libraries, _ = self.lookup_standard_libraries(self.target)
             self.library = libraries[0]
 
-            if not self.verbose:
-
-                print('The requested library does not exist, ' + self.library +
-                      ' is used because it has the closest matching name.')
+            logging.warn('The requested library does not exist, ' +
+                         self.library +
+                         ' is used because it has the closest matching name.')
 
         if not self.verbose:
 
             if library is None:
 
                 # Use the default library order
-                if not self.verbose:
-
-                    print('Standard library is not given, ' + self.library +
-                          ' is used.')
+                logging.warn('Standard library is not given, ' + self.library +
+                             ' is used.')
 
         if self.library.startswith('iraf'):
 
@@ -436,7 +485,12 @@ class StandardLibrary:
 
 
 class FluxCalibration(StandardLibrary):
-    def __init__(self, verbose=True):
+    def __init__(self,
+                 verbose=True,
+                 logger_name='FluxCalibration',
+                 log_level='warn',
+                 log_file_folder='default',
+                 log_file_name='default'):
         '''
         Initialise a FluxCalibration object.
 
@@ -444,11 +498,64 @@ class FluxCalibration(StandardLibrary):
         ----------
         verbose: boolean
             Set to True to suppress all verbose warnings.
+        logger_name: str (Default: OneDSpec)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARN)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity:
+            CRITICAL, DEBUG, INFO, WARNING, ERROR
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to logging.warn to screen only.
 
         '''
 
+        # Set-up logger
+        logger = logging.getLogger(logger_name)
+        if (log_level == "CRITICAL") or (not verbose):
+            logging.basicConfig(level=logging.CRITICAL)
+        if log_level == "ERROR":
+            logging.basicConfig(level=logging.ERROR)
+        if log_level == "WARNING":
+            logging.basicConfig(level=logging.WARNING)
+        if log_level == "INFO":
+            logging.basicConfig(level=logging.INFO)
+        if log_level == "DEBUG":
+            logging.basicConfig(level=logging.DEBUG)
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
+            '%(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S')
+
+        if log_file_name is None:
+            # Only logging.warn log to screen
+            handler = logging.StreamHandler()
+        else:
+            if log_file_name == 'default':
+                log_file_name = '{}_{}.log'.format(
+                    logger_name,
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+            # Save log to file
+            if log_file_folder == 'default':
+                log_file_folder = ''
+
+            handler = logging.FileHandler(
+                os.path.join(log_file_folder, log_file_name), 'a+')
+
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
         # Load the dictionary
-        super().__init__()
+        super().__init__(verbose=verbose,
+                         logger_name=logger_name,
+                         log_level=log_level,
+                         log_file_folder=log_file_folder,
+                         log_file_name=log_file_name)
         self.verbose = verbose
         self.spectrum1D = Spectrum1D()
         self.target_spec_id = None
@@ -477,7 +584,8 @@ class FluxCalibration(StandardLibrary):
                               ftype=ftype,
                               cutoff=cutoff)
         # the best target and library found can be different from the input
-        self.spectrum1D.add_standard_star(library=self.library, target=self.target)
+        self.spectrum1D.add_standard_star(library=self.library,
+                                          target=self.target)
 
     def add_standard(self, wavelength, count, count_err=None, count_sky=None):
         '''
@@ -657,7 +765,9 @@ class FluxCalibration(StandardLibrary):
 
         else:
 
-            raise NotImplementedError('{} is not implemented.'.format(method))
+            error_msg = '{} is not implemented.'.format(method)
+            logging.critical(error_msg)
+            raise NotImplementedError(error_msg)
 
         self.spectrum1D.add_sensitivity(sensitivity_masked)
         self.spectrum1D.add_literature_standard(standard_wave_masked,

@@ -1,5 +1,7 @@
+import copy
+import datetime
+import logging
 import os
-import warnings
 
 import numpy as np
 from astropy import units as u
@@ -8,6 +10,8 @@ from astropy.nddata import CCDData
 from ccdproc import Combiner
 from plotly import graph_objects as go
 from plotly import io as pio
+
+__all__ = ['ImageReduction']
 
 
 class ImageReduction:
@@ -36,7 +40,11 @@ class ImageReduction:
                  sigma_clipping_flat=True,
                  clip_low_flat=5,
                  clip_high_flat=5,
-                 verbose=True):
+                 verbose=True,
+                 logger_name='ImageReduction',
+                 log_level='warn',
+                 log_file_folder='default',
+                 log_file_name='default'):
         '''
         This class is not intented for quality data reduction, it exists for
         completeness such that users can produce a minimal pipeline with
@@ -113,20 +121,76 @@ class ImageReduction:
             lower threshold of the sigma clipping
         clip_high_flat: float
             upper threshold of the sigma clipping
-        verbose: boolean
-            Set to True to suppress all verbose warnings.
+        verbose: boolean (default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
+        logger_name: str (Default: ImageReduction)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARN)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity:
+            CRITICAL, DEBUG, INFO, WARNING, ERROR
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to print to screen only.
+
         '''
+
+        # Set-up logger
+        logger = logging.getLogger(logger_name)
+        if (log_level == "CRITICAL") or (not verbose):
+            logging.basicConfig(level=logging.CRITICAL)
+        if log_level == "ERROR":
+            logging.basicConfig(level=logging.ERROR)
+        if log_level == "WARNING":
+            logging.basicConfig(level=logging.WARNING)
+        if log_level == "INFO":
+            logging.basicConfig(level=logging.INFO)
+        if log_level == "DEBUG":
+            logging.basicConfig(level=logging.DEBUG)
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
+            '%(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S')
+
+        if log_file_name is None:
+            # Only print log to screen
+            handler = logging.StreamHandler()
+        else:
+            if log_file_name == 'default':
+                log_file_name = '{}_{}.log'.format(
+                    logger_name,
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+            # Save log to file
+            if log_file_folder == 'default':
+                log_file_folder = ''
+
+            handler = logging.FileHandler(
+                os.path.join(log_file_folder, log_file_name), 'a+')
+
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
         if os.path.isabs(filelist):
             self.filelist = filelist
         else:
             self.filelist = os.path.abspath(filelist)
 
+        logging.debug('The filelist is: {}'.format(self.filelist))
+
         # Check if running on Windows
         if os.name == 'nt':
             self.filelist_abspath = self.filelist.rsplit('\\', 1)[0]
         else:
             self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
+
+        logging.debug('The absolute path of the filelist is: {}'.format(
+            self.filelist_abspath))
 
         self.ftype = ftype
         if ftype == 'csv':
@@ -198,58 +262,78 @@ class ImageReduction:
         # file path
 
         if isinstance(self.filelist, str):
+            logging.info('Loading filelist from {}.'.format(self.filelist))
             self.filelist = np.genfromtxt(self.filelist,
                                           delimiter=self.delimiter,
                                           dtype='U',
                                           autostrip=True)
 
             if np.shape(np.shape(self.filelist))[0] == 2:
+                logging.debug('filelist contains multiple lines.')
                 self.imtype = self.filelist[:, 0].astype('object')
                 self.impath = self.filelist[:, 1].astype('object')
             elif np.shape(np.shape(self.filelist))[0] == 1:
+                logging.debug('filelist contains one line.')
                 self.imtype = self.filelist[0].astype('object')
                 self.impath = self.filelist[1].astype('object')
             else:
-                raise TypeError(
-                    'Please provide a text file with at least 2 columns.')
+                error_msg = 'Please provide a text file with at least 2 ' +\
+                    'columns: where the first column is the image type ' +\
+                    'and the second column is the file path, and optional ' +\
+                    'third column being the #HDU.'
+                logging.critical(error_msg)
+                raise TypeError(error_msg)
 
         elif isinstance(self.filelist, np.ndarray):
+            logging.info('Loading filelist from an numpy.ndarray.')
             if np.shape(np.shape(self.filelist))[0] == 2:
+                logging.debug('filelist contains multiple lines.')
                 self.imtype = self.filelist[:, 0]
                 self.impath = self.filelist[:, 1]
             elif np.shape(np.shape(self.filelist))[0] == 1:
+                logging.debug('filelist contains one line.')
                 self.imtype = self.filelist[0]
                 self.impath = self.filelist[1]
             else:
-                raise TypeError(
-                    'Please provide a numpy.ndarray with at least 2 columns.')
+                error_msg = 'Please provide a numpy.ndarray with at ' +\
+                    'least 2 columns.'
+                logging.critical(error_msg)
+                raise TypeError(error_msg)
         else:
-            raise TypeError('Please provide a file path to the file list or '
-                            'a numpy array with at least 2 columns.')
+            error_msg = 'Please provide a file path to the file list ' +\
+                'or a numpy array with at least 2 columns.'
+            logging.critical(error_msg)
+            raise TypeError(error_msg)
 
         for i, im in enumerate(self.impath):
             if not os.path.isabs(im):
                 self.impath[i] = os.path.join(self.filelist_abspath, im)
-            print(im)
-            print(self.impath[i])
+
+            logging.debug(self.impath[i])
 
         self.imtype = self.imtype.astype('str')
 
         if np.shape(np.shape(self.filelist))[0] == 2:
+            logging.debug('filelist contains multiple lines.')
+            # Get the HDU number if provided
             try:
                 self.hdunum = self.filelist[:, 2].astype('int')
+            # Otherwise populate with 0
             except Exception as e:
-                warnings.warn(str(e))
+                logging.info(str(e))
                 self.hdunum = np.zeros(len(self.impath)).astype('int')
         elif np.shape(np.shape(self.filelist))[0] == 1:
+            logging.debug('filelist contains one line.')
             try:
                 self.hdunum = self.filelist[2].astype('int')
             except Exception as e:
-                warnings.warn(str(e))
+                logging.warn(str(e))
                 self.hdunum = 0
         else:
-            raise TypeError('Please provide a file path to the file list or '
-                            'a numpy array with at least 2 columns.')
+            error_msg = 'Please provide a file path to the file list ' +\
+                'or a numpy array with at least 2 columns.'
+            logging.critical(error_msg)
+            raise TypeError(error_msg)
 
         if np.shape(np.shape(self.filelist))[0] == 2:
             self.bias_list = self.impath[self.imtype == 'bias']
@@ -278,8 +362,10 @@ class ImageReduction:
                 self.flat_hdunum = np.array([])
                 self.arc_hdunum = np.array([])
             else:
-                ValueError('You are only providing a single file, it has to '
-                           'be a light frame.')
+                error_msg = 'You are only providing a single file, it has ' +\
+                    'to be a light frame.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
 
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
@@ -306,6 +392,8 @@ class ImageReduction:
         else:
             self.saxis = saxis
 
+        logging.info('Saxis is found/set to be {}.'.format(self.saxis))
+
         # Only load the science data, other types of image data are loaded by
         # separate methods.
         light_CCDData = []
@@ -314,9 +402,16 @@ class ImageReduction:
 
         for i in range(self.light_list.size):
             # Open all the light frames
+            logging.debug('Loading light frame: {}.'.format(
+                self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
             light_CCDData.append(CCDData(light.data, unit=u.ct))
+
+            logging.debug('Appending light header: {}.'.format(light.header))
             self.light_header.append(light.header)
+
+            logging.debug('Appending light filename: {}.'.format(
+                self.light_list[i].split('/')[-1]))
             self.light_filename.append(self.light_list[i].split('/')[-1])
 
             # Get the exposure time for the light frames
@@ -336,27 +431,38 @@ class ImageReduction:
             else:
                 assert (exptime_light > 0), 'Exposure time has to be positive.'
                 light_time = exptime_light
+            logging.info(
+                'Exposure time of the light frame is {}.'.format(light_time))
 
         # Put data into a Combiner
         light_combiner = Combiner(light_CCDData)
+        logging.debug('Combiner for the light frames is created.')
+
         # Free memory
         del light_CCDData
+        logging.debug('light_CCDData is deleted.')
 
         # Apply sigma clipping
         if self.sigma_clipping_light:
             light_combiner.sigma_clipping(low_thresh=self.clip_low_light,
                                           high_thresh=self.clip_high_light,
                                           func=np.ma.median)
-
+            logging.info('Sigma clipping with a lower and upper threshold '
+                         'of {} and {} sigma.'.format(self.clip_low_light,
+                                                      self.clip_high_light))
         # Image combine by median or average
         if self.combinetype_light == 'median':
             self.light_master = light_combiner.median_combine()
-            self.exptime_light = np.median(light_time)
+            self.exptime_light = np.nanmedian(light_time)
+            logging.info('light frames are median_combined.')
         elif self.combinetype_light == 'average':
             self.light_master = light_combiner.average_combine()
-            self.exptime_light = np.mean(light_time)
+            self.exptime_light = np.nanmean(light_time)
+            logging.info('light frames are mean_combined.')
         else:
-            raise ValueError('ASPIRED: Unknown combinetype.')
+            error_msg = 'Unknown combinetype for light frames.'
+            logging.critical(error_msg)
+            raise ValueError(error_msg)
 
         # Free memory
         del light_combiner
@@ -365,9 +471,8 @@ class ImageReduction:
         # to supply the exposure time, use 1 second
         if len(light_time) == 0:
             self.light_time = 1.
-            if self.verbose:
-                warnings.warn('Light frame exposure time cannot be found. '
-                              '1 second is used as the exposure time.')
+            logging.warn('Light frame exposure time cannot be found. '
+                         '1 second is used as the exposure time.')
 
         if len(self.arc_list) > 0:
             # Combine the arcs
@@ -417,12 +522,16 @@ class ImageReduction:
             self.bias_master = bias_combiner.average_combine()
         else:
             self.bias_filename = []
-            raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Bias subtract
-        self.light_redcued = self.light_master.subtract(self.bias_master)
-        if self.flat_master is not None:
-            self.flat_redcued = self.flat_master.subtract(self.bias_master)
+        if self.bias_master is None:
+
+            logging.error('Unknown combinetype for bias frames, master '
+                          'bias cannot be created.')
+
+        else:
+
+            self.light_redcued = self.light_master.subtract(self.bias_master)
 
         # Free memory
         del bias_CCDData
@@ -451,7 +560,7 @@ class ImageReduction:
                         exptime))
                     break
                 except Exception as e:
-                    warnings.warn(str(e))
+                    logging.warn(str(e))
                     continue
 
         # Put data into a Combiner
@@ -465,19 +574,17 @@ class ImageReduction:
         # Image combine by median or average
         if self.combinetype_dark == 'median':
             self.dark_master = dark_combiner.median_combine()
-            self.exptime_dark = np.median(dark_time)
+            self.exptime_dark = np.nanmedian(dark_time)
         elif self.combinetype_dark == 'average':
             self.dark_master = dark_combiner.average_combine()
-            self.exptime_dark = np.mean(dark_time)
+            self.exptime_dark = np.nanmean(dark_time)
         else:
             self.dark_filename = []
-            raise ValueError('ASPIRED: Unknown combinetype.')
 
         # If exposure time cannot be found from the header, use 1 second
         if len(dark_time) == 0:
-            if self.verbose:
-                warnings.warn('Dark frame exposure time cannot be found. '
-                              '1 second is used as the exposure time.')
+            logging.warn('Dark frame exposure time cannot be found. '
+                         '1 second is used as the exposure time.')
             self.exptime_dark = 1.
 
         # Dark subtraction adjusted for exposure time
@@ -486,13 +593,7 @@ class ImageReduction:
                 self.dark_master.multiply(
                     self.exptime_light / self.exptime_dark)
             )
-
-        if self.flat_master is not None:
-            self.flat_reduced =\
-                self.flat_reduced.subtract(
-                    self.dark_master.multiply(
-                        self.exptime_light / self.exptime_dark)
-                )
+        logging.info('Light frame is dark subtracted.')
 
         # Free memory
         del dark_CCDData
@@ -528,10 +629,47 @@ class ImageReduction:
             self.flat_master = flat_combiner.average_combine()
         else:
             self.flat_filename = []
-            raise ValueError('ASPIRED: Unknown combinetype.')
 
         # Field-flattening
-        self.light_reduced = self.light_reduced.divide(self.flat_master)
+        if self.flat_master is None:
+
+            logging.error('Unknown combinetype for flat frames, master '
+                          'flat cannot be created.')
+
+        else:
+
+            self.flat_reduced = copy.deepcopy(self.flat_master)
+
+            # Dark subtract the flat field
+            if self.dark_master is None:
+
+                logging.error('Master dark is not available, master '
+                              'flat cannot be dark subtracted.')
+
+            else:
+
+                self.flat_reduced =\
+                    self.flat_reduced.subtract(
+                        self.dark_master.multiply(
+                            self.exptime_light / self.exptime_dark)
+                    )
+                logging.info('Flat frame is flat subtracted.')
+
+            # Bias subtract the flat field
+            if self.bias_master is None:
+
+                logging.error('Master bias is not available, master '
+                              'flat cannot be bias subtracted.')
+
+            else:
+
+                self.flat_redcued = self.flat_reduced.subtract(
+                    self.bias_master)
+                logging.info('Flat frame is bias subtracted.')
+
+            # Flattenning the light frame
+            self.light_reduced = self.light_reduced.divide(self.flat_reduced)
+            logging.info('Light frame is flattened.')
 
         # Free memory
         del flat_CCDData
@@ -542,31 +680,28 @@ class ImageReduction:
         Perform data reduction using the frames provided.
         '''
 
-        self.light_reduced = self.light_master
+        self.light_reduced = copy.deepcopy(self.light_master)
 
         # Bias subtraction
         if self.bias_list.size > 0:
             self._bias_subtract()
         else:
-            if self.verbose:
-                warnings.warn('No bias frames. Bias subtraction is not '
-                              'performed.')
+            logging.warn('No bias frames. Bias subtraction is not '
+                         'performed.')
 
         # Dark subtraction
         if self.dark_list.size > 0:
             self._dark_subtract()
         else:
-            if self.verbose:
-                warnings.warn('No dark frames. Dark subtraction is not '
-                              'performed.')
+            logging.warn('No dark frames. Dark subtraction is not '
+                         'performed.')
 
         # Field flattening
         if self.flat_list.size > 0:
             self._flatfield()
         else:
-            if self.verbose:
-                warnings.warn('No flat frames. Field-flattening is not '
-                              'performed.')
+            logging.warn('No flat frames. Field-flattening is not '
+                         'performed.')
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:
@@ -580,11 +715,14 @@ class ImageReduction:
         # Append header info to the *first* light frame header
         self.image_fits = fits.ImageHDU(self.light_reduced)
 
+        logging.info('Appending the header from the first light frame.')
         self.image_fits.header = self.light_header[0]
 
         # Add the names of all the light frames to header
         if len(self.light_filename) > 0:
             for i in range(len(self.light_filename)):
+                logging.debug('Light frame: {} is added to the header.'
+                              ''.format(self.light_filename[i]))
                 self.image_fits.header.set(keyword='light' + str(i + 1),
                                            value=self.light_filename[i],
                                            comment='Light frames')
@@ -592,6 +730,8 @@ class ImageReduction:
         # Add the names of all the biad frames to header
         if len(self.bias_filename) > 0:
             for i in range(len(self.bias_filename)):
+                logging.debug('Bias frame: {} is added to the header.'
+                              ''.format(self.bias_filename[i]))
                 self.image_fits.header.set(keyword='bias' + str(i + 1),
                                            value=self.bias_filename[i],
                                            comment='Bias frames')
@@ -599,6 +739,8 @@ class ImageReduction:
         # Add the names of all the dark frames to header
         if len(self.dark_filename) > 0:
             for i in range(len(self.dark_filename)):
+                logging.debug('Dark frame: {} is added to the header.'
+                              ''.format(self.dark_filename[i]))
                 self.image_fits.header.set(keyword='dark' + str(i + 1),
                                            value=self.dark_filename[i],
                                            comment='Dark frames')
@@ -606,6 +748,8 @@ class ImageReduction:
         # Add the names of all the flat frames to header
         if len(self.flat_filename) > 0:
             for i in range(len(self.flat_filename)):
+                logging.debug('Flat frame: {} is added to the header.'
+                              ''.format(self.flat_filename[i]))
                 self.image_fits.header.set(keyword='flat' + str(i + 1),
                                            value=self.flat_filename[i],
                                            comment='Flat frames')
@@ -724,6 +868,8 @@ class ImageReduction:
         # Save file to disk
         self.image_fits.writeto(filename + '.' + extension,
                                 overwrite=overwrite)
+        logging.info('FITS file saved to {}.'.format(filename + '.' +
+                                                     extension))
 
     def inspect(self,
                 log=True,

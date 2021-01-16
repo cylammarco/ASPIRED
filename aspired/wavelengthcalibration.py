@@ -1,4 +1,6 @@
-import warnings
+import datetime
+import logging
+import os
 
 import numpy as np
 from plotly import graph_objects as go
@@ -11,7 +13,12 @@ from .spectrum1D import Spectrum1D
 
 
 class WavelengthCalibration():
-    def __init__(self, verbose=True):
+    def __init__(self,
+                 verbose=True,
+                 logger_name='WavelengthCalibration',
+                 log_level='warn',
+                 log_file_folder='default',
+                 log_file_name='default'):
         '''
         This is a wrapper for using RASCAL to perform wavelength calibration,
         which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
@@ -33,6 +40,41 @@ class WavelengthCalibration():
             Set to True to suppress all verbose warnings.
 
         '''
+
+        # Set-up logger
+        logger = logging.getLogger(logger_name)
+        if (log_level == "CRITICAL") or (not verbose):
+            logging.basicConfig(level=logging.CRITICAL)
+        if log_level == "ERROR":
+            logging.basicConfig(level=logging.ERROR)
+        if log_level == "WARNING":
+            logging.basicConfig(level=logging.WARNING)
+        if log_level == "INFO":
+            logging.basicConfig(level=logging.INFO)
+        if log_level == "DEBUG":
+            logging.basicConfig(level=logging.DEBUG)
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
+            '%(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S')
+
+        if log_file_name is None:
+            # Only logging.warn log to screen
+            handler = logging.StreamHandler()
+        else:
+            if log_file_name == 'default':
+                log_file_name = '{}_{}.log'.format(
+                    logger_name,
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+            # Save log to file
+            if log_file_folder == 'default':
+                log_file_folder = ''
+
+            handler = logging.FileHandler(
+                os.path.join(log_file_folder, log_file_name), 'a+')
+
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
         self.verbose = verbose
         self.spectrum1D = Spectrum1D()
@@ -198,16 +240,17 @@ class WavelengthCalibration():
 
             if getattr(self.spectrum1D, 'arc_spec') is None:
 
-                raise ValueError(
-                    'arc_spec is not provided. Either provide when executing '
-                    'this function or provide a spectrum1D that contains an '
-                    'arc_spec.')
+                error_msg = 'arc_spec is not provided. Either provide when ' +\
+                    'executing this function or provide a spectrum1D that ' +\
+                    'contains an arc_spec.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
 
         else:
 
             if getattr(self.spectrum1D, 'arc_spec') is not None:
 
-                warnings.warn('arc_spec is replaced with the new one.')
+                logging.warn('arc_spec is replaced with the new one.')
 
             setattr(self.spectrum1D, 'arc_spec', arc_spec)
 
@@ -216,25 +259,24 @@ class WavelengthCalibration():
             background = np.nanpercentile(self.spectrum1D.arc_spec, percentile)
 
         peaks = signal.find_peaks(getattr(self.spectrum1D, 'arc_spec'),
-                              distance=distance,
-                              height=background,
-                              prominence=prominence)[0]
+                                  distance=distance,
+                                  height=background,
+                                  prominence=prominence)[0]
         self.spectrum1D.add_peaks(peaks)
 
         # Fine tuning
         if refine:
 
             peaks = refine_peaks(getattr(self.spectrum1D, 'arc_spec'),
-                             getattr(self.spectrum1D, 'peaks'),
-                             window_width=int(refine_window_width))
+                                 getattr(self.spectrum1D, 'peaks'),
+                                 window_width=int(refine_window_width))
             self.spectrum1D.add_peaks(peaks)
 
         # Adjust for chip gaps
         if getattr(self.spectrum1D, 'pixel_mapping_itp') is not None:
 
             self.spectrum1D.add_peaks_refined(
-                getattr(self.spectrum1D,
-                        'pixel_mapping_itp')(peaks))
+                getattr(self.spectrum1D, 'pixel_mapping_itp')(peaks))
 
         else:
 
@@ -252,7 +294,8 @@ class WavelengthCalibration():
                            line=dict(color='royalblue', width=1)))
             fig.add_trace(
                 go.Scatter(x=peaks,
-                           y=np.array(self.spectrum1D.arc_spec)[np.rint(peaks).astype('int')],
+                           y=np.array(self.spectrum1D.arc_spec)[np.rint(
+                               peaks).astype('int')],
                            mode='markers',
                            line=dict(color='firebrick', width=1)))
 
@@ -317,16 +360,17 @@ class WavelengthCalibration():
 
             else:
 
-                raise ValueError(
-                    'arc_spec is not provided. Either provide when executing '
-                    'this function or provide a spectrum1D that contains an '
-                    'peaks_refined.')
+                error_msg = 'arc_spec is not provided. Either provide when ' +\
+                    'executing this function or provide a spectrum1D that ' +\
+                    'contains a peaks_refined.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
 
         else:
 
             if getattr(self.spectrum1D, 'peaks_refined') is not None:
 
-                warnings.warn('peaks_refined is replaced with the new one.')
+                logging.warn('peaks_refined is replaced with the new one.')
 
             self.spectrum1D.add_peaks_refined(peaks)
 
@@ -338,16 +382,17 @@ class WavelengthCalibration():
 
             else:
 
-                raise ValueError(
-                    'arc_spec is not provided. Either provide when executing '
-                    'this function or provide a spectrum1D that contains an '
-                    'arc_spec.')
+                error_msg = 'arc_spec is not provided. Either provide when ' +\
+                    'executing this function or provide a spectrum1D that ' +\
+                    'contains an arc_spec.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
 
         else:
 
             if getattr(self.spectrum1D, 'arc_spec') is not None:
 
-                warnings.warn('arc_spec is replaced with the new one.')
+                logging.warn('arc_spec is replaced with the new one.')
 
             self.spectrum1D.add_arc_spec(arc_spec)
 
