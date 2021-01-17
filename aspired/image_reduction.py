@@ -42,7 +42,7 @@ class ImageReduction:
                  clip_high_flat=5,
                  verbose=True,
                  logger_name='ImageReduction',
-                 log_level='warn',
+                 log_level='WARNING',
                  log_file_folder='default',
                  log_file_name='default'):
         '''
@@ -121,7 +121,7 @@ class ImageReduction:
             lower threshold of the sigma clipping
         clip_high_flat: float
             upper threshold of the sigma clipping
-        verbose: boolean (default: True)
+        verbose: boolean (Default: True)
             Set to False to suppress all verbose warnings, except for
             critical failure.
         logger_name: str (Default: ImageReduction)
@@ -129,10 +129,16 @@ class ImageReduction:
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARN)
+        log_level: str (Default: WARNING)
             Four levels of logging are available, in decreasing order of
-            information and increasing order of severity:
-            CRITICAL, DEBUG, INFO, WARNING, ERROR
+            information and increasing order of severity: (1) DEBUG, (2) INFO,
+            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+            there is suboptimal operations in some parts of that step. ERROR
+            means that the requested operation cannot be performed, but the
+            software can handle it by either using the default setting or
+            skipping the operation. CRITICAL means that the requested
+            operation cannot be resolved without human interaction, this is
+            most usually coming from missing data.
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
@@ -145,14 +151,16 @@ class ImageReduction:
         logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
             logging.basicConfig(level=logging.CRITICAL)
-        if log_level == "ERROR":
+        elif log_level == "ERROR":
             logging.basicConfig(level=logging.ERROR)
-        if log_level == "WARNING":
+        elif log_level == "WARNING":
             logging.basicConfig(level=logging.WARNING)
-        if log_level == "INFO":
+        elif log_level == "INFO":
             logging.basicConfig(level=logging.INFO)
-        if log_level == "DEBUG":
+        elif log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
+        else:
+            raise ValueError('Unknonw logging level.')
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -497,6 +505,7 @@ class ImageReduction:
     def _bias_subtract(self):
         '''
         Perform bias subtraction if bias frames are available.
+
         '''
 
         bias_CCDData = []
@@ -542,6 +551,7 @@ class ImageReduction:
     def _dark_subtract(self):
         '''
         Perform dark subtraction if dark frames are available
+
         '''
 
         dark_CCDData = []
@@ -604,6 +614,7 @@ class ImageReduction:
     def _flatfield(self):
         '''
         Perform field flattening if flat frames are available
+
         '''
 
         flat_CCDData = []
@@ -680,6 +691,7 @@ class ImageReduction:
     def reduce(self):
         '''
         Perform data reduction using the frames provided.
+
         '''
 
         self.light_reduced = copy.deepcopy(self.light_master)
@@ -713,8 +725,11 @@ class ImageReduction:
         self.light_reduced = np.array((self.light_reduced))
 
     def _create_image_fits(self):
-        # Put the reduced data in FITS format with an image header
-        # Append header info to the *first* light frame header
+        '''
+        Put the reduced data in FITS format with an image header.
+
+        '''
+
         self.image_fits = fits.ImageHDU(self.light_reduced)
 
         logging.info('Appending the header from the first light frame.')
@@ -968,6 +983,7 @@ class ImageReduction:
     def list_files(self):
         '''
         Print the file input list.
+
         '''
 
         print(self.filelist)

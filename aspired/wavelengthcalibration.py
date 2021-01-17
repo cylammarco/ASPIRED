@@ -11,12 +11,14 @@ from scipy import signal
 
 from .spectrum1D import Spectrum1D
 
+__all__ = ['WavelengthCalibration']
+
 
 class WavelengthCalibration():
     def __init__(self,
                  verbose=True,
                  logger_name='WavelengthCalibration',
-                 log_level='warn',
+                 log_level='WARNING',
                  log_file_folder='default',
                  log_file_name='default'):
         '''
@@ -36,8 +38,30 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        verbose: boolean
-            Set to True to suppress all verbose warnings.
+        verbose: boolean (Default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
+        logger_name: str (Default: OneDSpec)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARNING)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity: (1) DEBUG, (2) INFO,
+            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+            there is suboptimal operations in some parts of that step. ERROR
+            means that the requested operation cannot be performed, but the
+            software can handle it by either using the default setting or
+            skipping the operation. CRITICAL means that the requested
+            operation cannot be resolved without human interaction, this is
+            most usually coming from missing data.
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to logging.warning to screen
+            only.
 
         '''
 
@@ -45,14 +69,16 @@ class WavelengthCalibration():
         logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
             logging.basicConfig(level=logging.CRITICAL)
-        if log_level == "ERROR":
+        elif log_level == "ERROR":
             logging.basicConfig(level=logging.ERROR)
-        if log_level == "WARNING":
+        elif log_level == "WARNING":
             logging.basicConfig(level=logging.WARNING)
-        if log_level == "INFO":
+        elif log_level == "INFO":
             logging.basicConfig(level=logging.INFO)
-        if log_level == "DEBUG":
+        elif log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
+        else:
+            raise ValueError('Unknonw logging level.')
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -100,11 +126,20 @@ class WavelengthCalibration():
         This function copies all the info from the spectrum1D, because users
         may supply different level/combination of reduction, everything is
         copied from the spectrum1D even though in most cases only a None
-        will be passed. Only those are not None will be used to set the
-        properties of a calibrator.
+        will be passed.
 
-        Note: This is passing object by reference by default, so it directly
-        modifies the spectrum1D supplied.
+        By default, this is passing object by reference by default, so it
+        directly modifies the spectrum1D supplied. By setting merger to True,
+        it copies the data into the Spectrum1D in the FluxCalibration object.
+
+        Parameters
+        ----------
+        spectrum1D: Spectrum1D object
+            The Spectrum1D to be referenced or copied.
+        merge: boolean (Default: None)
+            Set to True to copy everything over to the local Spectrum1D,
+            hence FluxCalibration will not be acting on the Spectrum1D
+            outside.
 
         '''
 
@@ -151,16 +186,12 @@ class WavelengthCalibration():
 
         self.spectrum1D.remove_arc_spec()
 
-    def add_fit_coeff(self, fit_type, fit_coeff):
+    def add_fit_type(self, fit_type):
         '''
-        To provide the polynomial coefficients and polynomial type for science,
-        standard or both. Science stype can provide multiple traces. Standard
-        stype can only accept one trace.
+        Adding the polynomial type.
 
         Parameters
         ----------
-        fit_coeff: list or list of list
-            Polynomial fit coefficients.
         fit_type: str or list of str
             Strings starting with 'poly', 'leg' or 'cheb' for polynomial,
             legendre and chebyshev fits. Case insensitive.
@@ -168,6 +199,26 @@ class WavelengthCalibration():
         '''
 
         self.spectrum1D.add_fit_type(fit_type)
+
+    def remove_fit_type(self):
+        '''
+        To remove the polynomial fit type.
+
+        '''
+
+        self.spectrum1D.remove_fit_type()
+
+    def add_fit_coeff(self, fit_coeff):
+        '''
+        Adding the polynomial coefficients.
+
+        Parameters
+        ----------
+        fit_coeff: list or list of list
+            Polynomial fit coefficients.
+
+        '''
+
         self.spectrum1D.add_fit_coeff(fit_coeff)
 
     def remove_fit_coeff(self):
@@ -203,21 +254,25 @@ class WavelengthCalibration():
         hence, the sepration between two clearly resolved peaks are ~5 pixels
         apart). A crude estimate of the background can exclude random noise
         which look like small peaks.
+
         Parameters
         ----------
+        arc_spec: list, array or None (Default: None)
+            If not provided, it will look for the arc_spec in the spectrum1D.
+            Otherwise, the input arc_spec will be used.
         background: int
-            User-supplied estimated background level
+            User-supplied estimated background level.
         percentile: float
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
             is None. [Count]
         prominence: float
-            The minimum prominence to be considered as a peak
+            The minimum prominence to be considered as a peak.
         distance: float
-            Minimum separation between peaks
+            Minimum separation between peaks.
         refine: boolean
             Set to true to fit a gaussian to get the peak at sub-pixel
-            precision
+            precision.
         refine_window_width: boolean
             The number of pixels (on each side of the existing peaks) to be
             fitted with gaussian profiles over.
@@ -226,9 +281,9 @@ class WavelengthCalibration():
         renderer: string
             plotly renderer options.
         width: int/float
-            Number of pixels in the horizontal direction of the outputs
+            Number of pixels in the horizontal direction of the outputs.
         height: int/float
-            Number of pixels in the vertical direction of the outputs
+            Number of pixels in the vertical direction of the outputs.
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
@@ -243,7 +298,8 @@ class WavelengthCalibration():
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True
+        JSON strings if return_jsonstring is set to True.
+
         '''
 
         if arc_spec is None:
@@ -353,10 +409,8 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        spec_id: int (default: None)
-            The ID corresponding to the spectrum1D object
-        peaks: list (default: None)
-            The pixel values of the peaks (start from zero)
+        peaks: list (Default: None)
+            The pixel values of the peaks (start from zero).
         arc_spec: list
             The spectral intensity as a function of pixel.
 
@@ -419,18 +473,18 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        num_pix: int (default: None)
+        num_pix: int (Default: None)
             The number of pixels in the dispersion direction
-        pixel_list: list or numpy array (default: None)
+        pixel_list: list or numpy array (Default: None)
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(num_pix), for example, in the case of accounting
             for chip gaps (10 pixels) in a 3-CCD setting, you should provide
             [0,1,2,...90, 100,101,...190, 200,201,...290]
-        plotting_library : string (default: 'matplotlib')
+        plotting_library : string (Default: 'matplotlib')
             Choose between matplotlib and plotly.
-        log_level : string (default: 'info')
-            Choose {critical, error, warning, info, debug, notset}.
+        log_level : string (Default: 'info')
+            Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
 
         '''
 
@@ -456,21 +510,21 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        num_slopes: int (default: 1000)
+        num_slopes: int (Default: 1000)
             Number of slopes to consider during Hough transform
-        xbins: int (default: 50)
+        xbins: int (Default: 50)
             Number of bins for Hough accumulation
-        ybins: int (default: 50)
+        ybins: int (Default: 50)
             Number of bins for Hough accumulation
-        min_wavelength: float (default: 3000)
+        min_wavelength: float (Default: 3000)
             Minimum wavelength of the spectrum.
-        max_wavelength: float (default: 9000)
+        max_wavelength: float (Default: 9000)
             Maximum wavelength of the spectrum.
-        range_tolerance: float (default: 500)
+        range_tolerance: float (Default: 500)
             Estimation of the error on the provided spectral range
             e.g. 3000-5000 with tolerance 500 will search for
             solutions that may satisfy 2500-5500
-        linearity_tolerance: float (default: 100)
+        linearity_tolerance: float (Default: 100)
             A toleranceold (Ansgtroms) which defines some padding around the
             range tolerance to allow for non-linearity. This should be the
             maximum expected excursion from linearity.
@@ -504,23 +558,23 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        sample_size: int (default: 5)
+        sample_size: int (Default: 5)
             Number of pixel-wavelength hough pairs to be used for each arc line
             being picked.
-        top_n_candidate: int (default: 5)
+        top_n_candidate: int (Default: 5)
             Top ranked lines to be fitted.
-        linear: boolean (default: True)
+        linear: boolean (Default: True)
             True to use the hough transformed gradient, otherwise, use the
             known polynomial.
-        filter_close: boolean (default: False)
+        filter_close: boolean (Default: False)
             Remove the pairs that are out of bounds in the hough space.
-        ransac_tolerance: float (default: 1)
+        ransac_tolerance: float (Default: 1)
             The distance criteria  (Angstroms) to be considered an inlier to a
             fit. This should be close to the size of the expected residuals on
             the final fit (e.g. 1A is typical)
-        candidate_weighted: boolean (default: True)
+        candidate_weighted: boolean (Default: True)
             Set to True to down-weight pairs that are far from the fit.
-        hough_weight: float or None (default: 1.0)
+        hough_weight: float or None (Default: 1.0)
             Set to use the hough space to weigh the fit. The theoretical
             optimal weighting is unclear. The larger the value, the heavily it
             relies on the overdensity in the hough space for a good fit.
@@ -554,10 +608,10 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        pix : numeric value, list or numpy 1D array (N) (default: None)
+        pix : numeric value, list or numpy 1D array (N) (Default: None)
             Any pixel value, can be outside the detector chip and
             serve purely as anchor points.
-        wave : numeric value, list or numpy 1D array (N) (default: None)
+        wave : numeric value, list or numpy 1D array (N) (Default: None)
             The matching wavelength for each of the pix.
 
         '''
@@ -654,16 +708,16 @@ class WavelengthCalibration():
         ----------
         elements: string or list of strings
             Chemical symbol, case insensitive
-        min_atlas_wavelength: float (default: None)
+        min_atlas_wavelength: float (Default: None)
             Minimum wavelength of the arc lines.
-        max_atlas_wavelength: float (default: None)
+        max_atlas_wavelength: float (Default: None)
             Maximum wavelength of the arc lines.
-        min_intensity: float (default: None)
+        min_intensity: float (Default: None)
             Minimum intensity of the arc lines. Refer to NIST for the
             intensity.
-        min_distance: float (default: None)
+        min_distance: float (Default: None)
             Minimum separation between neighbouring arc lines.
-        candidate_tolerance: float (default: 10)
+        candidate_tolerance: float (Default: 10)
             toleranceold  (Angstroms) for considering a point to be an inlier
             during candidate peak/line selection. This should be reasonable
             small as we want to search for candidate points which are
@@ -736,20 +790,20 @@ class WavelengthCalibration():
         ----------
         max_tries: int
             Number of trials of polynomial fitting.
-        fit_deg: int (default: 4)
+        fit_deg: int (Default: 4)
             The degree of the polynomial to be fitted.
-        fit_coeff: list (default: None)
-            *NOT CURRENTLY USED*
+        fit_coeff: list (Default: None)
+            *NOT CURRENTLY USED, as of 17 Jan 2021*
             Set the baseline of the least square fit. If no fits outform this
             set of polynomial coefficients, this will be used as the best fit.
-        fit_tolerance: float (default: 10)
+        fit_tolerance: float (Default: 10)
             Sets a tolerance on whether a fit found by RANSAC is considered
-            acceptable
-        fit_type: string (default: 'poly')
-            One of 'poly', 'legendre' or 'chebyshev'
-        brute_force: boolean (default: False)
+            acceptable.
+        fit_type: string (Default: 'poly')
+            One of 'poly', 'legendre' or 'chebyshev'.
+        brute_force: boolean (Default: False)
             Set to True to try all possible combination in the given parameter
-            space
+            space.
         progress: boolean
             Set to show the progress using tdqm (if imported).
         display: boolean
@@ -804,7 +858,7 @@ class WavelengthCalibration():
                    filename=None,
                    return_values=True):
         '''
-        *EXPERIMENTAL*
+        ** EXPERIMENTAL, as of 17 Jan 2021 **
         A wrapper function to fine tune wavelength calibration with RASCAL
         when there is already a set of good coefficienes.
 
@@ -828,20 +882,20 @@ class WavelengthCalibration():
         ----------
         fit_coeff : list
             List of polynomial fit coefficients.
-        n_delta : int (default: None)
+        n_delta : int (Default: None)
             The number of the highest polynomial order to be adjusted
-        refine : boolean (default: True)
+        refine : boolean (Default: True)
             Set to True to refine solution.
-        tolerance : float (default: 10.)
+        tolerance : float (Default: 10.)
             Absolute difference between fit and model in the unit of nm.
-        method : string (default: 'Nelder-Mead')
+        method : string (Default: 'Nelder-Mead')
             scipy.optimize.minimize method.
-        convergence : float (default: 1e-6)
+        convergence : float (Default: 1e-6)
             scipy.optimize.minimize tol.
-        robust_refit : boolean (default: True)
+        robust_refit : boolean (Default: True)
             Set to True to fit all the detected peaks with the given polynomial
             solution.
-        fit_deg : int (default: length of the input coefficients)
+        fit_deg : int (Default: length of the input coefficients)
             Order of polynomial fit with all the detected peaks.
         display: boolean
             Set to show diagnostic plot.
@@ -903,15 +957,70 @@ class WavelengthCalibration():
                   output='wavecal',
                   filename='wavecal',
                   overwrite=False,
+                  recreate=False,
                   empty_primary_hdu=True):
+        '''
+        Save the reduced data to disk, with a choice of any combination of the
+        data that are already present in the Spectrum1D. Because a
+        WavelengthCalibration only requires a subset of all the data, only
+        'wavecal' is guaranteed to exist.
+
+        Parameters
+        ----------
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            wavecal: 1 HDU
+                Polynomial coefficients for wavelength calibration
+        filename: String
+            Disk location to be written to. Default is at where the
+            process/subprocess is execuated.
+        overwrite: boolean
+            Default is False.
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
+
+        '''
 
         self.spectrum1D.save_fits(output=output,
                                   filename=filename,
                                   overwrite=overwrite,
+                                  recreate=recreate,
                                   empty_primary_hdu=empty_primary_hdu)
 
-    def save_csv(self, output='wavecal', filename='wavecal', overwrite=False):
+    def save_csv(self,
+                 output='wavecal',
+                 filename='wavecal',
+                 overwrite=False,
+                 recreate=False):
+        '''
+        Save the reduced data to disk, with a choice of any combination of the
+        data that are already present in the Spectrum1D. Because a
+        WavelengthCalibration only requires a subset of all the data, only
+        'wavecal' is guaranteed to exist.
+
+        Parameters
+        ----------
+        output: String
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strings are delimited by "+",
+
+            wavecal: 1 HDU
+                Polynomial coefficients for wavelength calibration
+        filename: String
+            Disk location to be written to. Default is at where the
+            process/subprocess is execuated.
+        overwrite: boolean
+            Default is False.
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
+
+        '''
 
         self.spectrum1D.save_csv(output=output,
                                  filename=filename,
-                                 overwrite=overwrite)
+                                 overwrite=overwrite,
+                                 recreate=recreate)

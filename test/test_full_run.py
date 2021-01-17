@@ -26,6 +26,7 @@ def test_full_run():
     # Science frame
     lhs6328_frame = image_reduction.ImageReduction(
         'test/test_data/sprat_LHS6328.list',
+        log_level='INFO',
         log_file_folder='test/test_output/')
     lhs6328_frame.reduce()
     lhs6328_frame.save_fits('test/test_output/test_full_run_standard_image',
@@ -37,6 +38,7 @@ def test_full_run():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
     lhs6328_twodspec.ap_trace(nspec=2, display=False)
@@ -88,6 +90,7 @@ def test_full_run():
     # Standard frame
     standard_frame = image_reduction.ImageReduction(
         'test/test_data/sprat_Hiltner102.list',
+        log_level='INFO',
         log_file_folder='test/test_output/')
     standard_frame.reduce()
     standard_frame.save_fits('test/test_output/test_full_run_standard_image',
@@ -99,6 +102,7 @@ def test_full_run():
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
         readnoise=5.7,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
     hilt102_twodspec.ap_trace(nspec=1, resample_factor=10, display=False)
@@ -124,6 +128,7 @@ def test_full_run():
 
     # Handle 1D Science spectrum
     lhs6328_onedspec = spectral_reduction.OneDSpec(
+        log_level='INFO',
         log_file_folder='test/test_output/')
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
@@ -173,9 +178,14 @@ def test_full_run():
 
     lhs6328_onedspec.compute_sensitivity(k=3,
                                          method='interpolate',
-                                         mask_fit_size=1)
+                                         mask_fit_size=1,
+                                         extinction_correction=True)
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
+
+    # Apply atmospheric extinction correction
+    lhs6328_onedspec.set_atmospheric_extinction(location='orm')
+    lhs6328_onedspec.apply_atmospheric_extinction_correction()
 
     # Create FITS
     lhs6328_onedspec.create_fits(output='trace+count')

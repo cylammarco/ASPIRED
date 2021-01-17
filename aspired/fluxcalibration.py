@@ -16,12 +16,14 @@ from .spectrum1D import Spectrum1D
 
 base_dir = os.path.dirname(__file__)
 
+__all__ = ['StandardLibrary', 'FluxCalibration']
+
 
 class StandardLibrary:
     def __init__(self,
                  verbose=True,
                  logger_name='StandardLibrary',
-                 log_level='warn',
+                 log_level='WARNING',
                  log_file_folder='default',
                  log_file_name='default'):
         '''
@@ -40,17 +42,24 @@ class StandardLibrary:
 
         Parameters
         ----------
-        verbose: boolean
-            Set to True to suppress all verbose warnings.
-        logger_name: str (Default: OneDSpec)
+        verbose: boolean (Default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
+        logger_name: str (Default: StandardLibrary)
             This will set the name of the logger, if the name is used already,
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARN)
+        log_level: str (Default: WARNING)
             Four levels of logging are available, in decreasing order of
-            information and increasing order of severity:
-            CRITICAL, DEBUG, INFO, WARNING, ERROR
+            information and increasing order of severity: (1) DEBUG, (2) INFO,
+            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+            there is suboptimal operations in some parts of that step. ERROR
+            means that the requested operation cannot be performed, but the
+            software can handle it by either using the default setting or
+            skipping the operation. CRITICAL means that the requested
+            operation cannot be resolved without human interaction, this is
+            most usually coming from missing data.
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
@@ -64,14 +73,16 @@ class StandardLibrary:
         logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
             logging.basicConfig(level=logging.CRITICAL)
-        if log_level == "ERROR":
+        elif log_level == "ERROR":
             logging.basicConfig(level=logging.ERROR)
-        if log_level == "WARNING":
+        elif log_level == "WARNING":
             logging.basicConfig(level=logging.WARNING)
-        if log_level == "INFO":
+        elif log_level == "INFO":
             logging.basicConfig(level=logging.INFO)
-        if log_level == "DEBUG":
+        elif log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
+        else:
+            raise ValueError('Unknonw logging level.')
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -101,7 +112,7 @@ class StandardLibrary:
 
     def _load_standard_dictionary(self):
         '''
-        Load the dictionaries
+        Load the dictionaries containing the names of all the standard stars.
 
         '''
 
@@ -115,6 +126,10 @@ class StandardLibrary:
                     'aspired', 'standards/uname_to_lib.json')))
 
     def _get_eso_standard(self):
+        '''
+        Formatter for reading the ESO standards.
+
+        '''
 
         folder = self.library
 
@@ -147,6 +162,10 @@ class StandardLibrary:
                 self.standard_fluxmag_true *= 1e-16
 
     def _get_ing_standard(self):
+        '''
+        Formatter for reading the ING standards.
+
+        '''
 
         folder = self.library.split("_")[0]
 
@@ -228,7 +247,10 @@ class StandardLibrary:
                                               self.standard_wave_true**2)
 
     def _get_iraf_standard(self):
-        # iraf is always in AB magnitude
+        '''
+        Formatter for reading the iraf standards.
+
+        '''
 
         folder = self.library
 
@@ -242,6 +264,7 @@ class StandardLibrary:
         self.standard_wave_true = f[:, 0]
         self.standard_fluxmag_true = f[:, 1]
 
+        # iraf is always in AB magnitude
         if self.ftype == 'flux':
 
             # Convert from AB mag to flux
@@ -260,7 +283,7 @@ class StandardLibrary:
         ----------
         target: str
             Name of the standard star
-        cutoff: float (default: 0.4)
+        cutoff: float (Default: 0.4)
             The similarity toleranceold
             [0 (completely different) - 1 (identical)]
 
@@ -489,7 +512,7 @@ class FluxCalibration(StandardLibrary):
     def __init__(self,
                  verbose=True,
                  logger_name='FluxCalibration',
-                 log_level='warn',
+                 log_level='WARNING',
                  log_file_folder='default',
                  log_file_name='default'):
         '''
@@ -497,14 +520,15 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
-        verbose: boolean
-            Set to True to suppress all verbose warnings.
-        logger_name: str (Default: OneDSpec)
+        verbose: boolean (Default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
+        logger_name: str (Default: FluxCalibration)
             This will set the name of the logger, if the name is used already,
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARN)
+        log_level: str (Default: WARNING)
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity:
             CRITICAL, DEBUG, INFO, WARNING, ERROR
@@ -577,9 +601,26 @@ class FluxCalibration(StandardLibrary):
 
     def from_spectrum1D(self, spectrum1D, merge=False):
         '''
-        Note: This is passing object by reference by default, so it directly
-        modifies the spectrum1D supplied.
+        This function copies all the info from the spectrum1D, because users
+        may supply different level/combination of reduction, everything is
+        copied from the spectrum1D even though in most cases only a None
+        will be passed.
+
+        By default, this is passing object by reference by default, so it
+        directly modifies the spectrum1D supplied. By setting merger to True,
+        it copies the data into the Spectrum1D in the FluxCalibration object.
+
+        Parameters
+        ----------
+        spectrum1D: Spectrum1D object
+            The Spectrum1D to be referenced or copied.
+        merge: boolean (Default: None)
+            Set to True to copy everything over to the local Spectrum1D,
+            hence FluxCalibration will not be acting on the Spectrum1D
+            outside.
+
         '''
+
         if merge:
             self.spectrum1D.merge(spectrum1D)
         else:
@@ -588,6 +629,7 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D_imported = True
 
     def remove_spectrum1D(self):
+
         self.spectrum1D = Spectrum1D(spec_id=0,
                                      verbose=self.verbose,
                                      logger_name=self.logger_name,
@@ -597,6 +639,11 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D_imported = False
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
+        """
+        Load the literature values of the standard star.
+
+        """
+
         super().load_standard(target=target,
                               library=library,
                               ftype=ftype,
@@ -672,6 +719,9 @@ class FluxCalibration(StandardLibrary):
             Order of polynomial to be fitted over the masked regions
         mask_fit_size: int
             Number of "pixels" to be fitted on each side of the masked regions.
+        return_function: boolean
+            Set to True to return the callable function of the sensitivity
+            curve.
 
         Returns
         -------
@@ -1239,7 +1289,8 @@ class FluxCalibration(StandardLibrary):
 
     def create_fits(self,
                     output='count+count_resampled+flux+flux_resampled',
-                    empty_primary_hdu=True):
+                    empty_primary_hdu=True,
+                    recreate=False):
         '''
         Parameters
         ----------
@@ -1264,33 +1315,38 @@ class FluxCalibration(StandardLibrary):
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        empty_primary_hdu: boolean (default: True)
-            Set to True to leave the Primary HDU blank (default: True)
-        overwrite: boolean
-            Default is False.
+        empty_primary_hdu: boolean (Default: True)
+            Set to True to leave the Primary HDU blank (Default: True)
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
 
         '''
 
         # If flux is calibrated
         self.spectrum1D.create_fits(output=output,
-                                    empty_primary_hdu=empty_primary_hdu)
+                                    empty_primary_hdu=empty_primary_hdu,
+                                    recreate=recreate)
 
     def save_fits(
             self,
             output='count_resampled+sensitivity_resampled+flux_resampled',
             filename='fluxcal',
             empty_primary_hdu=True,
-            overwrite=False):
+            overwrite=False,
+            recreate=False):
         '''
-        Save the reduced data to disk, with a choice of any combination of the
-        5 sets of data, see below the 'output' parameters for details.
+        Save the reduced data to disk, with a choice of any combination of
+        the data that are already present in the Spectrum1D, see below the
+        'output' parameters for details.
 
         Parameters
         ----------
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
-            input strings are delimited by "+",
+            input strings are delimited by "+". Because a FluxCalibration
+            only requires a subset of all the data, only a few data products
+            are guaranteed to exist.
 
             count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
@@ -1305,10 +1361,12 @@ class FluxCalibration(StandardLibrary):
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        empty_primary_hdu: boolean (default: True)
-            Set to True to leave the Primary HDU blank (default: True)
+        empty_primary_hdu: boolean (Default: True)
+            Set to True to leave the Primary HDU blank (Default: True)
         overwrite: boolean
             Default is False.
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
 
         '''
 
@@ -1318,31 +1376,31 @@ class FluxCalibration(StandardLibrary):
                 self.target_spec_id)
         else:
             filename = os.path.splitext(filename)[0]
-
-        # Create the FITS here to go through all the checks, the
-        # save_fits() below does not re-create the FITS. A warning will
-        # be given, but it can be ignored.
-        self.create_fits(output=output, empty_primary_hdu=empty_primary_hdu)
 
         self.spectrum1D.save_fits(output=output,
                                   filename=filename,
                                   overwrite=overwrite,
+                                  recreate=recreate,
                                   empty_primary_hdu=empty_primary_hdu)
 
     def save_csv(self,
-                 output='count_resampled+sensitivity_resampled+flux_resampled',
+                 output='sensitivity_resampled+flux_resampled',
                  filename='fluxcal',
-                 overwrite=False):
+                 overwrite=False,
+                 recreate=False):
         '''
-        Save the reduced data to disk, with a choice of any combination of the
-        5 sets of data, see below the 'output' parameters for details.
+        Save the reduced data to disk, with a choice of any combination of
+        the data that are already present in the Spectrum1D, see below the
+        'output' parameters for details.
 
         Parameters
         ----------
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
-            input strings are delimited by "+",
+            input strings are delimited by "+". Because a FluxCalibration
+            only requires a subset of all the data, only a few data products
+            are guaranteed to exist.
 
             count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
@@ -1359,6 +1417,8 @@ class FluxCalibration(StandardLibrary):
             process/subprocess is execuated.
         overwrite: boolean
             Default is False.
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
 
         '''
 
@@ -1369,14 +1429,10 @@ class FluxCalibration(StandardLibrary):
         else:
             filename = os.path.splitext(filename)[0]
 
-        # Create the FITS here to go through all the checks, the
-        # save_fits() below does not re-create the FITS. A warning will be
-        # given, but it can be ignored.
-        self.create_fits(output=output, empty_primary_hdu=False)
-
         self.spectrum1D.save_csv(output=output,
                                  filename=filename,
-                                 overwrite=overwrite)
+                                 overwrite=overwrite,
+                                 recreate=recreate)
 
     def get_spectrum1D(self):
 

@@ -99,7 +99,18 @@ science and standard spectra are shown.
 
     and the spectrum of the standard frame:
 
-5.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
+5.  Add the 2D arc. The `extract_arc_spec()` automatrically apply the traces
+    found above to extract the spectra of the arcs.
+
+    .. code-block:: python
+
+      science2D.add_arc(science_frame)
+      science2D.extract_arc_spec()
+
+      standard2D.add_arc(standard_frame)
+      standard2D.extract_arc_spec()
+
+6.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
     and the extracted spectra from the TwoDSpec objects,
 
     .. code-block:: python
@@ -108,25 +119,19 @@ science and standard spectra are shown.
       onedspec.from_twodspec(science2D, stype='science')
       onedspec.from_twodspec(standard2D, stype='standard')
 
-6.  Add the arcs to the onedspec, whether it is an arc for the science or for 
-    the standard has to be specified, otherwise it will assume the same arc will
-    be used by both. The `extract_arc_spec()` automatrically apply the traces
-    from the TwoDSpec in order to extract the spectra of the arcs.
+7.  Identify the arclines from the extracted spectrum of the arc.
 
     .. code-block:: python
 
-      onedspec.add_arc(science_frame, stype='science')
-      onedspec.add_arc(standard_frame, stype='standard')
-      onedspec.extract_arc_spec()
       onedspec.find_arc_lines()
 
-    Then, the position of the peaks, which are the arc lines, can be found for
+    Then, the position of the peaks of the arc lines, can be found for
     performing wavelength calibration for each trace.
 
     .. raw:: html
       :file: ../_static/9_science_arc_lines.html
 
-7.  Initialise a calibrator and add element lines to prepare for wavelength
+8.  Initialise a calibrator and add element lines to prepare for wavelength
     calibration, set the various calibrator, Hough transform and RANSAC
     properties before performing the Hough Transform that is used for the
     automated wavelength calibration. And finally fit for the solution and
@@ -145,7 +150,7 @@ science and standard spectra are shown.
       onedspec.fit()
       onedspec.apply_wavelength_calibration()
 
-8.  Next step is the perform the flux calibration, which requires comparing the
+9.  Next step is the perform the flux calibration, which requires comparing the
     spectrum of the standard to the literature values. To do this, first we need
     to load the literature template from the built-in library, which contains
     all the iraf and ESO standards.
@@ -166,7 +171,7 @@ science and standard spectra are shown.
     .. raw:: html
       :file: ../_static/12_sensitivity_curve.html
 
-9.  Apply the fluxcalibration and inspect the reduced spectra.
+10.  Apply the fluxcalibration and inspect the reduced spectra.
 
     .. code-block:: python
 

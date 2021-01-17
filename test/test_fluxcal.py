@@ -5,7 +5,7 @@ from aspired.spectrum1D import Spectrum1D
 
 def test_sensitivity():
 
-    hiltner_spectrum1D = Spectrum1D()
+    hiltner_spectrum1D = Spectrum1D(log_file_folder='test/test_output/')
     sens = FluxCalibration(log_file_folder='test/test_output/')
 
     # Standard count
@@ -40,8 +40,8 @@ def test_sensitivity():
 
 def test_fluxcalibration():
 
-    hiltner_spectrum1D = Spectrum1D()
-    lhs6328_spectrum1D = Spectrum1D()
+    hiltner_spectrum1D = Spectrum1D(log_file_folder='test/test_output/')
+    lhs6328_spectrum1D = Spectrum1D(log_file_folder='test/test_output/')
 
     fluxcalibrator = FluxCalibration(log_file_folder='test/test_output/')
 
