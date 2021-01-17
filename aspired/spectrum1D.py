@@ -6,34 +6,47 @@ import numpy as np
 from astropy.io import fits
 from scipy import interpolate as itp
 
+__all__ = ['Spectrum1D']
+
 
 class Spectrum1D():
     '''
     Base class of a 1D spectral object to hold the information of each
-    extracted spectrum.
+    extracted spectrum and the raw headers if was provided during the
+    data reduction.
 
     '''
     def __init__(self,
                  spec_id=None,
                  verbose=True,
                  logger_name='Spectrum1D',
-                 log_level='warn',
+                 log_level='WARN',
                  log_file_folder='default',
                  log_file_name='default'):
         """
         Parameters
         ----------
-        verbose: boolean
-            Set to True to suppress all verbose warnings.
-        logger_name: str (Default: OneDSpec)
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object. Note that this
+            ID is unique in each reduction only.
+        verbose: boolean (Default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
+        logger_name: str (Default: Spectrum1D)
             This will set the name of the logger, if the name is used already,
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
         log_level: str (Default: WARN)
             Four levels of logging are available, in decreasing order of
-            information and increasing order of severity:
-            CRITICAL, DEBUG, INFO, WARNING, ERROR
+            information and increasing order of severity: (1) DEBUG, (2) INFO,
+            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+            there is suboptimal operations in some parts of that step. ERROR
+            means that the requested operation cannot be performed, but the
+            software can handle it by either using the default setting or
+            skipping the operation. CRITICAL means that the requested
+            operation cannot be resolved without human interaction, this is
+            most usually coming from missing data.
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
@@ -47,14 +60,16 @@ class Spectrum1D():
         logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
             logging.basicConfig(level=logging.CRITICAL)
-        if log_level == "ERROR":
+        elif log_level == "ERROR":
             logging.basicConfig(level=logging.ERROR)
-        if log_level == "WARNING":
+        elif log_level == "WARNING":
             logging.basicConfig(level=logging.WARNING)
-        if log_level == "INFO":
+        elif log_level == "INFO":
             logging.basicConfig(level=logging.INFO)
-        if log_level == "DEBUG":
+        elif log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
+        else:
+            raise ValueError('Unknonw logging level.')
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -120,7 +135,6 @@ class Spectrum1D():
         self.sepup = None
         self.skywidthdn = None
         self.skywidthup = None
-        self.background = None
         self.extraction_type = None
         self.count = None
         self.count_err = None
@@ -281,6 +295,13 @@ class Spectrum1D():
         This function copies all the info from the supplied spectrum1D to
         this one.
 
+        Parameters
+        ----------
+        spectrum1D: Spectrum1D object
+            The source Spectrum1D to be deep copied over.
+        overwrite: boolean (Default: False)
+            Set to True to overwrite all the data in this Spectrum1D.
+
         '''
 
         for attr, value in self.__dict__.items():
@@ -309,6 +330,16 @@ class Spectrum1D():
                         pass
 
     def add_spectrum_header(self, header):
+        '''
+        Add a header for the spectrum. Typically put the header of the
+        raw 2D spectral image of the science target(s) here. Some
+        automated operations rely on reading from the header.
+
+        Parameters
+        ----------
+        header: astropy.io.fits.Header object
+
+        '''
 
         self.spectrum_header = header
 
@@ -317,6 +348,19 @@ class Spectrum1D():
         self.spectrum_header = None
 
     def add_standard_header(self, header):
+        '''
+        Add a header for the standard star that it is flux calibrated
+        against. The, if opted for, automatic atmospheric extinction
+        correction is applied based on the airmass found in this header.
+        Typically put the header of the raw 2D spectral image of the
+        standard star here. Some automated operations rely on reading
+        from the header.
+
+        Parameters
+        ----------
+        header: astropy.io.fits.Header object
+
+        '''
 
         self.standard_header = header
 
@@ -325,6 +369,17 @@ class Spectrum1D():
         self.standard_header = None
 
     def add_arc_header(self, header):
+        '''
+        Add a header for the arc that it is wavelength calibrated
+        against. Typically put the header of the raw 2D spectral image
+        of the arc here. Some automated operations rely on reading from
+        the header.
+
+        Parameters
+        ----------
+        header: astropy.io.fits.Header object
+
+        '''
 
         self.arc_header = header
 
@@ -333,6 +388,24 @@ class Spectrum1D():
         self.arc_header = None
 
     def add_trace(self, trace, trace_sigma, pixel_list=None):
+        '''
+        Add the trace of the spectrum.
+
+        Parameters
+        ----------
+        trace: list or numpy.ndarray (N)
+            The spatial pixel value (can be sub-pixel) of the trace at each
+            spectral position.
+        trace_sigma: list or numpy.ndarray (N)
+            Standard deviation of the Gaussian profile of a trace
+        pixel_list: list or numpy array (Default: None)
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range (num_pix), for example, in the case of accounting for chip
+            gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+
+        '''
 
         assert isinstance(
             trace, (list, np.ndarray)), 'trace has to be a list or an array'
@@ -375,6 +448,47 @@ class Spectrum1D():
 
     def add_aperture(self, widthdn, widthup, sepdn, sepup, skywidthdn,
                      skywidthup):
+        """
+        The size of the aperture in which the spectrum is extracted. This is
+        merely the limit where extraction is performed, it does not hold the
+        information of the weighting::
+
+                        .................................   ^
+            Sky         .................................   |   skywidthup
+                        .................................   v
+                        .................................     ^
+                        .................................     | sepup
+                        .................................     v
+                        .................................   ^
+                        ---------------------------------   |   widthup
+            Spectrum    =================================   v ^
+                        ---------------------------------     | widthdn
+                        .................................     v
+                        .................................   ^
+                        .................................   |   sepdn
+                        .................................   v
+                        .................................     ^
+            Sky         .................................     | skywidthdn
+                        .................................     v
+
+        Parameters
+        ----------
+        widthdn: real positive number
+            The aperture size on the bottom side of the spectrum.
+        widthup: real positive number
+            The aperture size on the top side of the spectrum.
+        sepdn: real positive number
+            The gap between the spectrum and the sky region on the bottom
+            side of the spectrum.
+        sepup: real positive number
+            The gap between the spectrum and the sky region on the top
+            side of the spectrum.
+        skywidthdn: real positive number
+            The sky region on the bottom side of the spectrum.
+        skywidthup: real positive number
+            The sky region on the top side of the spectrum.
+
+        """
 
         assert np.isfinite(widthdn), 'widthdn has to be finite.'
         assert np.isfinite(widthup), 'widthup has to be finite.'
@@ -390,6 +504,21 @@ class Spectrum1D():
         self.skywidthup = skywidthup
 
     def add_count(self, count, count_err=None, count_sky=None):
+        """
+        Adding the photoelectron counts and the asociated optional
+        uncertainty and sky counts.
+
+        Parameters
+        ----------
+        count: 1-d array
+            The summed count at each column along the trace.
+        count_err: 1-d array
+            the uncertainties of the count values
+        count_sky: 1-d array
+            The integrated sky values along each column, suitable for
+            subtracting from the output of ap_extract
+
+        """
 
         assert isinstance(
             count, (list, np.ndarray)), 'count has to be a list or an array'
@@ -447,6 +576,10 @@ class Spectrum1D():
         self.count_sky = None
 
     def add_variances(self, var):
+        '''
+        Adding the weight map of the extraction.
+
+        '''
 
         self.var = var
 
@@ -455,6 +588,10 @@ class Spectrum1D():
         self.var = None
 
     def add_arc_spec(self, arc_spec):
+        '''
+        Adding the extracted spectrum of the arc.
+
+        '''
 
         assert isinstance(arc_spec,
                           (list, np.ndarray)), 'arc_spec has to be a list'
@@ -464,6 +601,11 @@ class Spectrum1D():
         self.arc_spec = None
 
     def add_pixel_list(self, pixel_list):
+        '''
+        Adding the pixel list, which contain the effective pixel values that
+        has accounted for chip gaps etc.
+
+        '''
 
         assert isinstance(pixel_list,
                           (list, np.ndarray)), 'pixel_list has to be a list'
@@ -474,6 +616,11 @@ class Spectrum1D():
         self.pixel_list = None
 
     def add_pixel_mapping_itp(self, pixel_mapping_itp):
+        '''
+        Adding the interpolated callable function that convert raw pixel
+        values into effective pixel values.
+
+        '''
 
         assert type(
             pixel_mapping_itp
@@ -486,6 +633,10 @@ class Spectrum1D():
         self.pixel_mapping_itp = None
 
     def add_peaks(self, peaks):
+        '''
+        Adding the pixel values (int) where arc lines are located.
+
+        '''
 
         assert isinstance(peaks, (list, np.ndarray)), 'peaks has to be a list'
         self.peaks = peaks
@@ -495,6 +646,10 @@ class Spectrum1D():
         self.peaks = None
 
     def add_peaks_refined(self, peaks_refined):
+        '''
+        Adding the refined pixel values (float) where arc lines are located.
+
+        '''
 
         assert isinstance(peaks_refined,
                           (list, np.ndarray)), 'peaks_refined has to be a list'
@@ -505,6 +660,10 @@ class Spectrum1D():
         self.peaks_refined = None
 
     def add_peaks_wave(self, peaks_wave):
+        '''
+        Adding the wavelength (Angstrom) of the arc lines.
+
+        '''
 
         assert isinstance(peaks_wave,
                           (list, np.ndarray)), 'peaks_wave has to be a list'
@@ -514,17 +673,11 @@ class Spectrum1D():
 
         self.peaks_wave = None
 
-    def add_background(self, background):
-
-        # background Count level
-        assert np.isfinite(background), 'background has to be finite.'
-        self.background = background
-
-    def remove_background(self):
-
-        self.background = None
-
     def add_calibrator(self, calibrator):
+        '''
+        Adding a RASCAL Calibrator object.
+
+        '''
 
         self.calibrator = calibrator
 
@@ -534,6 +687,10 @@ class Spectrum1D():
 
     def add_atlas_wavelength_range(self, min_atlas_wavelength,
                                    max_atlas_wavelength):
+        '''
+        Adding the allowed range of wavelength calibration.
+
+        '''
 
         assert np.isfinite(
             min_atlas_wavelength), 'min_atlas_wavelength has to be finite.'
@@ -548,6 +705,11 @@ class Spectrum1D():
         self.max_atlas_wavelength = None
 
     def add_min_atlas_intensity(self, min_atlas_intensity):
+        '''
+        Adding the minimum allowed line intensity (theoretical NIST value)
+        that were used for wavelength calibration.
+
+        '''
 
         assert np.isfinite(
             min_atlas_intensity), 'min_atlas_intensity has to be finite.'
@@ -558,6 +720,12 @@ class Spectrum1D():
         self.min_atlas_intensity = None
 
     def add_min_atlas_distance(self, min_atlas_distance):
+        '''
+        Adding the minimum allowed line distance (only consider lines that
+        passed the minimum intensity threshold) that were used for
+        wavelength calibration.
+
+        '''
 
         assert np.isfinite(
             min_atlas_distance), 'min_atlas_distance has to be finite.'
@@ -568,6 +736,12 @@ class Spectrum1D():
         self.min_atlas_distance = None
 
     def add_gain(self, gain):
+        """
+        Adding the gain value of the spectral image. This value can be
+        different from the one in the header as this can be overwritten
+        by an user input, while the header value is raw.
+
+        """
 
         assert np.isfinite(gain), 'gain has to be finite.'
         self.gain = gain
@@ -577,6 +751,12 @@ class Spectrum1D():
         self.gain = None
 
     def add_readnoise(self, readnoise):
+        """
+        Adding the readnoise value of the spectral image. This value can be
+        different from the one in the header as this can be overwritten
+        by an user input, while the header value is raw.
+
+        """
 
         assert np.isfinite(readnoise), 'readnoise has to be finite.'
         self.readnoise = readnoise
@@ -586,6 +766,12 @@ class Spectrum1D():
         self.readnoise = None
 
     def add_exptime(self, exptime):
+        """
+        Adding the exposure time of the spectral image. This value can be
+        different from the one in the header as this can be overwritten
+        by an user input, while the header value is raw.
+
+        """
 
         assert np.isfinite(exptime), 'exptime has to be finite.'
         self.exptime = exptime
@@ -595,6 +781,13 @@ class Spectrum1D():
         self.exptime = None
 
     def add_weather_condition(self, pressure, temperature, relative_humidity):
+        """
+        Adding the pressure, temperature and relative humidity when the
+        spectral image was taken. These value can be different from the ones
+        in the header as this can be overwritten by an user input, while the
+        header value is raw.
+
+        """
 
         assert np.isfinite(pressure), 'pressure has to be finite.'
         assert np.isfinite(temperature), 'temperature has to be finite.'
@@ -612,6 +805,11 @@ class Spectrum1D():
         self.relative_humidity = None
 
     def add_fit_type(self, fit_type):
+        """
+        Adding the kind of polynomial used for fitting the
+        pixel-to-wavelength function.
+
+        """
 
         assert type(fit_type) == str, 'fit_type has to be a string'
         assert fit_type in ['poly', 'leg', 'cheb'], 'fit_type must be '
@@ -622,12 +820,17 @@ class Spectrum1D():
 
         self.fit_type = None
 
-    def add_fit_coeff(self, fit_coeff, fit_type):
+    def add_fit_coeff(self, fit_coeff):
+        """
+        Adding the polynomial co-efficients of the pixel-to-wavelength
+        function. Note that this overwrites the wavelength calibrated
+        fit coefficients.
+
+        """
 
         assert isinstance(fit_coeff,
                           (list, np.ndarray)), 'fit_coeff has to be a list.'
         self.fit_coeff = fit_coeff
-        self.fit_type = fit_type
 
     def remove_fit_coeff(self):
 
@@ -635,6 +838,10 @@ class Spectrum1D():
 
     def add_calibrator_properties(self, num_pix, pixel_list, plotting_library,
                                   log_level):
+        """
+        Adding the properties of the RASCAL Calibrator.
+
+        """
 
         self.num_pix = num_pix
         self.plotting_library = plotting_library
@@ -651,6 +858,10 @@ class Spectrum1D():
     def add_hough_properties(self, num_slopes, xbins, ybins, min_wavelength,
                              max_wavelength, range_tolerance,
                              linearity_tolerance):
+        """
+        Adding the hough transform configuration of the RASCAL Calibrator.
+
+        """
 
         self.num_slopes = num_slopes
         self.xbins = xbins
@@ -673,6 +884,10 @@ class Spectrum1D():
     def add_ransac_properties(self, sample_size, top_n_candidate, linear,
                               filter_close, ransac_tolerance,
                               candidate_weighted, hough_weight):
+        """
+        Adding the RANSAC properties of the RASCAL Calibrator.
+
+        """
 
         self.sample_size = sample_size
         self.top_n_candidate = top_n_candidate
@@ -693,6 +908,10 @@ class Spectrum1D():
         self.hough_weight = None
 
     def add_fit_output_final(self, fit_coeff, rms, residual, peak_utilisation):
+        """
+        Adding the final accepted polynomial solution.
+
+        """
 
         # add assertion here
         self.fit_coeff = fit_coeff
@@ -709,6 +928,10 @@ class Spectrum1D():
 
     def add_fit_output_rascal(self, fit_coeff, rms, residual,
                               peak_utilisation):
+        """
+        Adding the final accepted RASCAL polynomial solution.
+
+        """
 
         # add assertion here
         self.fit_coeff_rascal = fit_coeff
@@ -726,6 +949,10 @@ class Spectrum1D():
 
     def add_fit_output_refine(self, fit_coeff, rms, residual,
                               peak_utilisation):
+        """
+        Adding the refined polynomial solution.
+
+        """
 
         # add assertion here
         self.fit_coeff_refine = fit_coeff
@@ -742,6 +969,10 @@ class Spectrum1D():
         self.peak_utilisation_refine = None
 
     def add_wavelength(self, wave):
+        """
+        Adding the wavelength of each (effective) pixel.
+
+        """
 
         self.wave = wave
         # Note that the native pixels have varing bin size.
@@ -754,6 +985,11 @@ class Spectrum1D():
         self.wave = None
 
     def add_wavelength_resampled(self, wave_resampled):
+        """
+        Adding the wavelength of the resampled spectrum which has an evenly
+        distributed wavelength spacing.
+
+        """
 
         # We assume that the resampled spectrum has fixed bin size
         self.wave_bin = np.nanmedian(np.array(np.ediff1d(wave_resampled)))
@@ -770,6 +1006,11 @@ class Spectrum1D():
 
     def add_count_resampled(self, count_resampled, count_err_resampled,
                             count_sky_resampled):
+        """
+        Adding the photoelectron counts of the resampled spectrum which has
+        an evenly distributed wavelength spacing.
+
+        """
 
         self.count_resampled = count_resampled
         self.count_err_resampled = count_err_resampled
@@ -782,11 +1023,19 @@ class Spectrum1D():
         self.count_sky_resampled = None
 
     def add_standard_star(self, library, target):
+        """
+        Adding the name of the standard star and its source.
+
+        """
 
         self.library = library
         self.target = target
 
     def add_smoothing(self, smooth, slength, sorder):
+        """
+        Adding the smoothing parameters for computing the sensitivity curve.
+
+        """
 
         self.smooth = smooth
         self.slength = slength
@@ -799,6 +1048,10 @@ class Spectrum1D():
         self.sorder = None
 
     def add_sensitivity_func(self, sensitivity_func):
+        """
+        Adding the callable function of the sensitivity curve.
+
+        """
 
         self.sensitivity_func = sensitivity_func
 
@@ -807,6 +1060,11 @@ class Spectrum1D():
         self.sensitivity_func = None
 
     def add_sensitivity(self, sensitivity):
+        """
+        Adding the sensitivity as it is when dividing the literature standard
+        by the photoelectron count.
+
+        """
 
         self.sensitivity = sensitivity
 
@@ -814,7 +1072,24 @@ class Spectrum1D():
 
         self.sensitivity = None
 
+    def add_sensitivity_resampled(self, sensitivity_resampled):
+        """
+        Adding the sensitivity after the spectrum is resampled.
+
+        """
+
+        self.sensitivity_resampled = sensitivity_resampled
+
+    def remove_sensitivity_resampled(self):
+
+        self.sensitivity_resampled = None
+
     def add_literature_standard(self, wave_literature, flux_literature):
+        """
+        Adding the literature wavelength and flux values of the standard star
+        used for calibration.
+
+        """
 
         self.wave_literature = wave_literature
         self.flux_literature = flux_literature
@@ -825,6 +1100,11 @@ class Spectrum1D():
         self.flux_literature = None
 
     def add_flux(self, flux, flux_err, flux_sky):
+        """
+        Adding the flux and the associated uncertainty and sky background
+        in the raw pixel sampling.
+
+        """
 
         self.flux = flux
         self.flux_err = flux_err
@@ -838,6 +1118,11 @@ class Spectrum1D():
 
     def add_flux_resampled(self, flux_resampled, flux_err_resampled,
                            flux_sky_resampled):
+        """
+        Adding the flux and the associated uncertainty and sky background
+        of the resampled spectrum.
+
+        """
 
         self.flux_resampled = flux_resampled
         self.flux_err_resampled = flux_err_resampled
@@ -849,21 +1134,19 @@ class Spectrum1D():
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
 
-    def add_sensitivity_resampled(self, sensitivity_resampled):
-
-        self.sensitivity_resampled = sensitivity_resampled
-
-    def remove_sensitivity_resampled(self):
-
-        self.sensitivity_resampled = None
-
     def _modify_imagehdu_data(self, hdulist, idx, method, *args):
+        """
+        Wrapper function to modify the data of an ImageHDU object.
+
+        """
 
         method_to_call = getattr(hdulist[idx].data, method)
         method_to_call(*args)
 
     def _modify_imagehdu_header(self, hdulist, idx, method, *args):
         '''
+        Wrapper function to modify the header of an ImageHDU object.
+
         e.g.
         method = 'set'
         args = 'BUNIT', 'Angstroms'
@@ -1671,35 +1954,42 @@ class Spectrum1D():
                     empty_primary_hdu=True,
                     return_hdu_list=False):
         '''
+        Create a HDU list, with a choice of any combination of the
+        data, see below the 'output' parameters for details.
+
         Parameters
         ----------
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
-            input strings are delimited by "+",
+            input strings are delimited by "+":
 
-            trace: 2 HDUs
-                Trace, and trace width (pixel)
-            count: 3 HDUs
-                Count, uncertainty, and sky (pixel)
-            weight_map: 1 HDU
-                Weight (pixel)
-            arc_spec: 3 HDUs
-                1D arc spectrum, arc line pixels, and arc line effective pixels
-            wavecal: 1 HDU
-                Polynomial coefficients for wavelength calibration
-            wavelength: 1 HDU
-                Wavelength of each pixel
-            count_resampled: 3 HDUs
-                Resampled Count, uncertainty, and sky (wavelength)
-            flux: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (pixel)
-            flux_resampled: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (wavelength)
-        empty_primary_hdu: boolean (default: True)
-            Set to True to leave the Primary HDU blank (default: True)
-        return_hdu_list: boolean (default: False)
-            Set to True to return the HDU List
+                trace: 2 HDUs
+                    Trace, and trace width (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
+                arc_spec: 3 HDUs
+                    1D arc spectrum, arc line position (pixel), and arc
+                    line effective position (pixel)
+                wavecal: 1 HDU
+                    Polynomial coefficients for wavelength calibration
+                wavelength: 1 HDU
+                    Wavelength of each pixel
+                count_resampled: 3 HDUs
+                    Resampled Count, uncertainty, and sky (wavelength)
+                flux: 4 HDUs
+                    Flux, uncertainty, sky, and sensitivity (pixel)
+                flux_resampled: 4 HDUs
+                    Flux, uncertainty, sky, and sensitivity (wavelength)
+
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
+        empty_primary_hdu: boolean (Default: True)
+            Set to True to leave the Primary HDU blank.
+        return_hdu_list: boolean (Default: False)
+            Set to True to return the HDU List.
 
         '''
 
@@ -1855,6 +2145,9 @@ class Spectrum1D():
                   recreate=False,
                   empty_primary_hdu=True):
         '''
+        Save the reduced data to disk, with a choice of any combination of the
+        data, see below the 'output' parameters for details.
+
         Parameters
         ----------
         output: String
@@ -1862,40 +2155,46 @@ class Spectrum1D():
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            trace: 2 HDUs
-                Trace, and trace width (pixel)
-            count: 3 HDUs
-                Count, uncertainty, and sky (pixel)
-            weight_map: 1 HDU
-                Weight (pixel)
-            arc_spec: 3 HDUs
-                1D arc spectrum, arc line pixels, and arc line effective pixels
-            wavecal: 1 HDU
-                Polynomial coefficients for wavelength calibration
-            wavelength: 1 HDU
-                Wavelength of each pixel
-            count_resampled: 3 HDUs
-                Resampled Count, uncertainty, and sky (wavelength)
-            flux: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (pixel)
-            flux_resampled: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (wavelength)
+                trace: 2 HDUs
+                    Trace, and trace width (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
+                arc_spec: 3 HDUs
+                    1D arc spectrum, arc line pixels, and arc line effective
+                    pixels
+                wavecal: 1 HDU
+                    Polynomial coefficients for wavelength calibration
+                wavelength: 1 HDU
+                    Wavelength of each pixel
+                count_resampled: 3 HDUs
+                    Resampled Count, uncertainty, and sky (wavelength)
+                flux: 4 HDUs
+                    Flux, uncertainty, sky, and sensitivity (pixel)
+                flux_resampled: 4 HDUs
+                    Flux, uncertainty, sky, and sensitivity (wavelength)
+
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
         overwrite: boolean
             Default is False.
-        empty_primary_hdu: boolean (default: True)
-            Set to True to leave the Primary HDU blank (default: True)
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
+        empty_primary_hdu: boolean (Default: True)
+            Set to True to leave the Primary HDU blank (Default: True)
 
         '''
 
-        self.create_fits(output, recreate, empty_primary_hdu)
+        self.create_fits(output,
+                         recreate=recreate,
+                         empty_primary_hdu=empty_primary_hdu)
 
         # Save file to disk
         self.hdu_output.writeto(filename + '.fits', overwrite=overwrite)
 
-    def save_csv(self, output, filename, overwrite):
+    def save_csv(self, output, filename, overwrite, recreate):
         '''
         Save the reduced data to disk, with a choice of any combination of the
         5 sets of data, see below the 'output' parameters for details.
@@ -1907,33 +2206,37 @@ class Spectrum1D():
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            trace: 2 HDUs
-                Trace, and trace width (pixel)
-            count: 4 HDUs
-                Count, uncertainty, sky, and optimal flag (pixel)
-            weight_map: 1 HDU
-                Weight (pixel)
-            arc_spec: 3 HDUs
-                1D arc spectrum, arc line pixels, and arc line effective pixels
-            wavecal: 1 HDU
-                Polynomial coefficients for wavelength calibration
-            wavelength: 1 HDU
-                Wavelength of each pixel
-            count_resampled: 3 HDUs
-                Resampled Count, uncertainty, and sky (wavelength)
-            flux: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (pixel)
-            flux_resampled: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (wavelength)
+                trace: 2 HDUs
+                    Trace, and trace width (pixel)
+                count: 4 HDUs
+                    Count, uncertainty, sky, and optimal flag (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
+                arc_spec: 3 HDUs
+                    1D arc spectrum, arc line pixels, and arc line effective
+                    pixels
+                wavecal: 1 HDU
+                    Polynomial coefficients for wavelength calibration
+                wavelength: 1 HDU
+                    Wavelength of each pixel
+                count_resampled: 3 HDUs
+                    Resampled Count, uncertainty, and sky (wavelength)
+                flux: 4 HDUs
+                    Flux, uncertainty, sky, and sensitivity (pixel)
+                flux_resampled: 4 HDUs
+                    Flux, uncertainty, sky, and sensitivity (wavelength)
+
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
         overwrite: boolean
             Default is False.
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
 
         '''
 
-        self.create_fits(output, empty_primary_hdu=False)
+        self.create_fits(output, recreate=recreate, empty_primary_hdu=False)
 
         output_split = output.split('+')
 

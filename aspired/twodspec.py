@@ -16,6 +16,8 @@ from spectres import spectres
 from .image_reduction import ImageReduction
 from .spectrum1D import Spectrum1D
 
+__all__ = ['TwoDSpec']
+
 
 class TwoDSpec:
     '''
@@ -27,14 +29,16 @@ class TwoDSpec:
                  header=None,
                  verbose=True,
                  logger_name='TwoDSpec',
-                 log_level='warn',
+                 log_level='WARN',
                  log_file_folder='default',
                  log_file_name='default',
                  **kwargs):
         '''
         The constructor takes the data and the header, and the the header
         infromation will be read automatically. See set_properties()
-        for the detail information of the keyword arguments.
+        for the detail information of the keyword arguments. The extraction
+        always consider the x-direction as the dispersion direction, while
+        the y-direction as the spatial direction.
 
         parameters
         ----------
@@ -42,6 +46,9 @@ class TwoDSpec:
             2D spectral image in either format
         header: FITS header (deafult: None)
             THIS WILL OVERRIDE the header from the astropy.io.fits object
+        verbose: boolean (Default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
         logger_name: str (Default: TwoDSpec)
             This will set the name of the logger, if the name is used already,
             it will reference to the existing logger. This will be the
@@ -49,14 +56,20 @@ class TwoDSpec:
             provided.
         log_level: str (Default: WARN)
             Four levels of logging are available, in decreasing order of
-            information and increasing order of severity:
-            CRITICAL, DEBUG, INFO, WARNING, ERROR
+            information and increasing order of severity: (1) DEBUG, (2) INFO,
+            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+            there is suboptimal operations in some parts of that step. ERROR
+            means that the requested operation cannot be performed, but the
+            software can handle it by either using the default setting or
+            skipping the operation. CRITICAL means that the requested
+            operation cannot be resolved without human interaction, this is
+            most usually coming from missing data.
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
         log_file_name: None or str (Default: "default")
             File name of the log, set to None to print to screen only.
-        **kwargs: keyword arguments (default: see set_properties())
+        **kwargs: keyword arguments (Default: see set_properties())
             see set_properties().
 
         '''
@@ -65,14 +78,16 @@ class TwoDSpec:
         logger = logging.getLogger()
         if (log_level == "CRITICAL") or (not verbose):
             logging.basicConfig(level=logging.CRITICAL)
-        if log_level == "ERROR":
+        elif log_level == "ERROR":
             logging.basicConfig(level=logging.ERROR)
-        if log_level == "WARNING":
+        elif log_level == "WARNING":
             logging.basicConfig(level=logging.WARNING)
-        if log_level == "INFO":
+        elif log_level == "INFO":
             logging.basicConfig(level=logging.INFO)
-        if log_level == "DEBUG":
+        elif log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
+        else:
+            raise ValueError('Unknonw logging level.')
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -133,12 +148,17 @@ class TwoDSpec:
 
     def add_data(self, data, header=None):
         """
+        Adding the 2D image data to be processed. The data can be a 2D numpy
+        array, an AstroPy ImageHDU/Primary HDU object or an ImageReduction
+        object.
+
         parameters
         ----------
         data: 2D numpy array (M x N) OR astropy.io.fits object
             2D spectral image in either format
         header: FITS header (deafult: None)
             THIS WILL OVERRIDE the header from the astropy.io.fits object
+
         """
 
         # If data provided is an numpy array
@@ -285,7 +305,8 @@ class TwoDSpec:
             calibration is not needed.
             (Deafult is None, which will be replaced with 1.0)
         verbose: boolean
-            Set to True to suppress all verbose warnings.
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
 
         '''
 
@@ -580,8 +601,11 @@ class TwoDSpec:
 
         Parameters
         ----------
-        arc: 2D numpy array, PrimaryHDU object or ImageReduction object
+        arc: 2D numpy array, PrimaryHDU/ImageHDU or ImageReduction object
             The image of the arc image.
+        header: FITS header (deafult: None)
+            An astropy.io.fits.Header object. This is not used if arc is
+            a PrimaryHDU or ImageHDU.
 
         '''
 
@@ -589,7 +613,7 @@ class TwoDSpec:
         if isinstance(arc, np.ndarray):
 
             self.arc = arc
-            self.arc_header = header
+            self.set_arc_header(header)
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
@@ -633,6 +657,10 @@ class TwoDSpec:
             raise TypeError(error_msg)
 
     def set_arc_header(self, header):
+        """
+        Adding the header for the arc.
+
+        """
 
         # If it is a fits.hdu.header.Header object
         if isinstance(header, fits.header.Header):
@@ -648,7 +676,7 @@ class TwoDSpec:
 
     def apply_twodspec_mask_to_arc(self):
         '''
-        *EXPERIMENTAL*
+        **EXPERIMENTAL, as of 17 Jan 2021**
         Apply both the spec_mask and spatial_mask that are already stroed in
         the object.
 
@@ -667,7 +695,7 @@ class TwoDSpec:
 
     def apply_spec_mask_to_arc(self, spec_mask):
         '''
-        *EXPERIMENTAL*
+        **EXPERIMENTAL, as of 17 Jan 2021**
         Apply to use only the valid x-range of the chip (i.e. dispersion
         direction)
 
@@ -692,7 +720,7 @@ class TwoDSpec:
 
     def apply_spatial_mask_to_arc(self, spatial_mask):
         '''
-        *EXPERIMENTAL*
+        **EXPERIMENTAL, as of 17 Jan 2021**
         Apply to use only the valid y-range of the chip (i.e. spatial
         direction)
 
@@ -723,7 +751,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (default: False)
+        append: boolean (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -744,7 +772,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (default: False)
+        append: boolean (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -765,7 +793,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (default: False)
+        append: boolean (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -786,7 +814,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (default: False)
+        append: boolean (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -847,7 +875,7 @@ class TwoDSpec:
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
 
-    def _identify_spectra(self, f_height, display, renderer, height, width,
+    def _identify_spectra(self, f_height, display, renderer, width, height,
                           return_jsonstring, save_iframe, filename,
                           open_iframe):
         """
@@ -862,6 +890,10 @@ class TwoDSpec:
             Set to True to display disgnostic plot.
         renderer: string
             plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
         return_jsonstring: boolean
             set to True to return json string that can be rendered by Plotly
             in any support language.
@@ -873,13 +905,6 @@ class TwoDSpec:
             will have different extension.
         open_iframe: boolean
             Open the save_iframe in the default browser if set to True.
-
-        Returns
-        -------
-        peaks_y :
-            Array or float of the pixel values of the detected peaks
-        heights_y :
-            Array or float of the integrated counts at the peaks
 
         """
 
@@ -1478,7 +1503,7 @@ class TwoDSpec:
             spectral position.
         trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
-        spec_id: int
+        spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
 
         '''
@@ -1614,7 +1639,7 @@ class TwoDSpec:
         skydeg: int
             The polynomial order to fit between the sky windows.
             (Default is 0, i.e. constant flat sky level)
-        spec_id: int
+        spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
         optimal: boolean
             Set optimal extraction. (Default is True)
@@ -1808,8 +1833,11 @@ class TwoDSpec:
 
                         sky = np.ones(len(pix)) * np.nanmean(z)
 
+                    # If the weights are given externally to perform forced
+                    # extraction
                     if forced:
 
+                        # Unit weighted
                         if np.ndim(variances) == 0:
 
                             if np.isfinite(variances):
@@ -1822,6 +1850,7 @@ class TwoDSpec:
                                 var_i = np.ones(len(pix))
                                 logging.warning('Variances are set to 1.')
 
+                        # A single LSF is given for the entire trace
                         elif np.ndim(variances) == 1:
                             if len(variances) == len(pix):
 
@@ -1836,6 +1865,7 @@ class TwoDSpec:
                                 var_i = np.ones(len(pix))
                                 logging.warning('Variances are set to 1.')
 
+                        # A two dimensional LSF
                         elif np.ndim(variances) == 2:
 
                             var_i = variances[i]
@@ -1879,6 +1909,7 @@ class TwoDSpec:
                             variances=var_i)
                     count[i] /= self.exptime
                     count_err[i] /= self.exptime
+                    var[i] = var_i
 
                 else:
 
@@ -2139,6 +2170,32 @@ class TwoDSpec:
                                    save_iframe=False,
                                    filename=None,
                                    open_iframe=False):
+        """
+        Parameters
+        ----------
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        display: boolean
+            Set to True to display disgnostic plot.
+        renderer: string
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: boolean
+            Open the save_iframe in the default browser if set to True.
+
+        """
 
         if spec_id is not None:
 
@@ -2264,10 +2321,10 @@ class TwoDSpec:
     def extract_arc_spec(self,
                          spec_id=None,
                          display=False,
-                         return_jsonstring=False,
                          renderer='default',
                          width=1280,
                          height=720,
+                         return_jsonstring=False,
                          save_iframe=False,
                          filename=None,
                          open_iframe=False):
@@ -2284,13 +2341,10 @@ class TwoDSpec:
 
         Parameters
         ----------
-        spec_id: int
+        spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
         display: boolean
             Set to True to display disgnostic plot.
-        return_jsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
-            in any support language.
         renderer: string
             plotly renderer options.
         width: int/float
@@ -2415,17 +2469,21 @@ class TwoDSpec:
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            trace: 2 HDUs
-                Trace, and trace width (pixel)
-            count: 3 HDUs
-                Count, uncertainty, and sky (pixel)
-            weight_map: 1 HDU
-                Weight (pixel)
-            arc_spec: 3 HDUs
-                1D arc spectrum, arc line pixels, and arc line effective pixels
-        empty_primary_hdu: boolean (default: True)
-            Set to True to leave the Primary HDU blank (default: True)
-        return_hdu_list: boolean (default: False)
+                trace: 2 HDUs
+                    Trace, and trace width (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
+                arc_spec: 3 HDUs
+                    1D arc spectrum, arc line pixels, and arc line effective
+                    pixels
+
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
+        empty_primary_hdu: boolean (Default: True)
+            Set to True to leave the Primary HDU blank (Default: True)
+        return_hdu_list: boolean (Default: False)
             Set to True to return the HDU List
 
         '''
@@ -2451,6 +2509,7 @@ class TwoDSpec:
                   output='trace+count',
                   filename='TwoDSpecExtracted',
                   overwrite=False,
+                  recreate=False,
                   empty_primary_hdu=True):
         '''
         Save the reduced image to disk.
@@ -2462,21 +2521,25 @@ class TwoDSpec:
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            trace: 2 HDUs
-                Trace, and trace width (pixel)
-            count: 3 HDUs
-                Count, uncertainty, and sky (pixel)
-            weight_map: 1 HDU
-                Weight (pixel)
-            arc_spec: 3 HDUs
-                1D arc spectrum, arc line pixels, and arc line effective pixels
+                trace: 2 HDUs
+                    Trace, and trace width (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
+                arc_spec: 3 HDUs
+                    1D arc spectrum, arc line pixels, and arc line effective
+                    pixels
+
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
         overwrite: boolean
             Default is False.
-        empty_primary_hdu: boolean (default: True)
-            Set to True to leave the Primary HDU blank (default: True)
+        recreate: boolean (Default: False)
+            Set to True to overwrite the FITS data and header.
+        empty_primary_hdu: boolean (Default: True)
+            Set to True to leave the Primary HDU blank (Default: True)
 
         '''
 
@@ -2499,4 +2562,5 @@ class TwoDSpec:
                 output=output,
                 filename=filename_i,
                 overwrite=overwrite,
+                recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu)
