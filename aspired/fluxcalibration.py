@@ -1380,7 +1380,7 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D.save_fits(output=output,
                                   filename=filename,
                                   overwrite=overwrite,
-                                  recreat=recreate,
+                                  recreate=recreate,
                                   empty_primary_hdu=empty_primary_hdu)
 
     def save_csv(self,
