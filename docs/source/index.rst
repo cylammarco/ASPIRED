@@ -46,7 +46,7 @@ User Guide
    modules/imagereductionmodule
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Spectral Reduction API
 
    modules/spectralreductionmodule
@@ -65,45 +65,49 @@ The bare minimum example code to perform a complete spectral data reduction with
 
 .. code-block:: python
 
-    from astropy.io import fits
-    from aspired import spectral_reduction
+   from astropy.io import fits
+   from aspired import spectral_reduction
 
-    # Open the FITS file as a fits.hdu.image.PrimaryHDU
-    science = fits.open('/path/to/science_FITS_file')
-    science2D = spectral_reduction.TwoDSpec(science)
-    science2D.ap_trace()
-    science2D.ap_extract()
+   # Open the FITS file as a fits.hdu.image.PrimaryHDU
+   science = fits.open('/path/to/science_FITS_file')
+   standard = fits.open('/path/to/standard_FITS_file')
 
-    standard = fits.open('/path/to/standard_FITS_file')
-    standard2D = spectral_reduction.TwoDSpec(standard)
-    standard2D.ap_trace()
-    standard2D.ap_extract()
+   # Handle the 2D operations
+   science2D = spectral_reduction.TwoDSpec(science)
+   science2D.ap_trace()
+   science2D.ap_extract()
+   science2D.add_arc()
+   science2D.extract_arc_spec()
 
-    # Load the standard flux
-    fluxcal = spectral_reduction.StandardFlux(target='Name1', group='Name2')
-    fluxcal.load_standard()
+   standard2D = spectral_reduction.TwoDSpec(standard)
+   standard2D.ap_trace()
+   standard2D.ap_extract()
+   standard2D.add_arc()
+   standard2D.extract_arc_spec()
 
-    # Wavelength calibration
-    wavecal_science = spectral_reduction.WavelengthPolyFit(science2D, science_arc)
-    wavecal_science.find_arc_lines()
-    wavecal_science.fit(elements=["Chemical Symbol"])
+   # Handle the 1D operations
+   onedspec = spectral_reduction.OneDSpec()
+   onedspec.from_twodspec(science2D, stype='science')
+   onedspec.from_twodspec(standard2D, stype='standard')
+   onedspec.find_arc_lines()
 
-    wavecal_standard = spectral_reduction.WavelengthPolyFit(standard2D, standard_arc)
-    wavecal_standard.find_arc_lines()
-    wavecal_standard.fit(elements=["Chemical Symbol"])
+   # Wavelength calibration
+   onedspec.initialise_calibrator()
+   onedspec.add_atlas(['Chemical Symbol 1', 'Chemical Symbol 2'])
+   onedspec.fit()
+   onedspec.apply_wavelength_calibration()
 
-    # Applying flux and wavelength calibration
-    science_reduced = spectral_reduction.OneDSpec(
-        science2D,
-        wavecal_science,
-        standard2D,
-        wavecal_standard,
-        fluxcal
-    )
-    science_reduced.apply_wavelength_calibration()
-    science_reduced.compute_sencurve()
-    science_reduced.inspect_reduced_spectrum()
+   # Flux calibration
+   onedspec.load_standard(target='target name')
+   onedspec.compute_sensitivity()
+   onedspec.apply_flux_calibration()
 
+   # Apply atmospheric extinction correction
+   onedspec.set_atmospheric_extinction()
+   onedspec.apply_atmospheric_extinction_correction()
+   
+   # Inspect the reduced data product
+   onedspec.inspect_reduced_spectrum()
 
 Some more complete examples are available in the tutorials.
 
@@ -114,9 +118,9 @@ License & Attribution
 Copyright 2019-2020
 
 If you make use of ASPIRED in your work, please cite our paper
-(`arXiv <https://arxiv.org/abs/1912.05885>`_,
-`ADS <https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract>`_,
-`BibTeX <https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/exportcitation>`_).
+(`arXiv <https://arxiv.org/abs/2012.03505>`_,
+`ADS <https://ui.adsabs.harvard.edu/abs/2020arXiv201203505L/abstract>`_,
+`BibTeX <https://ui.adsabs.harvard.edu/abs/2020arXiv201203505L/exportcitation>`_).
 
 
 Indices and tables

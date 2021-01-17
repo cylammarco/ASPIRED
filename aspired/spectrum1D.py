@@ -20,7 +20,7 @@ class Spectrum1D():
                  spec_id=None,
                  verbose=True,
                  logger_name='Spectrum1D',
-                 log_level='WARN',
+                 log_level='WARNING',
                  log_file_folder='default',
                  log_file_name='default'):
         """
@@ -37,7 +37,7 @@ class Spectrum1D():
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARN)
+        log_level: str (Default: WARNING)
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that

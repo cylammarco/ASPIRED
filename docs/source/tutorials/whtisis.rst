@@ -135,8 +135,30 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
     .. raw:: html
       :file: ../_static/isis_g93_extract_0.html
 
-5.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
-    and the extracted spectra from the TwoDSpec objects,
+5.  Add the 2D arc and apply the masks in both the dispersion and spatial
+    directions to the image before extracting the spectra of the
+    arcs (experimental, as of 17 Jan 2021). The arcs have to be rotated
+    manually if the dispersion direction is along the y-axis. Future updates
+    will handle the `saxis` automatically.
+
+    .. code-block:: python
+
+      pso.add_arc(np.transpose(science_frame.arc_master), stype='science')
+      pso.apply_twodspec_mask_to_arc()
+      pso.extract_arc_spec(
+          display=True,
+          save_iframe=True,
+          filename='science_arc_spec')
+
+      g93.add_arc(np.transpose(standard_frame.arc_master), stype='standard')
+      g93.apply_twodspec_mask_to_arc()
+      g93.extract_arc_spec(
+          display=True,
+          save_iframe=True,
+          filename='standard_arc_spec')
+
+6.  Initialise the OneDSpec for wavelength and flux calibration; copy the
+    relavent data from the TwoDSpec objects and find the arc lines
 
     .. code-block:: python
 
@@ -144,33 +166,13 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
       pso_reduced.from_twodspec(pso, stype='science')
       pso_reduced.from_twodspec(g93, stype='standard')
 
-6.  Add the arcs to the onedspec, whether it is an arc for the science or for 
-    the standard has to be specified, otherwise it will assume the same arc will
-    be used by both. The arcs have to be rotated. Future updates will handle the
-    `saxis` automatically, currently, only the masking applied can be applied to
-    the arc frame. The `extract_arc_spec()` applies the traces from the
-    `TwoDSpec` in order to extract the spectra of the arcs.
-
-    .. code-block:: python
-
-      pso_reduced.add_arc(np.transpose(science_frame.arc_master), stype='science')
-      pso_reduced.add_arc(np.transpose(standard_frame.arc_master), stype='standard')
-
-      pso_reduced.apply_twodspec_mask_to_arc(stype='science+standard')
-
-      pso_reduced.extract_arc_spec(
-          display=True,
-          stype='science+standard',
-          save_iframe=True,
-          filename='arc_spec')
-
       pso_reduced.find_arc_lines(
           display=True,
           stype='science+standard',
           save_iframe=True,
           filename='arc_lines')
 
-    Then, the position of the peaks, which are the arc lines, can be found for
+    Then, the position of the arc line peaks can be found for
     performing wavelength calibration for each trace.
 
     .. raw:: html

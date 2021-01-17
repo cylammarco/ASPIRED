@@ -1,7 +1,7 @@
 Spectral Reduction API
 ======================
 
-.. autoclass:: aspired.spectral_reduction._spectrum1D
+.. autoclass:: aspired.spectral_reduction.Spectrum1D
    :members:
 
 .. autoclass:: aspired.spectral_reduction.TwoDSpec
