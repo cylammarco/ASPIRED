@@ -1414,7 +1414,6 @@ class Spectrum1D():
             self.modify_count_header(0, 'set', 'SEPUP', self.sepup)
             self.modify_count_header(0, 'set', 'SKYDN', self.skywidthdn)
             self.modify_count_header(0, 'set', 'SKYUP', self.skywidthup)
-            self.modify_count_header(0, 'set', 'BKGRND', self.background)
             self.modify_count_header(0, 'set', 'XTYPE', self.extraction_type)
             self.modify_count_header(0, 'set', 'LABEL', 'Electron Count')
             self.modify_count_header(0, 'set', 'CRPIX1', 1)
