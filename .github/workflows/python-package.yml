@@ -44,6 +44,11 @@ jobs:
       with:
         parallel: true
         flag-name: Test with pytest
+
+  coveralls_finish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
     - name: Coveralls
       uses: AndreMiras/coveralls-python-action@develop
       with:
