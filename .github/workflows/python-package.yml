@@ -48,6 +48,7 @@ jobs:
   coveralls_finish:
     needs: build
     runs-on: ubuntu-latest
+    if: matrix.os == 'ubuntu-latest'
     steps:
     - name: Coveralls
       uses: AndreMiras/coveralls-python-action@develop
