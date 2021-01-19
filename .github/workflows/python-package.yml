@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [ main, dev, dev-simplify-twodspec]
+    branches: [main, dev]
   pull_request:
-    branches: [ main, dev, dev-simplify-twodspec]
+    branches: [main, dev]
 
 jobs:
   build:
@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest
+        python -m pip install flake8 pytest pytest-cov coverage
         pip install -r requirements.txt
         pip install -e .
     - name: Lint with flake8
@@ -38,7 +38,15 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest --disable-warnings -p no:warnings test/test_extraction.py
-        pytest --disable-warnings -p no:warnings test/test_wavecal.py
-        pytest --disable-warnings -p no:warnings test/test_fluxcal.py
-        pytest --disable-warnings -p no:warnings test/test_full_run.py
+        coverage run -m pytest --disable-warnings -p no:warnings test
+    - name: Generate Coveralls reports
+      if: startsWith(matrix.os, 'ubuntu')
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        parallel: true
+        flag-name: Test with pytest
+    - name: Coveralls
+      if: startsWith(matrix.os, 'ubuntu')
+      uses: AndreMiras/coveralls-python-action@develop
+      with:
+        github-token: ${{ secrets.COVERALL_TOKEN }}
