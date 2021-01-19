@@ -44,13 +44,8 @@ jobs:
       with:
         parallel: true
         flag-name: Test with pytest
-
-  coveralls_finish:
-    needs: build
-    runs-on: ubuntu-latest
-    if: matrix.os == 'ubuntu-latest'
-    steps:
     - name: Coveralls
+      if: matrix.os == 'ubuntu-latest'
       uses: AndreMiras/coveralls-python-action@develop
       with:
         github-token: ${{ secrets.COVERALL_TOKEN }}
