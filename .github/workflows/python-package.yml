@@ -40,12 +40,13 @@ jobs:
       run: |
         coverage run -m pytest --disable-warnings -p no:warnings test
     - name: Generate Coveralls reports
+      if: startsWith(matrix.os, 'ubuntu')
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel: true
         flag-name: Test with pytest
     - name: Coveralls
-      if: matrix.os == 'ubuntu-latest'
+      if: startsWith(matrix.os, 'ubuntu')
       uses: AndreMiras/coveralls-python-action@develop
       with:
         github-token: ${{ secrets.COVERALL_TOKEN }}
