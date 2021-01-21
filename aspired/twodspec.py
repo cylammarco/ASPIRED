@@ -1909,7 +1909,10 @@ class TwoDSpec:
                             variances=var_i)
                     count[i] /= self.exptime
                     count_err[i] /= self.exptime
-                    var[i] = var_i
+                    if var_i is None:
+                        var[i] = var_temp
+                    else:
+                        var[i] = var_i
 
                 else:
 

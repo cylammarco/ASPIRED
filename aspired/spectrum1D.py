@@ -1743,6 +1743,8 @@ class Spectrum1D():
             flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
             flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
 
+            header = None
+
             # Use the header of the standard
             if self.spectrum_header is not None:
                 header = self.spectrum_header
@@ -1849,6 +1851,8 @@ class Spectrum1D():
                 self.flux_err_resampled)
             flux_sky_resampled_ImageHDU = fits.ImageHDU(
                 self.flux_sky_resampled)
+
+            header = None
 
             # Use the header of the standard
             if self.spectrum_header is not None:

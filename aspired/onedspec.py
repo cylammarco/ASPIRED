@@ -666,7 +666,9 @@ class OneDSpec():
                 for i in spec_id:
 
                     self.science_spectrum_list[i].add_fit_coeff(
-                        fit_coeff=fit_coeff, fit_type=fit_type)
+                        fit_coeff=fit_coeff)
+                    self.science_spectrum_list[i].add_fit_type(
+                        fit_type=fit_type)
 
             self.science_wavecal_polynomial_available = True
 
@@ -675,7 +677,8 @@ class OneDSpec():
             if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_fit_coeff(
-                    fit_coeff=fit_coeff, fit_type=fit_type)
+                    fit_coeff=fit_coeff)
+                self.standard_spectrum_list[0].add_fit_type(fit_type=fit_type)
 
             self.standard_wavecal_polynomial_available = True
 
