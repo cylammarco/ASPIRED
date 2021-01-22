@@ -1028,7 +1028,7 @@ class FluxCalibration(StandardLibrary):
                                inspect=False,
                                wave_min=4000.,
                                wave_max=8000.,
-                               display=True,
+                               display=False,
                                renderer='default',
                                width=1280,
                                height=720,
