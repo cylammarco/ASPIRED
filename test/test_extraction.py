@@ -55,7 +55,7 @@ def test_user_supplied_trace():
     # Loading a single pre-saved spectral trace.
     #
     lhs6328_extracted = fits.open(
-        'test/test_output/test_full_run_science_0.fits')
+        'test/test_data/test_full_run_science_0.fits')
     lhs6328_trace = lhs6328_extracted[1].data
     lhs6328_trace_sigma = lhs6328_extracted[2].data
 
