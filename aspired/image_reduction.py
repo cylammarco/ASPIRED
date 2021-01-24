@@ -40,6 +40,8 @@ class ImageReduction:
                  sigma_clipping_flat=True,
                  clip_low_flat=5,
                  clip_high_flat=5,
+                 exptime_flat=None,
+                 exptime_flat_keyword=None,
                  verbose=True,
                  logger_name='ImageReduction',
                  log_level='WARNING',
@@ -121,6 +123,11 @@ class ImageReduction:
             lower threshold of the sigma clipping
         clip_high_flat: float
             upper threshold of the sigma clipping
+        exptime_flat: float
+            OVERRIDE the exposure time value in the FITS header, or to provide
+            one if the keyword does not exist
+        exptime_flat_keyword: string
+            HDU keyword for the exposure time of the flat frame
         verbose: boolean (Default: True)
             Set to False to suppress all verbose warnings, except for
             critical failure.
@@ -214,7 +221,7 @@ class ImageReduction:
         # first keyword found on the list, if all failed, an exposure time of
         # 1 second will be applied. A warning will be promted.
         self.exptime_keyword = [
-            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
         ]
 
         self.combinetype_light = combinetype_light
@@ -240,6 +247,8 @@ class ImageReduction:
         self.sigma_clipping_flat = sigma_clipping_flat
         self.clip_low_flat = clip_low_flat
         self.clip_high_flat = clip_high_flat
+        self.exptime_flat = exptime_flat
+        self.exptime_flat_keyword = exptime_flat_keyword
 
         self.verbose = verbose
 
@@ -265,6 +274,11 @@ class ImageReduction:
         self.flat_filename = []
         self.arc_filename = []
         self.light_filename = []
+
+        self.light_header = []
+        self.arc_header = []
+        self.dark_header = []
+        self.flat_header = []
 
         # import file with first column as image type and second column as
         # file path
@@ -406,48 +420,87 @@ class ImageReduction:
         # separate methods.
         light_CCDData = []
         light_time = []
-        self.light_header = []
 
         for i in range(self.light_list.size):
             # Open all the light frames
             logging.debug('Loading light frame: {}.'.format(
                 self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
-            light_CCDData.append(CCDData(light.data, unit=u.ct))
+            light_shape = np.shape(light.data)
+            logging.debug('light.data has shape {}.'.format(light_shape))
 
-            logging.debug('Appending light header: {}.'.format(light.header))
-            self.light_header.append(light.header)
+            # Normal case
+            if len(light_shape) == 2:
+                logging.debug('light.data is 2 dimensional.')
+                light_CCDData.append(CCDData(light.data.astype('float'), unit=u.ct))
+                self.light_header.append(light.header)
+            # Try to trap common error when saving FITS file
+            # Case with multiple image extensions, we only take the first one
+            elif len(light_shape) == 3:
+                logging.debug('light.data is 3 dimensional.')
+                light_CCDData.append(CCDData(light.data[0].astype('float'), unit=u.ct))
+                self.light_header.append(light.header)
+            # Case with an extra bracket when saving
+            elif len(light_shape) == 1:
+                logging.debug('light.data is 1 dimensional.')
+                # In case it in a multiple extension format, we take the
+                # first one only
+                if len(np.shape(light.data[0]) == 3):
+                    light_CCDData.append(CCDData(light.data[0][0].astype('float'), unit=u.ct))
+                    self.light_header.append(light[0].header)
+                else:
+                    light_CCDData.append(CCDData(light.data[0].astype('float'), unit=u.ct))
+                    self.light_header.append(light[0].header)
+            else:
+                error_msg = 'Please check the shape/dimension of the ' +\
+                            'input light frame, it is probably empty ' +\
+                            'or has an atypical output format.'
+                logging.critical(error_msg)
+                raise RuntimeError(error_msg)
 
+            logging.debug('Light frame header: {}.'.format(self.light_header[i]))
+            
             logging.debug('Appending light filename: {}.'.format(
                 self.light_list[i].split('/')[-1]))
             self.light_filename.append(self.light_list[i].split('/')[-1])
 
             # Get the exposure time for the light frames
             if exptime_light is None:
-                if exptime_light_keyword is not None:
-                    # add line to check exptime_light_keyword is string
-                    light_time.append(light.header[exptime_light_keyword])
+
+                # Get the exposure time for the light frames
+                exptime_keyword_idx = int(
+                    np.where(
+                        np.in1d(self.exptime_keyword,
+                                self.light_header[i]))[0][0])
+
+                if np.isfinite(exptime_keyword_idx):
+
+                    exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
+                    light_time.append(self.light_header[i][exptime_keyword])
+
                 else:
-                    # check if the exposure time keyword exists
-                    exptime_keyword_matched = np.in1d(self.exptime_keyword,
-                                                      light.header)
-                    if exptime_keyword_matched.any():
-                        light_time.append(light.header[self.exptime_keyword[
-                            np.where(exptime_keyword_matched)[0][0]]])
-                    else:
-                        pass
+
+                    # If exposure time cannot be found from the header and user failed
+                    # to supply the exposure time, use 1 second
+                    logging.warning(
+                        'Light frame exposure time cannot be found. '
+                        '1 second is used as the exposure time.')
+                    light_time.append(1.0)
+
             else:
-                assert (exptime_light > 0), 'Exposure time has to be positive.'
-                light_time = exptime_light
-            logging.info(
-                'Exposure time of the light frame is {}.'.format(light_time))
+
+                light_time.append(exptime_light)
+
+            logging.debug('The light frame exposure time is {}.'.format(light_time[i]))
+ 
+            light_CCDData[i].data /= light_time[i]
 
         # Put data into a Combiner
         light_combiner = Combiner(light_CCDData)
         logging.debug('Combiner for the light frames is created.')
 
         # Free memory
-        del light_CCDData
+        light_CCDData = None
         logging.debug('light_CCDData is deleted.')
 
         # Apply sigma clipping
@@ -473,34 +526,57 @@ class ImageReduction:
             raise ValueError(error_msg)
 
         # Free memory
-        del light_combiner
+        light_combiner = None
 
-        # If exposure time cannot be found from the header and user failed
-        # to supply the exposure time, use 1 second
-        if len(light_time) == 0:
-            self.light_time = 1.
-            logging.warning('Light frame exposure time cannot be found. '
-                            '1 second is used as the exposure time.')
-
-        self.arc_header = []
         if len(self.arc_list) > 0:
             # Combine the arcs
             arc_CCDData = []
             for i in range(self.arc_list.size):
                 # Open all the light frames
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
-                arc_CCDData.append(CCDData(arc.data, unit=u.ct))
+
+                arc_shape = np.shape(arc)
+
+                # Normal case
+                if len(arc_shape) == 2:
+                    logging.debug('arc.data is 2 dimensional.')
+                    arc_CCDData.append(CCDData(arc.data.astype('float'), unit=u.ct))
+                    self.arc_header.append(arc.header)
+                # Try to trap common error when saving FITS file
+                # Case with multiple image extensions, we only take the first one
+                elif len(arc_shape) == 3:
+                    logging.debug('arc.data is 3 dimensional.')
+                    arc_CCDData.append(CCDData(arc.data[0].astype('float'), unit=u.ct))
+                    self.arc_header.append(arc.header)
+                # Case with an extra bracket when saving
+                elif len(arc_shape) == 1:
+                    logging.debug('arc.data is 1 dimensional.')
+                    # In case it in a multiple extension format, we take the
+                    # first one only
+                    if len(np.shape(arc.data[0]) == 3):
+                        arc_CCDData.append(CCDData(arc.data[0][0].astype('float'), unit=u.ct))
+                        self.arc_header.append(arc[0].header)
+                    else:
+                        arc_CCDData.append(CCDData(arc.data[0].astype('float'), unit=u.ct))
+                        self.arc_header.append(arc[0].header)
+                else:
+                    error_msg = 'Please check the shape/dimension of the ' +\
+                                'input arc frame, it is probably empty ' +\
+                                'or has an atypical output format.'
+                    logging.critical(error_msg)
+                    raise RuntimeError(error_msg)
 
                 self.arc_filename.append(self.arc_list[i].split('/')[-1])
-                self.arc_header.append(arc.header)
+
+                logging.debug('Arc frame header: {}.'.format(self.arc_header[i]))
 
             # combine the arc frames
             arc_combiner = Combiner(arc_CCDData)
             self.arc_master = arc_combiner.median_combine()
 
             # Free memory
-            del arc_CCDData
-            del arc_combiner
+            arc_CCDData = None
+            arc_combiner = None
 
     def _bias_subtract(self):
         '''
@@ -513,7 +589,33 @@ class ImageReduction:
         for i in range(self.bias_list.size):
             # Open all the bias frames
             bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
-            bias_CCDData.append(CCDData(bias.data, unit=u.ct))
+
+            bias_shape = np.shape(bias)
+
+            # Normal case
+            if len(bias_shape) == 2:
+                logging.debug('bias.data is 2 dimensional.')
+                bias_CCDData.append(CCDData(bias.data.astype('float'), unit=u.ct))
+            # Try to trap common error when saving FITS file
+            # Case with multiple image extensions, we only take the first one
+            elif len(bias_shape) == 3:
+                logging.debug('bias.data is 3 dimensional.')
+                bias_CCDData.append(CCDData(bias.data[0].astype('float'), unit=u.ct))
+            # Case with an extra bracket when saving
+            elif len(bias_shape) == 1:
+                logging.debug('bias.data is 1 dimensional.')
+                # In case it in a multiple extension format, we take the
+                # first one only
+                if len(np.shape(bias.data[0]) == 3):
+                    bias_CCDData.append(CCDData(bias.data[0][0].astype('float'), unit=u.ct))
+                else:
+                    bias_CCDData.append(CCDData(bias.data[0].astype('float'), unit=u.ct))
+            else:
+                error_msg = 'Please check the shape/dimension of the ' +\
+                            'input bias frame, it is probably empty ' +\
+                            'or has an atypical output format.'
+                logging.critical(error_msg)
+                raise RuntimeError(error_msg)
 
             self.bias_filename.append(self.bias_list[i].split('/')[-1])
 
@@ -533,20 +635,23 @@ class ImageReduction:
             self.bias_master = bias_combiner.average_combine()
         else:
             self.bias_filename = []
+            logging.error('Unknown combinetype for bias frames, master '
+                          'bias cannot be created. Process continues '
+                          'without bias subtraction.')
 
         # Bias subtract
         if self.bias_master is None:
 
-            logging.error('Unknown combinetype for bias frames, master '
-                          'bias cannot be created.')
+            logging.error('Master flat is not available, frame will '
+                          'not be flattened.')
 
         else:
 
             self.light_redcued = self.light_master.subtract(self.bias_master)
 
         # Free memory
-        del bias_CCDData
-        del bias_combiner
+        bias_CCDData = None
+        bias_combiner = None
 
     def _dark_subtract(self):
         '''
@@ -560,20 +665,65 @@ class ImageReduction:
         for i in range(self.dark_list.size):
             # Open all the dark frames
             dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
-            dark_CCDData.append(CCDData(dark.data, unit=u.ct))
+            dark_shape = np.shape(dark)
+
+            # Normal case
+            if len(dark_shape) == 2:
+                logging.debug('dark.data is 2 dimensional.')
+                dark_CCDData.append(CCDData(dark.data.astype('float'), unit=u.ct))
+                self.dark_header.append(dark.header)
+            # Try to trap common error when saving FITS file
+            # Case with multiple image extensions, we only take the first one
+            elif len(dark_shape) == 3:
+                logging.debug('dark.data is 3 dimensional.')
+                dark_CCDData.append(CCDData(dark.data[0].astype('float'), unit=u.ct))
+                self.dark_header.append(dark.header)
+            # Case with an extra bracket when saving
+            elif len(dark_shape) == 1:
+                logging.debug('dark.data is 1 dimensional.')
+                # In case it in a multiple extension format, we take the
+                # first one only
+                if len(np.shape(dark.data[0]) == 3):
+                    dark_CCDData.append(CCDData(dark.data[0][0].astype('float'), unit=u.ct))
+                    self.dark_header.append(dark[0].header)
+                else:
+                    dark_CCDData.append(CCDData(dark.data[0].astype('float'), unit=u.ct))
+                    self.dark_header.append(dark[0].header)
+            else:
+                error_msg = 'Please check the shape/dimension of the ' +\
+                            'input dark frame, it is probably empty ' +\
+                            'or has an atypical output format.'
+                logging.critical(error_msg)
+                raise RuntimeError(error_msg)
+
+            logging.debug('Dark frame header: {}.'.format(self.dark_header[i]))
 
             self.dark_filename.append(self.dark_list[i].split('/')[-1])
 
-            # Get the exposure time for the dark frames
-            for exptime in self.exptime_keyword:
-                try:
-                    dark_time.append(dark.header[exptime])
-                    print("Keyword '{}' is used for exposure time.".format(
-                        exptime))
-                    break
-                except Exception as e:
-                    logging.warning(str(e))
-                    continue
+            if self.exptime_dark is None:
+                # Get the exposure time for the dark frames
+                exptime_keyword_idx = np.where(
+                    np.in1d(self.exptime_keyword, self.dark_header))[0][0]
+                logging.debug('Exposure time keyword index is {}.'.format(
+                    exptime_keyword_idx))
+
+                if np.isfinite(exptime_keyword_idx):
+
+                    exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
+                    dark_time.append(self.dark_header[i][exptime_keyword])
+
+                else:
+
+                    logging.warning(
+                        'Dark frame exposure time cannot be found. '
+                        '1 second is used as the exposure time.')
+                    dark_time.append(1.0)
+
+            else:
+
+                dark_time.append(self.exptime_dark)
+
+            dark_CCDData[i].data /= dark_time[i]
 
         # Put data into a Combiner
         dark_combiner = Combiner(dark_CCDData)
@@ -592,24 +742,18 @@ class ImageReduction:
             self.exptime_dark = np.nanmean(dark_time)
         else:
             self.dark_filename = []
-
-        # If exposure time cannot be found from the header, use 1 second
-        if len(dark_time) == 0:
-            logging.warning('Dark frame exposure time cannot be found. '
-                            '1 second is used as the exposure time.')
-            self.exptime_dark = 1.
+            logging.error('Unknown combinetype for dark frames, master '
+                          'dark cannot be created. Process continues '
+                          'without dark subtraction.')
 
         # Dark subtraction adjusted for exposure time
         self.light_reduced =\
-            self.light_reduced.subtract(
-                self.dark_master.multiply(
-                    self.exptime_light / self.exptime_dark)
-            )
+            self.light_reduced.subtract(self.dark_master)
         logging.info('Light frame is dark subtracted.')
 
         # Free memory
-        del dark_CCDData
-        del dark_combiner
+        dark_CCDData = None
+        dark_combiner = None
 
     def _flatfield(self):
         '''
@@ -618,13 +762,69 @@ class ImageReduction:
         '''
 
         flat_CCDData = []
+        flat_time = []
 
         for i in range(self.flat_list.size):
             # Open all the flatfield frames
             flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
-            flat_CCDData.append(CCDData(flat.data, unit=u.ct))
+
+            flat_shape = np.shape(flat)
+
+            # Normal case
+            if len(flat_shape) == 2:
+                logging.debug('flat.data is 2 dimensional.')
+                flat_CCDData.append(CCDData(flat.data.astype('float'), unit=u.ct))
+                self.flat_header.append(flat.header)
+            # Try to trap common error when saving FITS file
+            # Case with multiple image extensions, we only take the first one
+            elif len(flat_shape) == 3:
+                logging.debug('flat.data is 3 dimensional.')
+                flat_CCDData.append(CCDData(flat.data[0].astype('float'), unit=u.ct))
+                self.flat_header.append(flat.header)
+            # Case with an extra bracket when saving
+            elif len(flat_shape) == 1:
+                logging.debug('flat.data is 1 dimensional.')
+                # In case it in a multiple extension format, we take the
+                # first one only
+                if len(np.shape(flat.data[0]) == 3):
+                    flat_CCDData.append(CCDData(flat.data[0][0].astype('float'), unit=u.ct))
+                    self.flat_header.append(flat[0].header)
+                else:
+                    flat_CCDData.append(CCDData(flat.data[0].astype('float'), unit=u.ct))
+                    self.flat_header.append(flat[0].header)
+            else:
+                error_msg = 'Please check the shape/dimension of the ' +\
+                            'input flat frame, it is probably empty ' +\
+                            'or has an atypical output format.'
+                logging.critical(error_msg)
+                raise RuntimeError(error_msg)
 
             self.flat_filename.append(self.flat_list[i].split('/')[-1])
+
+            if self.exptime_flat is None:
+                # Get the exposure time for the flat frames
+                exptime_keyword_idx = np.where(
+                    np.in1d(self.exptime_keyword, self.flat_header))[0][0]
+                logging.debug('Exposure time keyword index is {}.'.format(
+                    exptime_keyword_idx))
+
+                if np.isfinite(exptime_keyword_idx):
+                    exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
+                    flat_time.append(self.flat_header[i][exptime_keyword])
+                    logging.debug('Exposure time is {}.'.format(flat_time[i]))
+
+                else:
+
+                    logging.warning(
+                        'Flat frame exposure time cannot be found. '
+                        '1 second is used as the exposure time.')
+                    flat_time.append(1.0)
+
+            else:
+
+                flat_time.append(self.exptime_flat)
+
+            flat_CCDData[i].data /= flat_time[i]
 
         # Put data into a Combiner
         flat_combiner = Combiner(flat_CCDData)
@@ -642,12 +842,15 @@ class ImageReduction:
             self.flat_master = flat_combiner.average_combine()
         else:
             self.flat_filename = []
+            logging.error('Unknown combinetype for flat frames, master '
+                          'flat cannot be created. Process continues '
+                          'without flatfielding.')
 
         # Field-flattening
         if self.flat_master is None:
 
-            logging.error('Unknown combinetype for flat frames, master '
-                          'flat cannot be created.')
+            logging.warning('Master flat is not available, frame will '
+                            'not be flattened.')
 
         else:
 
@@ -656,23 +859,20 @@ class ImageReduction:
             # Dark subtract the flat field
             if self.dark_master is None:
 
-                logging.error('Master dark is not available, master '
-                              'flat cannot be dark subtracted.')
+                logging.warning('Master dark is not available, master '
+                                'flat will not be dark subtracted.')
 
             else:
 
                 self.flat_reduced =\
-                    self.flat_reduced.subtract(
-                        self.dark_master.multiply(
-                            self.exptime_light / self.exptime_dark)
-                    )
+                    self.flat_reduced.subtract(self.dark_master)
                 logging.info('Flat frame is flat subtracted.')
 
             # Bias subtract the flat field
             if self.bias_master is None:
 
-                logging.error('Master bias is not available, master '
-                              'flat cannot be bias subtracted.')
+                logging.warning('Master bias is not available, master '
+                                'flat will not be bias subtracted.')
 
             else:
 
@@ -680,13 +880,15 @@ class ImageReduction:
                     self.bias_master)
                 logging.info('Flat frame is bias subtracted.')
 
+            self.flat_reduced = self.flat_reduced/np.nanmean(self.flat_reduced)
+
             # Flattenning the light frame
             self.light_reduced = self.light_reduced.divide(self.flat_reduced)
             logging.info('Light frame is flattened.')
 
         # Free memory
-        del flat_CCDData
-        del flat_combiner
+        flat_CCDData = None
+        flat_combiner = None
 
     def reduce(self):
         '''

@@ -185,6 +185,8 @@ class TwoDSpec:
 
             self.img = data.image_fits.data
             self.header = data.image_fits.header
+            self.arc = data.arc_master
+            self.arc_header = data.arc_header
 
         # If a filepath is provided
         elif isinstance(data, str):
