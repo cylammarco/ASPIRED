@@ -97,7 +97,7 @@ def test_user_supplied_poly_coeff():
     lhs6328_onedspec.apply_wavelength_calibration()
 
     # Inspect reduced spectrum
-    lhs6328_onedspec.inspect_reduced_spectrum(display=True)
+    lhs6328_onedspec.inspect_reduced_spectrum(display=False)
 
     # Save as a FITS file
     lhs6328_onedspec.save_fits(
@@ -140,7 +140,7 @@ def test_user_supplied_wavelength():
     lhs6328_onedspec.add_wavelength(wavelength)
 
     # Inspect reduced spectrum
-    lhs6328_onedspec.inspect_reduced_spectrum(display=True)
+    lhs6328_onedspec.inspect_reduced_spectrum(display=False)
 
     # Save as a FITS file
     lhs6328_onedspec.save_fits(
