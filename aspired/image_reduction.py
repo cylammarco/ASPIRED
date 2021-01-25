@@ -426,19 +426,25 @@ class ImageReduction:
             logging.debug('Loading light frame: {}.'.format(
                 self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
+            if type(light) == 'astropy.io.fits.hdu.hdulist.HDUList':
+                light = light[0]
+                logging.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
             light_shape = np.shape(light.data)
             logging.debug('light.data has shape {}.'.format(light_shape))
 
             # Normal case
             if len(light_shape) == 2:
                 logging.debug('light.data is 2 dimensional.')
-                light_CCDData.append(CCDData(light.data.astype('float'), unit=u.ct))
+                light_CCDData.append(
+                    CCDData(light.data.astype('float'), unit=u.ct))
                 self.light_header.append(light.header)
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(light_shape) == 3:
                 logging.debug('light.data is 3 dimensional.')
-                light_CCDData.append(CCDData(light.data[0].astype('float'), unit=u.ct))
+                light_CCDData.append(
+                    CCDData(light.data[0].astype('float'), unit=u.ct))
                 self.light_header.append(light.header)
             # Case with an extra bracket when saving
             elif len(light_shape) == 1:
@@ -446,10 +452,12 @@ class ImageReduction:
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(light.data[0]) == 3):
-                    light_CCDData.append(CCDData(light.data[0][0].astype('float'), unit=u.ct))
+                    light_CCDData.append(
+                        CCDData(light.data[0][0].astype('float'), unit=u.ct))
                     self.light_header.append(light[0].header)
                 else:
-                    light_CCDData.append(CCDData(light.data[0].astype('float'), unit=u.ct))
+                    light_CCDData.append(
+                        CCDData(light.data[0].astype('float'), unit=u.ct))
                     self.light_header.append(light[0].header)
             else:
                 error_msg = 'Please check the shape/dimension of the ' +\
@@ -458,8 +466,9 @@ class ImageReduction:
                 logging.critical(error_msg)
                 raise RuntimeError(error_msg)
 
-            logging.debug('Light frame header: {}.'.format(self.light_header[i]))
-            
+            logging.debug('Light frame header: {}.'.format(
+                self.light_header[i]))
+
             logging.debug('Appending light filename: {}.'.format(
                 self.light_list[i].split('/')[-1]))
             self.light_filename.append(self.light_list[i].split('/')[-1])
@@ -480,8 +489,8 @@ class ImageReduction:
 
                 else:
 
-                    # If exposure time cannot be found from the header and user failed
-                    # to supply the exposure time, use 1 second
+                    # If exposure time cannot be found from the header and
+                    # user failed to supply the exposure time, use 1 second
                     logging.warning(
                         'Light frame exposure time cannot be found. '
                         '1 second is used as the exposure time.')
@@ -491,8 +500,9 @@ class ImageReduction:
 
                 light_time.append(exptime_light)
 
-            logging.debug('The light frame exposure time is {}.'.format(light_time[i]))
- 
+            logging.debug('The light frame exposure time is {}.'.format(
+                light_time[i]))
+
             light_CCDData[i].data /= light_time[i]
 
         # Put data into a Combiner
@@ -534,19 +544,25 @@ class ImageReduction:
             for i in range(self.arc_list.size):
                 # Open all the light frames
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
+                if type(arc) == 'astropy.io.fits.hdu.hdulist.HDUList':
+                    arc = arc[0]
+                    logging.warning('A HDU list is provided, only the first '
+                                    'HDU will be read.')
 
                 arc_shape = np.shape(arc)
 
                 # Normal case
                 if len(arc_shape) == 2:
                     logging.debug('arc.data is 2 dimensional.')
-                    arc_CCDData.append(CCDData(arc.data.astype('float'), unit=u.ct))
+                    arc_CCDData.append(
+                        CCDData(arc.data.astype('float'), unit=u.ct))
                     self.arc_header.append(arc.header)
                 # Try to trap common error when saving FITS file
-                # Case with multiple image extensions, we only take the first one
+                # Case with multiple extensions, we only take the first one
                 elif len(arc_shape) == 3:
                     logging.debug('arc.data is 3 dimensional.')
-                    arc_CCDData.append(CCDData(arc.data[0].astype('float'), unit=u.ct))
+                    arc_CCDData.append(
+                        CCDData(arc.data[0].astype('float'), unit=u.ct))
                     self.arc_header.append(arc.header)
                 # Case with an extra bracket when saving
                 elif len(arc_shape) == 1:
@@ -554,10 +570,12 @@ class ImageReduction:
                     # In case it in a multiple extension format, we take the
                     # first one only
                     if len(np.shape(arc.data[0]) == 3):
-                        arc_CCDData.append(CCDData(arc.data[0][0].astype('float'), unit=u.ct))
+                        arc_CCDData.append(
+                            CCDData(arc.data[0][0].astype('float'), unit=u.ct))
                         self.arc_header.append(arc[0].header)
                     else:
-                        arc_CCDData.append(CCDData(arc.data[0].astype('float'), unit=u.ct))
+                        arc_CCDData.append(
+                            CCDData(arc.data[0].astype('float'), unit=u.ct))
                         self.arc_header.append(arc[0].header)
                 else:
                     error_msg = 'Please check the shape/dimension of the ' +\
@@ -568,7 +586,8 @@ class ImageReduction:
 
                 self.arc_filename.append(self.arc_list[i].split('/')[-1])
 
-                logging.debug('Arc frame header: {}.'.format(self.arc_header[i]))
+                logging.debug('Arc frame header: {}.'.format(
+                    self.arc_header[i]))
 
             # combine the arc frames
             arc_combiner = Combiner(arc_CCDData)
@@ -589,27 +608,34 @@ class ImageReduction:
         for i in range(self.bias_list.size):
             # Open all the bias frames
             bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
-
+            if type(bias) == 'astropy.io.fits.hdu.hdulist.HDUList':
+                bias = bias[0]
+                logging.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
             bias_shape = np.shape(bias)
 
             # Normal case
             if len(bias_shape) == 2:
                 logging.debug('bias.data is 2 dimensional.')
-                bias_CCDData.append(CCDData(bias.data.astype('float'), unit=u.ct))
+                bias_CCDData.append(
+                    CCDData(bias.data.astype('float'), unit=u.ct))
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(bias_shape) == 3:
                 logging.debug('bias.data is 3 dimensional.')
-                bias_CCDData.append(CCDData(bias.data[0].astype('float'), unit=u.ct))
+                bias_CCDData.append(
+                    CCDData(bias.data[0].astype('float'), unit=u.ct))
             # Case with an extra bracket when saving
             elif len(bias_shape) == 1:
                 logging.debug('bias.data is 1 dimensional.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(bias.data[0]) == 3):
-                    bias_CCDData.append(CCDData(bias.data[0][0].astype('float'), unit=u.ct))
+                    bias_CCDData.append(
+                        CCDData(bias.data[0][0].astype('float'), unit=u.ct))
                 else:
-                    bias_CCDData.append(CCDData(bias.data[0].astype('float'), unit=u.ct))
+                    bias_CCDData.append(
+                        CCDData(bias.data[0].astype('float'), unit=u.ct))
             else:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input bias frame, it is probably empty ' +\
@@ -665,18 +691,24 @@ class ImageReduction:
         for i in range(self.dark_list.size):
             # Open all the dark frames
             dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
+            if type(dark) == 'astropy.io.fits.hdu.hdulist.HDUList':
+                dark = dark[0]
+                logging.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
             dark_shape = np.shape(dark)
 
             # Normal case
             if len(dark_shape) == 2:
                 logging.debug('dark.data is 2 dimensional.')
-                dark_CCDData.append(CCDData(dark.data.astype('float'), unit=u.ct))
+                dark_CCDData.append(
+                    CCDData(dark.data.astype('float'), unit=u.ct))
                 self.dark_header.append(dark.header)
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(dark_shape) == 3:
                 logging.debug('dark.data is 3 dimensional.')
-                dark_CCDData.append(CCDData(dark.data[0].astype('float'), unit=u.ct))
+                dark_CCDData.append(
+                    CCDData(dark.data[0].astype('float'), unit=u.ct))
                 self.dark_header.append(dark.header)
             # Case with an extra bracket when saving
             elif len(dark_shape) == 1:
@@ -684,10 +716,12 @@ class ImageReduction:
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(dark.data[0]) == 3):
-                    dark_CCDData.append(CCDData(dark.data[0][0].astype('float'), unit=u.ct))
+                    dark_CCDData.append(
+                        CCDData(dark.data[0][0].astype('float'), unit=u.ct))
                     self.dark_header.append(dark[0].header)
                 else:
-                    dark_CCDData.append(CCDData(dark.data[0].astype('float'), unit=u.ct))
+                    dark_CCDData.append(
+                        CCDData(dark.data[0].astype('float'), unit=u.ct))
                     self.dark_header.append(dark[0].header)
             else:
                 error_msg = 'Please check the shape/dimension of the ' +\
@@ -767,19 +801,25 @@ class ImageReduction:
         for i in range(self.flat_list.size):
             # Open all the flatfield frames
             flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
+            if type(flat) == 'astropy.io.fits.hdu.hdulist.HDUList':
+                flat = flat[0]
+                logging.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
 
             flat_shape = np.shape(flat)
 
             # Normal case
             if len(flat_shape) == 2:
                 logging.debug('flat.data is 2 dimensional.')
-                flat_CCDData.append(CCDData(flat.data.astype('float'), unit=u.ct))
+                flat_CCDData.append(
+                    CCDData(flat.data.astype('float'), unit=u.ct))
                 self.flat_header.append(flat.header)
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(flat_shape) == 3:
                 logging.debug('flat.data is 3 dimensional.')
-                flat_CCDData.append(CCDData(flat.data[0].astype('float'), unit=u.ct))
+                flat_CCDData.append(
+                    CCDData(flat.data[0].astype('float'), unit=u.ct))
                 self.flat_header.append(flat.header)
             # Case with an extra bracket when saving
             elif len(flat_shape) == 1:
@@ -787,10 +827,12 @@ class ImageReduction:
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(flat.data[0]) == 3):
-                    flat_CCDData.append(CCDData(flat.data[0][0].astype('float'), unit=u.ct))
+                    flat_CCDData.append(
+                        CCDData(flat.data[0][0].astype('float'), unit=u.ct))
                     self.flat_header.append(flat[0].header)
                 else:
-                    flat_CCDData.append(CCDData(flat.data[0].astype('float'), unit=u.ct))
+                    flat_CCDData.append(
+                        CCDData(flat.data[0].astype('float'), unit=u.ct))
                     self.flat_header.append(flat[0].header)
             else:
                 error_msg = 'Please check the shape/dimension of the ' +\
@@ -880,7 +922,8 @@ class ImageReduction:
                     self.bias_master)
                 logging.info('Flat frame is bias subtracted.')
 
-            self.flat_reduced = self.flat_reduced/np.nanmean(self.flat_reduced)
+            self.flat_reduced = self.flat_reduced / np.nanmean(
+                self.flat_reduced)
 
             # Flattenning the light frame
             self.light_reduced = self.light_reduced.divide(self.flat_reduced)

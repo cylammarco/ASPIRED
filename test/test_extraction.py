@@ -2,6 +2,7 @@ import numpy as np
 from astropy.io import fits
 from aspired import spectral_reduction
 
+
 def test_spectral_extraction():
     # Prepare dummy data
     # total signal at a given spectral position = 2 + 5 + 10 + 5 + 2 - 1*5 = 19
@@ -26,7 +27,7 @@ def test_spectral_extraction():
         dummy_data,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        log_file_folder='test/test_output/')
+        log_file_name=None)
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the
     # spatial_mask
@@ -42,41 +43,37 @@ def test_spectral_extraction():
     assert np.round(count).astype('int') == 47, 'Extracted count is ' + str(
         count) + ' but it should be 19.'
 
+
 def test_user_supplied_trace():
 
     # Load the image
-    lhs6328_fits = fits.open(
-        'test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
+    lhs6328_fits = fits.open('test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
 
     spatial_mask = np.arange(50, 200)
     spec_mask = np.arange(50, 1024)
 
-    #
     # Loading a single pre-saved spectral trace.
-    #
     lhs6328_extracted = fits.open(
         'test/test_data/test_full_run_science_0.fits')
     lhs6328_trace = lhs6328_extracted[1].data
     lhs6328_trace_sigma = lhs6328_extracted[2].data
 
     lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_fits,
-                                                spatial_mask=spatial_mask,
-                                                spec_mask=spec_mask,
-                                                readnoise=2.34)
+                                                   spatial_mask=spatial_mask,
+                                                   spec_mask=spec_mask,
+                                                   readnoise=2.34,
+                                                   log_file_name=None)
 
-    # Adding the trace and the line spread function (sigma) to the TwoDSpec
-    # object
     lhs6328_twodspec.add_trace(trace=lhs6328_trace,
-                            trace_sigma=lhs6328_trace_sigma)
+                               trace_sigma=lhs6328_trace_sigma)
 
     lhs6328_twodspec.ap_extract(apwidth=15,
                                 optimal=True,
                                 skywidth=10,
                                 skydeg=1,
-                                display=True)
+                                display=False)
 
     lhs6328_twodspec.save_fits(
         output='count',
-        filename=
-        'test/test_output/user_supplied_trace_for_spectral_extraction',
+        filename='test/test_output/user_supplied_trace_for_extraction',
         overwrite=True)

@@ -141,7 +141,7 @@ class TwoDSpec:
         self.gain_keyword = ['GAIN']
         self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
         self.exptime_keyword = [
-            'XPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
         ]
 
         self.set_properties(**kwargs)
@@ -166,6 +166,14 @@ class TwoDSpec:
 
             self.img = data
             self.header = header
+
+        # If it is a fits.hdu.hdulist.HDUList object
+        elif isinstance(data, fits.hdu.hdulist.HDUList):
+
+            self.img = data[0].data
+            self.header = data[0].header
+            logging.warning('An HDU list is provided, only the first '
+                            'HDU will be read.')
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
@@ -621,16 +629,22 @@ class TwoDSpec:
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
                 arc, fits.hdu.image.ImageHDU):
             self.arc = arc.data
-            self.arc_header = arc.header
+            self.set_arc_header(header)
 
         # If it is an ImageReduction object
         elif isinstance(arc, ImageReduction):
             if arc.saxis == 1:
                 self.arc = arc.arc_master
-                self.arc_header = arc.arc_header[0]
+                if arc.arc_header is not []:
+                    self.set_arc_header(arc.arc_header[0])
+                else:
+                    self.set_arc_header(None)
             else:
                 self.arc = np.transpose(arc.arc_master)
-                self.arc_header = arc.arc_header[0]
+                if arc.arc_header is not []:
+                    self.set_arc_header(arc.arc_header[0])
+                else:
+                    self.set_arc_header(None)
 
         # If a filepath is provided
         elif isinstance(arc, str):
@@ -649,9 +663,43 @@ class TwoDSpec:
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
-            self.arc = fitsfile_tmp.data
+            if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
+                fitsfile_tmp = fitsfile_tmp[0]
+                logging.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
+            fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
+
+            # Normal case
+            if len(fitsfile_tmp_shape) == 2:
+                logging.debug('arc.data is 2 dimensional.')
+                self.arc = fitsfile_tmp.data
+                self.set_arc_header(fitsfile_tmp.header)
+            # Try to trap common error when saving FITS file
+            # Case with multiple image extensions, we only take the first one
+            elif len(fitsfile_tmp_shape) == 3:
+                logging.debug('arc.data is 3 dimensional.')
+                self.arc = fitsfile_tmp.data[0]
+                self.set_arc_header(fitsfile_tmp.header)
+            # Case with an extra bracket when saving
+            elif len(fitsfile_tmp_shape) == 1:
+                logging.debug('arc.data is 1 dimensional.')
+                # In case it in a multiple extension format, we take the
+                # first one only
+                if len(np.shape(fitsfile_tmp.data[0]) == 3):
+                    self.arc = fitsfile_tmp.data[0][0]
+                    self.set_arc_header(fitsfile_tmp[0].header)
+                else:
+                    self.arc = fitsfile_tmp.data[0]
+                    self.set_arc_header(fitsfile_tmp[0].header)
+            else:
+                error_msg = 'Please check the shape/dimension of the ' +\
+                            'input light frame, it is probably empty ' +\
+                            'or has an atypical output format.'
+                logging.critical(error_msg)
+                raise RuntimeError(error_msg)
 
         else:
+
             error_msg = 'Please provide a numpy array, an ' +\
                 'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +\
                 'aspired.ImageReduction object.'
@@ -671,10 +719,11 @@ class TwoDSpec:
 
         else:
 
-            error_msg = 'Please provide an ' +\
-                'astropy.io.fits.header.Header object.'
-            logging.critical(error_msg)
-            raise TypeError(error_msg)
+            self.arc_header = None
+            error_msg = 'Please provide a valid ' +\
+                'astropy.io.fits.header.Header object. Process continues ' +\
+                'without storing the header of the arc file.'
+            logging.warning(error_msg)
 
     def apply_twodspec_mask_to_arc(self):
         '''
