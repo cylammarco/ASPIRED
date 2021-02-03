@@ -673,7 +673,7 @@ class ImageReduction:
 
         else:
 
-            self.light_redcued = self.light_master.subtract(self.bias_master)
+            self.light_redcued = self.light_reduced.subtract(self.bias_master)
 
         # Free memory
         bias_CCDData = None

@@ -2478,7 +2478,8 @@ class OneDSpec():
 
                         science_am = 1.0
 
-                    logging.info('Airmass is {}.'.format(science_am))
+                    logging.info('Standard airmass is {}.'.format(standard_am))
+                    logging.info('Science airmass is {}.'.format(science_am))
 
                     # Get the atmospheric extinction correction factor
                     science_flux_extinction_factor = 10.**(
@@ -2505,10 +2506,10 @@ class OneDSpec():
 
             else:
 
-                logging.error('Flux calibration was not performed, the spectrum'
-                              'cannot be extinction corrected. Process continues'
-                              'with the uncorrected spectrum.')
-
+                logging.error('Flux calibration was not performed, the '
+                              'spectrum cannot be extinction corrected. '
+                              'Process continues with the uncorrected '
+                              'spectrum.')
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
