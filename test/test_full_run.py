@@ -128,8 +128,7 @@ def test_full_run():
 
     # Handle 1D Science spectrum
     lhs6328_onedspec = spectral_reduction.OneDSpec(
-        log_level='DEBUG',
-        log_file_folder='test/test_output/')
+        log_level='DEBUG', log_file_folder='test/test_output/')
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype='science')
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype='standard')
 

@@ -9,7 +9,7 @@ from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
-from scipy import ndimage
+# from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
 from spectres import spectres
@@ -1577,11 +1577,11 @@ class TwoDSpec:
         Parameters
         ----------
         extraction_slice: numpy.ndarray
-        
+
         sky_width_dn: float
-        
+
         sky_width_up: float
-        
+
         sky_polyfit_order: int
 
         Returns
@@ -1673,7 +1673,7 @@ class TwoDSpec:
                             will be used to construct the gaussian weight
                             function along the entire spectrum. (Choose from
                             horne86 and marsh89 algorithm)
-                        
+
         Nothing is returned unless return_jsonstring of the plotly graph is
         set to be returned. The count, count_sky and count_err are stored as
         properties of the TwoDSpec object.
@@ -1863,7 +1863,8 @@ class TwoDSpec:
 
                 count_sky[i] = np.nansum(
                     count_sky_extraction_slice[int(sky_width_dn +
-                        sep_dn):-int(sky_width_up + sep_up)]
+                                                   sep_dn):-int(sky_width_up +
+                                                                sep_up)]
                 ) - pix_frac * count_sky_extraction_slice[-1] - (
                     1 - pix_frac) * count_sky_extraction_slice[0]
 
@@ -1954,7 +1955,6 @@ class TwoDSpec:
                     else:
 
                         var_i = None
-
 
                     # Get the optimal signals
                     # source_pix is the native pixel position
@@ -2332,12 +2332,13 @@ class TwoDSpec:
         signal = f1
         noise = np.sqrt(v1)
 
-        logging.debug(
-            'The signal, noise, is_optimal flag and variance are {}, {}, {} and {}.'
-            .format(signal, noise, is_optimal, var_f))
+        logging.debug('The signal, noise, is_optimal flag and variance '
+                      'are {}, {}, {} and {}.'.format(signal, noise,
+                                                      is_optimal, var_f))
 
         return signal, noise, is_optimal, var_f
 
+    '''
     def _optimal_extraction_marsh89(self,
                                     frame,
                                     variance,
@@ -2460,7 +2461,8 @@ class TwoDSpec:
         width_up, width_dn = apwidth, apwidth
         sep_up, sep_dn = skysep, skysep
         # size of the spectrum in the spatial direction
-        spec_height = sky_width_up + sky_width_dn + width_up + width_dn + sep_up + sep_dn + 1
+        spec_height = sky_width_up + sky_width_dn + width_up + width_dn +\
+            sep_up + sep_dn + 1
         len_trace = len(trace)
 
         count_sky = np.zeros(len_trace)
@@ -2854,6 +2856,7 @@ class TwoDSpec:
 
         return (spectrum_marsh, spectrum_horne, varSpectrum, profile,
                 extractionApertures, residual_frame, variance0, goodpixelmask)
+    '''
 
     def inspect_extracted_spectrum(self,
                                    spec_id=None,
