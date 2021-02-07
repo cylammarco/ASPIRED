@@ -9,7 +9,6 @@ from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
-# from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
 from spectres import spectres
@@ -230,6 +229,8 @@ class TwoDSpec:
                 'or an ImageReduction object.'
             logging.critical(error_msg)
             raise TypeError(error_msg)
+
+        self.img_residual = self.img.copy()
 
     def set_properties(self,
                        saxis=None,
@@ -564,6 +565,7 @@ class TwoDSpec:
         if self.img is not None:
 
             self.img = self.img / self.exptime
+            self.img_residual = self.img_residual / self.exptime
 
             # the valid y-range of the chip (i.e. spatial direction)
             if (len(self.spatial_mask) > 1):
@@ -571,10 +573,12 @@ class TwoDSpec:
                 if self.saxis == 1:
 
                     self.img = self.img[self.spatial_mask]
+                    self.img_residual = self.img_residual[self.spatial_mask]
 
                 else:
 
                     self.img = self.img[:, self.spatial_mask]
+                    self.img_residual = self.img_residual[:, self.spatial_mask]
 
             # the valid x-range of the chip (i.e. spectral direction)
             if (len(self.spec_mask) > 1):
@@ -582,10 +586,12 @@ class TwoDSpec:
                 if self.saxis == 1:
 
                     self.img = self.img[:, self.spec_mask]
+                    self.img_residual = self.img_residual[:, self.spec_mask]
 
                 else:
 
                     self.img = self.img[self.spec_mask]
+                    self.img_residual = self.img_residual[self.spec_mask]
 
             # get the length in the spectral and spatial directions
             self.spec_size = np.shape(self.img)[self.saxis]
@@ -594,10 +600,12 @@ class TwoDSpec:
             if self.saxis == 0:
 
                 self.img = np.transpose(self.img)
+                self.img_residual = np.transpose(self.img_residual)
 
             if self.flip:
 
                 self.img = np.flip(self.img)
+                self.img_residual = np.flip(self.img_residual)
 
             # set the 2D histogram z-limits
             img_log = np.log10(self.img)
@@ -1629,16 +1637,6 @@ class TwoDSpec:
 
         return count_sky_extraction_slice
 
-    def _tophat_extraction(self,
-                           pix,
-                           extraction_slice,
-                           sky,
-                           mu,
-                           sigma,
-                           readnoise=0.0,
-                           gain=1.0):
-        pass
-
     def ap_extract(self,
                    apwidth=7,
                    skysep=3,
@@ -1762,7 +1760,7 @@ class TwoDSpec:
             count_sky = np.zeros(len_trace)
             count_err = np.zeros(len_trace)
             count = np.zeros(len_trace)
-            var = np.ones((len_trace, 2 * apwidth + 1))
+            var = np.ones((len_trace, 2 * apwidth + 1)) * self.readnoise**2.
             is_optimal = np.zeros(len_trace, dtype=bool)
 
             if isinstance(apwidth, int):
@@ -1851,22 +1849,18 @@ class TwoDSpec:
                 # trace +/- aperture and sky region size
                 extraction_slice = self.img[extraction_pix, i].copy()
 
-                count_source_plus_sky = np.sum(
-                    source_slice) - pix_frac * source_slice[-1] - (
-                        1 - pix_frac) * source_slice[0]
-
                 count_sky_extraction_slice = self._fit_sky(
                     extraction_slice, sky_width_dn, sky_width_up, skydeg)
+
                 count_sky_source_slice = count_sky_extraction_slice[
-                    int(sky_width_dn +
-                        sep_dn):-int(sky_width_up + sep_up)].copy()
+                    source_pix - itrace].copy()
 
                 count_sky[i] = np.nansum(
-                    count_sky_extraction_slice[int(sky_width_dn +
-                                                   sep_dn):-int(sky_width_up +
-                                                                sep_up)]
-                ) - pix_frac * count_sky_extraction_slice[-1] - (
-                    1 - pix_frac) * count_sky_extraction_slice[0]
+                    count_sky_source_slice
+                ) - pix_frac * count_sky_source_slice[-1] - (
+                    1 - pix_frac) * count_sky_source_slice[0]
+
+                self.img_residual[source_pix, i] = count_sky_source_slice
 
                 logging.debug('count_sky at pixel {} is {}.'.format(
                     i, count_sky[i]))
@@ -1874,25 +1868,12 @@ class TwoDSpec:
                 # if not optimal extraction, perform a tophat extraction
                 if not optimal:
 
-                    # finally, compute the error in this pixel
-                    # standarddev in the background data
-                    sigB = np.nanstd(count_sky_source_slice) * self.exptime
-                    # number of bkgd pixels
-                    nB = len(extraction_pix)
-                    # number of aperture pixels
-                    nA = width_dn + width_up + 1
-
-                    # Based on aperture phot err description by F. Masci,
-                    # Caltech:
-                    # http://wise2.ipac.caltech.edu/staff/fmasci/
-                    #   ApPhotUncert.pdf
-                    # All the counts are in per second already, so need to
-                    # multiply by the exposure time when computing the
-                    # uncertainty
-                    count[i] = count_source_plus_sky - count_sky[i]
-                    count_err[i] = np.sqrt(count[i] * self.exptime /
-                                           self.gain + (nA + nA**2. / nB) *
-                                           (sigB**2.)) / self.exptime
+                    count[i], count_err[i], is_optimal[i], _ =\
+                        self._top_hat_extraction(
+                            source_slice * self.exptime,
+                            count_sky_source_slice * self.exptime, pix_frac,
+                            self.gain, count_sky[i] * self.exptime,
+                            sky_width_dn, sky_width_up, width_dn, width_up)
 
                 else:
 
@@ -1959,7 +1940,7 @@ class TwoDSpec:
                     # Get the optimal signals
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
-                    count[i], count_err[i], is_optimal[i], var_temp =\
+                    count[i], count_err[i], is_optimal[i], profile, var_temp =\
                         self._optimal_extraction_horne86(
                             pix=source_pix,
                             source_slice=source_slice * self.exptime,
@@ -1973,12 +1954,16 @@ class TwoDSpec:
                             cosmicray_sigma=self.cosmicray_sigma,
                             forced=forced,
                             variances=var_i)
-                    count[i] /= self.exptime
-                    count_err[i] /= self.exptime
+
                     if var_i is None:
                         var[i] = var_temp
                     else:
                         var[i] = var_i
+
+                # All the extraction methods return signal and noise in the
+                # same format
+                count[i] /= self.exptime
+                count_err[i] /= self.exptime
 
             spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
                               sky_width_up)
@@ -2207,6 +2192,34 @@ class TwoDSpec:
 
                     return fig.to_json()
 
+    def _top_hat_extraction(self, source_slice, count_sky_source_slice,
+                            pix_frac, gain, count_sky, sky_width_dn,
+                            sky_width_up, width_dn, width_up):
+
+        # Get the total count
+        count_source_plus_sky = np.sum(source_slice) - pix_frac * source_slice[
+            -1] - (1 - pix_frac) * source_slice[0]
+
+        # finally, compute the error in this pixel
+        # standarddev in the background data
+        sigB = np.nanstd(count_sky_source_slice)
+        # number of bkgd pixels
+        nB = sky_width_dn + sky_width_up
+        # number of aperture pixels
+        nA = width_dn + width_up
+
+        # Based on aperture phot err description by F. Masci,
+        # Caltech:
+        # http://wise2.ipac.caltech.edu/staff/fmasci/
+        #   ApPhotUncert.pdf
+        # All the counts are in per second already, so need to
+        # multiply by the exposure time when computing the
+        # uncertainty
+        signal = count_source_plus_sky - count_sky
+        noise = np.sqrt(signal / gain + (nA + nA**2. / nB) * (sigB**2.))
+
+        return signal, noise, False, None
+
     def _optimal_extraction_horne86(self,
                                     pix,
                                     source_slice,
@@ -2313,11 +2326,13 @@ class TwoDSpec:
 
                     mask_cr[np.argmax(ratio)] = False
 
+            denom = np.nansum((P**2. / var_f)[mask_cr])
+
             # step 8a - extract optimal signal
-            f1 = np.nansum((P * f / var_f)[mask_cr]) / \
-                np.nansum((P**2. / var_f)[mask_cr])
+            f1 = np.nansum((P * f / var_f)[mask_cr]) / denom
+
             # step 8b - variance of optimal signal
-            v1 = np.nansum(P[mask_cr]) / np.nansum((P**2. / var_f)[mask_cr])
+            v1 = np.nansum(P[mask_cr]) / denom
 
             f_diff = abs((f1 - f0) / f0)
             v_diff = abs((v1 - v0) / v0)
@@ -2336,32 +2351,24 @@ class TwoDSpec:
                       'are {}, {}, {} and {}.'.format(signal, noise,
                                                       is_optimal, var_f))
 
-        return signal, noise, is_optimal, var_f
+        return signal, noise, is_optimal, P, var_f
 
-    '''
     def _optimal_extraction_marsh89(self,
                                     frame,
+                                    residual_frame,
+                                    spectrum,
                                     variance,
                                     gain,
                                     readnoise,
                                     trace,
                                     apwidth=7,
-                                    skysep=3,
-                                    skywidth=5,
-                                    skydeg=1,
                                     goodpixelmask=None,
                                     npoly=21,
                                     polyspacing=1,
                                     pord=2,
-                                    bkg_radii=[15, 20],
-                                    extract_radius=10,
-                                    dispaxis=0,
-                                    bord=1,
-                                    bsigma=3,
-                                    tord=3,
                                     csigma=5,
                                     finite=True,
-                                    qmode='fast',
+                                    qmode='slow',
                                     nreject=100,
                                     retall=False):
         """
@@ -2369,18 +2376,17 @@ class TwoDSpec:
 
         Parameters
         ----------
-        data : 2D Numpy array
+        frame : 2D Numpy array
             Appropriately calibrated frame from which to extract
             spectrum.  Should be in units of ADU, not electrons!
         variance : 2D Numpy array
-            Variances of pixel values in 'data'.
+            Variances of pixel values in 'frame'.
         gain : scalar
             Detector gain, in electrons per ADU
         readnoise : scalar
             Detector readnoise, in electrons.
         trace : 1D numpy array
-            location of spectral trace.  If None, :func:`traceorders` is
-            invoked.
+            location of spectral trace.
         goodpixelmask : 2D numpy array
             Equals 0 for bad pixels, 1 for good pixels
         npoly : int
@@ -2395,146 +2401,41 @@ class TwoDSpec:
             code slows down as S^2.
         pord : int
             Order of profile polynomials; 1 = linear, etc.
-        bkg_radii : 2-sequence
-            inner and outer radii to use in computing background
-        extract_radius : int
-            radius to use for both flux normalization and extraction
-        dispaxis : bool
-            0 for horizontal spectrum, 1 for vertical spectrum
-        bord : int >= 0
-            Degree of polynomial background fit.
-        bsigma : int >= 0
-            Sigma-clipping threshold for computing background.
-        tord : int >= 0
-            Degree of spectral-trace polynomial (for trace across frame
-            -- not used if 'trace' is input)
         csigma : int >= 0
             Sigma-clipping threshold for cleaning & cosmic-ray rejection.
-        finite : bool
-            If true, mask all non-finite values as bad pixels.
         qmode : str ('fast' or 'slow')
-            How to compute Marsh's Q-matrix.  Valid inputs are
-            'fast-linear', 'slow-linear', 'fast-nearest,' 'slow-nearest,'
-            and 'brute'.  These select between various methods of
-            integrating the nearest-neighbor or linear interpolation
-            schemes as described by Marsh; the 'linear' methods are
-            preferred for accuracy.  Use 'slow' if you are running out of
-            memory when using the 'fast' array-based methods.  'Brute' is
-            both slow and inaccurate, and should not be used.
+            How to compute Marsh's Q-matrix. Valid inputs are 'fast-linear',
+            'slow-linear', 'fast-nearest', and 'slow-nearest'. These select
+            between various methods of integrating the nearest-neighbor or
+            linear interpolation schemes as described by Marsh; the 'linear'
+            methods are preferred for accuracy. Use 'slow' if you are
+            running out of memory when using the 'fast' array-based methods.
         nreject : int
             Number of outlier-pixels to reject at each iteration.
-        retall : bool
-            If true, also return the 2D profile, background, variance
-            map, and bad pixel mask.
 
         Returns
         -------
         spectrum:
 
-        varSpectrum:
+        spectrum_err_marsh:
 
         trace:
 
         """
 
-        variance[variance <= 0.] = readnoise**2
+        frame = frame.transpose()
+        residual_frame = residual_frame.transpose()
+        variance = variance.transpose()
 
         if goodpixelmask is not None:
             goodpixelmask = np.array(goodpixelmask, copy=True).astype(bool)
         else:
             goodpixelmask = np.ones(frame.shape, dtype=bool)
 
-        if dispaxis == 0:
-            frame = frame.transpose()
-            variance = variance.transpose()
-            goodpixelmask = goodpixelmask.transpose()
-
-        if finite:
-            goodpixelmask *= (np.isfinite(frame) * np.isfinite(variance))
+        goodpixelmask *= (np.isfinite(frame) * np.isfinite(variance))
 
         variance[~goodpixelmask] = frame[goodpixelmask].max() * 1e9
-        nlam, fitwidth = frame.shape
-        spatial_size, spectral_size = frame.shape
-
-        # Step3: Sky Subtraction
-        sky_width_up, sky_width_dn = skywidth, skywidth
-        width_up, width_dn = apwidth, apwidth
-        sep_up, sep_dn = skysep, skysep
-        # size of the spectrum in the spatial direction
-        spec_height = sky_width_up + sky_width_dn + width_up + width_dn +\
-            sep_up + sep_dn + 1
-        len_trace = len(trace)
-
-        count_sky = np.zeros(len_trace)
-        count_err = np.zeros(len_trace)
-        count = np.zeros(len_trace)
-        var = np.ones((len_trace, 2 * apwidth + 1))
-        extractionApertures = np.zeros(
-            (len_trace, 2 * apwidth + 1)).astype('int')
-
-        # Prepare a residual image after Horne's optimal extraction
-        residual_frame = 0. * frame
-        spectrum_horne = np.zeros((len_trace, spec_height))
-
-        for i, pos in enumerate(trace):
-
-            itrace = int(pos)
-            pix_frac = pos - itrace
-
-            # define the aperture in this column
-            extractionApertures[i] = np.arange(itrace - width_dn, itrace +
-                                               width_up + 1).astype('int')
-            spectrumApertures[i] = np.arange(
-                itrace - width_dn - sep_dn - sky_width_dn,
-                itrace + width_up + sep_up + sky_width_up + 1).astype('int')
-
-            # get the spectrum count around the trace +/- width
-            extraction_slice = frame[extractionApertures[i]]
-            spectrum[i] = frame[spectrumApertures[i]]
-
-            if (sky_width_up >= 0) or (sky_width_dn >= 0):
-
-                # get the indexes of the sky regions
-                y0 = max(itrace - width_dn - sep_dn - sky_width_dn, 0)
-                y1 = max(itrace - width_dn - sep_dn, 0)
-                y2 = min(itrace + width_up + sep_up + 1, fitwidth - 1)
-                y3 = min(itrace + width_up + sep_up + sky_width_up + 1,
-                         fitwidth - 1)
-                y = np.append(np.arange(y0, y1), np.arange(y2, y3))
-                z = frame[y, i]
-
-                if (skydeg > 0):
-
-                    # fit a polynomial to the sky in this column
-                    polyfit_coeff = np.polyfit(y, z, skydeg)
-                    # evaluate the polynomial across the aperture, and sum
-                    count_sky_slice = np.polyval(polyfit,
-                                                 extractionApertures[i])
-                    count_sky[i] = np.sum(
-                        count_sky_slice) - pix_frac * count_sky_slice[-1] - (
-                            1 - pix_frac) * count_sky_slice[0]
-                    residual_frame[i] = np.polyval(polyfit_coeff,
-                                                   spectrumApertures[i])
-
-                elif (skydeg == 0):
-
-                    residual_frame[i] = np.nanmean(z) * (
-                        len(extraction_slice) - 1)
-                    count_sky[i] = np.nanmean(z) * (len(extraction_slice) - 1)
-
-                else:
-
-                    logging.warning('skydeg cannot be negative. sky '
-                                    'background is set to zero.')
-
-            else:
-
-                # get the indexes of the sky regions
-                z = [0.]
-                residual_frame[i] = 0.
-
-            logging.debug('The residual values are {}.'.format(
-                residual_frame[i]))
+        spectral_size, spatial_size = frame.shape
 
         # (my 3a: mask any bad values)
         bad_residual_frame_mask = ~np.isfinite(residual_frame)
@@ -2543,24 +2444,15 @@ class TwoDSpec:
             logging.warning("Found bad residual_frame values at: {}".format(
                 bad_residual_frame_mask.nonzero()))
 
+        skysubFrame = frame - residual_frame
+
         # Interpolate and fix bad pixels for extraction of standard
         # spectrum -- otherwise there can be 'holes' in the spectrum from
         # ill-placed bad pixels.
-        fixSkysubFrame = self._bfixpix(residual_frame,
+        fixSkysubFrame = self._bfixpix(skysubFrame,
                                        ~goodpixelmask,
                                        n=8,
                                        retdat=True)
-
-        # Step4: Extract 'standard' spectrum and its variance
-        spectrum_horne = np.zeros((nlam, 1), dtype=float)
-        var_spectrum_horne = np.zeros((nlam, 1), dtype=float)
-        for ii in range(nlam):
-            thisrow_good = extractionApertures[ii]
-            spectrum_horne[ii] = fixSkysubFrame[thisrow_good, ii].sum()
-            var_spectrum_horne[ii] = variance[thisrow_good, ii].sum()
-
-        spectrum_marsh = spectrum_horne.copy()
-        varSpectrum = var_spectrum_horne
 
         # Define new indices (in Marsh's appendix):
         N = pord + 1
@@ -2571,28 +2463,29 @@ class TwoDSpec:
         pp = N * ll + mm
         qq = N * kk + nn
 
-        jj = np.arange(nlam)  # row (i.e., wavelength direction)
-        ii = np.arange(fitwidth)  # column (i.e., spatial direction)
-        jjnorm = np.linspace(-1, 1, nlam)  # normalized X-coordinate
-        jjnorm_pow = jjnorm.reshape(1, 1, nlam)**(np.arange(2 * N - 1).reshape(
-            2 * N - 1, 1, 1))
+        ii = np.arange(spatial_size)  # column (i.e., spatial direction)
+        jjnorm = np.linspace(-1, 1, spectral_size)  # normalized X-coordinate
+        jjnorm_pow = jjnorm.reshape(
+            1, 1,
+            spectral_size)**(np.arange(2 * N - 1).reshape(2 * N - 1, 1, 1))
 
         # Marsh eq. 9, defining centers of each polynomial:
         constant = 0.  # What is it for???
         poly_centers = np.array(trace).reshape(
-            nlam, 1) + polyspacing * np.arange(-npoly / 2 + 1,
-                                               npoly / 2 + 1) + constant
+            spectral_size, 1) + polyspacing * np.arange(
+                -npoly / 2 + 1, npoly / 2 + 1) + constant
 
         # Marsh eq. 11, defining Q_kij    (via nearest-neighbor interpolation)
         #    Q_kij =  max(0, min(S, (S+1)/2 - abs(x_kj - i)))
         if qmode == 'fast-nearest':  # Array-based nearest-neighbor mode.
             Q = np.array([
-                np.zeros((npoly, fitwidth, nlam)),
+                np.zeros((npoly, spatial_size, spectral_size)),
                 np.array([
-                    polyspacing * np.ones((npoly, fitwidth, nlam)),
+                    polyspacing * np.ones(
+                        (npoly, spatial_size, spectral_size)),
                     0.5 * (polyspacing + 1) - np.abs(
-                        (poly_centers - ii.reshape(fitwidth, 1, 1)).transpose(
-                            2, 0, 1))
+                        (poly_centers -
+                         ii.reshape(spatial_size, 1, 1)).transpose(2, 0, 1))
                 ]).min(0)
             ]).max(0)
 
@@ -2601,11 +2494,11 @@ class TwoDSpec:
             poly_centers_over_s = poly_centers / polyspacing
             xps_mat = poly_centers + polyspacing
             xms_mat = poly_centers - polyspacing
-            Q = np.zeros((npoly, fitwidth, nlam), dtype=float)
-            for i in range(fitwidth):
+            Q = np.zeros((npoly, spatial_size, spectral_size))
+            for i in range(spatial_size):
                 ip05 = i + 0.5
                 im05 = i - 0.5
-                for j in range(nlam):
+                for j in range(spectral_size):
                     for k in range(npoly):
                         xkj = poly_centers[j, k]
                         xkjs = poly_centers_over_s[j, k]
@@ -2638,22 +2531,23 @@ class TwoDSpec:
         elif qmode == 'fast-linear':
             invs = 1. / polyspacing
             xps_mat = poly_centers + polyspacing
-            Q = np.zeros((npoly, fitwidth, nlam), dtype=float)
-            for j in range(nlam):
+            Q = np.zeros((npoly, spatial_size, spectral_size))
+            for j in range(spectral_size):
                 xkj_vec = np.tile(poly_centers[j, :].reshape(npoly, 1),
-                                  (1, fitwidth))
+                                  (1, spatial_size))
                 xps_vec = np.tile(xps_mat[j, :].reshape(npoly, 1),
-                                  (1, fitwidth))
+                                  (1, spatial_size))
                 xms_vec = xps_vec - 2 * polyspacing
 
-                ip05_vec = np.tile(np.arange(fitwidth) + 0.5, (npoly, 1))
+                ip05_vec = np.tile(np.arange(spatial_size) + 0.5, (npoly, 1))
                 im05_vec = ip05_vec - 1
                 ind00 = (ip05_vec <= xms_vec) + (im05_vec >= xps_vec)
                 ind11 = (im05_vec > xkj_vec) * ~ind00
                 ind22 = (ip05_vec < xkj_vec) * ~ind00
-                ind33 = ~(ind00 + ind11 + ind22).nonzero()
+                ind33 = ~(ind00 + ind11 + ind22)
                 ind11 = ind11.nonzero()
                 ind22 = ind22.nonzero()
+                ind33 = ind33.nonzero()
 
                 n_ind11 = len(ind11[0])
                 n_ind22 = len(ind22[0])
@@ -2687,29 +2581,12 @@ class TwoDSpec:
                          (-xkj_vec[ind33] + lim1_ind33 + lim2_ind33) - 0.5 *
                          (lim1_ind33 * lim1_ind33 + lim2_ind33 * lim2_ind33)))
 
-        # Neither accurate, nor memory-frugal.
-        elif qmode == 'brute':
-            oversamp = 4.
-            jj2 = np.arange(nlam * oversamp, dtype=float) / oversamp
-            trace2 = np.interp(jj2, jj, trace)
-            poly_centers2 = trace2.reshape(
-                nlam * oversamp, 1) + polyspacing * np.arange(
-                    -npoly / 2 + 1, npoly / 2 + 1, dtype=float) + constant
-            x2 = np.arange(fitwidth * oversamp, dtype=float) / oversamp
-            Q = np.zeros((npoly, fitwidth, nlam), dtype=float)
-            for k in range(npoly):
-                Q[k, :, :] = ndimage.zoom((np.abs(
-                    x2.reshape(fitwidth * oversamp, 1) - poly_centers2[:, k])
-                                           <= polyspacing), oversamp)
-
-            Q /= oversamp * oversamp * 2
-
         # 'slow' Loop-based nearest-neighbor mode: requires less memory
         else:
-            Q = np.zeros((npoly, fitwidth, nlam), dtype=float)
+            Q = np.zeros((npoly, spatial_size, spectral_size))
             for k in range(npoly):
-                for i in range(fitwidth):
-                    for j in range(nlam):
+                for i in range(spatial_size):
+                    for j in range(spectral_size):
                         Q[k, i, j] = max(
                             0,
                             min(
@@ -2734,19 +2611,21 @@ class TwoDSpec:
             # Compute pixel fractions (Marsh Eq. 5):
             #     (Note that values outside the desired polynomial region
             #     have Q=0, and so do not contribute to the fit)
-            invEvariance = (spectrum_horne**2 / variance).transpose()
-            weightedE = (residual_frame * spectrum_horne /
+            invEvariance = (np.array(spectrum).reshape(spectral_size, 1)**2 /
+                            variance).transpose()
+            weightedE = (skysubFrame *
+                         np.array(spectrum).reshape(spectral_size, 1) /
                          variance).transpose()  # E / var_E
             invEvariance_subset = invEvariance[Q_cols[0]:Q_cols[1] + 1, :]
 
             # Define X vector (Marsh Eq. A3):
-            X = np.zeros(N * npoly, dtype=float)
+            X = np.zeros(N * npoly)
             for q in qq:
                 X[q] = (weightedE[Q_cols[0]:Q_cols[1] + 1, :] *
                         Qsm[kk[q], :, :] * jjnorm_pow[nn[q]]).sum()
             """
             # The unoptimised way to compute the X vector:
-            X2 = np.zeros(N * npoly, dtype=float)
+            X2 = np.zeros(N * npoly)
             for n in nn:
                 for k in kk:
                     q = N * k + n
@@ -2759,7 +2638,7 @@ class TwoDSpec:
             """
 
             # Define C matrix (Marsh Eq. A3)
-            C = np.zeros((N * npoly, N * npoly), dtype=float)
+            C = np.zeros((N * npoly, N * npoly))
 
             # C-matrix computation buffer (to be sure we don't miss any pixels)
             buffer = 1.1
@@ -2778,7 +2657,7 @@ class TwoDSpec:
                         if q > p:
                             C[p, q] = C[q, p]
 
-            # Solve for the profile-polynomial coefficients (Marsh Eq. A)4:
+            # Solve for the profile-polynomial coefficients (Marsh Eq. A4):
             if np.abs(np.linalg.det(C)) < 1e-10:
                 Bsoln = np.dot(np.linalg.pinv(C), X)
             else:
@@ -2788,24 +2667,25 @@ class TwoDSpec:
 
             # Define G_kj, the profile-defining polynomial profiles
             # (Marsh Eq. 8)
-            Gsoln = np.zeros((npoly, nlam), dtype=float)
+            Gsoln = np.zeros((npoly, spectral_size))
             for n in range(npoly):
                 Gsoln[n] = np.polyval(Asoln[n, ::-1],
                                       jjnorm)  # reorder polynomial coef.
 
             # Compute the profile (Marsh eq. 6) and normalize it:
-            profile = np.zeros((fitwidth, nlam), dtype=float)
-            for i in range(fitwidth):
+            profile = np.zeros((spatial_size, spectral_size))
+            for i in range(spatial_size):
                 profile[i, :] = (Q[:, i, :] * Gsoln).sum(0)
 
             logging.debug(profile)
             if profile.min() < 0:
                 profile[profile < 0] = 0.
-            profile /= profile.sum(0).reshape(1, nlam)
+            profile /= np.nansum(profile, axis=0)
             profile[~np.isfinite(profile)] = 0.
 
             # Step6: Revise variance estimates
-            modelSpectrum = spectrum_horne * profile.transpose()
+            modelSpectrum = np.array(spectrum).reshape(
+                spectral_size, 1) * profile.transpose()
             modelData = modelSpectrum + residual_frame
             variance0 = np.abs(modelData) + readnoise**2
             variance = variance0 / (
@@ -2832,31 +2712,40 @@ class TwoDSpec:
                 "Rejected {} pixels in this iteration.".format(numberRejected))
 
             # Optimal Spectral Extraction: (Horne, Step 8)
-            fixSkysubFrame = self._bfixpix(residual_frame,
+            fixSkysubFrame = self._bfixpix(skysubFrame,
                                            ~goodpixelmask,
                                            n=8,
                                            retdat=True)
-            spectrum_marsh = np.zeros((nlam, 1), dtype=float)
-            varSpectrum = np.zeros((nlam, 1), dtype=float)
-            goodprof = profile.transpose()
-            for ii in range(nlam):
-                thisrow_good = extractionApertures[ii]
-                denom = (goodprof[ii, thisrow_good] *
-                         profile.transpose()[ii, thisrow_good] /
-                         variance0[ii, thisrow_good]).sum()
-                if denom == 0:
-                    spectrum_marsh[ii] = 0.
-                    varSpectrum[ii] = 9e9
-                else:
-                    spectrum_marsh[ii] = (
-                        goodprof[ii, thisrow_good] *
-                        fixSkysubFrame[ii, thisrow_good] /
-                        variance0[ii, thisrow_good]).sum() / denom
-                    varSpectrum[ii] = goodprof[ii, thisrow_good].sum() / denom
 
-        return (spectrum_marsh, spectrum_horne, varSpectrum, profile,
-                extractionApertures, residual_frame, variance0, goodpixelmask)
-    '''
+            spectrum_marsh = np.zeros(spectral_size)
+            spectrum_err_marsh = np.zeros(spectral_size)
+            is_optimal = np.zeros(spectral_size)
+
+            for i in range(spectral_size):
+                aperture = np.arange(
+                    int(trace[i]) - apwidth,
+                    int(trace[i]) + apwidth + 1).astype(int)
+
+                # Horne86 notation
+                P = profile[aperture, i]
+                V = variance0[i, aperture]
+                D = fixSkysubFrame[i, aperture]
+
+                denom = np.nansum(P**2. / V)
+
+                if denom == 0:
+                    spectrum_marsh[i] = 0.
+                    spectrum_err_marsh[i] = 9e9
+                else:
+                    spectrum_marsh[i] = np.nansum(P / V * D) / denom
+                    spectrum_err_marsh[i] = np.sqrt(np.nansum(P) / denom)
+                    is_optimal[i] = True
+
+        spectrum_marsh = spectrum_marsh
+        spectrum_err_marsh = spectrum_err_marsh
+
+        return (spectrum_marsh, spectrum_err_marsh, is_optimal, profile,
+                variance0)
 
     def inspect_extracted_spectrum(self,
                                    spec_id=None,

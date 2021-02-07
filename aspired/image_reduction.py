@@ -866,8 +866,6 @@ class ImageReduction:
 
                 flat_time.append(self.exptime_flat)
 
-            flat_CCDData[i].data /= flat_time[i]
-
         # Put data into a Combiner
         flat_combiner = Combiner(flat_CCDData)
 
