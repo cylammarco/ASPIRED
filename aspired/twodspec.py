@@ -165,6 +165,7 @@ class TwoDSpec:
         if isinstance(data, np.ndarray):
 
             self.img = data
+            logging.info('An numpy array is loaded as data.')
             self.header = header
 
         # If it is a fits.hdu.hdulist.HDUList object
@@ -181,6 +182,7 @@ class TwoDSpec:
 
             self.img = data.data
             self.header = data.header
+            logging.info('A PrimaryHDU is loaded as data.')
 
         # If it is an ImageReduction object
         elif isinstance(data, ImageReduction):
@@ -234,6 +236,7 @@ class TwoDSpec:
 
     def set_properties(self,
                        saxis=None,
+                       variance=None,
                        spatial_mask=None,
                        spec_mask=None,
                        flip=None,
@@ -283,6 +286,8 @@ class TwoDSpec:
         saxis: int
             Spectral direction, 0 for vertical, 1 for horizontal.
             (Default is 1)
+        variance: 2D numpy array (M, N)
+            The per-pixel-variance of the frame.
         spatial_mask: 1D numpy array (N)
             Mask in the spatial direction, can be the indices of the pixels
             to be included (size <N) or a 1D numpy array of True/False (size N)
@@ -612,6 +617,20 @@ class TwoDSpec:
             img_log_finite = img_log[np.isfinite(img_log)]
             self.zmin = np.nanpercentile(img_log_finite, 5)
             self.zmax = np.nanpercentile(img_log_finite, 95)
+
+        else:
+
+            logging.critical('Please add the data when initialising the '
+                'TwoDSpec() or by using add_data(), before setting the '
+                'properties.')
+
+        if variance is not None:
+
+            self.variance = variance
+
+        else:
+
+            self.variance = np.abs(self.img) + self.readnoise**2
 
     def add_arc(self, arc, header=None):
         '''
@@ -1584,13 +1603,17 @@ class TwoDSpec:
 
         Parameters
         ----------
-        extraction_slice: numpy.ndarray
-
-        sky_width_dn: float
-
-        sky_width_up: float
-
+        extraction_slice: 1-d numpy array
+            The counts along the profile for extraction, including the sky
+            regions to be fitted and subtracted from.
+        sky_width_dn: int
+            Number of pixels used for sky modelling on the lower side of the
+            spectrum.
+        sky_width_up: int
+            Number of pixels used for sky modelling on the upper side of the
+            spectrum.
         sky_polyfit_order: int
+            The order of polynomial in fitting the sky background.
 
         Returns
         -------
@@ -1604,31 +1627,30 @@ class TwoDSpec:
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_dn] = True
-            sky_mask[-sky_width_up:-1] = True
+            sky_mask[-(sky_width_up+1):-1] = True
 
             if (sky_polyfit_order == 0):
 
                 count_sky_extraction_slice = np.ones(
-                    len(extraction_slice[sky_mask]) - 1) * np.nanmean(
+                    len(extraction_slice[sky_mask])) * np.nanmean(
                         extraction_slice[sky_mask])
 
             elif (sky_polyfit_order > 0):
 
                 # fit a polynomial to the sky in this column
-                polyfit_coeff = np.polyfit(
+                polyfit_coeff = np.polynomial.polynomial.polyfit(
                     np.arange(extraction_slice.size)[sky_mask],
                     extraction_slice[sky_mask], sky_polyfit_order)
 
                 # evaluate the polynomial across the extraction_slice, and sum
-                count_sky_extraction_slice = np.polyval(
-                    polyfit_coeff, np.arange(extraction_slice.size))
+                count_sky_extraction_slice = np.polynomial.polynomial.polyval(
+                    np.arange(extraction_slice.size), polyfit_coeff)
 
             else:
 
                 logging.warning('sky_polyfit_order cannot be negative. sky '
                                 'background is set to zero.')
-                count_sky_extraction_slice = np.zeros(
-                    len(extraction_slice[sky_mask]) - 1)
+                count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
         else:
 
@@ -1649,6 +1671,11 @@ class TwoDSpec:
                    max_iter=99,
                    forced=False,
                    variances=None,
+                   npoly=21,
+                   polyspacing=1,
+                   pord=2,
+                   qmode='fast-linear',
+                   nreject=100,
                    display=False,
                    renderer='default',
                    width=1280,
@@ -1687,36 +1714,55 @@ class TwoDSpec:
 
         Parameters
         ----------
-        apwidth: int (or list of int)
+        apwidth: int or list of int (Default: 7)
             Half the size of the aperature (fixed value for tophat extraction).
             If a list of two ints are provided, the first element is the
-            lower half of the aperture  and the second one is the upper half
-            (up and down refers to large and small pixel values)
-        skysep: int
+            lower half of the aperture and the second one is the upper half.
+        skysep: int or list of int (Default: 3)
             The separation in pixels from the aperture to the sky window.
-            (Default is 3)
-        skywidth: int
+        skywidth: int or list of int (Default: 5)
             The width in pixels of the sky windows on either side of the
-            aperture. Zero (0) means ignore sky subtraction. (Default is 7)
-        skydeg: int
+            aperture. Zero (0) means ignore sky subtraction.
+        skydeg: int (Default: 1)
             The polynomial order to fit between the sky windows.
-            (Default is 0, i.e. constant flat sky level)
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
-        optimal: boolean
+        optimal: boolean (Default: True)
             Set optimal extraction. (Default is True)
-        tolerance: float
+        algorithm: str (Default: 'horne86')
+            Available algorithms are horne86 and marsh89.
+        tolerance: float (Default: 1e-6)
             The tolerance limit for the convergence of the optimal extraction
-        max_iter: float
+        max_iter: float (Default: 99)
             The maximum number of iterations before optimal extraction fails
             and return to standard tophot extraction
-        forced: boolean
+        forced: boolean (Default: False)
             To perform forced optimal extraction  by using the given aperture
             profile as it is without interation, the resulting uncertainty
             will almost certainly be wrong. This is an experimental feature.
-        variances: list or numpy.ndarray
+        variances: list or numpy.ndarray (Default: None, only used if algorithm
+                   is 'horne86')
             The weight function for forced extraction. It is only used if force
             is set to True.
+        npoly: int (Default: 21, only used if algorithm is marsh89)
+            Number of profile to be use for polynomial fitting to evaluate
+            (Marsh's "K"). For symmetry, this should be odd.
+        polyspacing: float (Default: 1)
+            Spacing between profile polynomials, in pixels. (Marsh's "S").
+            A few cursory tests suggests that the extraction precision
+            (in the high S/N case) scales as S^-2 -- but the code slows down
+            as S^2.
+        pord: int (Default: 2)
+            Order of profile polynomials; 1 = linear, etc.
+        qmode: str (Default: 'fast-linear')
+            How to compute Marsh's Q-matrix. Valid inputs are 'fast-linear',
+            'slow-linear', 'fast-nearest', and 'slow-nearest'. These select
+            between various methods of integrating the nearest-neighbor or
+            linear interpolation schemes as described by Marsh; the 'linear'
+            methods are preferred for accuracy. Use 'slow' if you are
+            running out of memory when using the 'fast' array-based methods.
+        nreject: int (Default: 100)
+            Number of outlier-pixels to reject at each iteration.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
@@ -1820,6 +1866,7 @@ class TwoDSpec:
                 sky_width_dn = 5
                 sky_width_up = 5
 
+            # Sky extraction
             for i, pos in enumerate(spec.trace):
 
                 itrace = int(pos)
@@ -1851,119 +1898,152 @@ class TwoDSpec:
 
                 count_sky_extraction_slice = self._fit_sky(
                     extraction_slice, sky_width_dn, sky_width_up, skydeg)
+                logging.debug('Sky count (including wings): {}'.format(
+                    count_sky_extraction_slice))
 
                 count_sky_source_slice = count_sky_extraction_slice[
                     source_pix - itrace].copy()
+                logging.debug('Sky count: {}'.format(count_sky_source_slice))
 
                 count_sky[i] = np.nansum(
                     count_sky_source_slice
-                ) - pix_frac * count_sky_source_slice[-1] - (
-                    1 - pix_frac) * count_sky_source_slice[0]
+                ) - pix_frac * count_sky_source_slice[0] - (
+                    1 - pix_frac) * count_sky_source_slice[-1]
 
                 self.img_residual[source_pix, i] = count_sky_source_slice
 
                 logging.debug('count_sky at pixel {} is {}.'.format(
                     i, count_sky[i]))
 
-                # if not optimal extraction, perform a tophat extraction
-                if not optimal:
+                # if not optimal extraction or using marsh89, perform a
+                # tophat extraction
+                if not optimal or algorithm == 'marsh89':
 
-                    count[i], count_err[i], is_optimal[i], _ =\
-                        self._top_hat_extraction(
-                            source_slice * self.exptime,
-                            count_sky_source_slice * self.exptime, pix_frac,
-                            self.gain, count_sky[i] * self.exptime,
-                            sky_width_dn, sky_width_up, width_dn, width_up)
+                    count[i], count_err[i], is_optimal[i] =\
+                        self._tophat_extraction(
+                            source_slice=source_slice * self.exptime,
+                            sky_source_slice=count_sky_source_slice *\
+                                self.exptime,
+                            pix_frac=pix_frac,
+                            gain=self.gain,
+                            sky_width_dn=sky_width_dn,
+                            sky_width_up=sky_width_up,
+                            width_dn=width_dn,
+                            width_up=width_up)
 
-                else:
+            if optimal:
 
-                    # If the weights are given externally to perform forced
-                    # extraction
-                    if forced:
+                if algorithm == 'marsh89':
 
-                        # Unit weighted
-                        if np.ndim(variances) == 0:
+                    count, count_err, is_optimal, profile, var =\
+                        self._optimal_extraction_marsh89(
+                            frame=self.img,
+                            residual_frame=self.img_residual,
+                            variance=self.variance,
+                            trace=spec.trace,
+                            spectrum=count,
+                            gain=self.gain,
+                            readnoise=self.readnoise,
+                            apwidth=(width_dn, width_up),
+                            goodpixelmask=None,
+                            npoly=npoly,
+                            polyspacing=polyspacing,
+                            pord=pord,
+                            cosmicray_sigma=self.cosmicray_sigma,
+                            qmode=qmode,
+                            nreject=nreject)
 
-                            if np.isfinite(variances):
+                # Get the optimal signals
+                elif algorithm == 'horne86':
 
-                                var_i = np.ones(width_dn + width_up +
-                                                1) * variances
+                    for i, pos in enumerate(spec.trace):
+
+                        # If the weights are given externally to perform forced
+                        # extraction
+                        if forced:
+
+                            # Unit weighted
+                            if np.ndim(variances) == 0:
+
+                                if np.isfinite(variances):
+
+                                    var_i = np.ones(width_dn + width_up +
+                                                    1) * variances
+
+                                else:
+
+                                    var_i = np.ones(len(source_pix))
+                                    logging.warning('Variances are set to 1.')
+
+                            # A single LSF is given for the entire trace
+                            elif np.ndim(variances) == 1:
+                                if len(variances) == len(source_pix):
+
+                                    var_i = variances
+
+                                elif len(variances) == len_trace:
+
+                                    var_i = np.ones(len(source_pix)) * variances[i]
+
+                                else:
+
+                                    var_i = np.ones(len(source_pix))
+                                    logging.warning('Variances are set to 1.')
+
+                            # A two dimensional LSF
+                            elif np.ndim(variances) == 2:
+
+                                var_i = variances[i]
+
+                                # If some of the spectrum is outside of the frame
+                                if itrace - apwidth < 0:
+
+                                    var_i = var_i[apwidth - width_dn:]
+
+                                # If some of the spectrum is outside of the frame
+                                elif itrace + apwidth > self.spatial_size:
+
+                                    var_i = var_i[:-(apwidth - width_up + 1)]
+
+                                else:
+
+                                    pass
 
                             else:
 
                                 var_i = np.ones(len(source_pix))
                                 logging.warning('Variances are set to 1.')
-
-                        # A single LSF is given for the entire trace
-                        elif np.ndim(variances) == 1:
-                            if len(variances) == len(source_pix):
-
-                                var_i = variances
-
-                            elif len(variances) == len_trace:
-
-                                var_i = np.ones(len(source_pix)) * variances[i]
-
-                            else:
-
-                                var_i = np.ones(len(source_pix))
-                                logging.warning('Variances are set to 1.')
-
-                        # A two dimensional LSF
-                        elif np.ndim(variances) == 2:
-
-                            var_i = variances[i]
-
-                            # If some of the spectrum is outside of the frame
-                            if itrace - apwidth < 0:
-
-                                var_i = var_i[apwidth - width_dn:]
-
-                            # If some of the spectrum is outside of the frame
-                            elif itrace + apwidth > self.spatial_size:
-
-                                var_i = var_i[:-(apwidth - width_up + 1)]
-
-                            else:
-
-                                pass
 
                         else:
 
-                            var_i = np.ones(len(source_pix))
-                            logging.warning('Variances are set to 1.')
+                            var_i = None
 
-                    else:
+                        # source_pix is the native pixel position
+                        # pos is the trace at the native pixel position
+                        count[i], count_err[i], is_optimal[i], profile, var_temp =\
+                            self._optimal_extraction_horne86(
+                                pix=source_pix,
+                                source_slice=source_slice * self.exptime,
+                                sky=count_sky_source_slice * self.exptime,
+                                mu=pos,
+                                sigma=spec.trace_sigma[i],
+                                tol=tolerance,
+                                max_iter=max_iter,
+                                readnoise=self.readnoise,
+                                gain=self.gain,
+                                cosmicray_sigma=self.cosmicray_sigma,
+                                forced=forced,
+                                variances=var_i)
 
-                        var_i = None
+                        if var_i is None:
+                            var[i] = var_temp
+                        else:
+                            var[i] = var_i
 
-                    # Get the optimal signals
-                    # source_pix is the native pixel position
-                    # pos is the trace at the native pixel position
-                    count[i], count_err[i], is_optimal[i], profile, var_temp =\
-                        self._optimal_extraction_horne86(
-                            pix=source_pix,
-                            source_slice=source_slice * self.exptime,
-                            sky=count_sky_source_slice * self.exptime,
-                            mu=pos,
-                            sigma=spec.trace_sigma[i],
-                            tol=tolerance,
-                            max_iter=max_iter,
-                            readnoise=self.readnoise,
-                            gain=self.gain,
-                            cosmicray_sigma=self.cosmicray_sigma,
-                            forced=forced,
-                            variances=var_i)
-
-                    if var_i is None:
-                        var[i] = var_temp
-                    else:
-                        var[i] = var_i
-
-                # All the extraction methods return signal and noise in the
-                # same format
-                count[i] /= self.exptime
-                count_err[i] /= self.exptime
+            # All the extraction methods return signal and noise in the
+            # same format
+            count[i] /= self.exptime
+            count_err[i] /= self.exptime
 
             spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
                               sky_width_up)
@@ -2192,17 +2272,48 @@ class TwoDSpec:
 
                     return fig.to_json()
 
-    def _top_hat_extraction(self, source_slice, count_sky_source_slice,
-                            pix_frac, gain, count_sky, sky_width_dn,
-                            sky_width_up, width_dn, width_up):
+    def _tophat_extraction(self, source_slice, sky_source_slice, pix_frac,
+                            gain, sky_width_dn, sky_width_up, width_dn,
+                            width_up):
+        """
+        Make sure the counts are the number of photoelectrons or an equivalent
+        detector unit, and not counts per second.
 
+        Parameters
+        ----------
+        source_slice: 1-d numpy array (N)
+            The counts along the profile for aperture extraction.
+        sky_source_slice: 1-d numpy array (N)
+            Count of the fitted sky along the pix, has to be the same
+            length as pix
+        pix_frac: float
+            The decimal places of the centroid.
+        gain: float
+            Detector gain, in electrons per ADU
+        sky_width_dn: int
+            Number of pixels used for sky modelling on the lower side of the
+            spectrum.
+        sky_width_up: int
+            Number of pixels used for sky modelling on the upper side of the
+            spectrum.
+        width_dn: int
+            Number of pixels used for aperture extraction on the lower side
+            of the spectrum.
+        width_up: int
+            Number of pixels used for aperture extraction on the upper side
+            of the spectrum.
+
+        """
         # Get the total count
-        count_source_plus_sky = np.sum(source_slice) - pix_frac * source_slice[
-            -1] - (1 - pix_frac) * source_slice[0]
+        source_plus_sky = np.nansum(source_slice) - pix_frac * source_slice[
+            0] - (1 - pix_frac) * source_slice[-1]
 
         # finally, compute the error in this pixel
         # standarddev in the background data
-        sigB = np.nanstd(count_sky_source_slice)
+        sigB = np.nanstd(sky_source_slice)
+        sky = np.nansum(sky_source_slice) - pix_frac * sky_source_slice[
+            0] - (1 - pix_frac) * sky_source_slice[-1]
+
         # number of bkgd pixels
         nB = sky_width_dn + sky_width_up
         # number of aperture pixels
@@ -2215,10 +2326,10 @@ class TwoDSpec:
         # All the counts are in per second already, so need to
         # multiply by the exposure time when computing the
         # uncertainty
-        signal = count_source_plus_sky - count_sky
+        signal = source_plus_sky - sky
         noise = np.sqrt(signal / gain + (nA + nA**2. / nB) * (sigB**2.))
 
-        return signal, noise, False, None
+        return signal, noise, False
 
     def _optimal_extraction_horne86(self,
                                     pix,
@@ -2228,14 +2339,14 @@ class TwoDSpec:
                                     sigma,
                                     tol=1e-6,
                                     max_iter=99,
-                                    readnoise=0.0,
                                     gain=1.0,
+                                    readnoise=0.0,
                                     cosmicray_sigma=5.0,
                                     forced=False,
                                     variances=None):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
-        detector unit, and not counts per second.
+        detector unit, and not counts per second or ADU.
 
         Iterate to get the optimal signal. Following the algorithm on
         Horne, 1986, PASP, 98, 609 (1986PASP...98..609H). The 'steps' in the
@@ -2243,11 +2354,12 @@ class TwoDSpec:
 
         Parameters
         ----------
-        pix: 1-d numpy array
+        pix: 1-d numpy array (N)
             pixel number along the spatial direction
-        source_slice: 1-d numpy array
-            Count along the pix, has to be the same length as pix
-        sky: 1-d numpy array
+        source_slice: 1-d numpy array (N)
+            The counts along the profile for extraction, including the sky
+            regions to be fitted and subtracted from.
+        sky: 1-d numpy array (N)
             Count of the fitted sky along the pix, has to be the same
             length as pix
         mu: float
@@ -2258,11 +2370,17 @@ class TwoDSpec:
             The tolerance limit for the covergence
         max_iter: int
             The maximum number of iteration in the optimal extraction
+        gain: float (Default: 1.0)
+            Detector gain, in electrons per ADU
+        readnoise: float
+            Detector readnoise, in electrons.
+        cosmicray_sigma: int (Default: 5)
+            Sigma-clipping threshold for cleaning & cosmic ray rejection.
         forced: boolean
-            Forced extraction with the given weights
-        variances: 2-d numpy array
+            Forced extraction with the given weights.
+        variances: 2-d numpy array (N)
             The 1/weights of used for optimal extraction, has to be the
-            same length as the pix.
+            same length as the pix. Only used if forced is True.
 
         Returns
         -------
@@ -2272,9 +2390,11 @@ class TwoDSpec:
             The noise associated with the optimal signal.
         is_optimal: boolean
             List indicating whether the extraction at that pixel was
-            optimal or not.  True = optimal, False = suboptimal.
+            optimal or not. True = optimal, False = suboptimal.
+        P: numpy array
+            The line spread function of the extraction
         var_f: float
-            Weight function used in the extraction.
+            The variance in the extraction.
 
         """
 
@@ -2356,76 +2476,105 @@ class TwoDSpec:
     def _optimal_extraction_marsh89(self,
                                     frame,
                                     residual_frame,
-                                    spectrum,
                                     variance,
-                                    gain,
-                                    readnoise,
                                     trace,
+                                    spectrum=None,
+                                    gain=1.0,
+                                    readnoise=0.0,
                                     apwidth=7,
                                     goodpixelmask=None,
                                     npoly=21,
                                     polyspacing=1,
                                     pord=2,
-                                    csigma=5,
-                                    finite=True,
-                                    qmode='slow',
-                                    nreject=100,
-                                    retall=False):
+                                    cosmicray_sigma=5,
+                                    qmode='fast-linear',
+                                    nreject=100):
         """
-        Optimally extract curved spectra, following Marsh 1989.
+        Optimally extract curved spectra taken and updated from
+        https://people.ucsc.edu/~ianc/python/_modules/spec.html,
+        following Marsh 1989.
 
         Parameters
         ----------
-        frame : 2D Numpy array
-            Appropriately calibrated frame from which to extract
-            spectrum.  Should be in units of ADU, not electrons!
-        variance : 2D Numpy array
+        frame: 2-d Numpy array (M, N)
+            The calibrated frame from which to extract spectrum. In units
+            of electrons count.
+        residual_frame: 2-d Numpy array (M, N)
+            The sky background only frame.
+        variance: 2-d Numpy array (M, N)
             Variances of pixel values in 'frame'.
-        gain : scalar
+        trace: 1-d numpy array (N)
+            :ocation of spectral trace.
+        spectrum: 1-d numpy array (M) (Default: None)
+            The extracted spectrum for initial guess.
+        gain: float (Default: 1.0)
             Detector gain, in electrons per ADU
-        readnoise : scalar
+        readnoise: float (Default: 0.0)
             Detector readnoise, in electrons.
-        trace : 1D numpy array
-            location of spectral trace.
-        goodpixelmask : 2D numpy array
+        apwidth: int or list of int (default: 7)
+            The size of the aperture for extraction.
+        goodpixelmask : 2-d numpy array (M, N) (Default: None)
             Equals 0 for bad pixels, 1 for good pixels
-        npoly : int
-            Number of profile polynomials to evaluate (Marsh's
-            "K"). Ideally you should not need to set this -- instead,
-            play with 'polyspacing' and 'extract_radius.' For symmetry,
-            this should be odd.
-        polyspacing : scalar
-            Spacing between profile polynomials, in pixels. (Marsh's
-            "S").  A few cursory tests suggests that the extraction
-            precision (in the high S/N case) scales as S^-2 -- but the
-            code slows down as S^2.
-        pord : int
+        npoly: int (Default: 21)
+            Number of profile to be use for polynomial fitting to evaluate
+            (Marsh's "K"). For symmetry, this should be odd.
+        polyspacing: float (Default: 1)
+            Spacing between profile polynomials, in pixels. (Marsh's "S").
+            A few cursory tests suggests that the extraction precision
+            (in the high S/N case) scales as S^-2 -- but the code slows down
+            as S^2.
+        pord: int (Default: 2)
             Order of profile polynomials; 1 = linear, etc.
-        csigma : int >= 0
+        cosmicray_sigma: int (Default: 5)
             Sigma-clipping threshold for cleaning & cosmic-ray rejection.
-        qmode : str ('fast' or 'slow')
+        qmode: str (Default: 'fast-linear')
             How to compute Marsh's Q-matrix. Valid inputs are 'fast-linear',
             'slow-linear', 'fast-nearest', and 'slow-nearest'. These select
             between various methods of integrating the nearest-neighbor or
             linear interpolation schemes as described by Marsh; the 'linear'
             methods are preferred for accuracy. Use 'slow' if you are
             running out of memory when using the 'fast' array-based methods.
-        nreject : int
+        nreject: int (Default: 100)
             Number of outlier-pixels to reject at each iteration.
 
         Returns
         -------
-        spectrum:
-
+        spectrum_marsh:
+            The optimal signal.
         spectrum_err_marsh:
-
-        trace:
+            The noise associated with the optimal signal.
+        is_optimal:
+            List indicating whether the extraction at that pixel was
+            optimal or not (this list is always all optimal).
+        profile:
+            The line spread functions of the extraction
+        variance0:
+            The variance in the extraction.
 
         """
 
         frame = frame.transpose()
         residual_frame = residual_frame.transpose()
         variance = variance.transpose()
+
+        if isinstance(apwidth, int):
+
+            # first do the aperture count
+            width_dn = apwidth
+            width_up = apwidth
+
+        elif len(apwidth) == 2:
+
+            width_dn = apwidth[0]
+            width_up = apwidth[1]
+
+        else:
+
+            logging.error('apwidth can only be an int or a list ' +
+                            'of two ints. It is set to the default ' +
+                            'value to continue the extraction.')
+            width_dn = 7
+            width_up = 7
 
         if goodpixelmask is not None:
             goodpixelmask = np.array(goodpixelmask, copy=True).astype(bool)
@@ -2694,11 +2843,11 @@ class TwoDSpec:
 
             outlierVariances = (frame - modelData)**2 / variance
 
-            if outlierVariances.max() > csigma**2:
+            if outlierVariances.max() > cosmicray_sigma**2:
                 newBadPixels = True
                 # nreject-counting on pixels within the spectral trace
                 maxRejectedValue = max(
-                    csigma**2,
+                    cosmicray_sigma**2,
                     np.sort(outlierVariances[Qmask])[-nreject])
                 worstOutliers = (outlierVariances >=
                                  maxRejectedValue).nonzero()
@@ -2723,8 +2872,8 @@ class TwoDSpec:
 
             for i in range(spectral_size):
                 aperture = np.arange(
-                    int(trace[i]) - apwidth,
-                    int(trace[i]) + apwidth + 1).astype(int)
+                    int(trace[i]) - width_dn,
+                    int(trace[i]) + width_up + 1).astype(int)
 
                 # Horne86 notation
                 P = profile[aperture, i]

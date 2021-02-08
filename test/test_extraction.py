@@ -1,21 +1,22 @@
 import numpy as np
 from astropy.io import fits
 from aspired import spectral_reduction
+from aspired import image_reduction
 
 
 def test_spectral_extraction():
     # Prepare dummy data
-    # total signal at a given spectral position = 2 + 5 + 10 + 5 + 2 - 1*5 = 19
-    dummy_data = np.ones((100, 100))
-    dummy_noise = np.random.random((100, 100))
+    # total signal should be [2 * (2 + 5 + 10) + 20] - [1 * 7] = 47
+    dummy_data = np.ones((100, 1000))
+    dummy_noise = np.random.random((100, 1000)) * 0.1 - 0.05
 
-    dummy_data[47] *= 2.
-    dummy_data[48] *= 5.
-    dummy_data[49] *= 10.
-    dummy_data[50] *= 20.
-    dummy_data[51] *= 10.
-    dummy_data[52] *= 5.
-    dummy_data[53] *= 2.
+    dummy_data[47] += 2.
+    dummy_data[48] += 5.
+    dummy_data[49] += 10.
+    dummy_data[50] += 20.
+    dummy_data[51] += 10.
+    dummy_data[52] += 5.
+    dummy_data[53] += 2.
     dummy_data += dummy_noise
 
     # masking
@@ -27,7 +28,8 @@ def test_spectral_extraction():
         dummy_data,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        log_file_name=None)
+        log_file_name=None,
+        log_level='DEBUG')
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the
     # spatial_mask
@@ -39,9 +41,10 @@ def test_spectral_extraction():
     # Optimal extracting spectrum by summing over the aperture along the
     # trace
     dummy_twodspec.ap_extract(apwidth=5, optimal=False)
+
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    assert np.round(count).astype('int') == 47, 'Extracted count is ' + str(
-        count) + ' but it should be 47.'
+    assert np.round(count).astype('int') == 54, 'Extracted count is ' + str(
+        count) + ' but it should be 54.'
 
 
 def test_user_supplied_trace():
@@ -77,3 +80,50 @@ def test_user_supplied_trace():
         output='count',
         filename='test/test_output/user_supplied_trace_for_extraction',
         overwrite=True)
+
+
+spatial_mask = np.arange(30, 200)
+spec_mask = np.arange(50, 1024)
+
+# Science frame
+lhs6328_frame = image_reduction.ImageReduction(
+    'test/test_data/sprat_LHS6328.list',
+    log_level='INFO',
+    log_file_name='None')
+lhs6328_frame.reduce()
+
+lhs6328_twodspec = spectral_reduction.TwoDSpec(
+    lhs6328_frame,
+    spatial_mask=spatial_mask,
+    spec_mask=spec_mask,
+    cosmicray=True,
+    readnoise=5.7,
+    log_level='DEBUG',
+    log_file_name='None')
+
+lhs6328_twodspec.ap_trace(nspec=1, display=False)
+
+def test_tophat_extraction():
+
+    lhs6328_twodspec.ap_extract(optimal=False, display=False)
+
+def test_horne_extraction():
+
+    lhs6328_twodspec.ap_extract(optimal=True, algorithm='horne86', display=False)
+
+def test_marsh_extraction_fast():
+
+    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='fast-nearest', display=False)
+
+def test_marsh_extraction_fast_linear():
+
+    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='fast-linear', display=False)
+
+def test_marsh_extraction_slow():
+
+    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='slow-nearest', display=False)
+
+def test_marsh_extraction_slow_linear():
+
+    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='slow-linear', display=False)
+
