@@ -24,12 +24,11 @@ def test_spectral_extraction():
     spatial_mask = np.arange(15, 85)
 
     # initialise the two spectral_reduction.TwoDSpec()
-    dummy_twodspec = spectral_reduction.TwoDSpec(
-        dummy_data,
-        spatial_mask=spatial_mask,
-        spec_mask=spec_mask,
-        log_file_name=None,
-        log_level='DEBUG')
+    dummy_twodspec = spectral_reduction.TwoDSpec(dummy_data,
+                                                 spatial_mask=spatial_mask,
+                                                 spec_mask=spec_mask,
+                                                 log_file_name=None,
+                                                 log_level='DEBUG')
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the
     # spatial_mask
@@ -92,38 +91,56 @@ lhs6328_frame = image_reduction.ImageReduction(
     log_file_name='None')
 lhs6328_frame.reduce()
 
-lhs6328_twodspec = spectral_reduction.TwoDSpec(
-    lhs6328_frame,
-    spatial_mask=spatial_mask,
-    spec_mask=spec_mask,
-    cosmicray=True,
-    readnoise=5.7,
-    log_level='DEBUG',
-    log_file_name='None')
+lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
+                                               spatial_mask=spatial_mask,
+                                               spec_mask=spec_mask,
+                                               cosmicray=True,
+                                               readnoise=5.7,
+                                               log_level='DEBUG',
+                                               log_file_name='None')
 
 lhs6328_twodspec.ap_trace(nspec=1, display=False)
+
 
 def test_tophat_extraction():
 
     lhs6328_twodspec.ap_extract(optimal=False, display=False)
 
+
 def test_horne_extraction():
 
-    lhs6328_twodspec.ap_extract(optimal=True, algorithm='horne86', display=False)
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                algorithm='horne86',
+                                display=False)
+
 
 def test_marsh_extraction_fast():
 
-    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='fast-nearest', display=False)
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                algorithm='marsh89',
+                                qmode='fast-nearest',
+                                display=False)
+
 
 def test_marsh_extraction_fast_linear():
 
-    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='fast-linear', display=False)
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                algorithm='marsh89',
+                                qmode='fast-linear',
+                                display=False)
+
 
 def test_marsh_extraction_slow():
 
-    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='slow-nearest', display=False)
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                algorithm='marsh89',
+                                qmode='slow-nearest',
+                                display=False)
+
 
 def test_marsh_extraction_slow_linear():
 
-    lhs6328_twodspec.ap_extract(optimal=True, algorithm='marsh89', qmode='slow-linear', display=False)
-
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                algorithm='marsh89',
+                                qmode='slow-linear',
+                                display=False)

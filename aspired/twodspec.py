@@ -620,7 +620,8 @@ class TwoDSpec:
 
         else:
 
-            logging.critical('Please add the data when initialising the '
+            logging.critical(
+                'Please add the data when initialising the '
                 'TwoDSpec() or by using add_data(), before setting the '
                 'properties.')
 
@@ -1627,7 +1628,7 @@ class TwoDSpec:
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_dn] = True
-            sky_mask[-(sky_width_up+1):-1] = True
+            sky_mask[-(sky_width_up + 1):-1] = True
 
             if (sky_polyfit_order == 0):
 
@@ -1922,8 +1923,8 @@ class TwoDSpec:
                     count[i], count_err[i], is_optimal[i] =\
                         self._tophat_extraction(
                             source_slice=source_slice * self.exptime,
-                            sky_source_slice=count_sky_source_slice *\
-                                self.exptime,
+                            sky_source_slice=(
+                                count_sky_source_slice * self.exptime),
                             pix_frac=pix_frac,
                             gain=self.gain,
                             sky_width_dn=sky_width_dn,
@@ -1983,7 +1984,8 @@ class TwoDSpec:
 
                                 elif len(variances) == len_trace:
 
-                                    var_i = np.ones(len(source_pix)) * variances[i]
+                                    var_i = np.ones(
+                                        len(source_pix)) * variances[i]
 
                                 else:
 
@@ -1995,12 +1997,12 @@ class TwoDSpec:
 
                                 var_i = variances[i]
 
-                                # If some of the spectrum is outside of the frame
+                                # If the spectrum is outside of the frame
                                 if itrace - apwidth < 0:
 
                                     var_i = var_i[apwidth - width_dn:]
 
-                                # If some of the spectrum is outside of the frame
+                                # If the spectrum is outside of the frame
                                 elif itrace + apwidth > self.spatial_size:
 
                                     var_i = var_i[:-(apwidth - width_up + 1)]
@@ -2020,7 +2022,8 @@ class TwoDSpec:
 
                         # source_pix is the native pixel position
                         # pos is the trace at the native pixel position
-                        count[i], count_err[i], is_optimal[i], profile, var_temp =\
+                        (count[i], count_err[i], is_optimal[i], profile,
+                         var_temp) =\
                             self._optimal_extraction_horne86(
                                 pix=source_pix,
                                 source_slice=source_slice * self.exptime,
@@ -2273,8 +2276,8 @@ class TwoDSpec:
                     return fig.to_json()
 
     def _tophat_extraction(self, source_slice, sky_source_slice, pix_frac,
-                            gain, sky_width_dn, sky_width_up, width_dn,
-                            width_up):
+                           gain, sky_width_dn, sky_width_up, width_dn,
+                           width_up):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second.
@@ -2311,8 +2314,8 @@ class TwoDSpec:
         # finally, compute the error in this pixel
         # standarddev in the background data
         sigB = np.nanstd(sky_source_slice)
-        sky = np.nansum(sky_source_slice) - pix_frac * sky_source_slice[
-            0] - (1 - pix_frac) * sky_source_slice[-1]
+        sky = np.nansum(sky_source_slice) - pix_frac * sky_source_slice[0] - (
+            1 - pix_frac) * sky_source_slice[-1]
 
         # number of bkgd pixels
         nB = sky_width_dn + sky_width_up
@@ -2571,8 +2574,8 @@ class TwoDSpec:
         else:
 
             logging.error('apwidth can only be an int or a list ' +
-                            'of two ints. It is set to the default ' +
-                            'value to continue the extraction.')
+                          'of two ints. It is set to the default ' +
+                          'value to continue the extraction.')
             width_dn = 7
             width_up = 7
 
