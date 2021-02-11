@@ -87,7 +87,7 @@ class TwoDSpec:
         elif log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
         else:
-            raise ValueError('Unknonw logging level.')
+            raise ValueError('Unknown logging level.')
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -196,7 +196,7 @@ class TwoDSpec:
             self.img = data.image_fits.data
             self.header = data.image_fits.header
             self.arc = data.arc_master
-            self.arc_header = data.arc_header
+            self.arc_header = data.arc_header[0]
 
         # If a filepath is provided
         elif isinstance(data, str):
@@ -746,6 +746,10 @@ class TwoDSpec:
 
             self.arc_header = header
 
+        elif isinstance(header[0], fits.header.Header):
+
+            self.arc_header = header[0]
+
         else:
 
             self.arc_header = None
@@ -910,6 +914,10 @@ class TwoDSpec:
         if isinstance(header, fits.header.Header):
 
             self.header = header
+
+        elif isinstance(header[0], fits.header.Header):
+
+            self.header = header[0]
 
         else:
 
@@ -1148,7 +1156,7 @@ class TwoDSpec:
                  scaling_max=1.0005,
                  scaling_step=0.001,
                  percentile=5,
-                 shift_tol=3,
+                 shift_tol=10,
                  fit_deg=3,
                  ap_faint=10,
                  display=False,
@@ -1256,8 +1264,7 @@ class TwoDSpec:
 
         nresample = nspatial * resample_factor
 
-        # window size
-        w_size = nwave // nwindow
+        # split the spectrum into subspectra
         img_split = np.array_split(self.img, nwindow, axis=1)
         start_window_idx = nwindow // 2
 
@@ -1371,7 +1378,12 @@ class TwoDSpec:
         spec_idx[:, start_window_idx] = spec_init
 
         # Pixel positions of the mid point of each data_split (spectral)
-        spec_pix = np.arange(len(img_split)) * w_size + w_size / 2.
+        spec_pix = [len(i[0]) for i in img_split]
+        spec_pix[0] -= spec_pix[0] // 2
+        for i in range(1, len(spec_pix)):
+            spec_pix[i] += spec_pix[i - 1]
+
+        spec_pix = np.array(spec_pix).astype('int')
 
         # Looping through pixels larger than middle pixel
         for i in range(start_window_idx + 1, nwindow):
@@ -1384,7 +1396,7 @@ class TwoDSpec:
         for i in range(start_window_idx - 1, -1, -1):
 
             spec_idx[:, i] = (spec_idx[:, i + 1] * resample_factor -
-                              shift_solution[i + 1]) / (
+                              shift_solution[i]) / (
                                   int(nresample * scale_solution[i + 1]) /
                                   nresample) / resample_factor
 
@@ -1576,7 +1588,7 @@ class TwoDSpec:
                     log_file_name=self.log_file_name)
                 self.spectrum_list[i].add_trace(trace, trace_sigma)
 
-    def remove_trace(self, spec_id):
+    def remove_trace(self, spec_id=None):
         '''
         Parameters
         ----------
@@ -1585,16 +1597,23 @@ class TwoDSpec:
 
         '''
 
-        if spec_id in self.spectrum_list:
+        if spec_id is not None:
 
-            self.spectrum_list[spec_id].remove_trace()
+            assert np.in1d(spec_id,
+                           list(self.spectrum_list.keys())).all(), 'Some '
+            'spec_id provided are not in the spectrum_list.'
 
         else:
 
-            error_msg = "{spec_id: %s} is not in the list of " +\
-                "spectra." % spec_id
-            logging.critical(error_msg)
-            raise ValueError(error_msg)
+            spec_id = list(self.spectrum_list.keys())
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        for i in spec_id:
+
+            self.spectrum_list[i].remove_trace()
 
     def _fit_sky(self, extraction_slice, sky_width_dn, sky_width_up,
                  sky_polyfit_order):
@@ -1899,19 +1918,17 @@ class TwoDSpec:
 
                 count_sky_extraction_slice = self._fit_sky(
                     extraction_slice, sky_width_dn, sky_width_up, skydeg)
-                logging.debug('Sky count (including wings): {}'.format(
-                    count_sky_extraction_slice))
 
                 count_sky_source_slice = count_sky_extraction_slice[
                     source_pix - itrace].copy()
-                logging.debug('Sky count: {}'.format(count_sky_source_slice))
 
                 count_sky[i] = np.nansum(
                     count_sky_source_slice
                 ) - pix_frac * count_sky_source_slice[0] - (
                     1 - pix_frac) * count_sky_source_slice[-1]
 
-                self.img_residual[source_pix, i] = count_sky_source_slice
+                self.img_residual[source_pix,
+                                  i] = count_sky_source_slice.copy()
 
                 logging.debug('count_sky at pixel {} is {}.'.format(
                     i, count_sky[i]))
@@ -1932,116 +1949,111 @@ class TwoDSpec:
                             width_dn=width_dn,
                             width_up=width_up)
 
-            if optimal:
-
-                if algorithm == 'marsh89':
-
-                    count, count_err, is_optimal, profile, var =\
-                        self._optimal_extraction_marsh89(
-                            frame=self.img,
-                            residual_frame=self.img_residual,
-                            variance=self.variance,
-                            trace=spec.trace,
-                            spectrum=count,
-                            gain=self.gain,
-                            readnoise=self.readnoise,
-                            apwidth=(width_dn, width_up),
-                            goodpixelmask=None,
-                            npoly=npoly,
-                            polyspacing=polyspacing,
-                            pord=pord,
-                            cosmicray_sigma=self.cosmicray_sigma,
-                            qmode=qmode,
-                            nreject=nreject)
-
                 # Get the optimal signals
-                elif algorithm == 'horne86':
+                if optimal & (algorithm == 'horne86'):
 
-                    for i, pos in enumerate(spec.trace):
+                    # If the weights are given externally to perform forced
+                    # extraction
+                    if forced:
 
-                        # If the weights are given externally to perform forced
-                        # extraction
-                        if forced:
+                        # Unit weighted
+                        if np.ndim(variances) == 0:
 
-                            # Unit weighted
-                            if np.ndim(variances) == 0:
+                            if np.isfinite(variances):
 
-                                if np.isfinite(variances):
-
-                                    var_i = np.ones(width_dn + width_up +
-                                                    1) * variances
-
-                                else:
-
-                                    var_i = np.ones(len(source_pix))
-                                    logging.warning('Variances are set to 1.')
-
-                            # A single LSF is given for the entire trace
-                            elif np.ndim(variances) == 1:
-                                if len(variances) == len(source_pix):
-
-                                    var_i = variances
-
-                                elif len(variances) == len_trace:
-
-                                    var_i = np.ones(
-                                        len(source_pix)) * variances[i]
-
-                                else:
-
-                                    var_i = np.ones(len(source_pix))
-                                    logging.warning('Variances are set to 1.')
-
-                            # A two dimensional LSF
-                            elif np.ndim(variances) == 2:
-
-                                var_i = variances[i]
-
-                                # If the spectrum is outside of the frame
-                                if itrace - apwidth < 0:
-
-                                    var_i = var_i[apwidth - width_dn:]
-
-                                # If the spectrum is outside of the frame
-                                elif itrace + apwidth > self.spatial_size:
-
-                                    var_i = var_i[:-(apwidth - width_up + 1)]
-
-                                else:
-
-                                    pass
+                                var_i = np.ones(width_dn + width_up +
+                                                1) * variances
 
                             else:
 
                                 var_i = np.ones(len(source_pix))
                                 logging.warning('Variances are set to 1.')
 
+                        # A single LSF is given for the entire trace
+                        elif np.ndim(variances) == 1:
+                            if len(variances) == len(source_pix):
+
+                                var_i = variances
+
+                            elif len(variances) == len_trace:
+
+                                var_i = np.ones(len(source_pix)) * variances[i]
+
+                            else:
+
+                                var_i = np.ones(len(source_pix))
+                                logging.warning('Variances are set to 1.')
+
+                        # A two dimensional LSF
+                        elif np.ndim(variances) == 2:
+
+                            var_i = variances[i]
+
+                            # If the spectrum is outside of the frame
+                            if itrace - apwidth < 0:
+
+                                var_i = var_i[apwidth - width_dn:]
+
+                            # If the spectrum is outside of the frame
+                            elif itrace + apwidth > self.spatial_size:
+
+                                var_i = var_i[:-(apwidth - width_up + 1)]
+
+                            else:
+
+                                pass
+
                         else:
 
-                            var_i = None
+                            var_i = np.ones(len(source_pix))
+                            logging.warning('Variances are set to 1.')
 
-                        # source_pix is the native pixel position
-                        # pos is the trace at the native pixel position
-                        (count[i], count_err[i], is_optimal[i], profile,
-                         var_temp) =\
-                            self._optimal_extraction_horne86(
-                                pix=source_pix,
-                                source_slice=source_slice * self.exptime,
-                                sky=count_sky_source_slice * self.exptime,
-                                mu=pos,
-                                sigma=spec.trace_sigma[i],
-                                tol=tolerance,
-                                max_iter=max_iter,
-                                readnoise=self.readnoise,
-                                gain=self.gain,
-                                cosmicray_sigma=self.cosmicray_sigma,
-                                forced=forced,
-                                variances=var_i)
+                    else:
 
-                        if var_i is None:
-                            var[i] = var_temp
-                        else:
-                            var[i] = var_i
+                        var_i = None
+
+                    # source_pix is the native pixel position
+                    # pos is the trace at the native pixel position
+                    (count[i], count_err[i], is_optimal[i], profile,
+                        var_temp) =\
+                        self._optimal_extraction_horne86(
+                            pix=source_pix,
+                            source_slice=source_slice * self.exptime,
+                            sky=count_sky_source_slice * self.exptime,
+                            mu=pos,
+                            sigma=spec.trace_sigma[i],
+                            tol=tolerance,
+                            max_iter=max_iter,
+                            readnoise=self.readnoise,
+                            gain=self.gain,
+                            cosmicray_sigma=self.cosmicray_sigma,
+                            forced=forced,
+                            variances=var_i)
+
+                    if var_i is None:
+                        var[i] = var_temp
+                    else:
+                        var[i] = var_i
+
+            if optimal & (algorithm == 'marsh89'):
+
+                count, count_err, is_optimal, profile, var =\
+                    self._optimal_extraction_marsh89(
+                        frame=self.img,
+                        residual_frame=self.img_residual,
+                        variance=self.variance,
+                        trace=spec.trace,
+                        spectrum=count,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        apwidth=(width_dn, width_up),
+                        goodpixelmask=None,
+                        npoly=npoly,
+                        polyspacing=polyspacing,
+                        pord=pord,
+                        cosmicray_sigma=self.cosmicray_sigma,
+                        qmode=qmode,
+                        nreject=nreject)
 
             # All the extraction methods return signal and noise in the
             # same format
@@ -2469,10 +2481,6 @@ class TwoDSpec:
 
         signal = f1
         noise = np.sqrt(v1)
-
-        logging.debug('The signal, noise, is_optimal flag and variance '
-                      'are {}, {}, {} and {}.'.format(signal, noise,
-                                                      is_optimal, var_f))
 
         return signal, noise, is_optimal, P, var_f
 

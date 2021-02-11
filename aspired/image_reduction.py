@@ -7,6 +7,7 @@ import numpy as np
 from astropy import units as u
 from astropy.io import fits
 from astropy.nddata import CCDData
+from astroscrappy import detect_cosmics
 from ccdproc import Combiner
 from plotly import graph_objects as go
 from plotly import io as pio
@@ -42,6 +43,14 @@ class ImageReduction:
                  clip_high_flat=5,
                  exptime_flat=None,
                  exptime_flat_keyword=None,
+                 cosmicray=False,
+                 sigclip=5.0,
+                 readnoise=0.0,
+                 gain=1.0,
+                 fsmode='convolve',
+                 psfmodel='gaussy',
+                 psffwhm=2.5,
+                 psfsize=7,
                  verbose=True,
                  logger_name='ImageReduction',
                  log_level='WARNING',
@@ -250,6 +259,14 @@ class ImageReduction:
         self.exptime_flat = exptime_flat
         self.exptime_flat_keyword = exptime_flat_keyword
 
+        self.cosmicray = cosmicray
+        self.sigclip = sigclip
+        self.readnoise = readnoise
+        self.gain = gain
+        self.fsmode = fsmode
+        self.psfmodel = psfmodel
+        self.psffwhm = psffwhm
+        self.psfsize = psfsize
         self.verbose = verbose
 
         self.bias_list = None
@@ -465,6 +482,67 @@ class ImageReduction:
                             'or has an atypical output format.'
                 logging.critical(error_msg)
                 raise RuntimeError(error_msg)
+
+            if self.cosmicray:
+
+                logging.info(
+                    'Removing cosmic rays in mode: {}.'.format(psfmodel))
+
+                if psfmodel == 'gaussyx':
+
+                    light_CCDData[i].data = detect_cosmics(
+                        light_CCDData[i].data,
+                        sigclip=self.sigclip,
+                        readnoise=self.readnoise,
+                        gain=self.gain,
+                        fsmode='convolve',
+                        psfmodel='gaussy',
+                        psffwhm=self.psffwhm,
+                        psfsize=self.psfsize)[1]
+
+                    light_CCDData[i].data = detect_cosmics(
+                        light_CCDData[i].data,
+                        sigclip=self.sigclip,
+                        readnoise=self.readnoise,
+                        gain=self.gain,
+                        fsmode='convolve',
+                        psfmodel='gaussx',
+                        psffwhm=self.psffwhm,
+                        psfsize=self.psfsize)[1]
+
+                elif psfmodel == 'gaussxy':
+
+                    light_CCDData[i].data = detect_cosmics(
+                        light_CCDData[i].data,
+                        sigclip=self.sigclip,
+                        readnoise=self.readnoise,
+                        gain=self.gain,
+                        fsmode='convolve',
+                        psfmodel='gaussx',
+                        psffwhm=self.psffwhm,
+                        psfsize=self.psfsize)[1]
+
+                    light_CCDData[i].data = detect_cosmics(
+                        light_CCDData[i].data,
+                        sigclip=self.sigclip,
+                        readnoise=self.readnoise,
+                        gain=self.gain,
+                        fsmode='convolve',
+                        psfmodel='gaussy',
+                        psffwhm=self.psffwhm,
+                        psfsize=self.psfsize)[1]
+
+                else:
+
+                    light_CCDData[i].data = detect_cosmics(
+                        light_CCDData[i].data,
+                        sigclip=self.sigclip,
+                        readnoise=self.readnoise,
+                        gain=self.gain,
+                        fsmode=self.fsmode,
+                        psfmodel=self.psfmodel,
+                        psffwhm=self.psffwhm,
+                        psfsize=self.psfsize)[1]
 
             logging.debug('Light frame header: {}.'.format(
                 self.light_header[i]))
@@ -924,7 +1002,7 @@ class ImageReduction:
                 self.flat_reduced)
 
             # Flattenning the light frame
-            self.light_reduced = self.light_reduced.divide(self.flat_reduced)
+            self.light_reduced = self.light_reduced / self.flat_reduced
             logging.info('Light frame is flattened.')
 
         # Free memory
@@ -937,7 +1015,7 @@ class ImageReduction:
 
         '''
 
-        self.light_reduced = copy.deepcopy(self.light_master)
+        self.light_reduced = self.light_master
 
         # Bias subtraction
         if self.bias_list.size > 0:

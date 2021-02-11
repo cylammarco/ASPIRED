@@ -2485,18 +2485,18 @@ class OneDSpec():
                     science_flux_extinction_factor = 10.**(
                         -(self.extinction_func(science_spec.wave) * science_am)
                         / 2.5)
+                    standard_flux_extinction_factor = 10.**(
+                        -(self.extinction_func(science_spec.wave) *
+                          standard_am) / 2.5)
+                    science_spec.flux /= (science_flux_extinction_factor /
+                                          standard_flux_extinction_factor)
+
                     science_flux_resampled_extinction_factor = 10.**(
                         -(self.extinction_func(science_spec.wave_resampled) *
                           science_am) / 2.5)
-                    standard_flux_extinction_factor = 10.**(
-                        -(self.extinction_func(standard_spec.wave) *
-                          standard_am) / 2.5)
                     standard_flux_resampled_extinction_factor = 10.**(
-                        -(self.extinction_func(standard_spec.wave_resampled) *
+                        -(self.extinction_func(science_spec.wave_resampled) *
                           standard_am) / 2.5)
-
-                    science_spec.flux /= (science_flux_extinction_factor /
-                                          standard_flux_extinction_factor)
                     science_spec.flux_resampled /= (
                         science_flux_resampled_extinction_factor /
                         standard_flux_resampled_extinction_factor)

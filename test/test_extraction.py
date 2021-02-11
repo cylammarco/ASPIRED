@@ -32,7 +32,7 @@ def test_spectral_extraction():
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the
     # spatial_mask
-    dummy_twodspec.ap_trace(ap_faint=0)
+    dummy_twodspec.ap_trace(rescale=True, ap_faint=0)
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
     assert trace == 35, 'Trace is at row ' + str(
         trace) + ', but it is expected to be at row 35.'
@@ -79,6 +79,8 @@ def test_user_supplied_trace():
         output='count',
         filename='test/test_output/user_supplied_trace_for_extraction',
         overwrite=True)
+
+    lhs6328_twodspec.remove_trace()
 
 
 spatial_mask = np.arange(30, 200)

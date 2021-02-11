@@ -341,7 +341,18 @@ class Spectrum1D():
 
         '''
 
-        self.spectrum_header = header
+        if header is not None:
+            if type(header) == fits.Header:
+                self.spectrum_header = header
+                logging.info('spectrum_header is stored.')
+            elif type(header[0]) == fits.Header:
+                self.spectrum_header = header[0]
+                logging.info('spectrum_header is stored.')
+            else:
+                logging.error(
+                    'Unsupported type of header is provided: {}. '
+                    'Only astropy.io.fits.Header or such in a list or array '
+                    'can beaccepted.'.format(type(header)))
 
     def remove_spectrum_header(self):
 
@@ -362,7 +373,18 @@ class Spectrum1D():
 
         '''
 
-        self.standard_header = header
+        if header is not None:
+            if type(header) == fits.Header:
+                self.standard_header = header
+                logging.info('standard_header is stored.')
+            elif type(header[0]) == fits.Header:
+                self.standard_header = header[0]
+                logging.info('standard_header is stored.')
+            else:
+                logging.error(
+                    'Unsupported type of header is provided: {}. '
+                    'Only astropy.io.fits.Header or such in a list or array '
+                    'can be accepted.'.format(type(header)))
 
     def remove_standard_header(self):
 
@@ -381,7 +403,18 @@ class Spectrum1D():
 
         '''
 
-        self.arc_header = header
+        if header is not None:
+            if type(header) == fits.Header:
+                self.arc_header = header
+                logging.info('arc_header is stored.')
+            elif type(header[0]) == fits.Header:
+                self.arc_header = header[0]
+                logging.info('arc_header is stored.')
+            else:
+                logging.error(
+                    'Unsupported type of header is provided: {}. '
+                    'Only astropy.io.fits.Header or such in a list or array '
+                    'can be accepted.'.format(type(header)))
 
     def remove_arc_header(self):
 
@@ -1346,14 +1379,15 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            trace_ImageHDU = fits.ImageHDU(self.trace)
-            trace_sigma_ImageHDU = fits.ImageHDU(self.trace_sigma)
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
-                trace_ImageHDU.header += self.spectrum_header
-                trace_sigma_ImageHDU.header += self.spectrum_header
+                trace_ImageHDU = fits.ImageHDU(self.trace,
+                                               header=self.spectrum_header)
+                trace_sigma_ImageHDU = fits.ImageHDU(
+                    self.trace_sigma, header=self.spectrum_header)
+            else:
+                trace_ImageHDU = fits.ImageHDU(self.trace)
+                trace_sigma_ImageHDU = fits.ImageHDU(self.trace_sigma)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.trace_hdulist = fits.HDUList()
@@ -1390,16 +1424,18 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            count_ImageHDU = fits.ImageHDU(self.count)
-            count_err_ImageHDU = fits.ImageHDU(self.count_err)
-            count_sky_ImageHDU = fits.ImageHDU(self.count_sky)
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
-                count_ImageHDU.header += self.spectrum_header
-                count_err_ImageHDU.header += self.spectrum_header
-                count_sky_ImageHDU.header += self.spectrum_header
+                count_ImageHDU = fits.ImageHDU(self.count,
+                                               header=self.spectrum_header)
+                count_err_ImageHDU = fits.ImageHDU(self.count_err,
+                                                   header=self.spectrum_header)
+                count_sky_ImageHDU = fits.ImageHDU(self.count_sky,
+                                                   header=self.spectrum_header)
+            else:
+                count_ImageHDU = fits.ImageHDU(self.count)
+                count_err_ImageHDU = fits.ImageHDU(self.count_err)
+                count_sky_ImageHDU = fits.ImageHDU(self.count_sky)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.count_hdulist = fits.HDUList()
@@ -1454,12 +1490,12 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            weight_map_ImageHDU = fits.ImageHDU(self.var)
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
-                weight_map_ImageHDU.header += self.spectrum_header
+                weight_map_ImageHDU = fits.ImageHDU(
+                    self.var, header=self.spectrum_header)
+            else:
+                weight_map_ImageHDU = fits.ImageHDU(self.var)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.weight_map_hdulist = fits.HDUList()
@@ -1494,18 +1530,20 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            count_resampled_ImageHDU = fits.ImageHDU(self.count_resampled)
-            count_err_resampled_ImageHDU = fits.ImageHDU(
-                self.count_err_resampled)
-            count_sky_resampled_ImageHDU = fits.ImageHDU(
-                self.count_sky_resampled)
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
-                count_resampled_ImageHDU.header += self.spectrum_header
-                count_err_resampled_ImageHDU.header += self.spectrum_header
-                count_sky_resampled_ImageHDU.header += self.spectrum_header
+                count_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_resampled, header=self.spectrum_header)
+                count_err_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_err_resampled, header=self.spectrum_header)
+                count_sky_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_sky_resampled, header=self.spectrum_header)
+            else:
+                count_resampled_ImageHDU = fits.ImageHDU(self.count_resampled)
+                count_err_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_err_resampled)
+                count_sky_resampled_ImageHDU = fits.ImageHDU(
+                    self.count_sky_resampled)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.count_resampled_hdulist = fits.HDUList()
@@ -1564,16 +1602,18 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
-            peaks_ImageHDU = fits.ImageHDU(self.peaks)
-            peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined)
-
             # Use the header of the arc
             if self.arc_header is not None:
-                arc_spec_ImageHDU.header += self.arc_header
-                peaks_ImageHDU.header += self.arc_header
-                peaks_refined_ImageHDU.header += self.arc_header
+                arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec,
+                                                  header=self.arc_header)
+                peaks_ImageHDU = fits.ImageHDU(self.peaks,
+                                               header=self.arc_header)
+                peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined,
+                                                       header=self.arc_header)
+            else:
+                arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
+                peaks_ImageHDU = fits.ImageHDU(self.peaks)
+                peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.arc_spec_hdulist = fits.HDUList()
@@ -1613,12 +1653,12 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in an ImageHDU
-            wavecal_ImageHDU = fits.ImageHDU(self.fit_coeff)
-
             # Use the header of the arc
             if self.arc_header is not None:
-                wavecal_ImageHDU.header.extend(self.arc_header)
+                wavecal_ImageHDU = fits.ImageHDU(self.fit_coeff,
+                                                 header=self.arc_header)
+            else:
+                wavecal_ImageHDU = fits.ImageHDU(self.fit_coeff)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.wavecal_hdulist = fits.HDUList()
@@ -1673,11 +1713,13 @@ class Spectrum1D():
         try:
 
             # Put the data in an ImageHDU
-            wavelength_ImageHDU = fits.ImageHDU(self.wave)
 
             # Use the header of the arc
             if self.arc_header is not None:
-                wavelength_ImageHDU.header.extend(self.arc_header)
+                wavelength_ImageHDU = fits.ImageHDU(self.wave,
+                                                    header=self.arc_header)
+            else:
+                wavelength_ImageHDU = fits.ImageHDU(self.wave)
 
             # Create an empty HDU list and populate with the ImageHDU
             self.wavelength_hdulist = fits.HDUList()
@@ -1707,11 +1749,13 @@ class Spectrum1D():
         try:
 
             # Put the data in ImageHDUs
-            sensitivity_ImageHDU = fits.ImageHDU(self.sensitivity)
 
             # Use the header of the standard
             if self.standard_header is not None:
-                sensitivity_ImageHDU.header.extend(self.standard_header)
+                sensitivity_ImageHDU = fits.ImageHDU(
+                    self.sensitivity, header=self.standard_header)
+            else:
+                sensitivity_ImageHDU = fits.ImageHDU(self.sensitivity)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.sensitivity_hdulist = fits.HDUList()
@@ -1738,11 +1782,6 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            flux_ImageHDU = fits.ImageHDU(self.flux)
-            flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
-            flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
-
             header = None
 
             # Use the header of the standard
@@ -1762,9 +1801,17 @@ class Spectrum1D():
                     header += self.arc_header
 
             if header is not None:
-                flux_ImageHDU.header += header
-                flux_err_ImageHDU.header += header
-                flux_sky_ImageHDU.header += header
+
+                # Put the data in ImageHDUs
+                flux_ImageHDU = fits.ImageHDU(self.flux, header=header)
+                flux_err_ImageHDU = fits.ImageHDU(self.flux_err, header=header)
+                flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky, header=header)
+
+            else:
+
+                flux_ImageHDU = fits.ImageHDU(self.flux)
+                flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
+                flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.flux_hdulist = fits.HDUList()
@@ -1845,13 +1892,6 @@ class Spectrum1D():
 
         try:
 
-            # Put the data in ImageHDUs
-            flux_resampled_ImageHDU = fits.ImageHDU(self.flux_resampled)
-            flux_err_resampled_ImageHDU = fits.ImageHDU(
-                self.flux_err_resampled)
-            flux_sky_resampled_ImageHDU = fits.ImageHDU(
-                self.flux_sky_resampled)
-
             header = None
 
             # Use the header of the standard
@@ -1871,9 +1911,20 @@ class Spectrum1D():
                     header += self.arc_header
 
             if header is not None:
-                flux_resampled_ImageHDU.header += header
-                flux_err_resampled_ImageHDU.header += header
-                flux_sky_resampled_ImageHDU.header += header
+                # Put the data in ImageHDUs
+                flux_resampled_ImageHDU = fits.ImageHDU(self.flux_resampled,
+                                                        header=header)
+                flux_err_resampled_ImageHDU = fits.ImageHDU(
+                    self.flux_err_resampled, header=header)
+                flux_sky_resampled_ImageHDU = fits.ImageHDU(
+                    self.flux_sky_resampled, header=header)
+            else:
+                # Put the data in ImageHDUs
+                flux_resampled_ImageHDU = fits.ImageHDU(self.flux_resampled)
+                flux_err_resampled_ImageHDU = fits.ImageHDU(
+                    self.flux_err_resampled)
+                flux_sky_resampled_ImageHDU = fits.ImageHDU(
+                    self.flux_sky_resampled)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.flux_resampled_hdulist = fits.HDUList()
