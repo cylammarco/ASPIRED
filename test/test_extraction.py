@@ -28,28 +28,47 @@ def test_spectral_extraction():
                                                  spatial_mask=spatial_mask,
                                                  spec_mask=spec_mask,
                                                  log_file_name=None,
-                                                 log_level='DEBUG')
+                                                 log_level='DEBUG',
+                                                 saxis=1,
+                                                 flip=False,
+                                                 cosmicray_sigma=5.,
+                                                 readnoise=0.1,
+                                                 gain=1.0,
+                                                 seeing=1.0,
+                                                 exptime=1.0)
 
     # Trace the spectrum, note that the first 15 rows were trimmed from the
     # spatial_mask
-    dummy_twodspec.ap_trace(rescale=True, ap_faint=0)
+    dummy_twodspec.ap_trace(rescale=True,
+                            ap_faint=0,
+                            save_iframe=True,
+                            filename='test/test_output/test_full_run_aptrace',
+                            return_jsonstring=True)
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
     assert trace == 35, 'Trace is at row ' + str(
         trace) + ', but it is expected to be at row 35.'
 
     # Optimal extracting spectrum by summing over the aperture along the
     # trace
-    dummy_twodspec.ap_extract(apwidth=5, optimal=False)
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=False,
+        filename='test/test_output/test_full_run_apextract',
+        save_iframe=True,
+        return_jsonstring=True)
 
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     assert np.round(count).astype('int') == 54, 'Extracted count is ' + str(
         count) + ' but it should be 54.'
 
+    dummy_twodspec.inspect_extracted_spectrum(
+        display=False,
+        filename='test/test_output/test_full_run_extracted_spectrum',
+        save_iframe=True,
+        return_jsonstring=True)
+
 
 def test_user_supplied_trace():
-
-    # Load the image
-    lhs6328_fits = fits.open('test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
 
     spatial_mask = np.arange(50, 200)
     spec_mask = np.arange(50, 1024)
@@ -60,11 +79,12 @@ def test_user_supplied_trace():
     lhs6328_trace = lhs6328_extracted[1].data
     lhs6328_trace_sigma = lhs6328_extracted[2].data
 
-    lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_fits,
-                                                   spatial_mask=spatial_mask,
-                                                   spec_mask=spec_mask,
-                                                   readnoise=2.34,
-                                                   log_file_name=None)
+    lhs6328_twodspec = spectral_reduction.TwoDSpec(
+        'test/test_data/v_e_20180810_12_1_0_0.fits.gz',
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        readnoise=2.34,
+        log_file_name=None)
 
     lhs6328_twodspec.add_trace(trace=lhs6328_trace,
                                trace_sigma=lhs6328_trace_sigma)

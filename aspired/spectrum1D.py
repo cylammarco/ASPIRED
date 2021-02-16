@@ -441,10 +441,12 @@ class Spectrum1D():
         '''
 
         assert isinstance(
-            trace, (list, np.ndarray)), 'trace has to be a list or an array'
+            trace,
+            (list, np.ndarray)), 'trace has to be a list or a numpy array'
         assert isinstance(
             trace_sigma,
-            (list, np.ndarray)), 'trace_sigma has to be a list or an array'
+            (list,
+             np.ndarray)), 'trace_sigma has to be a list or a numpy array'
         assert len(trace_sigma) == len(trace), 'trace and trace_sigma have to '
         ' be the same size.'
 
@@ -455,7 +457,9 @@ class Spectrum1D():
         else:
 
             assert isinstance(
-                pixel_list, (list, np.ndarray)), 'pixel_list has to be a list'
+                pixel_list,
+                (list,
+                 np.ndarray)), 'pixel_list has to be a list or a numpy array'
             assert len(pixel_list) == len(trace), 'trace and pixel_list have '
             'to be the same size.'
 
@@ -554,13 +558,15 @@ class Spectrum1D():
         """
 
         assert isinstance(
-            count, (list, np.ndarray)), 'count has to be a list or an array'
+            count,
+            (list, np.ndarray)), 'count has to be a list or a numpy array'
 
         if count_err is not None:
 
             assert isinstance(
                 count_err,
-                (list, np.ndarray)), 'count_err has to be a list or an array'
+                (list,
+                 np.ndarray)), 'count_err has to be a list or a numpy array'
             assert len(count_err) == len(
                 count), 'count_err has to be the same size as count'
 
@@ -568,7 +574,8 @@ class Spectrum1D():
 
             assert isinstance(
                 count_sky,
-                (list, np.ndarray)), 'count_sky has to be a list or an array'
+                (list,
+                 np.ndarray)), 'count_sky has to be a list or a numpy array'
             assert len(count_sky) == len(
                 count), 'count_sky has to be the same size as count'
 
@@ -626,8 +633,9 @@ class Spectrum1D():
 
         '''
 
-        assert isinstance(arc_spec,
-                          (list, np.ndarray)), 'arc_spec has to be a list'
+        assert isinstance(
+            arc_spec,
+            (list, np.ndarray)), 'arc_spec has to be a list or a numpy array'
         self.arc_spec = arc_spec
 
     def remove_arc_spec(self):
@@ -640,8 +648,9 @@ class Spectrum1D():
 
         '''
 
-        assert isinstance(pixel_list,
-                          (list, np.ndarray)), 'pixel_list has to be a list'
+        assert isinstance(
+            pixel_list,
+            (list, np.ndarray)), 'pixel_list has to be a list or a numpy array'
         self.pixel_list = pixel_list
 
     def remove_pixel_list(self):
@@ -671,7 +680,9 @@ class Spectrum1D():
 
         '''
 
-        assert isinstance(peaks, (list, np.ndarray)), 'peaks has to be a list'
+        assert isinstance(
+            peaks,
+            (list, np.ndarray)), 'peaks has to be a list or a numpy array'
         self.peaks = peaks
 
     def remove_peaks(self):
@@ -684,8 +695,10 @@ class Spectrum1D():
 
         '''
 
-        assert isinstance(peaks_refined,
-                          (list, np.ndarray)), 'peaks_refined has to be a list'
+        assert isinstance(
+            peaks_refined,
+            (list,
+             np.ndarray)), 'peaks_refined has to be a list or a numpy array'
         self.peaks_refined = peaks_refined
 
     def remove_peaks_refined(self):
@@ -698,8 +711,9 @@ class Spectrum1D():
 
         '''
 
-        assert isinstance(peaks_wave,
-                          (list, np.ndarray)), 'peaks_wave has to be a list'
+        assert isinstance(
+            peaks_wave,
+            (list, np.ndarray)), 'peaks_wave has to be a list or a numpy array'
         self.peaks_wave = peaks_wave
 
     def remove_peaks_wave(self):
@@ -861,8 +875,9 @@ class Spectrum1D():
 
         """
 
-        assert isinstance(fit_coeff,
-                          (list, np.ndarray)), 'fit_coeff has to be a list.'
+        assert isinstance(
+            fit_coeff,
+            (list, np.ndarray)), 'fit_coeff has to be a list or a numpy array.'
         self.fit_coeff = fit_coeff
 
     def remove_fit_coeff(self):

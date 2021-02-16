@@ -1819,6 +1819,8 @@ class TwoDSpec:
 
             spec_id = [spec_id]
 
+        to_return = []
+
         for j in spec_id:
 
             spec = self.spectrum_list[j]
@@ -2285,7 +2287,11 @@ class TwoDSpec:
 
                 if return_jsonstring:
 
-                    return fig.to_json()
+                    to_return.append(fig.to_json())
+
+        if return_jsonstring:
+
+            return to_return
 
     def _tophat_extraction(self, source_slice, sky_source_slice, pix_frac,
                            gain, sky_width_dn, sky_width_up, width_dn,
@@ -2958,14 +2964,16 @@ class TwoDSpec:
 
             spec_id = [spec_id]
 
+        to_return = []
+
         for j in spec_id:
 
             spec = self.spectrum_list[j]
 
             len_trace = len(spec.trace)
-            count = spec.count
-            count_err = spec.count_err
-            count_sky = spec.count_sky
+            count = np.array(spec.count)
+            count_err = np.array(spec.count_err)
+            count_sky = np.array(spec.count_sky)
 
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width))
@@ -3042,7 +3050,7 @@ class TwoDSpec:
                 if filename is None:
 
                     pio.write_html(fig,
-                                   'ap_extract_' + str(j) + '.html',
+                                   'extracted_spectrum_' + str(j) + '.html',
                                    auto_open=open_iframe)
 
                 else:
@@ -3063,7 +3071,11 @@ class TwoDSpec:
 
             if return_jsonstring:
 
-                return fig.to_json()
+                to_return.append(fig.to_json())
+
+        if return_jsonstring:
+
+            return to_return
 
     def extract_arc_spec(self,
                          spec_id=None,
@@ -3137,6 +3149,8 @@ class TwoDSpec:
             logging.critical(error_msg)
             raise ValueError(error_msg)
 
+        to_return = []
+
         for i in spec_id:
 
             spec = self.spectrum_list[i]
@@ -3201,7 +3215,11 @@ class TwoDSpec:
 
                 if return_jsonstring:
 
-                    return fig.to_json()
+                    to_return.append(fig.to_json())
+
+        if return_jsonstring:
+
+            return to_return
 
     def create_fits(self,
                     output,

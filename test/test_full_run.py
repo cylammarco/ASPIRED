@@ -123,7 +123,11 @@ def test_full_run():
     hilt102_twodspec.apply_twodspec_mask_to_arc()
 
     # Extract the 1D arc by aperture sum of the traces provided
-    lhs6328_twodspec.extract_arc_spec(display=False)
+    lhs6328_twodspec.extract_arc_spec(
+        display=False,
+        filename='test/test_output/test_full_run_arc_spec',
+        save_iframe=False,
+        return_jsonstring=True)
     hilt102_twodspec.extract_arc_spec(display=False)
 
     # Handle 1D Science spectrum

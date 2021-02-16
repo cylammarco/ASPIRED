@@ -2570,6 +2570,7 @@ class OneDSpec():
         '''
 
         stype_split = stype.split('+')
+        to_return = []
 
         if 'science' in stype_split:
 
@@ -2761,7 +2762,7 @@ class OneDSpec():
 
                 if return_jsonstring:
 
-                    return fig_sci[i].to_json()
+                    to_return.sppend(fig_sci[i].to_json())
 
         if 'standard' in stype_split:
 
@@ -2942,7 +2943,11 @@ class OneDSpec():
 
             if return_jsonstring:
 
-                return fig_standard.to_json()
+                to_return.append(fig_standard.to_json())
+
+        if return_jsonstring:
+
+            return to_return
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
 
