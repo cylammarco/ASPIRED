@@ -814,52 +814,46 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_available:
+            if isinstance(spec_id, int):
 
-                if spec_id is not None:
+                spec_id = [spec_id]
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+            if spec_id is not None:
 
-                        for i in spec_id:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                            if i not in list(
-                                    self.science_spectrum_list.keys()):
+                    for i in spec_id:
 
-                                self.add_science_spectrum1D(i)
+                        if i not in list(self.science_spectrum_list.keys()):
 
-                                logging.warning(
-                                    'The given spec_id, {}, does not '
-                                    'exist. A new spectrum1D is created. '
-                                    'Please check you are providing the '
-                                    'correct spec_id.'.format(spec_id))
+                            self.add_science_spectrum1D(i)
 
-                else:
+                            logging.warning(
+                                'The given spec_id, {}, does not '
+                                'exist. A new spectrum1D is created. '
+                                'Please check you are providing the '
+                                'correct spec_id.'.format(spec_id))
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            else:
 
-                if isinstance(spec_id, int):
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    spec_id = [spec_id]
+            for i in spec_id:
 
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].add_trace(
-                        trace=trace,
-                        trace_sigma=trace_sigma,
-                        pixel_list=pixel_list)
+                self.science_spectrum_list[i].add_trace(
+                    trace=trace,
+                    trace_sigma=trace_sigma,
+                    pixel_list=pixel_list)
 
             self.science_trace_available = True
 
         if 'standard' in stype_split:
 
-            if self.standard_arc_available:
-
-                self.standard_spectrum_list[0].add_trace(
-                    trace=trace,
-                    trace_sigma=trace_sigma,
-                    pixel_list=pixel_list)
+            self.standard_spectrum_list[0].add_trace(trace=trace,
+                                                     trace_sigma=trace_sigma,
+                                                     pixel_list=pixel_list)
 
             self.standard_trace_available = True
 
