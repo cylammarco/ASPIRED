@@ -255,16 +255,17 @@ class Spectrum1D():
         }
 
         self.n_hdu = {
-            'flux_resampled': 4,
-            'count_resampled': 3,
+            'trace': 2,
+            'count': 3,
+            'weight_map': 1,
             'arc_spec': 3,
             'wavecal': 1,
             'wavelength': 1,
+            'count_resampled': 3,
             'sensitivity': 1,
             'flux': 3,
-            'weight_map': 1,
-            'count': 3,
-            'trace': 2
+            'sensitivity_resampled': 1,
+            'flux_resampled': 3
         }
 
         self.hdu_order = {
@@ -277,7 +278,8 @@ class Spectrum1D():
             'count_resampled': 6,
             'sensitivity': 7,
             'flux': 8,
-            'flux_resampled': 9
+            'sensitivity_resampled': 9,
+            'flux_resampled': 10
         }
 
         self.hdu_content = {
@@ -290,13 +292,14 @@ class Spectrum1D():
             'count_resampled': False,
             'sensitivity': False,
             'flux': False,
+            'sensitivity_resampled': False,
             'flux_resampled': False
         }
 
     def merge(self, spectrum1D, overwrite=False):
         '''
         This function copies all the info from the supplied spectrum1D to
-        this one.
+        this one, including the spec_id.
 
         Parameters
         ----------
@@ -315,22 +318,18 @@ class Spectrum1D():
 
                     setattr(self, attr, value)
 
+            if getattr(self, attr) is None or []:
+
+                setattr(self, attr, getattr(spectrum1D, attr))
+
+            if overwrite:
+
+                setattr(self, attr, getattr(spectrum1D, attr))
+
             else:
 
-                if getattr(self, attr) is None or []:
-
-                    setattr(self, attr, getattr(spectrum1D, attr))
-
-                else:
-
-                    if overwrite:
-
-                        setattr(self, attr, getattr(spectrum1D, attr))
-
-                    else:
-
-                        # if not overwrite, do nothing
-                        pass
+                # if not overwrite, do nothing
+                pass
 
     def add_spectrum_header(self, header):
         '''
@@ -609,8 +608,8 @@ class Spectrum1D():
         else:
 
             assert len(
-                self.pixel_list) == len(count), 'count and pixel_list have '
-            'to be the same size.'
+                self.pixel_list) == len(count), 'count and pixel_list have ' +\
+                    'to be the same size.'
 
     def remove_count(self):
 
@@ -2202,8 +2201,11 @@ class Spectrum1D():
                 hdu_output.update_extend()
                 self.empty_primary_hdu = False
 
-            hdu_output.update_extend()
-            self.empty_primary_hdu = True
+            else:
+
+                hdu_output.update_extend()
+                self.empty_primary_hdu = True
+
             self.hdu_output = hdu_output
 
         if return_hdu_list:
@@ -2293,9 +2295,9 @@ class Spectrum1D():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, sky, and sensitivity (pixel)
-                flux_resampled: 4 HDUs
+                flux_resampled: 3 HDUs
                     Flux, uncertainty, sky, and sensitivity (wavelength)
 
         filename: String

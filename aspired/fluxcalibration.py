@@ -1147,6 +1147,10 @@ class FluxCalibration(StandardLibrary):
                                          np.array(sensitivity).reshape(-1),
                                          verbose=True)
 
+        flux_resampled[np.isnan(flux_resampled)] = 0.
+        flux_err_resampled[np.isnan(flux_err_resampled)] = 0.
+        flux_sky_resampled[np.isnan(flux_sky_resampled)] = 0.
+
         target_spectrum1D.add_flux(flux, flux_err, flux_sky)
         target_spectrum1D.add_flux_resampled(flux_resampled,
                                              flux_err_resampled,

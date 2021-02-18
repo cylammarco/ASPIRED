@@ -105,13 +105,7 @@ class OneDSpec():
         self.log_file_name = log_file_name
 
         # Initialise empty calibration objects
-        self.science_wavecal = [
-            WavelengthCalibration(verbose=self.verbose,
-                                  logger_name=self.logger_name,
-                                  log_level=self.log_level,
-                                  log_file_folder=self.log_file_folder,
-                                  log_file_name=self.log_file_name)
-        ]
+        self.science_wavecal = {}
         self.standard_wavecal = WavelengthCalibration(
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -125,15 +119,7 @@ class OneDSpec():
                                        log_file_name=self.log_file_name)
 
         # Create empty dictionary
-        self.science_spectrum_list = {
-            0:
-            Spectrum1D(spec_id=0,
-                       verbose=self.verbose,
-                       logger_name=self.logger_name,
-                       log_level=self.log_level,
-                       log_file_folder=self.log_file_folder,
-                       log_file_name=self.log_file_name)
-        }
+        self.science_spectrum_list = {}
         self.standard_spectrum_list = {
             0:
             Spectrum1D(spec_id=0,
@@ -144,8 +130,9 @@ class OneDSpec():
                        log_file_name=self.log_file_name)
         }
 
+        self.add_science_spectrum1D(0)
+
         # Link them up
-        self.science_wavecal[0].from_spectrum1D(self.science_spectrum_list[0])
         self.standard_wavecal.from_spectrum1D(self.standard_spectrum_list[0])
         self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
 
@@ -190,6 +177,25 @@ class OneDSpec():
 
         self.science_flux_resampled = False
         self.standard_flux_calibrated = False
+
+    def add_science_spectrum1D(self, spec_id):
+        self.science_wavecal[spec_id] = WavelengthCalibration(
+            verbose=self.verbose,
+            logger_name=self.logger_name,
+            log_level=self.log_level,
+            log_file_folder=self.log_file_folder,
+            log_file_name=self.log_file_name)
+
+        self.science_spectrum_list[spec_id] = Spectrum1D(
+            spec_id=spec_id,
+            verbose=self.verbose,
+            logger_name=self.logger_name,
+            log_level=self.log_level,
+            log_file_folder=self.log_file_folder,
+            log_file_name=self.log_file_name)
+
+        self.science_wavecal[spec_id].from_spectrum1D(
+            self.science_spectrum_list[spec_id])
 
     def add_fluxcalibration(self, fluxcal):
         '''
@@ -250,22 +256,43 @@ class OneDSpec():
 
             if s == 'science':
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise ValueError(error_msg)
+                        raise RuntimeError(error_msg)
 
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                if isinstance(spec_id, int):
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(wavecal) == len(spec_id):
 
-                    spec_id = [spec_id]
+                    wavecal = {
+                        spec_id[i]: wavecal[i]
+                        for i in range(len(spec_id))
+                    }
+
+                elif len(wavecal) == 1:
+
+                    wavecal = {spec_id[0]: wavecal[0]}
+
+                else:
+
+                    error_msg = 'wavecal must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
 
                 for i in spec_id:
 
@@ -295,6 +322,16 @@ class OneDSpec():
 
     def add_wavelength(self, wave, spec_id=None, stype='science+standard'):
         '''
+        Three combinations of wave and spec_id shapes are accepted.
+
+        +-----------+-----------------+
+        | Parameter |       Size      |
+        +-----------+-----+-----+-----+
+        | wave      |  1  |  1  |  N  |
+        +-----------+-----+-----+-----+
+        | spec_id   |  1  |  N  |  N  |
+        +-----------+-----+-----+-----+
+
         Parameters
         ----------
         wave : numeric value, list or numpy 1D array (N) (Default: None)
@@ -326,22 +363,40 @@ class OneDSpec():
 
             if self.science_data_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
-                        err_msg = 'The given spec_id does not exist.'
-                        logging.critical(err_msg)
-                        raise ValueError(err_msg)
+                        error_msg = 'The given spec_id does not exist.'
+                        logging.critical(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                if isinstance(spec_id, int):
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(wave) == len(spec_id):
 
-                    spec_id = [spec_id]
+                    wave = {spec_id[i]: wave[i] for i in range(len(spec_id))}
+
+                elif len(wave) == 1:
+
+                    wave = {spec_id[0]: wave[0]}
+
+                else:
+
+                    error_msg = 'wave must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
 
                 for i in spec_id:
 
@@ -396,6 +451,16 @@ class OneDSpec():
                                  spec_id=None,
                                  stype='science+standard'):
         '''
+        Three combinations of wave and spec_id shapes are accepted.
+
+        +-----------+-----------------+
+        | Parameter |       Size      |
+        +-----------+-----+-----+-----+
+        | wave      |  1  |  1  |  N  |
+        +-----------+-----+-----+-----+
+        | spec_id   |  1  |  N  |  N  |
+        +-----------+-----+-----+-----+
+
         Parameters
         ----------
         wave_resampled:
@@ -407,44 +472,113 @@ class OneDSpec():
 
         '''
 
+        if type(wave_resampled) == np.ndarray:
+
+            wave_resampled = [wave_resampled]
+
+        elif type(wave_resampled) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
         stype_split = stype.split('+')
 
         if 'science' in stype_split:
 
             if self.science_data_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                if isinstance(spec_id, int):
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(wave_resampled) == len(spec_id):
 
-                    spec_id = [spec_id]
+                    wave_resampled = {
+                        spec_id[i]: wave_resampled[i]
+                        for i in range(len(spec_id))
+                    }
+
+                elif len(wave_resampled) == 1:
+
+                    wave_resampled = {spec_id[0]: wave_resampled[0]}
+
+                else:
+
+                    error_msg = 'wave must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
 
                 for i in spec_id:
 
-                    self.science_spectrum_list[i].add_wavelength_resampled(
-                        wave_resampled=wave_resampled)
+                    if len(wave_resampled[i]) == len(
+                            self.science_spectrum_list[i].count):
+
+                        self.science_spectrum_list[i].add_wavelength_resampled(
+                            wave_resampled=wave_resampled[i])
+
+                    else:
+
+                        err_msg = 'The wavelength provided has a different ' +\
+                            'size to that of the extracted science spectrum.'
+                        logging.critical(err_msg)
+                        raise RuntimeError(err_msg)
 
                 self.science_wavelength_resampled = True
+
+            else:
+
+                err_msg = 'science data is not available, ' +\
+                    'wavelength_resampled cannot be added.'
+                logging.critical(err_msg)
+                raise RuntimeError(err_msg)
 
         if 'standard' in stype_split:
 
             if self.standard_data_available:
 
-                self.standard_spectrum_list[0].add_wavelength_resampled(
-                    wave_resampled=wave_resampled)
+                if len(wave_resampled[0]) == len(
+                        self.standard_spectrum_list[0].count):
 
-                self.standard_wavelength_resampled = True
+                    self.standard_spectrum_list[0].add_wavelength_resampled(
+                        wave_resampled=wave_resampled[0])
+
+                else:
+
+                    err_msg = 'The wavelength provided is of a different ' +\
+                        'size to that of the extracted standard spectrum.'
+                    logging.critical(err_msg)
+                    raise RuntimeError(err_msg)
+
+                self.standard_wavelength_resampled_calibrated = True
+
+            else:
+
+                err_msg = 'standard data is not available, ' +\
+                    'wavelength_resampled cannot be added.'
+                logging.critical(err_msg)
+                raise RuntimeError(err_msg)
 
     def add_spec(self,
                  count,
@@ -473,22 +607,35 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
-                    raise TypeError(error_msg)
+                    for i in spec_id:
+
+                        if i not in list(self.science_spectrum_list.keys()):
+
+                            self.add_science_spectrum1D(i)
+
+                            logging.warning(
+                                'The given spec_id, {}, does not exist. A new '
+                                'spectrum1D is created. Please check you are '
+                                'providing the correct spec_id.'.format(
+                                    spec_id))
+
+                        else:
+
+                            pass
 
             else:
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -506,7 +653,7 @@ class OneDSpec():
 
             self.standard_data_available = True
 
-    def add_arc_spec(self, spec_id, arc_spec, stype='science+standard'):
+    def add_arc_spec(self, arc_spec, spec_id=None, stype='science+standard'):
         '''
         Parameters
         ----------
@@ -525,22 +672,36 @@ class OneDSpec():
 
             if self.science_data_available:
 
-                if spec_id is not None:
+                if isinstance(spec_id, int):
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    spec_id = [spec_id]
 
-                        error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                    if spec_id is not None:
+
+                        if not set(spec_id).issubset(
+                                list(self.science_spectrum_list.keys())):
+
+                            for i in spec_id:
+
+                                if i not in list(
+                                        self.science_spectrum_list.keys()):
+
+                                    self.add_science_spectrum1D(i)
+
+                                    logging.warning(
+                                        'The given spec_id, {}, does not '
+                                        'exist. A new spectrum1D is created. '
+                                        'Please check you are providing the '
+                                        'correct spec_id.'.format(spec_id))
+
+                                else:
+
+                                    pass
 
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -557,7 +718,7 @@ class OneDSpec():
 
                 self.standard_arc_spec_available = True
 
-    def add_arc_lines(self, spec_id, peaks, stype='science+standard'):
+    def add_arc_lines(self, peaks, spec_id=None, stype='science+standard'):
         '''
         Parameters
         ----------
@@ -577,26 +738,40 @@ class OneDSpec():
 
             if self.science_data_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
-                        error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        for i in spec_id:
+
+                            if i not in list(
+                                    self.science_spectrum_list.keys()):
+
+                                self.add_science_spectrum1D(i)
+
+                                logging.warning(
+                                    'The given spec_id, {}, does not '
+                                    'exist. A new spectrum1D is created. '
+                                    'Please check you are providing the '
+                                    'correct spec_id.'.format(spec_id))
+
+                            else:
+
+                                pass
 
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
-
                 for i in spec_id:
 
-                    self.science_spectrum_list[i].add_arc_lines(peaks=peaks)
+                    self.science_spectrum_list[i].add_peaks(peaks=peaks)
 
                 self.science_arc_lines_available = True
 
@@ -604,7 +779,7 @@ class OneDSpec():
 
             if self.standard_data_available:
 
-                self.standard_spectrum_list[0].add_arc_lines(peaks=peaks)
+                self.standard_spectrum_list[0].add_peaks(peaks=peaks)
 
                 self.standard_arc_lines_available = True
 
@@ -643,11 +818,21 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
-                        error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        for i in spec_id:
+
+                            if i not in list(
+                                    self.science_spectrum_list.keys()):
+
+                                self.add_science_spectrum1D(i)
+
+                                logging.warning(
+                                    'The given spec_id, {}, does not '
+                                    'exist. A new spectrum1D is created. '
+                                    'Please check you are providing the '
+                                    'correct spec_id.'.format(spec_id))
 
                 else:
 
@@ -704,22 +889,23 @@ class OneDSpec():
 
             if self.science_data_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -784,11 +970,13 @@ class OneDSpec():
 
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
                     raise TypeError(error_msg)
+
             else:
 
                 # if spec_id is None, calibrators are initialised to all
@@ -903,7 +1091,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -996,13 +1185,31 @@ class OneDSpec():
 
             if self.science_arc_lines_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
-                        error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        for i in spec_id:
+
+                            if i not in list(
+                                    self.science_spectrum_list.keys()):
+
+                                self.add_science_spectrum1D(i)
+
+                                logging.warning(
+                                    'The given spec_id, {}, does not '
+                                    'exist. A new spectrum1D is created. '
+                                    'Please check you are providing the '
+                                    'correct spec_id.'.format(spec_id))
+
+                            else:
+
+                                pass
 
                 else:
 
@@ -1094,7 +1301,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1181,7 +1389,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1281,7 +1490,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1356,7 +1566,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1465,7 +1676,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1580,7 +1792,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1658,7 +1871,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1750,7 +1964,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1863,7 +2078,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -1951,7 +2167,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -2109,7 +2326,7 @@ class OneDSpec():
         if (extinction_func is not None) and (callable(extinction_func)):
 
             self.extinction_func = extinction_func
-            logging.info('Manually extinction correction function is loaded.')
+            logging.info('Manual extinction correction function is loaded.')
 
         else:
 
@@ -2357,9 +2574,14 @@ class OneDSpec():
 
             if 'science' in stype_split:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -2370,10 +2592,6 @@ class OneDSpec():
                     # if spec_id is None, contraints are applied to all
                     #  calibrators
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -2480,7 +2698,8 @@ class OneDSpec():
 
                 if spec_id is not None:
 
-                    if spec_id not in list(self.science_spectrum_list.keys()):
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
@@ -2632,9 +2851,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -2644,10 +2868,6 @@ class OneDSpec():
 
                 # if spec_id is None, contraints are applied to all calibrators
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3015,8 +3235,8 @@ class OneDSpec():
             raise TypeError(error_msg)
 
     def create_fits(self,
-                    spec_id=None,
                     output='arc_spec+wavecal+wavelength+flux+flux_resampled',
+                    spec_id=None,
                     stype='science+standard',
                     recreate=True,
                     empty_primary_hdu=True,
@@ -3088,9 +3308,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3101,10 +3326,6 @@ class OneDSpec():
                 # if spec_id is None, contraints are applied to all
                 #  calibrators
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3149,9 +3370,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3161,10 +3387,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3205,9 +3427,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3217,10 +3444,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3261,9 +3484,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3273,10 +3501,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3317,9 +3541,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3329,10 +3558,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3373,9 +3598,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3385,10 +3615,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3429,9 +3655,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3441,10 +3672,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3485,9 +3712,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3497,10 +3729,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3541,9 +3769,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3553,10 +3786,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3597,9 +3826,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3609,10 +3843,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3653,9 +3883,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3665,10 +3900,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3709,9 +3940,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3721,10 +3957,6 @@ class OneDSpec():
 
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3817,9 +4049,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -3830,10 +4067,6 @@ class OneDSpec():
                 # if spec_id is None, contraints are applied to all
                 #  calibrators
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 
@@ -3933,9 +4166,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
             if spec_id is not None:
 
-                if spec_id not in list(self.science_spectrum_list.keys()):
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
                     raise ValueError('The given spec_id does not exist.')
 
@@ -3944,10 +4182,6 @@ class OneDSpec():
                 # if spec_id is None, contraints are applied to all
                 #  calibrators
                 spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
 
             for i in spec_id:
 

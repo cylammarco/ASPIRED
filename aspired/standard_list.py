@@ -17,7 +17,7 @@ esoctiostan = [
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/hststandards.html
 esohststan = [
-    'agk81d226', 'bd28d4211', 'bd33d2642', 'bd75d325', 'bpm16274', 'feige110',
+    'agk81d266', 'bd28d4211', 'bd33d2642', 'bd75d325', 'bpm16274', 'feige110',
     'feige34', 'g191b2b', 'g93_48', 'gd108', 'gd50', 'grw70d5824', 'hd49798',
     'hd60753', 'hd93521', 'hr153', 'hr1996', 'hr4554', 'hr5191', 'hr7001',
     'hz2', 'hz21', 'hz4', 'hz44', 'lb227', 'lds749b', 'ngc7293'
@@ -33,7 +33,7 @@ esookestan = [
 
 # https://www.eso.org/sci/observing/tools/standards/spectra/wdstandards.html
 esowdstan = [
-    'agk81d226_005', 'alpha_lyr_004', 'bd_25d4655_002', 'bd_28d4211_005',
+    'agk_81d266_005', 'alpha_lyr_004', 'bd_25d4655_002', 'bd_28d4211_005',
     'bd_33d2642_004', 'bd_75d325_005', 'feige110_005', 'feige34_005',
     'feige66_002', 'feige67_002', 'g93_48_004', 'gd108_005', 'gd50_004',
     'gd71', 'grw_70d5824_005', 'hd93521_005', 'hz21_005', 'hz2_005',

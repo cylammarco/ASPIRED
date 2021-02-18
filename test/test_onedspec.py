@@ -125,26 +125,61 @@ def test_add_wavelengthcalibration():
     onedspec.add_wavelengthcalibration([dummy_wavecal], spec_id=0)
 
 
+# science
 @pytest.mark.xfail(raises=TypeError)
-def test_add_wavelengthcalibration_fail_type():
+def test_add_wavelengthcalibration_science_fail_type_None():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-    onedspec.add_wavelengthcalibration(None)
+    onedspec.add_wavelengthcalibration(None, stype='science')
 
 
-@pytest.mark.xfail(raises=ValueError)
-def test_add_wavelengthcalibration_fail_spec_id():
+@pytest.mark.xfail(raises=TypeError)
+def test_add_wavelengthcalibration_science_fail_type_list_of_None():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelengthcalibration([None], stype='science')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelengthcalibration_science_fail_spec_id():
     # Create a dummy WavelengthCalibration
     dummy_wavecal = WavelengthCalibration(log_file_name=None)
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-    onedspec.add_wavelengthcalibration(dummy_wavecal, spec_id=1)
+    onedspec.add_wavelengthcalibration(dummy_wavecal,
+                                       spec_id=1,
+                                       stype='science')
+
+
+# standard
+@pytest.mark.xfail(raises=TypeError)
+def test_add_wavelengthcalibration_standard_fail_type_None():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelengthcalibration(None, stype='standard')
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_add_wavelengthcalibration_standard_fail_type_list_of_None():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelengthcalibration([None], stype='standard')
+
+
+# spec_id is ignored in standard, so this passes
+def test_add_wavelengthcalibration_standard_fail_spec_id():
+    # Create a dummy WavelengthCalibration
+    dummy_wavecal = WavelengthCalibration(log_file_name=None)
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelengthcalibration(dummy_wavecal,
+                                       spec_id=1,
+                                       stype='standard')
 
 
 # science
 def test_add_wavelength_science():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-    onedspec.add_spec(np.arange(100), stype='science')
-    onedspec.add_wavelength(np.arange(100), stype='science')
-    onedspec.add_wavelength([np.arange(100)], stype='science')
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_spec(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_wavelength(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_wavelength(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_wavelength([np.arange(100)], spec_id=0, stype='science')
+    onedspec.add_wavelength([np.arange(200)], spec_id=1, stype='science')
 
 
 @pytest.mark.xfail(raises=RuntimeError)
@@ -178,9 +213,9 @@ def test_add_wavelength_science_fail_wavelength_size():
 # standard
 def test_add_wavelength_standard():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-    onedspec.add_spec(np.arange(100), stype='standard')
-    onedspec.add_wavelength(np.arange(100), stype='standard')
-    onedspec.add_wavelength([np.arange(100)], stype='standard')
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_wavelength(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_wavelength([np.arange(100)], spec_id=0, stype='standard')
 
 
 @pytest.mark.xfail(raises=RuntimeError)
@@ -209,3 +244,431 @@ def test_add_wavelength_standard_fail_wavelength_size():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_spec(np.arange(100), stype='standard')
     onedspec.add_wavelength(np.arange(10), stype='standard')
+
+
+# science
+def test_add_wavelength_resampled_science():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_spec(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_spec(np.arange(100), spec_id=10, stype='science')
+    onedspec.add_wavelength_resampled(np.arange(100),
+                                      spec_id=0,
+                                      stype='science')
+    onedspec.add_wavelength_resampled(np.arange(200),
+                                      spec_id=1,
+                                      stype='science')
+    onedspec.add_wavelength_resampled([np.arange(100)],
+                                      spec_id=0,
+                                      stype='science')
+    onedspec.add_wavelength_resampled([np.arange(200)],
+                                      spec_id=1,
+                                      stype='science')
+    onedspec.add_wavelength_resampled(
+        [np.arange(100), np.arange(200),
+         np.arange(100)],
+        spec_id=[0, 1, 10],
+        stype='science')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_resampled_science_fail_no_science_data():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelength_resampled(np.arange(100), stype='science')
+    onedspec.add_wavelength_resampled([np.arange(100)], stype='science')
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_add_wavelength_resampled_science_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='science')
+    onedspec.add_wavelength_resampled(None, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_add_wavelength_resampled_science_fail_spec_id():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='science')
+    onedspec.add_wavelength_resampled(np.arange(100),
+                                      spec_id=1,
+                                      stype='science')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_resampled_science_fail_wavelength_size():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='science')
+    onedspec.add_wavelength_resampled(np.arange(10), stype='science')
+
+
+# standard
+def test_add_wavelength_resampled_standard():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_wavelength_resampled(np.arange(100),
+                                      spec_id=0,
+                                      stype='standard')
+    onedspec.add_wavelength_resampled([np.arange(100)],
+                                      spec_id=0,
+                                      stype='standard')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_resampled_standard_fail_no_standard_data():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelength_resampled(np.arange(100), stype='standard')
+    onedspec.add_wavelength_resampled([np.arange(100)], stype='standard')
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_add_wavelength_resampled_standard_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='standard')
+    onedspec.add_wavelength_resampled(None, stype='standard')
+
+
+# Note that standard does not care about spec_id, there can only be one
+# so this test passes
+def test_add_wavelength_resampled_standard_spec_id():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='standard')
+    onedspec.add_wavelength_resampled(np.arange(100),
+                                      spec_id=1,
+                                      stype='standard')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_resampled_standard_fail_wavelength_size():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='standard')
+    onedspec.add_wavelength_resampled(np.arange(10), stype='standard')
+
+
+# science arc_spec
+def test_add_arc_spec_science():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_arc_spec(np.arange(100), stype='science')
+    onedspec.add_arc_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_arc_spec(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_arc_spec([np.arange(100), np.arange(200)],
+                          spec_id=[0, 2],
+                          stype='science')
+
+
+# standard arc_spec
+def test_add_arc_spec_standard():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_arc_spec(np.arange(100), stype='standard')
+
+
+# science add_arc_lines
+def test_add_arc_lines_science():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_spec(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_spec(np.arange(100), spec_id=10, stype='science')
+    onedspec.add_arc_lines(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_arc_lines(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_arc_lines([np.arange(100)], spec_id=0, stype='science')
+    onedspec.add_arc_lines([np.arange(200)], spec_id=1, stype='science')
+    onedspec.add_arc_lines(
+        [np.arange(100), np.arange(200),
+         np.arange(100)],
+        spec_id=[0, 1, 10],
+        stype='science')
+
+
+@pytest.mark.xfail(raises=AssertionError)
+def test_add_arc_lines_science_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='science')
+    onedspec.add_arc_lines(None, stype='science')
+
+
+# standard add_arc_lines
+def test_add_arc_lines_standard():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_arc_lines(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_arc_lines([np.arange(100)], spec_id=0, stype='standard')
+    onedspec.add_arc_lines([np.arange(100)], spec_id=[0], stype='standard')
+
+
+@pytest.mark.xfail(raises=AssertionError)
+def test_add_arc_lines_standard_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='standard')
+    onedspec.add_arc_lines(None, stype='standard')
+
+
+# science trace
+def test_add_trace_science():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_trace(np.arange(100), np.arange(100), stype='science')
+    onedspec.add_trace(np.arange(100),
+                       np.arange(100),
+                       spec_id=0,
+                       stype='science')
+    onedspec.add_trace(np.arange(200),
+                       np.arange(200),
+                       spec_id=1,
+                       stype='science')
+    onedspec.add_trace([np.arange(100), np.arange(200)],
+                       [np.arange(100), np.arange(200)],
+                       spec_id=[0, 2],
+                       stype='science')
+
+
+# standard trace
+def test_add_trace_standard():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_trace(np.arange(100), np.arange(100), stype='standard')
+
+
+# science trace
+@pytest.mark.xfail(raises=TypeError)
+def test_add_trace_science_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_trace(np.arange(100), stype='science')
+
+
+# standard trace
+@pytest.mark.xfail(raises=TypeError)
+def test_add_trace_standard_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_trace(np.arange(100), stype='standard')
+
+
+# science add_fit_coeff
+def test_add_fit_coeff_science():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_spec(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_spec(np.arange(100), spec_id=10, stype='science')
+    onedspec.add_fit_coeff(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_fit_coeff(np.arange(200), spec_id=1, stype='science')
+    onedspec.add_fit_coeff([np.arange(100)], spec_id=0, stype='science')
+    onedspec.add_fit_coeff([np.arange(200)], spec_id=1, stype='science')
+    onedspec.add_fit_coeff(
+        [np.arange(100), np.arange(200),
+         np.arange(100)],
+        spec_id=[0, 1, 10],
+        stype='science')
+
+
+@pytest.mark.xfail(raises=TypeError)
+def test_add_fit_coeff_science_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(10), stype='science')
+    onedspec.add_wavelength_resampled(None, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_add_fit_coeff_science_fail_spec_id():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(10), stype='science')
+    onedspec.add_fit_coeff(np.arange(10), spec_id=1, stype='science')
+
+
+# standard add_fit_coeff
+def test_add_fit_coeff_standard():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_fit_coeff(np.arange(100), spec_id=0, stype='standard')
+    onedspec.add_fit_coeff([np.arange(100)], spec_id=0, stype='standard')
+    onedspec.add_fit_coeff([np.arange(100)], spec_id=[0], stype='standard')
+
+
+@pytest.mark.xfail(raises=AssertionError)
+def test_add_fit_coeff_standard_fail_type():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(10), stype='standard')
+    onedspec.add_fit_coeff(None, stype='standard')
+
+
+# Note that standard does not care about spec_id, there can only be one
+# so this test passes
+def test_add_fit_coeff_standard_not_fail_spec_id():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(10), stype='standard')
+    onedspec.add_fit_coeff(np.arange(10), spec_id=1, stype='standard')
+
+
+# Note that this is testing the "relay" to the WavelengthCalibrator, but
+# not testing the calibrator itself.
+def test_calibrator_science():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.initialise_calibrator(spec_id=0, stype='science')
+    onedspec.initialise_calibrator(spec_id=[1], stype='science')
+    onedspec.initialise_calibrator(spec_id=[11, 75], stype='science')
+
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_calibrator_properties(spec_id=0, stype='science')
+    onedspec.set_calibrator_properties(spec_id=[1],
+                                       num_pix=100,
+                                       stype='science')
+    onedspec.set_calibrator_properties(spec_id=[11, 75],
+                                       pixel_list=np.arange(100),
+                                       log_level='debug',
+                                       stype='science')
+
+    onedspec.set_hough_properties(num_slopes=1000, stype='science')
+    onedspec.set_hough_properties(spec_id=0, num_slopes=1000, stype='science')
+    onedspec.set_hough_properties(spec_id=[1],
+                                  num_slopes=1000,
+                                  stype='science')
+    onedspec.set_hough_properties(spec_id=[11, 75],
+                                  num_slopes=1000,
+                                  stype='science')
+
+    onedspec.set_ransac_properties(filter_close=True, stype='science')
+    onedspec.set_ransac_properties(spec_id=0,
+                                   filter_close=True,
+                                   stype='science')
+    onedspec.set_ransac_properties(spec_id=[1],
+                                   filter_close=True,
+                                   stype='science')
+    onedspec.set_ransac_properties(spec_id=[11, 75],
+                                   filter_close=True,
+                                   stype='science')
+
+    onedspec.load_user_atlas(elements=['HeXe'] * 10,
+                             wavelengths=[np.arange(10)],
+                             stype='science')
+    onedspec.load_user_atlas(spec_id=0,
+                             elements=['HeXe'] * 10,
+                             wavelengths=[np.arange(10)],
+                             stype='science')
+    onedspec.load_user_atlas(spec_id=[1],
+                             elements=['HeXe'] * 10,
+                             wavelengths=[np.arange(10)],
+                             stype='science')
+    onedspec.load_user_atlas(spec_id=[11, 75],
+                             elements=['HeXe'] * 10,
+                             wavelengths=[np.arange(10)],
+                             stype='science')
+
+    onedspec.add_atlas(elements=['Ar'] * 10, stype='science')
+    onedspec.add_atlas(spec_id=0, elements=['Ar'] * 10, stype='science')
+    onedspec.add_atlas(spec_id=[1], elements=['Ar'] * 10, stype='science')
+    onedspec.add_atlas(spec_id=[11, 75], elements=['Ar'] * 10, stype='science')
+
+    onedspec.do_hough_transform()
+    onedspec.do_hough_transform(spec_id=0)
+    onedspec.do_hough_transform(spec_id=[1])
+    onedspec.do_hough_transform(spec_id=[11, 75])
+
+
+def test_extinction_function():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.set_atmospheric_extinction()
+    onedspec.set_atmospheric_extinction(
+        extinction_func=np.polyfit([0, 1], [0, 1], 1))
+
+
+def test_standard_library_lookup():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.lookup_standard_libraries(target='cd32d9927')
+    onedspec.lookup_standard_libraries(target='agk_81d266_005')
+    onedspec.lookup_standard_libraries(target='bd28')
+    onedspec.lookup_standard_libraries(target='hr3454')
+    onedspec.load_standard(library='esowdstan', target='agk_81d266_005')
+    onedspec.inspect_standard(display=False)
+
+
+def test_sensitivity():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_spec(np.arange(1, 71), spec_id=0, stype='science+standard')
+    onedspec.add_fit_coeff(np.array((4000., 1, 0.2, 0.0071)),
+                           spec_id=0,
+                           stype='science+standard')
+    onedspec.apply_wavelength_calibration()
+
+    onedspec.load_standard(target='cd32d9927')
+    onedspec.inspect_standard(
+        display=False,
+        return_jsonstring=True,
+        save_iframe=True,
+        filename='test/test_output/test_onedspec_inspect_standard')
+    onedspec.add_sensitivity_func(
+        np.polyfit(np.arange(1, 1001),
+                   np.random.random(1000) * 20, 2))
+    # Not implemented yet
+    # onedspec.save_sensitivity_func('test/test_output/' +\
+    # 'test_onedspec_sensitivity_func')
+    onedspec.compute_sensitivity()
+    onedspec.inspect_sensitivity(
+        display=False,
+        return_jsonstring=True,
+        save_iframe=True,
+        filename='test/test_output/test_onedspec_inspect_sensitivity')
+    onedspec.apply_flux_calibration()
+    onedspec.apply_flux_calibration(spec_id=0)
+    onedspec.apply_flux_calibration(spec_id=[0])
+    onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2,
+                                                     standard_airmass=1.5)
+    onedspec.apply_atmospheric_extinction_correction(spec_id=0,
+                                                     science_airmass=1.2,
+                                                     standard_airmass=1.5)
+    onedspec.apply_atmospheric_extinction_correction(spec_id=[0],
+                                                     science_airmass=1.2,
+                                                     standard_airmass=1.5)
+    onedspec.inspect_reduced_spectrum(
+        display=False,
+        filename='test/test_output/test_onedspec_sensitivity_func')
+    onedspec.inspect_reduced_spectrum(
+        display=False,
+        spec_id=0,
+        filename='test/test_output/test_onedspec_sensitivity_func')
+    onedspec.inspect_sensitivity(
+        display=False,
+        return_jsonstring=True,
+        save_iframe=True,
+        filename='test/test_output/test_onedspec_inspect_reduced_spectrum')
+
+    onedspec.create_fits(
+        output='trace+count+weight_map+arc_spec+wavecal+wavelength+'
+        'count_resampled+flux+flux_resampled',
+        empty_primary_hdu=False)
+    onedspec.create_fits(
+        output='trace+count+weight_map+arc_spec+wavecal+wavelength+'
+        'count_resampled+flux+flux_resampled',
+        return_id=True,
+        recreate=True)
+    onedspec.create_fits(
+        output='trace+count+weight_map+arc_spec+wavecal+wavelength+'
+        'count_resampled+flux+flux_resampled',
+        spec_id=0,
+        empty_primary_hdu=False,
+        recreate=True)
+
+    onedspec.modify_trace_header(0, 'set', 'COMMENT', 'Hello Trace!')
+    onedspec.modify_count_header(0, 'set', 'COMMENT', 'Hello Count!')
+    onedspec.modify_weight_map_header(0, 'set', 'COMMENT', 'Hello Weight!')
+    onedspec.modify_arc_spec_header(0, 'set', 'COMMENT', 'Hello Arc Spec!')
+    onedspec.modify_wavecal_header('set', 'COMMENT', 'Hello Wavecal!')
+    onedspec.modify_wavelength_header('set', 'COMMENT', 'Hello Wavelength!')
+    onedspec.modify_count_resampled_header(0, 'set', 'COMMENT',
+                                           'Hello Count Resampled!')
+    onedspec.modify_flux_header(0, 'set', 'COMMENT', 'Hello Flux!')
+    onedspec.modify_flux_resampled_header(0, 'set', 'COMMENT',
+                                          'Hello Flux Resampled!')
+
+    onedspec.save_fits(output='trace+count+wavelength+count_resampled+flux+'
+                       'flux_resampled',
+                       spec_id=0,
+                       filename='test/test_output/test_onedspec',
+                       overwrite=True)
+    onedspec.save_csv(output='trace+count+wavelength+count_resampled+flux+'
+                      'flux_resampled',
+                      spec_id=0,
+                      filename='test/test_output/test_onedspec')
