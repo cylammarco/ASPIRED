@@ -353,7 +353,7 @@ class OneDSpec():
 
                     else:
 
-                        err_msg = 'The wavelength provided is of a different ' +\
+                        err_msg = 'The wavelength provided has a different ' +\
                             'size to that of the extracted science spectrum.'
                         logging.critical(err_msg)
                         raise RuntimeError(err_msg)
@@ -362,8 +362,8 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'science data is not available, wavelength cannot' +\
-                    'be added.'
+                err_msg = 'science data is not available, wavelength ' +\
+                    'cannot be added.'
                 logging.critical(err_msg)
                 raise RuntimeError(err_msg)
 
@@ -386,8 +386,8 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'standard data is not available, wavelength cannot' +\
-                    'be added.'
+                err_msg = 'standard data is not available, wavelength ' +\
+                    'cannot be added.'
                 logging.critical(err_msg)
                 raise RuntimeError(err_msg)
 

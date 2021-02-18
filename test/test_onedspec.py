@@ -1,8 +1,6 @@
-import logging
 import os
 import numpy as np
 import pytest
-from aspired import image_reduction
 from aspired import spectral_reduction
 from aspired.wavelengthcalibration import WavelengthCalibration
 from aspired.fluxcalibration import FluxCalibration
@@ -81,23 +79,27 @@ def test_logger():
     debug_error_length = file_len('test/test_output/onedspec_error.log')
     debug_critical_length = file_len('test/test_output/onedspec_critical.log')
 
-    assert debug_debug_length == 5, 'Expecting 5 lines in the log file, {} is logged.'.format(
-        debug_debug_length)
-    assert debug_info_length == 4, 'Expecting 4 lines in the log file, {} is logged.'.format(
-        debug_info_length)
-    assert debug_warning_length == 3, 'Expecting 3 lines in the log file, {} is logged.'.format(
-        debug_warning_length)
-    assert debug_error_length == 2, 'Expecting 2 lines in the log file, {} is logged.'.format(
-        debug_error_length)
-    assert debug_critical_length == 1, 'Expecting 1 lines in the log file, {} is logged.'.format(
-        debug_critical_length)
+    assert debug_debug_length == 5, 'Expecting 5 lines in the log file, ' +\
+        '{} is logged.'.format(debug_debug_length)
+    assert debug_info_length == 4, 'Expecting 4 lines in the log file, ' +\
+        '{} is logged.'.format(debug_info_length)
+    assert debug_warning_length == 3, 'Expecting 3 lines in the log file, ' +\
+        '{} is logged.'.format(debug_warning_length)
+    assert debug_error_length == 2, 'Expecting 2 lines in the log file, ' +\
+        '{} is logged.'.format(debug_error_length)
+    assert debug_critical_length == 1, 'Expecting 1 lines in the log file, ' +\
+        '{} is logged.'.format(debug_critical_length)
 
 
-os.remove('test/test_output/onedspec_debug.log')
-os.remove('test/test_output/onedspec_info.log')
-os.remove('test/test_output/onedspec_warning.log')
-os.remove('test/test_output/onedspec_error.log')
-os.remove('test/test_output/onedspec_critical.log')
+try:
+    os.remove('test/test_output/onedspec_debug.log')
+    os.remove('test/test_output/onedspec_info.log')
+    os.remove('test/test_output/onedspec_warning.log')
+    os.remove('test/test_output/onedspec_error.log')
+    os.remove('test/test_output/onedspec_critical.log')
+except Exception as e:
+    print(e)
+    pass
 
 
 def test_add_fluxcalibration():
