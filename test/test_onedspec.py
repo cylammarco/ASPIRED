@@ -587,6 +587,10 @@ def test_sensitivity():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
+    onedspec.add_trace(np.ones(70) * 37,
+                       np.ones(70),
+                       spec_id=0,
+                       stype='science+standard')
     onedspec.add_spec(np.arange(1, 71), spec_id=0, stype='science+standard')
     onedspec.add_fit_coeff(np.array((4000., 1, 0.2, 0.0071)),
                            spec_id=0,
