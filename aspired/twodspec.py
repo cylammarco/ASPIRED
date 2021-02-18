@@ -75,19 +75,20 @@ class TwoDSpec:
         '''
 
         # Set-up logger
-        logger = logging.getLogger()
+        self.logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
-            logging.basicConfig(level=logging.CRITICAL)
+            self.logger.setLevel(logging.CRITICAL)
         elif log_level == "ERROR":
-            logging.basicConfig(level=logging.ERROR)
+            self.logger.setLevel(logging.ERROR)
         elif log_level == "WARNING":
-            logging.basicConfig(level=logging.WARNING)
+            self.logger.setLevel(logging.WARNING)
         elif log_level == "INFO":
-            logging.basicConfig(level=logging.INFO)
+            self.logger.setLevel(logging.INFO)
         elif log_level == "DEBUG":
-            logging.basicConfig(level=logging.DEBUG)
+            self.logger.setLevel(logging.DEBUG)
         else:
-            raise ValueError('Unknown logging level.')
+            raise ValueError('Unknonw logging level.')
+
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -95,7 +96,7 @@ class TwoDSpec:
 
         if log_file_name is None:
             # Only print log to screen
-            handler = logging.StreamHandler()
+            self.handler = logging.StreamHandler()
         else:
             if log_file_name == 'default':
                 log_file_name = '{}_{}.log'.format(
@@ -105,11 +106,13 @@ class TwoDSpec:
             if log_file_folder == 'default':
                 log_file_folder = ''
 
-            handler = logging.FileHandler(
+            self.handler = logging.FileHandler(
                 os.path.join(log_file_folder, log_file_name), 'a+')
 
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        self.handler.setFormatter(formatter)
+        if (self.logger.hasHandlers()):
+            self.logger.handlers.clear()
+        self.logger.addHandler(self.handler)
 
         self.add_data(data, header)
         self.spectrum_list = {}

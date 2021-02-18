@@ -59,19 +59,20 @@ class OneDSpec():
         '''
 
         # Set-up logger
-        logger = logging.getLogger(logger_name)
+        self.logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
-            logging.basicConfig(level=logging.CRITICAL)
+            self.logger.setLevel(logging.CRITICAL)
         elif log_level == "ERROR":
-            logging.basicConfig(level=logging.ERROR)
+            self.logger.setLevel(logging.ERROR)
         elif log_level == "WARNING":
-            logging.basicConfig(level=logging.WARNING)
+            self.logger.setLevel(logging.WARNING)
         elif log_level == "INFO":
-            logging.basicConfig(level=logging.INFO)
+            self.logger.setLevel(logging.INFO)
         elif log_level == "DEBUG":
-            logging.basicConfig(level=logging.DEBUG)
+            self.logger.setLevel(logging.DEBUG)
         else:
             raise ValueError('Unknonw logging level.')
+
         formatter = logging.Formatter(
             '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
             '%(message)s',
@@ -79,7 +80,7 @@ class OneDSpec():
 
         if log_file_name is None:
             # Only print log to screen
-            handler = logging.StreamHandler()
+            self.handler = logging.StreamHandler()
         else:
             if log_file_name == 'default':
                 log_file_name = '{}_{}.log'.format(
@@ -89,11 +90,13 @@ class OneDSpec():
             if log_file_folder == 'default':
                 log_file_folder = ''
 
-            handler = logging.FileHandler(
+            self.handler = logging.FileHandler(
                 os.path.join(log_file_folder, log_file_name), 'a+')
 
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        self.handler.setFormatter(formatter)
+        if (self.logger.hasHandlers()):
+            self.logger.handlers.clear()
+        self.logger.addHandler(self.handler)
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -199,23 +202,26 @@ class OneDSpec():
 
         '''
 
-        try:
+        if type(fluxcal) == FluxCalibration:
 
             self.fluxcal = fluxcal
 
-        except Exception as e:
+        else:
 
-            error_msg = 'Please provide a valid FluxCalibration: {}'.format(e)
-            logging.critical(error_msg)
-            raise TypeError(error_msg)
+            err_msg = 'Please provide a valid FluxCalibration object'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
 
-    def add_wavelengthcalibration(self, wavecal, stype):
+    def add_wavelengthcalibration(self,
+                                  wavecal,
+                                  spec_id=None,
+                                  stype='science+standard'):
         '''
         Provide the pre-calibrated WavelengthCalibration object.
 
         Parameters
         ----------
-        wavecal: WavelengthPolyFit object
+        wavecal: list of WavelengthPolyFit object
             The WavelengthPolyFit object for the science target, flux will
             not be calibrated if this is not provided.
         stype: string
@@ -223,17 +229,69 @@ class OneDSpec():
 
         '''
 
+        if type(wavecal) == WavelengthCalibration:
+
+            wavecal = [wavecal]
+
+        elif type(wavecal) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a WavelengthCalibration object or ' +\
+                'a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
         stype_split = stype.split('+')
 
         for s in stype_split:
 
             if s == 'science':
 
-                self.science_wavecal = wavecal
+                if spec_id is not None:
+
+                    if spec_id not in list(self.science_spectrum_list.keys()):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        logging.critical(error_msg)
+                        raise ValueError(error_msg)
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                for i in spec_id:
+
+                    if type(wavecal[i]) == WavelengthCalibration:
+
+                        self.science_wavecal[i] = wavecal
+
+                    else:
+
+                        err_msg = 'Please provide a valid ' +\
+                            'WavelengthCalibration object.'
+                        logging.critical(err_msg)
+                        raise TypeError(err_msg)
 
             if s == 'standard':
 
-                self.standard_wavecal = wavecal
+                if type(wavecal[0]) == WavelengthCalibration:
+
+                    self.standard_wavecal = wavecal[0]
+
+                else:
+
+                    err_msg = 'Please provide a valid ' +\
+                        'WavelengthCalibration object'
+                    logging.critical(err_msg)
+                    raise TypeError(err_msg)
 
     def add_wavelength(self, wave, spec_id=None, stype='science+standard'):
         '''
@@ -248,6 +306,20 @@ class OneDSpec():
 
         '''
 
+        if type(wave) == np.ndarray:
+
+            wave = [wave]
+
+        elif type(wave) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
         stype_split = stype.split('+')
 
         if 'science' in stype_split:
@@ -258,9 +330,9 @@ class OneDSpec():
 
                     if spec_id not in list(self.science_spectrum_list.keys()):
 
-                        error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        err_msg = 'The given spec_id does not exist.'
+                        logging.critical(err_msg)
+                        raise ValueError(err_msg)
 
                 else:
 
@@ -273,17 +345,51 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    self.science_spectrum_list[i].add_wavelength(wave=wave)
+                    if len(wave[i]) == len(
+                            self.science_spectrum_list[i].count):
+
+                        self.science_spectrum_list[i].add_wavelength(
+                            wave=wave[i])
+
+                    else:
+
+                        err_msg = 'The wavelength provided is of a different ' +\
+                            'size to that of the extracted science spectrum.'
+                        logging.critical(err_msg)
+                        raise RuntimeError(err_msg)
 
                 self.science_wavelength_calibrated = True
+
+            else:
+
+                err_msg = 'science data is not available, wavelength cannot' +\
+                    'be added.'
+                logging.critical(err_msg)
+                raise RuntimeError(err_msg)
 
         if 'standard' in stype_split:
 
             if self.standard_data_available:
 
-                self.standard_spectrum_list[0].add_wavelength(wave=wave)
+                if len(wave[0]) == len(self.standard_spectrum_list[0].count):
+
+                    self.standard_spectrum_list[0].add_wavelength(wave=wave[0])
+
+                else:
+
+                    err_msg = 'The wavelength provided is of a different ' +\
+                        'size to that of the extracted standard spectrum.'
+                    logging.critical(err_msg)
+                    raise RuntimeError(err_msg)
 
                 self.standard_wavelength_calibrated = True
+
+            else:
+
+                err_msg = 'standard data is not available, wavelength cannot' +\
+                    'be added.'
+                logging.critical(err_msg)
+                raise RuntimeError(err_msg)
 
     def add_wavelength_resampled(self,
                                  wave_resampled,
@@ -501,54 +607,6 @@ class OneDSpec():
                 self.standard_spectrum_list[0].add_arc_lines(peaks=peaks)
 
                 self.standard_arc_lines_available = True
-
-    def add_arc(self, arc, spec_id=None, stype='science+standard'):
-        '''
-
-        The add_arc() can be used without science data if traces are added
-        manually with add_trace().
-
-        Parameters
-        ----------
-        arc: 2D numpy array (M x N) OR astropy.io.fits object
-            2D spectral image in either format
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        '''
-
-        stype_split = stype.split('+')
-
-        if 'science' in stype_split:
-
-            if spec_id is not None:
-
-                if spec_id not in list(self.science_spectrum_list.keys()):
-
-                    error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
-                    raise TypeError(error_msg)
-
-            else:
-
-                # if spec_id is None, calibrators are initialised to all
-                spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
-
-            for i in spec_id:
-
-                self.science_spectrum_list[i].add_arc(arc=arc)
-
-            self.science_arc_available = True
-
-        if 'standard' in stype_split:
-
-            self.standard_spectrum_list[0].add_arc(arc=arc)
-
-            self.standard_arc_available = True
 
     def add_trace(self,
                   trace,
