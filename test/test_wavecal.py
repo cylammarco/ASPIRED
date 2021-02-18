@@ -190,7 +190,7 @@ def test_user_supplied_wavelength():
     wavelength = np.genfromtxt(
         'test/test_data/test_full_run_standard_wavelength.csv')
     # Manually supply wavelengths
-    lhs6328_onedspec.add_wavelength(wavelength)
+    lhs6328_onedspec.add_wavelength([wavelength, wavelength])
 
     # Inspect reduced spectrum
     lhs6328_onedspec.inspect_reduced_spectrum(display=False)

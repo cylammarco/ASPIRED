@@ -779,7 +779,7 @@ class OneDSpec():
                 self.science_spectrum_list = twodspec.spectrum_list
 
             self.science_wavecal =\
-                [copy.deepcopy(self.science_wavecal[0]) for i in range(
+                [copy.copy(self.science_wavecal[0]) for i in range(
                     len(self.science_spectrum_list))]
 
             if spec_id is not None:
