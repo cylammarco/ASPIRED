@@ -430,8 +430,7 @@ class WavelengthCalibration():
                 error_msg = 'arc_spec is not provided. Either provide when ' +\
                     'executing this function or provide a spectrum1D that ' +\
                     'contains a peaks_refined.'
-                logging.critical(error_msg)
-                raise ValueError(error_msg)
+                logging.warning(error_msg)
 
         else:
 
@@ -452,8 +451,7 @@ class WavelengthCalibration():
                 error_msg = 'arc_spec is not provided. Either provide when ' +\
                     'executing this function or provide a spectrum1D that ' +\
                     'contains an arc_spec.'
-                logging.critical(error_msg)
-                raise ValueError(error_msg)
+                logging.warning(error_msg)
 
         else:
 

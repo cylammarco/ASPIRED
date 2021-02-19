@@ -133,6 +133,7 @@ class OneDSpec():
         self.add_science_spectrum1D(0)
 
         # Link them up
+        self.science_wavecal[0].from_spectrum1D(self.science_spectrum_list[0])
         self.standard_wavecal.from_spectrum1D(self.standard_spectrum_list[0])
         self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
 
@@ -903,69 +904,64 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_data_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                    for i in spec_id:
 
-                        for i in spec_id:
+                        if i not in list(self.science_spectrum_list.keys()):
 
-                            if i not in list(
-                                    self.science_spectrum_list.keys()):
+                            self.add_science_spectrum1D(i)
 
-                                self.add_science_spectrum1D(i)
+                            logging.warning(
+                                'The given spec_id, {}, does not '
+                                'exist. A new spectrum1D is created. '
+                                'Please check you are providing the '
+                                'correct spec_id.'.format(spec_id))
 
-                                logging.warning(
-                                    'The given spec_id, {}, does not '
-                                    'exist. A new spectrum1D is created. '
-                                    'Please check you are providing the '
-                                    'correct spec_id.'.format(spec_id))
+                        else:
 
-                            else:
+                            pass
 
-                                pass
+            else:
 
-                else:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(peaks) == len(spec_id):
 
-                # Check the sizes of the wave and spec_id and convert wave
-                # into a dictionary
-                if len(peaks) == len(spec_id):
+                peaks = {spec_id[i]: peaks[i] for i in range(len(spec_id))}
 
-                    peaks = {spec_id[i]: peaks[i] for i in range(len(spec_id))}
+            elif len(peaks) == 1:
 
-                elif len(peaks) == 1:
+                peaks = {i: peaks[0] for i in spec_id}
 
-                    peaks = {i: peaks[0] for i in spec_id}
+            else:
 
-                else:
+                error_msg = 'wave must be the same length of shape ' +\
+                    'as spec_id.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
 
-                    error_msg = 'wave must be the same length of shape ' +\
-                        'as spec_id.'
-                    logging.critical(error_msg)
-                    raise ValueError(error_msg)
+            for i in spec_id:
 
-                for i in spec_id:
+                self.science_spectrum_list[i].add_peaks(peaks=peaks[i])
 
-                    self.science_spectrum_list[i].add_peaks(peaks=peaks[i])
-
-                self.science_arc_lines_available = True
+            self.science_arc_lines_available = True
 
         if 'standard' in stype_split:
 
-            if self.standard_data_available:
+            self.standard_spectrum_list[0].add_peaks(peaks=peaks[0])
 
-                self.standard_spectrum_list[0].add_peaks(peaks=peaks[0])
-
-                self.standard_arc_lines_available = True
+            self.standard_arc_lines_available = True
 
     def add_trace(self,
                   trace,
@@ -1539,10 +1535,6 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
-
                 for i in spec_id:
 
                     if peaks is None:
@@ -1551,7 +1543,7 @@ class OneDSpec():
 
                     if arc_spec is None:
 
-                        arc_spec = self.science_spectrum_list[i].count
+                        arc_spec = self.science_spectrum_list[i].arc_spec
 
                     self.science_wavecal[i].from_spectrum1D(
                         self.science_spectrum_list[i])
@@ -1622,6 +1614,10 @@ class OneDSpec():
 
             if self.science_arc_lines_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -1636,13 +1632,9 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
-
                 for i in spec_id:
 
-                    self.science_wavcal[i].set_calibrator_properties(
+                    self.science_wavecal[i].set_calibrator_properties(
                         num_pix=num_pix,
                         pixel_list=pixel_list,
                         plotting_library=plotting_library,
@@ -1710,6 +1702,10 @@ class OneDSpec():
 
             if self.science_arc_lines_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -1723,10 +1719,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -1811,6 +1803,10 @@ class OneDSpec():
 
             if self.science_arc_lines_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -1824,10 +1820,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -1887,6 +1879,10 @@ class OneDSpec():
 
             if self.science_arc_lines_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -1900,10 +1896,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -1997,6 +1989,10 @@ class OneDSpec():
 
             if self.science_arc_lines_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -2010,10 +2006,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -2111,52 +2103,27 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if spec_id is not None:
+                spec_id = [spec_id]
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+            if spec_id is not None:
 
-                        error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].add_atlas(
-                        elements=elements,
-                        min_atlas_wavelength=min_atlas_wavelength,
-                        max_atlas_wavelength=max_atlas_wavelength,
-                        min_intensity=min_intensity,
-                        min_distance=min_distance,
-                        candidate_tolerance=candidate_tolerance,
-                        constrain_poly=constrain_poly,
-                        vacuum=vacuum,
-                        pressure=pressure,
-                        temperature=temperature,
-                        relative_humidity=relative_humidity)
-
-                self.science_atlas_available = True
+                    error_msg = 'The given spec_id does not exist.'
+                    logging.critical(error_msg)
+                    raise TypeError(error_msg)
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-        if 'standard' in stype_split:
+            for i in spec_id:
 
-            if self.standard_data_available:
-
-                self.standard_wavecal.add_atlas(
+                self.science_wavecal[i].add_atlas(
                     elements=elements,
                     min_atlas_wavelength=min_atlas_wavelength,
                     max_atlas_wavelength=max_atlas_wavelength,
@@ -2169,11 +2136,24 @@ class OneDSpec():
                     temperature=temperature,
                     relative_humidity=relative_humidity)
 
-                self.standard_atlas_available = True
+            self.science_atlas_available = True
 
-            else:
+        if 'standard' in stype_split:
 
-                logging.warning('Standard arc lines are not available.')
+            self.standard_wavecal.add_atlas(
+                elements=elements,
+                min_atlas_wavelength=min_atlas_wavelength,
+                max_atlas_wavelength=max_atlas_wavelength,
+                min_intensity=min_intensity,
+                min_distance=min_distance,
+                candidate_tolerance=candidate_tolerance,
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
+
+            self.standard_atlas_available = True
 
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''
@@ -2192,6 +2172,10 @@ class OneDSpec():
 
             if self.science_atlas_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -2205,10 +2189,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -2285,6 +2265,10 @@ class OneDSpec():
 
             if self.science_hough_pairs_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -2298,10 +2282,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -2399,6 +2379,10 @@ class OneDSpec():
 
             if self.science_wavecal_polynomial_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -2411,10 +2395,6 @@ class OneDSpec():
 
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -2488,6 +2468,10 @@ class OneDSpec():
 
             if self.science_wavecal_polynomial_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
@@ -2502,10 +2486,6 @@ class OneDSpec():
                     # if spec_id is None, contraints are applied to all
                     #  calibrators
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 

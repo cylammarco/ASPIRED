@@ -93,13 +93,28 @@ def test_logger():
 
 try:
     os.remove('test/test_output/onedspec_debug.log')
+except Exception as e:
+    print(e)
+
+try:
     os.remove('test/test_output/onedspec_info.log')
+except Exception as e:
+    print(e)
+
+try:
     os.remove('test/test_output/onedspec_warning.log')
+except Exception as e:
+    print(e)
+
+try:
     os.remove('test/test_output/onedspec_error.log')
+except Exception as e:
+    print(e)
+
+try:
     os.remove('test/test_output/onedspec_critical.log')
 except Exception as e:
     print(e)
-    pass
 
 
 def test_add_fluxcalibration():
@@ -186,6 +201,11 @@ def test_add_wavelength_science():
 def test_add_wavelength_science_fail_no_science_data():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength(np.arange(100), stype='science')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_science_fail_no_science_data_2():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength([np.arange(100)], stype='science')
 
 
@@ -500,6 +520,13 @@ def test_calibrator_science():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
     onedspec.initialise_calibrator(stype='science')
     onedspec.initialise_calibrator(spec_id=0, stype='science')
     onedspec.initialise_calibrator(spec_id=[1], stype='science')
@@ -536,19 +563,19 @@ def test_calibrator_science():
                                    stype='science')
 
     onedspec.load_user_atlas(elements=['HeXe'] * 10,
-                             wavelengths=[np.arange(10)],
+                             wavelengths=np.arange(10),
                              stype='science')
     onedspec.load_user_atlas(spec_id=0,
                              elements=['HeXe'] * 10,
-                             wavelengths=[np.arange(10)],
+                             wavelengths=np.arange(10),
                              stype='science')
     onedspec.load_user_atlas(spec_id=[1],
                              elements=['HeXe'] * 10,
-                             wavelengths=[np.arange(10)],
+                             wavelengths=np.arange(10),
                              stype='science')
     onedspec.load_user_atlas(spec_id=[11, 75],
                              elements=['HeXe'] * 10,
-                             wavelengths=[np.arange(10)],
+                             wavelengths=np.arange(10),
                              stype='science')
 
     onedspec.add_atlas(elements=['Ar'] * 10, stype='science')
