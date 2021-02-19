@@ -711,10 +711,7 @@ class OneDSpec():
             # into a dictionary
             if count_sky == [None]:
 
-                count_sky = {
-                    spec_id[i]: None
-                    for i in range(len(spec_id))
-                }
+                count_sky = {spec_id[i]: None for i in range(len(spec_id))}
 
             elif len(count_sky) == len(spec_id):
 
@@ -738,10 +735,7 @@ class OneDSpec():
             # into a dictionary
             if count_err == [None]:
 
-                count_err = {
-                    spec_id[i]: None
-                    for i in range(len(spec_id))
-                }
+                count_err = {spec_id[i]: None for i in range(len(spec_id))}
 
             elif len(count_err) == len(spec_id):
 
@@ -845,7 +839,10 @@ class OneDSpec():
                 # into a dictionary
                 if len(arc_spec) == len(spec_id):
 
-                    arc_spec = {spec_id[i]: arc_spec[i] for i in range(len(spec_id))}
+                    arc_spec = {
+                        spec_id[i]: arc_spec[i]
+                        for i in range(len(spec_id))
+                    }
 
                 elif len(arc_spec) == 1:
 
@@ -869,7 +866,8 @@ class OneDSpec():
 
             if self.standard_data_available:
 
-                self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec[0])
+                self.standard_spectrum_list[0].add_arc_spec(
+                    arc_spec=arc_spec[0])
 
                 self.standard_arc_spec_available = True
 
@@ -1075,7 +1073,10 @@ class OneDSpec():
             # into a dictionary
             if len(trace_sigma) == len(spec_id):
 
-                trace_sigma = {spec_id[i]: trace_sigma[i] for i in range(len(spec_id))}
+                trace_sigma = {
+                    spec_id[i]: trace_sigma[i]
+                    for i in range(len(spec_id))
+                }
 
             elif len(trace_sigma) == 1:
 
@@ -1099,9 +1100,10 @@ class OneDSpec():
 
         if 'standard' in stype_split:
 
-            self.standard_spectrum_list[0].add_trace(trace=trace[0],
-                                                     trace_sigma=trace_sigma[0],
-                                                     pixel_list=pixel_list)
+            self.standard_spectrum_list[0].add_trace(
+                trace=trace[0],
+                trace_sigma=trace_sigma[0],
+                pixel_list=pixel_list)
 
             self.standard_trace_available = True
 
@@ -1129,11 +1131,11 @@ class OneDSpec():
 
             fit_coeff = [fit_coeff]
 
-        elif any(isinstance(l, list) for l in fit_coeff):
+        elif any(isinstance(i, list) for i in fit_coeff):
 
             pass
 
-        elif any(isinstance(l, np.ndarray) for l in fit_coeff):
+        elif any(isinstance(i, np.ndarray) for i in fit_coeff):
 
             pass
 
@@ -1185,11 +1187,17 @@ class OneDSpec():
                 # into a dictionary
                 if len(fit_coeff) == len(spec_id):
 
-                    fit_coeff = {spec_id[i]: fit_coeff[i] for i in range(len(spec_id))}
+                    fit_coeff = {
+                        spec_id[i]: fit_coeff[i]
+                        for i in range(len(spec_id))
+                    }
 
                 elif len(fit_coeff) == 1:
 
-                    fit_coeff = {spec_id[i]: fit_coeff[0] for i in range(len(spec_id))}
+                    fit_coeff = {
+                        spec_id[i]: fit_coeff[0]
+                        for i in range(len(spec_id))
+                    }
 
                 else:
 
@@ -1202,11 +1210,17 @@ class OneDSpec():
                 # into a dictionary
                 if len(fit_type) == len(spec_id):
 
-                    fit_type = {spec_id[i]: fit_type[i] for i in range(len(spec_id))}
+                    fit_type = {
+                        spec_id[i]: fit_type[i]
+                        for i in range(len(spec_id))
+                    }
 
                 elif len(fit_type) == 1:
 
-                    fit_type = {spec_id[i]: fit_type[0] for i in range(len(spec_id))}
+                    fit_type = {
+                        spec_id[i]: fit_type[0]
+                        for i in range(len(spec_id))
+                    }
 
                 else:
 
@@ -1230,7 +1244,8 @@ class OneDSpec():
 
                 self.standard_spectrum_list[0].add_fit_coeff(
                     fit_coeff=fit_coeff[0])
-                self.standard_spectrum_list[0].add_fit_type(fit_type=fit_type[0])
+                self.standard_spectrum_list[0].add_fit_type(
+                    fit_type=fit_type[0])
 
             self.standard_wavecal_polynomial_available = True
 
