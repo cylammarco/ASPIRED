@@ -378,7 +378,7 @@ def test_add_arc_lines_science():
         stype='science')
 
 
-@pytest.mark.xfail(raises=AssertionError)
+@pytest.mark.xfail(raises=TypeError)
 def test_add_arc_lines_science_fail_type():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_spec(np.arange(100), stype='science')
@@ -394,7 +394,7 @@ def test_add_arc_lines_standard():
     onedspec.add_arc_lines([np.arange(100)], spec_id=[0], stype='standard')
 
 
-@pytest.mark.xfail(raises=AssertionError)
+@pytest.mark.xfail(raises=TypeError)
 def test_add_arc_lines_standard_fail_type():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_spec(np.arange(100), stype='standard')
@@ -479,7 +479,7 @@ def test_add_fit_coeff_standard():
     onedspec.add_fit_coeff([np.arange(100)], spec_id=[0], stype='standard')
 
 
-@pytest.mark.xfail(raises=AssertionError)
+@pytest.mark.xfail(raises=TypeError)
 def test_add_fit_coeff_standard_fail_type():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_spec(np.arange(10), stype='standard')

@@ -298,7 +298,7 @@ class OneDSpec():
 
                     if type(wavecal[i]) == WavelengthCalibration:
 
-                        self.science_wavecal[i] = wavecal
+                        self.science_wavecal[i] = wavecal[i]
 
                     else:
 
@@ -603,6 +603,59 @@ class OneDSpec():
 
         '''
 
+        if type(count) == np.ndarray:
+
+            count = [count]
+
+        elif type(count) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
+        if count_err is not None:
+            if type(count_err) == np.ndarray:
+
+                count_err = [count_err]
+
+            elif type(count_err) == list:
+
+                pass
+
+            else:
+
+                err_msg = 'Please provide a numpy array or a list of them.'
+                logging.critical(err_msg)
+                raise TypeError(err_msg)
+
+        else:
+
+            count_err = [None]
+
+        if count_sky is not None:
+
+            if type(count_sky) == np.ndarray:
+
+                count_sky = [count_sky]
+
+            elif type(count_sky) == list:
+
+                pass
+
+            else:
+
+                err_msg = 'Please provide a numpy array or a list of them.'
+                logging.critical(err_msg)
+                raise TypeError(err_msg)
+
+        else:
+
+            count_sky = [None]
+
         stype_split = stype.split('+')
 
         if 'science' in stype_split:
@@ -637,19 +690,90 @@ class OneDSpec():
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
 
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(count) == len(spec_id):
+
+                count = {spec_id[i]: count[i] for i in range(len(spec_id))}
+
+            elif len(count) == 1:
+
+                count = {spec_id[0]: count[0]}
+
+            else:
+
+                error_msg = 'wave must be the same length of shape ' +\
+                    'as spec_id.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
+
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if count_sky == [None]:
+
+                count_sky = {
+                    spec_id[i]: None
+                    for i in range(len(spec_id))
+                }
+
+            elif len(count_sky) == len(spec_id):
+
+                count_sky = {
+                    spec_id[i]: count_sky[i]
+                    for i in range(len(spec_id))
+                }
+
+            elif len(count_sky) == 1:
+
+                count_sky = {spec_id[0]: count_sky[0]}
+
+            else:
+
+                error_msg = 'wave must be the same length of shape ' +\
+                    'as spec_id.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
+
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if count_err == [None]:
+
+                count_err = {
+                    spec_id[i]: None
+                    for i in range(len(spec_id))
+                }
+
+            elif len(count_err) == len(spec_id):
+
+                count_err = {
+                    spec_id[i]: count_err[i]
+                    for i in range(len(spec_id))
+                }
+
+            elif len(count_err) == 1:
+
+                count_err = {spec_id[0]: count_err[0]}
+
+            else:
+
+                error_msg = 'wave must be the same length of shape ' +\
+                    'as spec_id.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
+
             for i in spec_id:
 
-                self.science_spectrum_list[i].add_count(count=count,
-                                                        count_err=count_err,
-                                                        count_sky=count_sky)
+                self.science_spectrum_list[i].add_count(count=count[i],
+                                                        count_err=count_err[i],
+                                                        count_sky=count_sky[i])
 
             self.science_data_available = True
 
         if 'standard' in stype_split:
 
-            self.standard_spectrum_list[0].add_count(count=count,
-                                                     count_err=count_err,
-                                                     count_sky=count_sky)
+            self.standard_spectrum_list[0].add_count(count=count[0],
+                                                     count_err=count_err[0],
+                                                     count_sky=count_sky[0])
 
             self.standard_data_available = True
 
@@ -666,71 +790,19 @@ class OneDSpec():
 
         '''
 
-        stype_split = stype.split('+')
+        if type(arc_spec) == np.ndarray:
 
-        if 'science' in stype_split:
+            arc_spec = [arc_spec]
 
-            if self.science_data_available:
+        elif type(arc_spec) == list:
 
-                if isinstance(spec_id, int):
+            pass
 
-                    spec_id = [spec_id]
+        else:
 
-                    if spec_id is not None:
-
-                        if not set(spec_id).issubset(
-                                list(self.science_spectrum_list.keys())):
-
-                            for i in spec_id:
-
-                                if i not in list(
-                                        self.science_spectrum_list.keys()):
-
-                                    self.add_science_spectrum1D(i)
-
-                                    logging.warning(
-                                        'The given spec_id, {}, does not '
-                                        'exist. A new spectrum1D is created. '
-                                        'Please check you are providing the '
-                                        'correct spec_id.'.format(spec_id))
-
-                                else:
-
-                                    pass
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_spectrum_list[i].add_arc_spec(
-                        arc_spec=arc_spec)
-
-                self.science_arc_spec_available = True
-
-        if 'standard' in stype_split:
-
-            if self.standard_data_available:
-
-                self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec)
-
-                self.standard_arc_spec_available = True
-
-    def add_arc_lines(self, peaks, spec_id=None, stype='science+standard'):
-        '''
-        Parameters
-        ----------
-        spec_id: int
-            The ID corresponding to the spectrum1D object
-        peaks: list of list or list of arrays
-            The pixel locations of the arc lines. Multiple traces of the arc
-            can be provided as list of list or list of arrays.
-        stype: string
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        '''
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
 
         stype_split = stype.split('+')
 
@@ -769,9 +841,123 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(arc_spec) == len(spec_id):
+
+                    arc_spec = {spec_id[i]: arc_spec[i] for i in range(len(spec_id))}
+
+                elif len(arc_spec) == 1:
+
+                    arc_spec = {spec_id[0]: arc_spec[0]}
+
+                else:
+
+                    error_msg = 'wave must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
+
                 for i in spec_id:
 
-                    self.science_spectrum_list[i].add_peaks(peaks=peaks)
+                    self.science_spectrum_list[i].add_arc_spec(
+                        arc_spec=arc_spec[i])
+
+                self.science_arc_spec_available = True
+
+        if 'standard' in stype_split:
+
+            if self.standard_data_available:
+
+                self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec[0])
+
+                self.standard_arc_spec_available = True
+
+    def add_arc_lines(self, peaks, spec_id=None, stype='science+standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int
+            The ID corresponding to the spectrum1D object
+        peaks: list of list or list of arrays
+            The pixel locations of the arc lines. Multiple traces of the arc
+            can be provided as list of list or list of arrays.
+        stype: string
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        if type(peaks) == np.ndarray:
+
+            peaks = [peaks]
+
+        elif type(peaks) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_data_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        for i in spec_id:
+
+                            if i not in list(
+                                    self.science_spectrum_list.keys()):
+
+                                self.add_science_spectrum1D(i)
+
+                                logging.warning(
+                                    'The given spec_id, {}, does not '
+                                    'exist. A new spectrum1D is created. '
+                                    'Please check you are providing the '
+                                    'correct spec_id.'.format(spec_id))
+
+                            else:
+
+                                pass
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(peaks) == len(spec_id):
+
+                    peaks = {spec_id[i]: peaks[i] for i in range(len(spec_id))}
+
+                elif len(peaks) == 1:
+
+                    peaks = {i: peaks[0] for i in spec_id}
+
+                else:
+
+                    error_msg = 'wave must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
+
+                for i in spec_id:
+
+                    self.science_spectrum_list[i].add_peaks(peaks=peaks[i])
 
                 self.science_arc_lines_available = True
 
@@ -779,7 +965,7 @@ class OneDSpec():
 
             if self.standard_data_available:
 
-                self.standard_spectrum_list[0].add_peaks(peaks=peaks)
+                self.standard_spectrum_list[0].add_peaks(peaks=peaks[0])
 
                 self.standard_arc_lines_available = True
 
@@ -809,6 +995,34 @@ class OneDSpec():
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
+
+        if type(trace) == np.ndarray:
+
+            trace = [trace]
+
+        elif type(trace) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
+        if type(trace_sigma) == np.ndarray:
+
+            trace_sigma = [trace_sigma]
+
+        elif type(trace_sigma) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
 
         stype_split = stype.split('+')
 
@@ -840,19 +1054,53 @@ class OneDSpec():
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
 
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(trace) == len(spec_id):
+
+                trace = {spec_id[i]: trace[i] for i in range(len(spec_id))}
+
+            elif len(trace) == 1:
+
+                trace = {spec_id[0]: trace[0]}
+
+            else:
+
+                error_msg = 'wave must be the same length of shape ' +\
+                    'as spec_id.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
+
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(trace_sigma) == len(spec_id):
+
+                trace_sigma = {spec_id[i]: trace_sigma[i] for i in range(len(spec_id))}
+
+            elif len(trace_sigma) == 1:
+
+                trace_sigma = {spec_id[0]: trace_sigma[0]}
+
+            else:
+
+                error_msg = 'wave must be the same length of shape ' +\
+                    'as spec_id.'
+                logging.critical(error_msg)
+                raise ValueError(error_msg)
+
             for i in spec_id:
 
                 self.science_spectrum_list[i].add_trace(
-                    trace=trace,
-                    trace_sigma=trace_sigma,
+                    trace=trace[i],
+                    trace_sigma=trace_sigma[i],
                     pixel_list=pixel_list)
 
             self.science_trace_available = True
 
         if 'standard' in stype_split:
 
-            self.standard_spectrum_list[0].add_trace(trace=trace,
-                                                     trace_sigma=trace_sigma,
+            self.standard_spectrum_list[0].add_trace(trace=trace[0],
+                                                     trace_sigma=trace_sigma[0],
                                                      pixel_list=pixel_list)
 
             self.standard_trace_available = True
@@ -865,7 +1113,7 @@ class OneDSpec():
         '''
         Parameters
         ----------
-        fit_coeff: list or list of list
+        fit_coeff: list or numpy array, or a list of them
             Polynomial fit coefficients.
         fit_type: str or list of str
             Strings starting with 'poly', 'leg' or 'cheb' for polynomial,
@@ -876,6 +1124,38 @@ class OneDSpec():
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         '''
+
+        if type(fit_coeff) == np.ndarray:
+
+            fit_coeff = [fit_coeff]
+
+        elif any(isinstance(l, list) for l in fit_coeff):
+
+            pass
+
+        elif any(isinstance(l, np.ndarray) for l in fit_coeff):
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
+
+        if type(fit_type) == str:
+
+            fit_type = [fit_type]
+
+        elif type(fit_type) == list:
+
+            pass
+
+        else:
+
+            err_msg = 'Please provide a numpy array or a list of them.'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
 
         stype_split = stype.split('+')
 
@@ -901,12 +1181,46 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(fit_coeff) == len(spec_id):
+
+                    fit_coeff = {spec_id[i]: fit_coeff[i] for i in range(len(spec_id))}
+
+                elif len(fit_coeff) == 1:
+
+                    fit_coeff = {spec_id[i]: fit_coeff[0] for i in range(len(spec_id))}
+
+                else:
+
+                    error_msg = 'wave must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
+
+                # Check the sizes of the wave and spec_id and convert wave
+                # into a dictionary
+                if len(fit_type) == len(spec_id):
+
+                    fit_type = {spec_id[i]: fit_type[i] for i in range(len(spec_id))}
+
+                elif len(fit_type) == 1:
+
+                    fit_type = {spec_id[i]: fit_type[0] for i in range(len(spec_id))}
+
+                else:
+
+                    error_msg = 'wave must be the same length of shape ' +\
+                        'as spec_id.'
+                    logging.critical(error_msg)
+                    raise ValueError(error_msg)
+
                 for i in spec_id:
 
                     self.science_spectrum_list[i].add_fit_coeff(
-                        fit_coeff=fit_coeff)
+                        fit_coeff=fit_coeff[i])
                     self.science_spectrum_list[i].add_fit_type(
-                        fit_type=fit_type)
+                        fit_type=fit_type[i])
 
             self.science_wavecal_polynomial_available = True
 
@@ -915,8 +1229,8 @@ class OneDSpec():
             if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_fit_coeff(
-                    fit_coeff=fit_coeff)
-                self.standard_spectrum_list[0].add_fit_type(fit_type=fit_type)
+                    fit_coeff=fit_coeff[0])
+                self.standard_spectrum_list[0].add_fit_type(fit_type=fit_type[0])
 
             self.standard_wavecal_polynomial_available = True
 
