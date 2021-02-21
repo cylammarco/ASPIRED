@@ -691,7 +691,7 @@ class OneDSpec():
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(self.science_spectrum_list.keys())
 
-            # Check the sizes of the wave and spec_id and convert wave
+            # Check the sizes of the count and spec_id and convert count
             # into a dictionary
             if len(count) == len(spec_id):
 
@@ -699,18 +699,18 @@ class OneDSpec():
 
             elif len(count) == 1:
 
-                count = {spec_id[0]: count[0]}
+                count = {spec_id[i]: count[0] for i in range(len(spec_id))}
 
             else:
 
-                error_msg = 'wave must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = 'count must be the same length of shape ' +\
+                    'as spec_id, or of size 1.'
                 logging.critical(error_msg)
-                raise ValueError(error_msg)
+                raise RuntimeError(error_msg)
 
-            # Check the sizes of the wave and spec_id and convert wave
-            # into a dictionary
-            if count_sky == [None]:
+            # Check the sizes of the count_sky and spec_id and convert
+            # count_sky into a dictionary
+            if count_sky is [None]:
 
                 count_sky = {spec_id[i]: None for i in range(len(spec_id))}
 
@@ -723,18 +723,21 @@ class OneDSpec():
 
             elif len(count_sky) == 1:
 
-                count_sky = {spec_id[0]: count_sky[0]}
+                count_sky = {
+                    spec_id[i]: count_sky[0]
+                    for i in range(len(spec_id))
+                }
 
             else:
 
-                error_msg = 'wave must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = 'count_sky must be the same length of shape ' +\
+                    'as spec_id, or of size 1.'
                 logging.critical(error_msg)
-                raise ValueError(error_msg)
+                raise RuntimeError(error_msg)
 
-            # Check the sizes of the wave and spec_id and convert wave
-            # into a dictionary
-            if count_err == [None]:
+            # Check the sizes of the count_err and spec_id and convert
+            # count_err into a dictionary
+            if count_err is [None]:
 
                 count_err = {spec_id[i]: None for i in range(len(spec_id))}
 
@@ -747,14 +750,17 @@ class OneDSpec():
 
             elif len(count_err) == 1:
 
-                count_err = {spec_id[0]: count_err[0]}
+                count_err = {
+                    spec_id[i]: count_err[0]
+                    for i in range(len(spec_id))
+                }
 
             else:
 
-                error_msg = 'wave must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = 'count_err must be the same length of shape ' +\
+                    'as spec_id, or of size 1.'
                 logging.critical(error_msg)
-                raise ValueError(error_msg)
+                raise RuntimeError(error_msg)
 
             for i in spec_id:
 
@@ -831,6 +837,10 @@ class OneDSpec():
 
                                 pass
 
+                    else:
+
+                        pass
+
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
@@ -847,11 +857,14 @@ class OneDSpec():
 
                 elif len(arc_spec) == 1:
 
-                    arc_spec = {spec_id[0]: arc_spec[0]}
+                    arc_spec = {
+                        spec_id[i]: arc_spec[0]
+                        for i in range(len(spec_id))
+                    }
 
                 else:
 
-                    error_msg = 'wave must be the same length of shape ' +\
+                    error_msg = 'arc_spec must be the same length of shape ' +\
                         'as spec_id.'
                     logging.critical(error_msg)
                     raise ValueError(error_msg)
@@ -924,10 +937,6 @@ class OneDSpec():
                                 'exist. A new spectrum1D is created. '
                                 'Please check you are providing the '
                                 'correct spec_id.'.format(spec_id))
-
-                        else:
-
-                            pass
 
             else:
 
@@ -1056,7 +1065,7 @@ class OneDSpec():
 
             elif len(trace) == 1:
 
-                trace = {spec_id[0]: trace[0]}
+                trace = {spec_id[i]: trace[0] for i in range(len(spec_id))}
 
             else:
 
@@ -1076,7 +1085,10 @@ class OneDSpec():
 
             elif len(trace_sigma) == 1:
 
-                trace_sigma = {spec_id[0]: trace_sigma[0]}
+                trace_sigma = {
+                    spec_id[i]: trace_sigma[0]
+                    for i in range(len(spec_id))
+                }
 
             else:
 
@@ -1127,11 +1139,26 @@ class OneDSpec():
 
             fit_coeff = [fit_coeff]
 
-        elif any(isinstance(i, list) for i in fit_coeff):
+        elif all(isinstance(i, list) for i in fit_coeff):
 
             pass
 
-        elif any(isinstance(i, np.ndarray) for i in fit_coeff):
+        elif isinstance(fit_coeff, list):
+
+            if isinstance(fit_coeff[0], np.ndarray) or isinstance(
+                    fit_coeff[0], list):
+
+                pass
+
+            elif isinstance(fit_coeff[0], (int, float, complex)):
+
+                fit_coeff = [fit_coeff]
+
+            else:
+
+                pass
+
+        elif all(isinstance(i, np.ndarray) for i in fit_coeff):
 
             pass
 
@@ -1145,7 +1172,22 @@ class OneDSpec():
 
             fit_type = [fit_type]
 
-        elif type(fit_type) == list:
+        elif all(isinstance(i, list) for i in fit_type):
+
+            if isinstance(fit_type[0], np.ndarray) or isinstance(
+                    fit_type[0], list):
+
+                pass
+
+            elif isinstance(fit_coeff[0], str):
+
+                fit_type = [fit_type]
+
+            else:
+
+                pass
+
+        elif all(isinstance(i, np.ndarray) for i in fit_type):
 
             pass
 
@@ -1197,8 +1239,8 @@ class OneDSpec():
 
                 else:
 
-                    error_msg = 'wave must be the same length of shape ' +\
-                        'as spec_id.'
+                    error_msg = 'fit_coeff must be the same length of ' +\
+                        'shape as spec_id.'
                     logging.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -1248,7 +1290,7 @@ class OneDSpec():
     def from_twodspec(self,
                       twodspec,
                       spec_id=None,
-                      deep_copy=False,
+                      copy_spec=False,
                       stype='science+standard'):
         '''
         To add a TwoDSpec object or numpy array to provide the traces, line
@@ -1263,7 +1305,7 @@ class OneDSpec():
         twodspec: TwoDSpec object
             TwoDSpec of the science image containin the trace(s) and
             trace_sigma(s).
-        deep_copy: boolean
+        copy_spec: boolean
             Set to true to clone the spectrum_list from twodspec.
         stype: string (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
@@ -1274,10 +1316,9 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if deep_copy:
+            if copy_spec:
 
-                self.science_spectrum_list = copy.deepcopy(
-                    twodspec.spectrum_list)
+                self.science_spectrum_list = copy.copy(twodspec.spectrum_list)
 
             else:
 
@@ -1318,10 +1359,9 @@ class OneDSpec():
 
         if 'standard' in stype_split:
 
-            if deep_copy:
+            if copy_spec:
 
-                self.standard_spectrum_list = copy.deepcopy(
-                    twodspec.spectrum_list)
+                self.standard_spectrum_list = copy.copy(twodspec.spectrum_list)
 
             else:
 
@@ -2685,6 +2725,10 @@ class OneDSpec():
                          height=720,
                          return_jsonstring=False,
                          save_iframe=False,
+                         save_png=False,
+                         save_jpg=False,
+                         save_svg=False,
+                         save_pdf=False,
                          filename=None,
                          open_iframe=False):
         '''
@@ -2722,6 +2766,10 @@ class OneDSpec():
                                       height=height,
                                       width=width,
                                       save_iframe=save_iframe,
+                                      save_png=save_png,
+                                      save_jpg=save_jpg,
+                                      save_svg=save_svg,
+                                      save_pdf=save_pdf,
                                       filename=filename,
                                       open_iframe=open_iframe)
 
@@ -2821,6 +2869,10 @@ class OneDSpec():
                             height=720,
                             return_jsonstring=False,
                             save_iframe=False,
+                            save_png=False,
+                            save_jpg=False,
+                            save_svg=False,
+                            save_pdf=False,
                             filename=None,
                             open_iframe=False):
         '''
@@ -2857,6 +2909,10 @@ class OneDSpec():
                 return_jsonstring=return_jsonstring,
                 display=display,
                 save_iframe=save_iframe,
+                save_png=save_png,
+                save_jpg=save_jpg,
+                save_svg=save_svg,
+                save_pdf=save_pdf,
                 filename=filename,
                 open_iframe=open_iframe)
 
@@ -2945,6 +3001,25 @@ class OneDSpec():
 
         '''
 
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())):
+
+                error_msg = 'The given spec_id does not exist.'
+                logging.critical(error_msg)
+                raise TypeError(error_msg)
+
+        else:
+
+            # if spec_id is None, contraints are applied to all
+            #  calibrators
+            spec_id = list(self.science_spectrum_list.keys())
+
         if not self.atmospheric_extinction_correction_available:
 
             logging.error(
@@ -2978,10 +3053,10 @@ class OneDSpec():
                             logging.warning(str(e))
 
                             standard_am = 1.0
-                            logging.error(
+                            logging.warning(
                                 'Keyword for airmass: {} cannot be found '
                                 'in header.'.format(standard_airmass))
-                            logging.error('Airmass is set to be 1.0')
+                            logging.warning('Airmass is set to be 1.0')
 
                 else:
 
@@ -2994,10 +3069,10 @@ class OneDSpec():
                         logging.warning(str(e))
 
                         standard_am = 1.0
-                        logging.error(
+                        logging.warning(
                             'Keyword for airmass: AIRMASS cannot be found '
                             'in header.')
-                        logging.error('Airmass is set to be 1.0')
+                        logging.warning('Airmass is set to be 1.0')
 
                 if spec_id is not None:
 
@@ -3343,7 +3418,7 @@ class OneDSpec():
 
                 if return_jsonstring:
 
-                    to_return.sppend(fig_sci[i].to_json())
+                    to_return.append(fig_sci.to_json())
 
         if 'standard' in stype_split:
 

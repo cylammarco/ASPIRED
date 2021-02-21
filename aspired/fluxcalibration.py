@@ -406,6 +406,10 @@ class StandardLibrary:
                          height=720,
                          return_jsonstring=False,
                          save_iframe=False,
+                         save_png=False,
+                         save_jpg=False,
+                         save_svg=False,
+                         save_pdf=False,
                          filename=None,
                          open_iframe=False):
         '''
@@ -486,15 +490,13 @@ class StandardLibrary:
             hovermode='closest',
             showlegend=False)
 
+        if filename is None:
+
+            filename = 'standard'
+
         if save_iframe:
 
-            if filename is None:
-
-                pio.write_html(fig, 'standard.html', auto_open=open_iframe)
-
-            else:
-
-                pio.write_html(fig, filename + '.html', auto_open=open_iframe)
+            pio.write_html(fig, filename + '.html', auto_open=open_iframe)
 
         if display:
 
@@ -505,6 +507,22 @@ class StandardLibrary:
             else:
 
                 fig.show(renderer)
+
+        if save_jpg:
+
+            fig.write_image(filename + '.jpg', format='jpg')
+
+        if save_png:
+
+            fig.write_image(filename + '.png', format='png')
+
+        if fig:
+
+            fig.write_image(filename + '.svg', format='svg')
+
+        if save_pdf:
+
+            fig.write_image(filename + '.pdf', format='pdf')
 
         if return_jsonstring:
 
@@ -876,6 +894,10 @@ class FluxCalibration(StandardLibrary):
                             height=720,
                             return_jsonstring=False,
                             save_iframe=False,
+                            save_png=False,
+                            save_jpg=False,
+                            save_svg=False,
+                            save_pdf=False,
                             filename=None,
                             open_iframe=False):
         '''
@@ -1002,15 +1024,13 @@ class FluxCalibration(StandardLibrary):
                                                       color="black"),
                                                   bgcolor='rgba(0,0,0,0)'))
 
+        if filename is None:
+
+            filename = 'senscurve'
+
         if save_iframe:
 
-            if filename is None:
-
-                pio.write_html(fig, 'senscurve.html', auto_open=open_iframe)
-
-            else:
-
-                pio.write_html(fig, filename + '.html', auto_open=open_iframe)
+            pio.write_html(fig, filename + '.html', auto_open=open_iframe)
 
         if display:
 
@@ -1021,6 +1041,22 @@ class FluxCalibration(StandardLibrary):
             else:
 
                 fig.show(renderer)
+
+        if save_jpg:
+
+            fig.write_image(filename + '.jpg', format='jpg')
+
+        if save_png:
+
+            fig.write_image(filename + '.png', format='png')
+
+        if save_svg:
+
+            fig.write_image(filename + '.svg', format='svg')
+
+        if save_pdf:
+
+            fig.write_image(filename + '.pdf', format='pdf')
 
         if return_jsonstring:
 
