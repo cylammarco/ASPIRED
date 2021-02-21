@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: s-weigand/setup-conda@v1
 
-    - name: install plotly plotly-orca psutil
+    - name: install plotly plotly-orca
       run: |
         conda install -c plotly plotly-orca
     - name: Set up Python ${{ matrix.python-version }}
@@ -32,7 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install flake8 pytest pytest-cov coverage
+        python -m pip install flake8 pytest pytest-cov coverage psutil
         pip install -r requirements.txt
         pip install -e .
 

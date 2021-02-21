@@ -821,7 +821,7 @@ def test_sensitivity():
 
     onedspec.inspect_reduced_spectrum(
         display=False,
-        filename='test/test_output/test_onedspec_sensitivity_func')
+        filename='test/test_output/test_onedspec_inspect_reduced_spectrum')
     onedspec.inspect_reduced_spectrum(
         display=False,
         spec_id=0,
@@ -832,7 +832,7 @@ def test_sensitivity():
         save_jpg=True,
         save_svg=True,
         save_pdf=True,
-        filename='test/test_output/test_onedspec_sensitivity_func')
+        filename='test/test_output/test_onedspec_inspect_reduced_spectrum')
     onedspec.inspect_sensitivity(
         display=False,
         renderer='default',
