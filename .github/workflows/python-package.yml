@@ -30,7 +30,7 @@ jobs:
         python -m pip install flake8 pytest pytest-cov coverage
         pip install -r requirements.txt
         pip install -e .
-        conda install -c plotly-orca psutil
+        conda install -c plotly plotly-orca
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
