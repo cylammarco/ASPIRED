@@ -516,7 +516,7 @@ class StandardLibrary:
 
             fig.write_image(filename + '.png', format='png')
 
-        if fig:
+        if save_svg:
 
             fig.write_image(filename + '.svg', format='svg')
 
