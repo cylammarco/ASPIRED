@@ -3646,8 +3646,12 @@ class OneDSpec():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
+                sensitivity: 1 HDU
+                    Sensitivity (pixel)
                 flux: 4 HDUs
                     Flux, uncertainty, sky, and sensitivity (pixel)
+                sensitivity_resampled: 1 HDU
+                    Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, sky, and sensitivity (wavelength)
 
@@ -3670,7 +3674,8 @@ class OneDSpec():
 
             if i not in [
                     'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
-                    'wavelength', 'count_resampled', 'flux', 'flux_resampled'
+                    'wavelength', 'count_resampled', 'sensitivity', 'flux',
+                    'sensitivity_resampled', 'flux_resampled'
             ]:
 
                 error_msg = '{} is not a valid output.'.format(i)
@@ -4381,10 +4386,14 @@ class OneDSpec():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
-                flux: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (pixel)
-                flux_resampled: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (wavelength)
+                sensitivity: 1 HDU
+                    Sensitivity (pixel)
+                flux: 3 HDUs
+                    Flux, uncertainty, and sky (pixel)
+                sensitivity_resampled: 1 HDU
+                    Sensitivity (wavelength)
+                flux_resampled: 3 HDUs
+                    Flux, uncertainty, and sky (wavelength)
 
         filename: String (Default: 'reduced')
             Disk location to be written to. Default is at where the
@@ -4411,7 +4420,8 @@ class OneDSpec():
 
             if i not in [
                     'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
-                    'wavelength', 'count_resampled', 'flux', 'flux_resampled'
+                    'wavelength', 'count_resampled', 'sensitivity', 'flux',
+                    'sensitivity_resampled', 'flux_resampled'
             ]:
 
                 error_msg = '{} is not a valid output.'.format(i)
@@ -4500,9 +4510,13 @@ class OneDSpec():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
-                flux: 4 HDUs
+                sensitivity: 1 HDU
+                    Sensitivity (pixel)
+                flux: 3 HDUs
                     Flux, uncertainty, sky, and sensitivity (pixel)
-                flux_resampled: 4 HDUs
+                sensitivity_resampled: 1 HDU
+                    Sensitivity (wavelength)
+                flux_resampled: 3 HDUs
                     Flux, uncertainty, sky, and sensitivity (wavelength)
 
         filename: String (Default: 'reduced')
@@ -4528,7 +4542,8 @@ class OneDSpec():
 
             if i not in [
                     'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
-                    'wavelength', 'count_resampled', 'flux', 'flux_resampled'
+                    'wavelength', 'count_resampled', 'sensitivity', 'flux',
+                    'sensitivity', 'flux_resampled'
             ]:
 
                 error_msg = '{} is not a valid output.'.format(i)

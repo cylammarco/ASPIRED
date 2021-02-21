@@ -778,6 +778,45 @@ def test_sensitivity():
         return_jsonstring=True,
         save_iframe=True,
         filename='test/test_output/test_onedspec_inspect_sensitivity')
+
+
+onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+onedspec.add_trace(np.ones(70) * 37,
+                   np.ones(70),
+                   spec_id=0,
+                   stype='science+standard')
+onedspec.add_spec(np.arange(1, 71), spec_id=0, stype='science+standard')
+onedspec.add_arc_spec(np.arange(1, 71), spec_id=0, stype='science+standard')
+onedspec.add_fit_coeff(np.array((4000., 1, 0.2, 0.0071)),
+                       spec_id=0,
+                       stype='science+standard')
+onedspec.apply_wavelength_calibration(wave_bin=100.,
+                                      wave_start=4000.,
+                                      wave_end=9000.)
+
+onedspec.load_standard(target='cd32d9927')
+onedspec.add_sensitivity_func(
+    np.polyfit(np.arange(1, 1001),
+               np.random.random(1000) * 20, 2))
+# Not implemented yet
+# onedspec.save_sensitivity_func('test/test_output/' +\
+# 'test_onedspec_sensitivity_func')
+onedspec.compute_sensitivity()
+onedspec.set_atmospheric_extinction()
+onedspec.apply_flux_calibration()
+
+onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2,
+                                                 standard_airmass=1.5)
+
+onedspec.create_fits(output='trace+count+wavelength+count_resampled+'
+                     'sensitivity+flux+sensitivity_resampled+'
+                     'flux_resampled',
+                     empty_primary_hdu=False)
+
+
+def test_miscellaneous():
+
     onedspec.apply_flux_calibration()
     onedspec.apply_flux_calibration(spec_id=0)
     onedspec.apply_flux_calibration(spec_id=[0])
@@ -844,31 +883,34 @@ def test_sensitivity():
         save_pdf=True,
         filename='test/test_output/test_onedspec_inspect_reduced_spectrum')
 
-    onedspec.create_fits(
-        output='trace+count+weight_map+arc_spec+wavecal+wavelength+'
-        'count_resampled+flux+flux_resampled',
-        empty_primary_hdu=False)
-    onedspec.create_fits(
-        output='trace+count+weight_map+arc_spec+wavecal+wavelength+'
-        'count_resampled+flux+flux_resampled',
-        return_id=True,
-        recreate=True)
-    onedspec.create_fits(
-        output='trace+count+weight_map+arc_spec+wavecal+wavelength+'
-        'count_resampled+flux+flux_resampled',
-        spec_id=0,
-        empty_primary_hdu=False,
-        recreate=True)
+    onedspec.create_fits(output='trace+count+weight_map+arc_spec+wavecal+'
+                         'wavelength+count_resampled+sensitivity+flux+'
+                         'sensitivity_resampled+flux_resampled',
+                         empty_primary_hdu=False)
+    onedspec.create_fits(output='trace+count+weight_map+arc_spec+wavecal+'
+                         'wavelength+count_resampled+sensitivity+flux+'
+                         'sensitivity_resampled+flux_resampled',
+                         return_id=True,
+                         recreate=True)
+    onedspec.create_fits(output='trace+count+weight_map+arc_spec+wavecal+'
+                         'wavelength+count_resampled+sensitivity+flux+'
+                         'sensitivity_resampled+flux_resampled',
+                         spec_id=0,
+                         empty_primary_hdu=False,
+                         recreate=True)
 
     onedspec.modify_trace_header(0, 'set', 'COMMENT', 'Hello Trace!')
     onedspec.modify_count_header(0, 'set', 'COMMENT', 'Hello Count!')
-    onedspec.modify_weight_map_header(0, 'set', 'COMMENT', 'Hello Weight!')
+    onedspec.modify_weight_map_header('set', 'COMMENT', 'Hello Weight!')
     onedspec.modify_arc_spec_header(0, 'set', 'COMMENT', 'Hello Arc Spec!')
     onedspec.modify_wavecal_header('set', 'COMMENT', 'Hello Wavecal!')
     onedspec.modify_wavelength_header('set', 'COMMENT', 'Hello Wavelength!')
     onedspec.modify_count_resampled_header(0, 'set', 'COMMENT',
                                            'Hello Count Resampled!')
+    onedspec.modify_sensitivity_header('set', 'COMMENT', 'Hello Sensitivity!')
     onedspec.modify_flux_header(0, 'set', 'COMMENT', 'Hello Flux!')
+    onedspec.modify_sensitivity_resampled_header(
+        'set', 'COMMENT', 'Hello Sensitivity Resampled!')
     onedspec.modify_flux_resampled_header(0, 'set', 'COMMENT',
                                           'Hello Flux Resampled!')
 
@@ -882,8 +924,7 @@ def test_sensitivity():
                                  'COMMENT',
                                  'Hello Count!',
                                  spec_id=0)
-    onedspec.modify_weight_map_header(0,
-                                      'set',
+    onedspec.modify_weight_map_header('set',
                                       'COMMENT',
                                       'Hello Weight!',
                                       spec_id=0)
@@ -905,113 +946,135 @@ def test_sensitivity():
                                            'COMMENT',
                                            'Hello Count Resampled!',
                                            spec_id=0)
+    onedspec.modify_sensitivity_header('set',
+                                       'COMMENT',
+                                       'Hello Sensitivity!',
+                                       spec_id=0)
     onedspec.modify_flux_header(0, 'set', 'COMMENT', 'Hello Flux!', spec_id=0)
+    onedspec.modify_sensitivity_resampled_header(
+        'set', 'COMMENT', 'Hello Sensitivity Resampled!', spec_id=0)
     onedspec.modify_flux_resampled_header(0,
                                           'set',
                                           'COMMENT',
                                           'Hello Flux Resampled!',
                                           spec_id=0)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_trace_header_fail_spec_id():
-        onedspec.modify_trace_header(0,
-                                     'set',
-                                     'COMMENT',
-                                     'Hello Trace!',
-                                     spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_count_header_fail_spec_id():
-        onedspec.modify_count_header(0,
-                                     'set',
-                                     'COMMENT',
-                                     'Hello Count!',
-                                     spec_id=10)
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_trace_header_fail_spec_id():
+    onedspec.modify_trace_header(0,
+                                 'set',
+                                 'COMMENT',
+                                 'Hello Trace!',
+                                 spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_weight_map_header_fail_spec_id():
-        onedspec.modify_weight_map_header(0,
-                                          'set',
-                                          'COMMENT',
-                                          'Hello Weight!',
-                                          spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_arc_spec_header_fail_spec_id():
-        onedspec.modify_arc_spec_header(0,
-                                        'set',
-                                        'COMMENT',
-                                        'Hello Arc Spec!',
-                                        spec_id=10)
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_count_header_fail_spec_id():
+    onedspec.modify_count_header(0,
+                                 'set',
+                                 'COMMENT',
+                                 'Hello Count!',
+                                 spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_wavecal_header_fail_spec_id():
-        onedspec.modify_wavecal_header('set',
-                                       'COMMENT',
-                                       'Hello Wavecal!',
-                                       spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_wavelength_header_fail_spec_id():
-        onedspec.modify_wavelength_header('set',
-                                          'COMMENT',
-                                          'Hello Wavelength!',
-                                          spec_id=10)
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_weight_map_header_fail_spec_id():
+    onedspec.modify_weight_map_header(0,
+                                      'set',
+                                      'COMMENT',
+                                      'Hello Weight!',
+                                      spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_count_resampled_header_fail_spec_id():
-        onedspec.modify_count_resampled_header(0,
-                                               'set',
-                                               'COMMENT',
-                                               'Hello Count Resampled!',
-                                               spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_flux_header_fail_spec_id():
-        onedspec.modify_flux_header(0,
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_arc_spec_header_fail_spec_id():
+    onedspec.modify_arc_spec_header(0,
                                     'set',
                                     'COMMENT',
-                                    'Hello Flux!',
+                                    'Hello Arc Spec!',
                                     spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_modify_flux_resampled_header_fail_spec_id():
-        onedspec.modify_flux_resampled_header(0,
-                                              'set',
-                                              'COMMENT',
-                                              'Hello Flux Resampled!',
-                                              spec_id=10)
 
-    onedspec.save_fits(output='trace+count+wavelength+count_resampled+flux+'
-                       'flux_resampled',
-                       spec_id=0,
-                       filename='test/test_output/test_onedspec',
-                       overwrite=True)
-    onedspec.save_csv(output='trace+count+wavelength+count_resampled+flux+'
-                      'flux_resampled',
-                      spec_id=0,
-                      filename='test/test_output/test_onedspec')
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_wavecal_header_fail_spec_id():
+    onedspec.modify_wavecal_header('set',
+                                   'COMMENT',
+                                   'Hello Wavecal!',
+                                   spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_save_fits_fail_output_type(onedspec):
-        onedspec.save_fits(output='wave')
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_save_fits_fail_stype(onedspec):
-        onedspec.save_fits(stype='sci')
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_wavelength_header_fail_spec_id():
+    onedspec.modify_wavelength_header('set',
+                                      'COMMENT',
+                                      'Hello Wavelength!',
+                                      spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_save_fits_fail_spec_id(onedspec):
-        onedspec.save_csv(spec_id=100)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_save_csv_fail_output_type(onedspec):
-        onedspec.save_csv(output='wave')
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_count_resampled_header_fail_spec_id():
+    onedspec.modify_count_resampled_header(0,
+                                           'set',
+                                           'COMMENT',
+                                           'Hello Count Resampled!',
+                                           spec_id=10)
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_save_csv_fail_stype(onedspec):
-        onedspec.save_csv(stype='sci')
 
-    @pytest.mark.xfail(raises=ValueError)
-    def test_save_csv_fail_spec_id(onedspec):
-        onedspec.save_csv(spec_id=100)
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_sensitivity_header_fail_spec_id():
+    onedspec.modify_sensitivity_header(0,
+                                       'set',
+                                       'COMMENT',
+                                       'Hello Sensitivity!',
+                                       spec_id=10)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_flux_header_fail_spec_id():
+    onedspec.modify_flux_header(0, 'set', 'COMMENT', 'Hello Flux!', spec_id=10)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_sensitivity_resampled_header_fail_spec_id():
+    onedspec.modify_sensitivity_resampled_header(
+        0, 'set', 'COMMENT', 'Hello Sensitivity Resampled!', spec_id=10)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_modify_flux_resampled_header_fail_spec_id():
+    onedspec.modify_flux_resampled_header(0,
+                                          'set',
+                                          'COMMENT',
+                                          'Hello Flux Resampled!',
+                                          spec_id=10)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_save_fits_fail_output_type():
+    onedspec.save_fits(output='wave')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_save_fits_fail_stype():
+    onedspec.save_fits(stype='sci')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_save_fits_fail_spec_id():
+    onedspec.save_csv(spec_id=100)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_save_csv_fail_output_type():
+    onedspec.save_csv(output='wave')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_save_csv_fail_stype():
+    onedspec.save_csv(stype='sci')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_save_csv_fail_spec_id():
+    onedspec.save_csv(spec_id=100)

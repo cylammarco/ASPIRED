@@ -1241,7 +1241,7 @@ class Spectrum1D():
 
         self._modify_imagehdu_header(self.count_hdulist, idx, method, *args)
 
-    def modify_weight_map_header(self, idx, method, *args):
+    def modify_weight_map_header(self, method, *args):
         '''
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -1254,8 +1254,7 @@ class Spectrum1D():
 
         '''
 
-        self._modify_imagehdu_header(self.weight_map_hdulist, idx, method,
-                                     *args)
+        self._modify_imagehdu_header(self.weight_map_hdulist, 0, method, *args)
 
     def modify_count_resampled_header(self, idx, method, *args):
         '''
@@ -1519,21 +1518,19 @@ class Spectrum1D():
             self.weight_map_hdulist += [weight_map_ImageHDU]
 
             # Add the extraction weights
-            self.modify_weight_map_header(0, 'set', 'LABEL',
+            self.modify_weight_map_header('set', 'LABEL',
                                           'Optimal Extraction Profile')
             if self.var is not None:
-                self.modify_weight_map_header(0, 'set', 'CRVAL1',
-                                              len(self.var))
-                self.modify_weight_map_header(0, 'set', 'CRPIX1', 1)
-                self.modify_weight_map_header(0, 'set', 'CDELT1', 1)
-                self.modify_weight_map_header(0, 'set', 'CTYPE1',
+                self.modify_weight_map_header('set', 'CRVAL1', len(self.var))
+                self.modify_weight_map_header('set', 'CRPIX1', 1)
+                self.modify_weight_map_header('set', 'CDELT1', 1)
+                self.modify_weight_map_header('set', 'CTYPE1',
                                               'Pixel (Spatial)')
-                self.modify_weight_map_header(0, 'set', 'CUNIT1', 'Pixel')
-                self.modify_weight_map_header(0, 'set', 'BUNIT', 'weights')
+                self.modify_weight_map_header('set', 'CUNIT1', 'Pixel')
+                self.modify_weight_map_header('set', 'BUNIT', 'weights')
             else:
                 self.modify_weight_map_header(
-                    0, 'set', 'COMMENT',
-                    'Extraction Profile is not available.')
+                    'set', 'COMMENT', 'Extraction Profile is not available.')
 
         except Exception as e:
 
@@ -2050,10 +2047,14 @@ class Spectrum1D():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
+                sensitivity: 1 HDU
+                    Sensitivity (pixel)
                 flux: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (pixel)
+                    Flux, uncertainty, and sky (pixel)
+                sensitivity: 1 HDU
+                    Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (wavelength)
+                    Flux, uncertainty, and sky (wavelength)
 
         recreate: boolean (Default: False)
             Set to True to overwrite the FITS data and header.
@@ -2244,10 +2245,14 @@ class Spectrum1D():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
+                sensitivity: 1 HDU
+                    Sensitivity (pixel)
                 flux: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (pixel)
+                    Flux, uncertainty, and sky (pixel)
+                sensitivity: 1 HDU
+                    Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (wavelength)
+                    Flux, uncertainty, and sky (wavelength)
 
         filename: str
             Filename for the output, all of them will share the same name but
@@ -2295,10 +2300,14 @@ class Spectrum1D():
                     Wavelength of each pixel
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
-                flux: 3 HDUs
-                    Flux, uncertainty, sky, and sensitivity (pixel)
+                sensitivity: 1 HDU
+                    Sensitivity (pixel)
+                flux: 4 HDUs
+                    Flux, uncertainty, and sky (pixel)
+                sensitivity: 1 HDU
+                    Sensitivity (wavelength)
                 flux_resampled: 3 HDUs
-                    Flux, uncertainty, sky, and sensitivity (wavelength)
+                    Flux, uncertainty, and sky (wavelength)
 
         filename: String
             Disk location to be written to. Default is at where the
