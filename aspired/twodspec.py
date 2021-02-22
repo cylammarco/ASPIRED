@@ -1427,6 +1427,10 @@ class TwoDSpec:
 
         '''
 
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
         assert isinstance(spec_id, (int, list, np.ndarray)) or (
             spec_id is
             None), 'spec_id has to be an integer, None, list or array.'
@@ -1440,10 +1444,6 @@ class TwoDSpec:
             elif len(np.shape(trace)) == 2:
 
                 spec_id = list(np.arange(np.shape(trace)[0]))
-
-        if isinstance(spec_id, int):
-
-            spec_id = [spec_id]
 
         if isinstance(spec_id, np.ndarray):
 
@@ -1483,6 +1483,10 @@ class TwoDSpec:
 
         '''
 
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
         if spec_id is not None:
 
             assert np.in1d(spec_id,
@@ -1492,10 +1496,6 @@ class TwoDSpec:
         else:
 
             spec_id = list(self.spectrum_list.keys())
-
-        if isinstance(spec_id, int):
-
-            spec_id = [spec_id]
 
         for i in spec_id:
 
@@ -1691,6 +1691,10 @@ class TwoDSpec:
 
         """
 
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
         if spec_id is not None:
 
             assert np.in1d(spec_id,
@@ -1701,21 +1705,9 @@ class TwoDSpec:
 
             spec_id = list(self.spectrum_list.keys())
 
-        if isinstance(spec_id, int):
-
-            spec_id = [spec_id]
-
         to_return = []
 
         for j in spec_id:
-
-            spec = self.spectrum_list[j]
-            len_trace = len(spec.trace)
-            count_sky = np.zeros(len_trace)
-            count_err = np.zeros(len_trace)
-            count = np.zeros(len_trace)
-            var = np.ones((len_trace, 2 * apwidth + 1)) * self.readnoise**2.
-            is_optimal = np.zeros(len_trace, dtype=bool)
 
             if isinstance(apwidth, int):
 
@@ -1773,6 +1765,15 @@ class TwoDSpec:
                               'to continue the extraction.')
                 sky_width_dn = 5
                 sky_width_up = 5
+
+            spec = self.spectrum_list[j]
+            len_trace = len(spec.trace)
+            count_sky = np.zeros(len_trace)
+            count_err = np.zeros(len_trace)
+            count = np.zeros(len_trace)
+            var = np.ones((len_trace, width_dn + width_up + 1)) *\
+                self.readnoise**2.
+            is_optimal = np.zeros(len_trace, dtype=bool)
 
             # Sky extraction
             for i, pos in enumerate(spec.trace):
@@ -2836,6 +2837,10 @@ class TwoDSpec:
 
         """
 
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
         if spec_id is not None:
 
             assert np.in1d(spec_id,
@@ -2845,10 +2850,6 @@ class TwoDSpec:
         else:
 
             spec_id = list(self.spectrum_list.keys())
-
-        if isinstance(spec_id, int):
-
-            spec_id = [spec_id]
 
         to_return = []
 
@@ -3010,6 +3011,10 @@ class TwoDSpec:
 
         '''
 
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
         if spec_id is not None:
 
             if spec_id not in list(self.spectrum_list.keys()):
@@ -3022,10 +3027,6 @@ class TwoDSpec:
 
             # if spec_id is None, all arc spectra are extracted
             spec_id = list(self.spectrum_list.keys())
-
-        if isinstance(spec_id, int):
-
-            spec_id = [spec_id]
 
         if self.arc is None:
 

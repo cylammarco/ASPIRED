@@ -1,34 +1,48 @@
+import copy
 import numpy as np
 from astropy.io import fits
 from aspired.wavelengthcalibration import WavelengthCalibration
 from aspired.spectrum1D import Spectrum1D
 from aspired import spectral_reduction
 
+# Line list
+atlas = [
+    4193.5, 4385.77, 4500.98, 4524.68, 4582.75, 4624.28, 4671.23, 4697.02,
+    4734.15, 4807.02, 4921.48, 5028.28, 5618.88, 5823.89, 5893.29, 5934.17,
+    6182.42, 6318.06, 6472.841, 6595.56, 6668.92, 6728.01, 6827.32, 6976.18,
+    7119.60, 7257.9, 7393.8, 7584.68, 7642.02, 7740.31, 7802.65, 7887.40,
+    7967.34, 8057.258
+]
+element = ['Xe'] * len(atlas)
+
+arc_spec = np.loadtxt('test/test_data/test_full_run_science_0_arc_spec.csv',
+                      delimiter=',',
+                      skiprows=1)
+
+wavecal = WavelengthCalibration(log_file_name=None)
+wavecal.add_arc_spec(arc_spec)
+
+# Find the peaks of the arc
+wavecal.find_arc_lines()
+
+arc_lines = wavecal.spectrum1D.peaks
+
 
 def test_wavecal():
-    # Line list
-    atlas = [
-        4193.5, 4385.77, 4500.98, 4524.68, 4582.75, 4624.28, 4671.23, 4697.02,
-        4734.15, 4807.02, 4921.48, 5028.28, 5618.88, 5823.89, 5893.29, 5934.17,
-        6182.42, 6318.06, 6472.841, 6595.56, 6668.92, 6728.01, 6827.32,
-        6976.18, 7119.60, 7257.9, 7393.8, 7584.68, 7642.02, 7740.31, 7802.65,
-        7887.40, 7967.34, 8057.258
-    ]
-    element = ['Xe'] * len(atlas)
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Science arc_spec
-    arc_spec = np.loadtxt(
-        'test/test_data/test_full_run_science_0_arc_spec.csv',
-        delimiter=',',
-        skiprows=1)
     lhs6328_spectrum1D.add_arc_spec(arc_spec)
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
 
     # Find the peaks of the arc
-    wavecal.find_arc_lines()
+    wavecal.find_arc_lines(
+        save_iframe=True,
+        filename='test/test_output/test_wavecal_find_arc_lines',
+        display=False,
+        return_jsonstring=True)
 
     # Configure the wavelength calibrator
     wavecal.initialise_calibrator()
@@ -45,7 +59,7 @@ def test_wavecal():
     # Solve for the pixel-to-wavelength solution
     wavecal.fit(max_tries=500, display=False)
 
-    # Just getting the calibrator
+    # Getting the calibrator
     wavecal.get_calibrator()
 
     # Save a FITS file
@@ -58,8 +72,145 @@ def test_wavecal():
                      filename='test/test_output/test_wavecal',
                      overwrite=True)
 
+    # Getting the calibrator
+    wavecal.get_spectrum1D()
 
-def test_user_supplied_poly_coeff():
+
+def test_user_supplied_arc_spec():
+
+    wavecal = WavelengthCalibration(log_file_name=None)
+
+    # Science arc_spec
+    wavecal.add_arc_spec(arc_spec)
+
+    # Find the peaks of the arc
+    wavecal.find_arc_lines()
+
+    # Configure the wavelength calibrator
+    wavecal.initialise_calibrator()
+    wavecal.set_hough_properties(num_slopes=200,
+                                 xbins=40,
+                                 ybins=40,
+                                 min_wavelength=3500,
+                                 max_wavelength=8500)
+    wavecal.set_ransac_properties(filter_close=True)
+
+    wavecal.load_user_atlas(elements=element, wavelengths=atlas)
+    wavecal.do_hough_transform()
+
+    # Solve for the pixel-to-wavelength solution
+    wavecal.fit(max_tries=500, display=False)
+
+    # Save a FITS file
+    wavecal.save_fits(
+        output='wavecal',
+        filename='test/test_output/test_wavecal_user_supplied_arc_spec',
+        overwrite=True)
+
+    wavecal.remove_arc_lines()
+
+
+def test_user_supplied_arc_spec_2():
+
+    wavecal = WavelengthCalibration(log_file_name=None)
+
+    # Find the peaks of the arc
+    wavecal.find_arc_lines(arc_spec=arc_spec)
+
+    # Configure the wavelength calibrator
+    wavecal.initialise_calibrator()
+    wavecal.set_hough_properties(num_slopes=200,
+                                 xbins=40,
+                                 ybins=40,
+                                 min_wavelength=3500,
+                                 max_wavelength=8500)
+    wavecal.set_ransac_properties(filter_close=True)
+
+    wavecal.load_user_atlas(elements=element, wavelengths=atlas)
+    wavecal.do_hough_transform()
+
+    # Solve for the pixel-to-wavelength solution
+    wavecal.fit(max_tries=500, display=False)
+
+    # Save a FITS file
+    wavecal.save_fits(
+        output='wavecal',
+        filename='test/test_output/test_wavecal_user_supplied_arc_spec',
+        overwrite=True)
+
+    wavecal.remove_arc_lines()
+
+
+def test_user_supplied_arc_spec_arc_lines_from_at_initilisation():
+
+    wavecal = WavelengthCalibration(log_file_name=None)
+
+    # Configure the wavelength calibrator
+    wavecal.initialise_calibrator(peaks=arc_lines, arc_spec=arc_spec)
+    wavecal.set_hough_properties(num_slopes=200,
+                                 xbins=40,
+                                 ybins=40,
+                                 min_wavelength=3500,
+                                 max_wavelength=8500)
+    wavecal.set_ransac_properties(filter_close=True)
+
+    wavecal.load_user_atlas(elements=element, wavelengths=atlas)
+    wavecal.do_hough_transform()
+
+    # Solve for the pixel-to-wavelength solution
+    wavecal.fit(max_tries=500, display=False)
+
+    # Save a FITS file
+    wavecal.save_fits(
+        output='wavecal',
+        filename='test/test_output/test_wavecal_user_supplied_arc_spec',
+        overwrite=True)
+
+
+def test_overwritten_copy_of_spectrum1Ds_are_different():
+
+    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    wavecal_1 = WavelengthCalibration(log_file_name=None)
+    wavecal_1.from_spectrum1D(lhs6328_spectrum1D)
+    memory_1 = id(wavecal_1.spectrum1D)
+    wavecal_1.from_spectrum1D(copy.copy(lhs6328_spectrum1D), overwrite=True)
+    memory_2 = id(wavecal_1.spectrum1D)
+
+    assert (memory_1 != memory_2)
+
+
+def test_user_supplied_arc_lines():
+
+    wavecal = WavelengthCalibration(log_file_name=None)
+
+    # Find the peaks of the arc
+    wavecal.add_arc_lines(arc_lines)
+
+    # Configure the wavelength calibrator
+    wavecal.initialise_calibrator()
+    wavecal.set_hough_properties(num_slopes=200,
+                                 xbins=40,
+                                 ybins=40,
+                                 min_wavelength=3500,
+                                 max_wavelength=8500)
+    wavecal.set_ransac_properties(filter_close=True)
+
+    wavecal.load_user_atlas(elements=element, wavelengths=atlas)
+    wavecal.do_hough_transform()
+
+    # Solve for the pixel-to-wavelength solution
+    wavecal.fit(max_tries=500, display=False)
+
+    # Save a FITS file
+    wavecal.save_fits(
+        output='wavecal',
+        filename='test/test_output/test_wavecal_user_supplied_arc_spec',
+        overwrite=True)
+
+    wavecal.remove_arc_lines()
+
+
+def test_user_supplied_poly_coeff_twodspec():
     # Load the image
     lhs6328_fits = fits.open('test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
     spatial_mask = np.arange(50, 200)
@@ -108,7 +259,7 @@ def test_user_supplied_poly_coeff():
         overwrite=True)
 
 
-def test_user_supplied_poly_coeff_and_add_arc():
+def test_user_supplied_poly_coeff_and_add_arc_twodspec():
     # Load the image
     lhs6328_fits = fits.open('test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
     spatial_mask = np.arange(50, 200)
@@ -161,7 +312,7 @@ def test_user_supplied_poly_coeff_and_add_arc():
         overwrite=True)
 
 
-def test_user_supplied_wavelength():
+def test_user_supplied_wavelength_twodspec():
     # Load the image
     lhs6328_fits = fits.open('test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
     spatial_mask = np.arange(50, 200)

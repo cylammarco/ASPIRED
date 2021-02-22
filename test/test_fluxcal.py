@@ -1,6 +1,39 @@
 import numpy as np
+import pytest
+
 from aspired.fluxcalibration import FluxCalibration
 from aspired.spectrum1D import Spectrum1D
+
+
+def test_ing_standard():
+    fluxcal = FluxCalibration(log_file_name=None)
+    fluxcal.load_standard(target='bd254', library='ing_oke', ftype='flux')
+    fluxcal.load_standard(target='bd254', library='ing_oke', ftype='mag')
+
+
+def test_eso_standard():
+    fluxcal = FluxCalibration(log_file_name=None)
+    fluxcal.load_standard(target='eg274', library='esoctiostan', ftype='flux')
+    fluxcal.load_standard(target='eg274', library='esoctiostan', ftype='mag')
+
+
+def test_iraf_standard():
+    fluxcal = FluxCalibration(log_file_name=None)
+    fluxcal.load_standard(target='bd75325',
+                          library='irafoke1990',
+                          ftype='flux')
+    fluxcal.load_standard(target='bd75325', library='irafoke1990', ftype='mag')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_standard_expect_fail():
+    fluxcal = FluxCalibration(log_file_name=None)
+    fluxcal.load_standard(target='sun')
+
+
+def test_standard_return_suggestion():
+    fluxcal = FluxCalibration(log_file_name=None)
+    fluxcal.load_standard(target='bd')
 
 
 def test_sensitivity():
@@ -21,6 +54,14 @@ def test_sensitivity():
 
     # Load standard star from literature
     sens.load_standard('hiltner102')
+    sens.inspect_standard(display=False,
+                          return_jsonstring=True,
+                          save_iframe=True,
+                          save_png=True,
+                          save_jpg=True,
+                          save_svg=True,
+                          save_pdf=True,
+                          filename='test/test_output/fluxcal_inspect_standard')
 
     sens.compute_sensitivity()
 
@@ -71,4 +112,14 @@ def test_fluxcalibration():
     fluxcalibrator.compute_sensitivity()
 
     # Get back the spectrum1D and merge
-    fluxcalibrator.apply_flux_calibration(lhs6328_spectrum1D)
+    fluxcalibrator.apply_flux_calibration(
+        lhs6328_spectrum1D,
+        inspect=True,
+        display=False,
+        return_jsonstring=True,
+        save_iframe=True,
+        save_png=True,
+        save_jpg=True,
+        save_svg=True,
+        save_pdf=True,
+        filename='test/test_output/fluxcal_flux_calibration')

@@ -125,8 +125,21 @@ lhs6328_twodspec.ap_trace(nspec=1, display=False)
 
 
 def test_tophat_extraction():
-
     lhs6328_twodspec.ap_extract(optimal=False, display=False)
+    lhs6328_twodspec.ap_extract(optimal=False, display=False, spec_id=0)
+    lhs6328_twodspec.ap_extract(optimal=False, display=False, spec_id=[0])
+    lhs6328_twodspec.ap_extract(optimal=False,
+                                apwidth=[4, 5],
+                                skysep=[8, 10],
+                                skywidth=[3, 4],
+                                display=False)
+
+
+def test_extraction_wrong_size_extraction_description():
+    lhs6328_twodspec.ap_extract(optimal=False,
+                                apwidth=[1, 2, 3],
+                                skysep=[4, 5, 6],
+                                skywidth=[7, 8, 9])
 
 
 def test_horne_extraction():
