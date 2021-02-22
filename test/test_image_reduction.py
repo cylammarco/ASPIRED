@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import pytest
 from aspired import image_reduction
@@ -157,6 +158,21 @@ def test_input_with_multiple_frames_to_combine():
         log_file_name=None)
 
 
+def test_input_with_one_line():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328_one_line.list',
+        log_file_name=None)
+
+
+def test_input_with_numpy_array():
+    filelist = np.loadtxt('test/test_data/sprat_LHS6328.list',
+                          delimiter=',',
+                          dtype='object')
+    for i, filepath in enumerate(filelist[:, 1]):
+        filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
+    image_reduction.ImageReduction(filelist=filelist, log_file_name=None)
+
+
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_only_one_column():
     image_reduction.ImageReduction(
@@ -194,6 +210,7 @@ def test_reduction_and_save():
     img.reduce()
     img.save_fits('test/test_output/reduced_image', overwrite=True)
     img.inspect(display=False,
+                filename='test/test_output/reduced_image',
                 save_iframe=True,
                 save_jpg=True,
                 save_png=True,

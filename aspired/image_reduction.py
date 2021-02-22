@@ -206,22 +206,6 @@ class ImageReduction:
             self.logger.handlers.clear()
         self.logger.addHandler(self.handler)
 
-        if os.path.isabs(filelist):
-            self.filelist = filelist
-        else:
-            self.filelist = os.path.abspath(filelist)
-
-        logging.debug('The filelist is: {}'.format(self.filelist))
-
-        # Check if running on Windows
-        if os.name == 'nt':
-            self.filelist_abspath = self.filelist.rsplit('\\', 1)[0]
-        else:
-            self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
-
-        logging.debug('The absolute path of the filelist is: {}'.format(
-            self.filelist_abspath))
-
         if delimiter is not None:
 
             self.delimiter = delimiter
@@ -313,7 +297,23 @@ class ImageReduction:
         # import file with first column as image type and second column as
         # file path
 
-        if isinstance(self.filelist, str):
+        if isinstance(filelist, str):
+            if os.path.isabs(filelist):
+                self.filelist = filelist
+            else:
+                self.filelist = os.path.abspath(filelist)
+
+            logging.debug('The filelist is: {}'.format(self.filelist))
+
+            # Check if running on Windows
+            if os.name == 'nt':
+                self.filelist_abspath = self.filelist.rsplit('\\', 1)[0]
+            else:
+                self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
+
+            logging.debug('The absolute path of the filelist is: {}'.format(
+                self.filelist_abspath))
+
             logging.info('Loading filelist from {}.'.format(self.filelist))
             self.filelist = np.loadtxt(self.filelist,
                                        delimiter=self.delimiter,
@@ -331,7 +331,9 @@ class ImageReduction:
                 logging.critical(error_msg)
                 raise RuntimeError(error_msg)
 
-        elif isinstance(self.filelist, np.ndarray):
+        elif isinstance(filelist, np.ndarray):
+            self.filelist = filelist
+            self.filelist_abspath = ''
             logging.info('Loading filelist from an numpy.ndarray.')
             if np.shape(self.filelist)[1] == 3:
                 logging.debug('filelist contains 3 columns.')
