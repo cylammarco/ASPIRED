@@ -19,6 +19,7 @@ class ImageReduction:
     def __init__(self,
                  filelist,
                  ftype='csv',
+                 delimiter=None,
                  saxis=None,
                  saxis_keyword=None,
                  combinetype_light='median',
@@ -70,25 +71,27 @@ class ImageReduction:
         Parameters
         ----------
         filelist: string
-            file location, does not support URL
+            File location, does not support URL
         ftype: string
-            one of csv, tsv and ascii. Default is csv.
+            One of csv, tsv and ascii. Default is csv.
+        delimiter: string
+            Set the delimiter. This overrides ftype.
         Sxais: int, 0 or 1
             OVERRIDE the SAXIS value in the FITS header, or to provide the
             SAXIS if it does not exist
         saxis_keyword: string
             HDU keyword for the spectral axis direction
         combinetype_light: string
-            average of median for CCDproc.Combiner.average_combine() and
+            Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
         sigma_clipping_light: boolean
-            perform sigma clipping if set to True. sigma is computed with the
+            Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_light: float
-            lower threshold of the sigma clipping
+            Set the lower threshold of the sigma clipping
         clip_high_light: float
-            upper threshold of the sigma clipping
+            Set the upper threshold of the sigma clipping
         exptime_light: float
             OVERRIDE the exposure time value in the FITS header, or to provide
             one if the keyword does not exist
@@ -99,39 +102,39 @@ class ImageReduction:
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
         sigma_clipping_dark: boolean
-            perform sigma clipping if set to True. sigma is computed with the
+            Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_dark: float
-            lower threshold of the sigma clipping
+            Set the lower threshold of the sigma clipping
         clip_high_dark: float
-            upper threshold of the sigma clipping
+            Set the upper threshold of the sigma clipping
         exptime_dark: float
             OVERRIDE the exposure time value in the FITS header, or to provide
             one if the keyword does not exist
         exptime_dark_keyword: string
             HDU keyword for the exposure time of the dark frame
         combinetype_bias: string
-            average of median for CCDproc.Combiner.average_combine() and
+            Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
         sigma_clipping_bias: boolean
-            perform sigma clipping if set to True. sigma is computed with the
+            Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_bias: float
-            lower threshold of the sigma clipping
+            Set the lower threshold of the sigma clipping
         clip_high_bias: float
-            upper threshold of the sigma clipping
+            Set the upper threshold of the sigma clipping
         combinetype_flat: string
-            average of median for CCDproc.Combiner.average_combine() and
+            Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
         sigma_clipping_flat: boolean
-            perform sigma clipping if set to True. sigma is computed with the
+            Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
         clip_low_flat: float
-            lower threshold of the sigma clipping
+            Set the lower threshold of the sigma clipping
         clip_high_flat: float
-            upper threshold of the sigma clipping
+            Set the upper threshold of the sigma clipping
         exptime_flat: float
             OVERRIDE the exposure time value in the FITS header, or to provide
             one if the keyword does not exist
@@ -219,13 +222,20 @@ class ImageReduction:
         logging.debug('The absolute path of the filelist is: {}'.format(
             self.filelist_abspath))
 
-        self.ftype = ftype
-        if ftype == 'csv':
-            self.delimiter = ','
-        elif ftype == 'tsv':
-            self.delimiter = '\t'
-        elif ftype == 'ascii':
-            self.delimiter = ' '
+        if delimiter is not None:
+
+            self.delimiter = delimiter
+            self.ftype = None
+
+        else:
+
+            self.ftype = ftype
+            if ftype == 'csv':
+                self.delimiter = ','
+            elif ftype == 'tsv':
+                self.delimiter = '\t'
+            elif ftype == 'ascii':
+                self.delimiter = ' '
 
         # FITS keyword standard recommends XPOSURE, but most observatories
         # use EXPTIME for supporting iraf. Also included a few other keywords
@@ -305,79 +315,62 @@ class ImageReduction:
 
         if isinstance(self.filelist, str):
             logging.info('Loading filelist from {}.'.format(self.filelist))
-            self.filelist = np.genfromtxt(self.filelist,
-                                          delimiter=self.delimiter,
-                                          dtype='U',
-                                          autostrip=True)
-
-            if np.shape(np.shape(self.filelist))[0] == 2:
-                logging.debug('filelist contains multiple lines.')
-                self.imtype = self.filelist[:, 0].astype('object')
-                self.impath = self.filelist[:, 1].astype('object')
-            elif np.shape(np.shape(self.filelist))[0] == 1:
-                logging.debug('filelist contains one line.')
-                self.imtype = self.filelist[0].astype('object')
-                self.impath = self.filelist[1].astype('object')
+            self.filelist = np.loadtxt(self.filelist,
+                                       delimiter=self.delimiter,
+                                       dtype='U',
+                                       ndmin=2)
+            if np.shape(self.filelist)[1] == 3:
+                logging.debug('filelist contains 3 columns.')
+            elif np.shape(self.filelist)[1] == 2:
+                logging.debug('filelist contains 2 column.')
             else:
-                error_msg = 'Please provide a text file with at least 2 ' +\
+                error_msg = 'Please provide a text file with 2 or 3 ' +\
                     'columns: where the first column is the image type ' +\
                     'and the second column is the file path, and optional ' +\
                     'third column being the #HDU.'
                 logging.critical(error_msg)
-                raise TypeError(error_msg)
+                raise RuntimeError(error_msg)
 
         elif isinstance(self.filelist, np.ndarray):
             logging.info('Loading filelist from an numpy.ndarray.')
-            if np.shape(np.shape(self.filelist))[0] == 2:
-                logging.debug('filelist contains multiple lines.')
-                self.imtype = self.filelist[:, 0]
-                self.impath = self.filelist[:, 1]
-            elif np.shape(np.shape(self.filelist))[0] == 1:
-                logging.debug('filelist contains one line.')
-                self.imtype = self.filelist[0]
-                self.impath = self.filelist[1]
+            if np.shape(self.filelist)[1] == 3:
+                logging.debug('filelist contains 3 columns.')
+            elif np.shape(self.filelist)[1] == 2:
+                logging.debug('filelist contains 2 columns.')
             else:
                 error_msg = 'Please provide a numpy.ndarray with at ' +\
-                    'least 2 columns.'
+                    'least 2 columns: where the first column is the ' +\
+                    'image type and the second column is the file ' +\
+                    'path, and optional third column being the #HDU.'
                 logging.critical(error_msg)
-                raise TypeError(error_msg)
+                raise RuntimeError(error_msg)
+
         else:
             error_msg = 'Please provide a file path to the file list ' +\
-                'or a numpy array with at least 2 columns.'
+                'or a numpy array.'
             logging.critical(error_msg)
             raise TypeError(error_msg)
+
+        if np.shape(self.filelist)[1] == 3:
+            logging.debug('filelist contains 3 columns.')
+            self.imtype = self.filelist[:, 0].astype('object')
+            self.impath = self.filelist[:, 1].astype('object')
+            self.hdunum = self.filelist[:, 2].astype('int')
+        else:
+            logging.debug('filelist contains 2 columns.')
+            self.imtype = self.filelist[:, 0].astype('object')
+            self.impath = self.filelist[:, 1].astype('object')
+            self.hdunum = np.zeros(len(self.imtype)).astype('int')
 
         for i, im in enumerate(self.impath):
             if not os.path.isabs(im):
-                self.impath[i] = os.path.join(self.filelist_abspath, im)
+                self.impath[i] = os.path.join(self.filelist_abspath,
+                                              im.strip())
 
             logging.debug(self.impath[i])
 
-        self.imtype = self.imtype.astype('str')
-
-        if np.shape(np.shape(self.filelist))[0] == 2:
-            logging.debug('filelist contains multiple lines.')
-            # Get the HDU number if provided
-            try:
-                self.hdunum = self.filelist[:, 2].astype('int')
-            # Otherwise populate with 0
-            except Exception as e:
-                logging.info(str(e))
-                self.hdunum = np.zeros(len(self.impath)).astype('int')
-        elif np.shape(np.shape(self.filelist))[0] == 1:
-            logging.debug('filelist contains one line.')
-            try:
-                self.hdunum = self.filelist[2].astype('int')
-            except Exception as e:
-                logging.warning(str(e))
-                self.hdunum = 0
-        else:
-            error_msg = 'Please provide a file path to the file list ' +\
-                'or a numpy array with at least 2 columns.'
-            logging.critical(error_msg)
-            raise TypeError(error_msg)
-
-        if np.shape(np.shape(self.filelist))[0] == 2:
+        # If there are multiple rows, which is in most of the cases
+        if np.shape(self.filelist)[1] >= 2:
             self.bias_list = self.impath[self.imtype == 'bias']
             self.dark_list = self.impath[self.imtype == 'dark']
             self.flat_list = self.impath[self.imtype == 'flat']
@@ -390,7 +383,8 @@ class ImageReduction:
             self.arc_hdunum = self.hdunum[self.imtype == 'arc']
             self.light_hdunum = self.hdunum[self.imtype == 'light']
 
-        if np.shape(np.shape(self.filelist))[0] == 1:
+        # If there is only 1 row, which is in most of the cases
+        else:
             if self.imtype == 'light':
                 self.light_list = np.array([self.impath])
                 self.bias_list = np.array([])
@@ -1220,6 +1214,10 @@ class ImageReduction:
                 height=720,
                 return_jsonstring=False,
                 save_iframe=False,
+                save_png=False,
+                save_jpg=False,
+                save_svg=False,
+                save_pdf=False,
                 filename=None,
                 open_iframe=False):
         '''
@@ -1278,17 +1276,13 @@ class ImageReduction:
             width=width,
         )
 
+        if filename is None:
+
+            filename = 'reduced_image'
+
         if save_iframe:
 
-            if filename is None:
-
-                pio.write_html(fig,
-                               'reduced_image.html',
-                               auto_open=open_iframe)
-
-            else:
-
-                pio.write_html(fig, filename + '.html', auto_open=open_iframe)
+            pio.write_html(fig, filename + '.html', auto_open=open_iframe)
 
         if display:
 
@@ -1300,6 +1294,22 @@ class ImageReduction:
 
                 fig.show(renderer)
 
+        if save_jpg:
+
+            fig.write_image(filename + '.jpg', format='jpg')
+
+        if save_png:
+
+            fig.write_image(filename + '.png', format='png')
+
+        if save_svg:
+
+            fig.write_image(filename + '.svg', format='svg')
+
+        if save_pdf:
+
+            fig.write_image(filename + '.pdf', format='pdf')
+
         if return_jsonstring:
 
             return fig.to_json()
@@ -1310,4 +1320,5 @@ class ImageReduction:
 
         '''
 
-        print(self.filelist)
+        for i in self.filelist:
+            print(i)

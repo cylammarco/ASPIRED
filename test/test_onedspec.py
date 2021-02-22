@@ -357,6 +357,11 @@ def test_add_wavelength_standard():
 def test_add_wavelength_standard_fail_no_standard_data():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength(np.arange(100), stype='standard')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_standard_fail_no_standard_data_2():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength([np.arange(100)], stype='standard')
 
 
@@ -410,6 +415,11 @@ def test_add_wavelength_resampled_science():
 def test_add_wavelength_resampled_science_fail_no_science_data():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength_resampled(np.arange(100), stype='science')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_resampled_science_fail_no_science_data_2():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength_resampled([np.arange(100)], stype='science')
 
 
@@ -452,6 +462,11 @@ def test_add_wavelength_resampled_standard():
 def test_add_wavelength_resampled_standard_fail_no_standard_data():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength_resampled(np.arange(100), stype='standard')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_add_wavelength_resampled_standard_fail_no_standard_data_2():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_wavelength_resampled([np.arange(100)], stype='standard')
 
 

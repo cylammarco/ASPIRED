@@ -1,0 +1,5 @@
+flat, v_slit_red_1.fits.gz, 0
+dark, v_dark_1.fits.gz, 0
+arc, v_a_20180810_13_1_0_1.fits.gz, 0
+light, v_e_20180810_12_1_0_0.fits.gz, 0
+light, v_e_20180810_12_2_0_0.fits.gz, 0
