@@ -152,27 +152,6 @@ def test_input_with_hdu():
         log_file_name=None)
 
 
-def test_input_with_multiple_frames_to_combine():
-    image_reduction.ImageReduction(
-        filelist='test/test_data/sprat_LHS6328_repeated_data.list',
-        log_file_name=None)
-
-
-def test_input_with_one_line():
-    image_reduction.ImageReduction(
-        filelist='test/test_data/sprat_LHS6328_one_line.list',
-        log_file_name=None)
-
-
-def test_input_with_numpy_array():
-    filelist = np.loadtxt('test/test_data/sprat_LHS6328.list',
-                          delimiter=',',
-                          dtype='object')
-    for i, filepath in enumerate(filelist[:, 1]):
-        filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
-    image_reduction.ImageReduction(filelist=filelist, log_file_name=None)
-
-
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_only_one_column():
     image_reduction.ImageReduction(
@@ -202,6 +181,30 @@ def test_cosmicray_cleaning():
         cosmicray=True,
         psfmodel='gaussx',
         log_file_name=None)
+
+
+def test_input_with_multiple_frames_to_combine_and_reduction():
+    img = image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328_repeated_data.list',
+        log_file_name=None)
+    img.reduce()
+
+
+def test_input_with_one_line_and_reduction():
+    img = image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328_one_line.list',
+        log_file_name=None)
+    img.reduce()
+
+
+def test_input_with_numpy_array_and_reduction():
+    filelist = np.loadtxt('test/test_data/sprat_LHS6328.list',
+                          delimiter=',',
+                          dtype='object')
+    for i, filepath in enumerate(filelist[:, 1]):
+        filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
+    img = image_reduction.ImageReduction(filelist=filelist, log_file_name=None)
+    img.reduce()
 
 
 def test_reduction_and_save():
