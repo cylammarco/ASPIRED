@@ -9,7 +9,7 @@ We aim to provide a suite of publicly available spectral data reduction software
 
 ASPIRED is written for use with python 3.6, 3.7 and 3.8 (will revisit [3.9](https://www.python.org/dev/peps/pep-0596/) in Fall 2020), and is intentionally developed as a self-consistent reduction pipeline with its own diagnostics and error handling. The pipeline should be able to reduce 2D spectral data from raw image to wavelength and flux calibrated 1D spectrum automatically without any user input (quicklook quality). However, the real goal is to provide a set of easily configurable routines to build pipelines for long slit spectrographs on different telescopes (science quality). We use SPRAT as a test case for this development, but our aim is to support a much wider range of instruments. By delivering near real-time data reduction we will facilitate automated or interactive decision making, allowing "on-the-fly" modification of observing strategies and rapid triggering of other facilities.
 
-More background information can be referring to the [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract), which will appeare in the [Astronomical Society of the Pacific Conference Series (ASPCS)](http://www.aspbooks.org/a/volumes/upcoming/?book_id=606). This is in concurrent development with the automated wavelength calibration software [RASCAL](https://github.com/jveitchmichaelis/rascal), further information can be referred to this [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205883V/abstract) and it will appear in the same volume of ASPCS.
+More background information can be referred to the [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract), which will appeare in the [Astronomical Society of the Pacific Conference Series (ASPCS)](http://www.aspbooks.org/a/volumes/upcoming/?book_id=606). This is in concurrent development with the automated wavelength calibration software [RASCAL](https://github.com/jveitchmichaelis/rascal), further information can be referred to this [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205883V/abstract) and it will appear in the same volume of ASPCS.
 
 Example notebooks can be found [here](https://github.com/cylammarco/ASPIRED-example).
 
@@ -65,7 +65,7 @@ The [quickstart guide](https://aspired.readthedocs.io/en/latest/tutorials/quicks
 ## Contributing Code/Documentation
 If you are interested in contributing code to the project, thank you! For those unfamiliar with the process of contributing to an open-source project, you may want to read through Github’s own short informational section on how to submit a [contribution](https://opensource.guide/how-to-contribute/#how-to-submit-a-contribution) or send me a message.
 
-Style -- as long as it passes PEP8, it's fine. We suggest you to use yapf default setting. What is not covered is the imports, we cluster imports into three groups in this order: Python built-in libraries, third party imports, and then local application imports. `import` goes before `from`, and then follow alphabatical order.
+Style -- as long as it passes flake8.
 
 ## Funding bodies
 1. European Union’s Horizon 2020 research and innovation programme (grant agreement No. 730890)

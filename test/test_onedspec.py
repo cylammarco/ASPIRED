@@ -708,21 +708,36 @@ def test_calibrator_science():
                                    filter_close=True,
                                    stype='science')
 
-    onedspec.load_user_atlas(elements=['HeXe'] * 10,
-                             wavelengths=np.arange(10),
-                             stype='science')
-    onedspec.load_user_atlas(spec_id=0,
-                             elements=['HeXe'] * 10,
-                             wavelengths=np.arange(10),
-                             stype='science')
-    onedspec.load_user_atlas(spec_id=[1],
-                             elements=['HeXe'] * 10,
-                             wavelengths=np.arange(10),
-                             stype='science')
-    onedspec.load_user_atlas(spec_id=[11, 75],
-                             elements=['HeXe'] * 10,
-                             wavelengths=np.arange(10),
-                             stype='science')
+    onedspec.add_user_atlas(elements=['HeXe'] * 10,
+                            wavelengths=np.arange(10),
+                            stype='science')
+    onedspec.add_user_atlas(spec_id=0,
+                            elements=['HeXe'] * 10,
+                            wavelengths=np.arange(10),
+                            stype='science')
+    onedspec.add_user_atlas(spec_id=[1],
+                            elements=['HeXe'] * 10,
+                            wavelengths=np.arange(10),
+                            stype='science')
+    onedspec.add_user_atlas(spec_id=[11, 75],
+                            elements=['HeXe'] * 10,
+                            wavelengths=np.arange(10),
+                            stype='science')
+
+    assert len(
+        onedspec.science_wavecal[0].spectrum1D.calibrator.atlas_elements) == 20
+    onedspec.remove_atlas_lines_range(wavelength=5., tolerance=1.5, spec_id=0)
+    assert len(
+        onedspec.science_wavecal[0].spectrum1D.calibrator.atlas_elements) == 10
+    assert len(
+        onedspec.science_wavecal[1].spectrum1D.calibrator.atlas_elements) == 20
+    onedspec.remove_atlas_lines_range(wavelength=5., tolerance=1.5)
+    assert len(
+        onedspec.science_wavecal[1].spectrum1D.calibrator.atlas_elements) == 10
+
+    onedspec.clear_atlas()
+    assert onedspec.science_wavecal[
+        0].spectrum1D.calibrator.atlas_elements == []
 
     onedspec.add_atlas(elements=['Ar'] * 10, stype='science')
     onedspec.add_atlas(spec_id=0, elements=['Ar'] * 10, stype='science')

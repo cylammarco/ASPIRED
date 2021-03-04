@@ -619,19 +619,18 @@ class WavelengthCalibration():
 
         self.spectrum1D.calibrator.set_known_pairs(pix=pix, wave=wave)
 
-    def load_user_atlas(self,
-                        elements,
-                        wavelengths,
-                        intensities=None,
-                        candidate_tolerance=10.,
-                        constrain_poly=False,
-                        vacuum=False,
-                        pressure=101325.,
-                        temperature=273.15,
-                        relative_humidity=0.):
+    def add_user_atlas(self,
+                       elements,
+                       wavelengths,
+                       intensities=None,
+                       candidate_tolerance=10.,
+                       constrain_poly=False,
+                       vacuum=False,
+                       pressure=101325.,
+                       temperature=273.15,
+                       relative_humidity=0.):
         '''
-        *Remove* all the arc lines loaded to the Calibrator and then use the
-        user supplied arc lines instead.
+        Append the user supplied arc lines to the calibrator.
 
         The vacuum to air wavelength conversion is deafult to False because
         observatories usually provide the line lists in the respective air
@@ -662,7 +661,7 @@ class WavelengthCalibration():
 
         '''
 
-        self.spectrum1D.calibrator.load_user_atlas(
+        self.spectrum1D.calibrator.add_user_atlas(
             elements=elements,
             wavelengths=wavelengths,
             intensities=intensities,
@@ -760,6 +759,38 @@ class WavelengthCalibration():
 
         self.spectrum1D.add_weather_condition(pressure, temperature,
                                               relative_humidity)
+
+    def remove_atlas_lines_range(self, wavelength, tolerance=10.):
+        '''
+        Remove arc lines within a certain wavelength range.
+
+        Parameters
+        ----------
+        wavelength: float
+            Wavelength to remove (Angstrom)
+        tolerance: float
+            Tolerance around this wavelength where atlas lines will be removed
+
+        '''
+
+        self.spectrum1D.calibrator.remove_atlas_lines_range(wavelength,
+                                                            tolerance=10.)
+
+    def list_atlas(self):
+        '''
+        List all the lines loaded to the Calibrator.
+
+        '''
+
+        self.spectrum1D.calibrator.list_atlas()
+
+    def clear_atlas(self):
+        '''
+        Remove all the lines loaded to the Calibrator.
+
+        '''
+
+        self.spectrum1D.calibrator.clear_atlas()
 
     def do_hough_transform(self):
         '''

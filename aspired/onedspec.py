@@ -1894,9 +1894,9 @@ class OneDSpec():
                 logging.warning('Standard arc lines are not available.')
 
     def set_known_pairs(self,
-                        spec_id=None,
                         pix=None,
                         wave=None,
+                        spec_id=None,
                         stype='science+standard'):
         '''
         Parameters
@@ -1955,21 +1955,20 @@ class OneDSpec():
 
                 logging.warning('Standard arc lines are not available.')
 
-    def load_user_atlas(self,
-                        elements,
-                        wavelengths,
-                        spec_id=None,
-                        intensities=None,
-                        candidate_tolerance=10.,
-                        constrain_poly=False,
-                        vacuum=False,
-                        pressure=None,
-                        temperature=None,
-                        relative_humidity=None,
-                        stype='science+standard'):
+    def add_user_atlas(self,
+                       elements,
+                       wavelengths,
+                       spec_id=None,
+                       intensities=None,
+                       candidate_tolerance=10.,
+                       constrain_poly=False,
+                       vacuum=False,
+                       pressure=None,
+                       temperature=None,
+                       relative_humidity=None,
+                       stype='science+standard'):
         '''
-        *Remove* all the arc lines loaded to the Calibrator and then use the
-        user supplied arc lines instead.
+        Append the user supplied arc lines to the calibrator.
 
         The vacuum to air wavelength conversion is deafult to False because
         observatories usually provide the line lists in the respective air
@@ -2049,7 +2048,7 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    self.science_wavecal[i].load_user_atlas(
+                    self.science_wavecal[i].add_user_atlas(
                         elements=elements,
                         wavelengths=wavelengths,
                         intensities=intensities,
@@ -2070,7 +2069,7 @@ class OneDSpec():
 
             if self.standard_data_available:
 
-                self.standard_wavecal.load_user_atlas(
+                self.standard_wavecal.add_user_atlas(
                     elements=elements,
                     wavelengths=wavelengths,
                     intensities=intensities,
@@ -2194,6 +2193,181 @@ class OneDSpec():
                 relative_humidity=relative_humidity)
 
             self.standard_atlas_available = True
+
+    def remove_atlas_lines_range(self,
+                                 wavelength,
+                                 tolerance=10.,
+                                 spec_id=None,
+                                 stype='science+standard'):
+        '''
+        Remove arc lines within a certain wavelength range.
+
+        Parameters
+        ----------
+        wavelength: float
+            Wavelength to remove (Angstrom)
+        tolerance: float
+            Tolerance around this wavelength where atlas lines will be removed
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_atlas_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        logging.critical(error_msg)
+                        raise TypeError(error_msg)
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.science_wavecal[i].remove_atlas_lines_range(
+                        wavelength, tolerance)
+
+            else:
+
+                logging.warning('Science atlas is not available.')
+
+        if 'standard' in stype_split:
+
+            if self.standard_atlas_available:
+
+                self.standard_wavecal.remove_atlas_lines_range(
+                    wavelength, tolerance)
+
+            else:
+
+                logging.warning('Standard atlas is not available.')
+
+    def clear_atlas(self, spec_id=None, stype='science+standard'):
+        '''
+        Remove all the atlas lines from the calibrator.
+
+        Parameters
+        ----------
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: string (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_atlas_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        logging.critical(error_msg)
+                        raise TypeError(error_msg)
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.science_wavecal[i].clear_atlas()
+
+                self.science_atlas_available = False
+
+            else:
+
+                logging.warning('Science atlas is not available.')
+
+        if 'standard' in stype_split:
+
+            if self.standard_atlas_available:
+
+                self.standard_wavecal.clear_atlas()
+
+                self.standard_atlas_available = False
+
+            else:
+
+                logging.warning('Standard atlas is not available.')
+
+    def list_atlas(self, spec_id=None, stype='science+standard'):
+        '''
+        Remove all the atlas lines from the calibrator.
+
+        Parameters
+        ----------
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: string (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_atlas_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        logging.critical(error_msg)
+                        raise TypeError(error_msg)
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.science_wavecal[i].list_atlas()
+
+            else:
+
+                logging.warning('Science atlas is not available.')
+
+        if 'standard' in stype_split:
+
+            if self.standard_atlas_available:
+
+                self.standard_wavecal.list_atlas()
+
+            else:
+
+                logging.warning('Standard atlas is not available.')
 
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''

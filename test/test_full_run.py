@@ -163,9 +163,9 @@ def test_full_run():
     lhs6328_onedspec.set_ransac_properties(filter_close=True,
                                            stype='science+standard')
 
-    lhs6328_onedspec.load_user_atlas(elements=element,
-                                     wavelengths=atlas,
-                                     stype='science+standard')
+    lhs6328_onedspec.add_user_atlas(elements=element,
+                                    wavelengths=atlas,
+                                    stype='science+standard')
     lhs6328_onedspec.do_hough_transform()
 
     # Solve for the pixel-to-wavelength solution
