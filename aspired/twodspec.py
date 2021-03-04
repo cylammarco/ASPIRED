@@ -389,7 +389,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
 
-            elif np.isfinite(readnoise):
+            elif isinstance(readnoise, (float, int)) & (not np.isnan(readnoise)):
 
                 # use the given readnoise value
                 self.readnoise = float(readnoise)
@@ -436,7 +436,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
 
-            elif np.isfinite(gain):
+            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
 
                 # use the given gain value
                 self.gain = float(gain)
@@ -481,7 +481,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
 
-            elif np.isfinite(gain):
+            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
 
                 # use the given gain value
                 self.seeing = float(seeing)
@@ -528,7 +528,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
 
-            elif np.isfinite(gain):
+            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
 
                 # use the given gain value
                 self.exptime = float(exptime)
