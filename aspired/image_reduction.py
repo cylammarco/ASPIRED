@@ -559,7 +559,7 @@ class ImageReduction:
                         np.in1d(self.exptime_keyword,
                                 self.light_header[i]))[0][0])
 
-                if isinstance(exptime_keyword_idx, (float, int)) & (not np.isnan(exptime_keyword_idx)):
+                if np.isfinite(exptime_keyword_idx):
 
                     exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
                     light_time.append(self.light_header[i][exptime_keyword])
@@ -818,7 +818,7 @@ class ImageReduction:
                 logging.debug('Exposure time keyword index is {}.'.format(
                     exptime_keyword_idx))
 
-                if isinstance(exptime_keyword_idx, (float, int)) & (not np.isnan(exptime_keyword_idx)):
+                if np.isfinite(exptime_keyword_idx):
 
                     exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
                     dark_time.append(self.dark_header[i][exptime_keyword])
@@ -927,7 +927,7 @@ class ImageReduction:
                 logging.debug('Exposure time keyword index is {}.'.format(
                     exptime_keyword_idx))
 
-                if isinstance(exptime_keyword_idx, (float, int)) & (not np.isnan(exptime_keyword_idx)):
+                if np.isfinite(exptime_keyword_idx):
                     exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
                     flat_time.append(self.flat_header[i][exptime_keyword])
                     logging.debug('Exposure time is {}.'.format(flat_time[i]))

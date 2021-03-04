@@ -481,7 +481,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
 
-            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
+            elif isinstance(seeing, (float, int)) & (not np.isnan(seeing)):
 
                 # use the given gain value
                 self.seeing = float(seeing)
@@ -528,7 +528,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
 
-            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
+            elif isinstance(exptime, (float, int)) & (not np.isnan(exptime)):
 
                 # use the given gain value
                 self.exptime = float(exptime)
