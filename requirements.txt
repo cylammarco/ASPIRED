@@ -1,6 +1,6 @@
 astropy>=4.0
 ccdproc>=2.1
-rascal==0.2
+git+git://github.com/jveitchmichaelis/rascal@main#egg=rascal
 plotly>=4.0
 git+git://github.com/astropy/astroscrappy@master#egg=astroscrappy
 spectres>=2.1.1
