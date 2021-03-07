@@ -7,5 +7,5 @@ from .fluxcalibration import StandardLibrary, FluxCalibration
 
 __all__ = [
     'ImageReduction', 'Spectrum1D', 'TwoDSpec', 'OneDSpec',
-    'WavelengthCalibration', 'StandardLibrary', 'FluxCalibration'
+    'WavelengthCalibration', 'StandardLibrary', 'FluxCalibration',
 ]

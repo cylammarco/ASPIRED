@@ -6,6 +6,7 @@ __all__ = [
     'image_reduction',
     'spectral_reduction',
     'standard_list',
+    'util',
 ]
 
 __author__ = "Marco C Lam", "Robert J Smith"

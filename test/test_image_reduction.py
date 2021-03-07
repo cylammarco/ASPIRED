@@ -220,3 +220,38 @@ def test_reduction_and_save():
                 save_svg=True,
                 save_pdf=True)
     img.list_files()
+
+
+def test_input_with_numpy_array_and_clean_bad_pixels():
+    filelist = np.loadtxt('test/test_data/sprat_LHS6328.list',
+                          delimiter=',',
+                          dtype='object')
+    for i, filepath in enumerate(filelist[:, 1]):
+        filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
+    img = image_reduction.ImageReduction(filelist=filelist, log_file_name=None)
+    img.reduce()
+    img.heal_bad_pixels()
+
+
+def test_input_with_numpy_array_and_set_every_pixel_bad():
+    filelist = np.loadtxt('test/test_data/sprat_LHS6328.list',
+                          delimiter=',',
+                          dtype='object')
+    for i, filepath in enumerate(filelist[:, 1]):
+        filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
+    img = image_reduction.ImageReduction(filelist=filelist, log_file_name=None)
+    img.reduce()
+    img.heal_bad_pixels(np.zeros_like(img.light_reduced))
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_input_with_numpy_array_and_clean_bad_pixels_expect_fail():
+    filelist = np.loadtxt('test/test_data/sprat_LHS6328.list',
+                          delimiter=',',
+                          dtype='object')
+    for i, filepath in enumerate(filelist[:, 1]):
+        filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
+    img = image_reduction.ImageReduction(filelist=filelist, log_file_name=None)
+    img.reduce()
+    img.create_bad_mask()
+    img.heal_bad_pixels(bad_mask=np.ones(100))

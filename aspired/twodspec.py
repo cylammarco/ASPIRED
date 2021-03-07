@@ -15,6 +15,7 @@ from spectres import spectres
 
 from .image_reduction import ImageReduction
 from .spectrum1D import Spectrum1D
+from .util import bfixpix
 
 __all__ = ['TwoDSpec']
 
@@ -389,7 +390,8 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
 
-            elif isinstance(readnoise, (float, int)) & (not np.isnan(readnoise)):
+            elif isinstance(readnoise,
+                            (float, int)) & (not np.isnan(readnoise)):
 
                 # use the given readnoise value
                 self.readnoise = float(readnoise)
@@ -953,84 +955,6 @@ class TwoDSpec:
         """
 
         return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
-
-    def _bfixpix(self, data, badmask, n=4, retdat=False):
-        """
-        Replace pixels flagged as nonzero in a bad-pixel mask with the
-        average of their nearest four good neighboring pixels.
-
-        Based on Ian Crossfield's code
-        https://www.lpl.arizona.edu/~ianc/python/_modules/nsdata.html#bfixpix
-
-        Parameters
-        ----------
-        data : numpy array (two-dimensional)
-
-        badmask : numpy array (same shape as data)
-
-        n : int
-            number of nearby, good pixels to average over
-
-        retdat : bool
-            If True, return an array instead of replacing-in-place and do
-            _not_ modify input array `data`.  This is always True if a 1D
-            array is input!
-
-        Returns
-        -------
-        another numpy array (if retdat is True)
-
-        """
-
-        if data.ndim == 1:
-            data = np.tile(data, (3, 1))
-            badmask = np.tile(badmask, (3, 1))
-            ret = self._bfixpix(data, badmask, n=2, retdat=True)
-            return ret[1]
-
-        nx, ny = data.shape
-
-        badx, bady = np.nonzero(badmask)
-        nbad = len(badx)
-
-        if retdat:
-            data = np.array(data, copy=True)
-
-        for ii in range(nbad):
-            rad = 0
-            numNearbyGoodPixels = 0
-
-            while numNearbyGoodPixels < n:
-                rad += 1
-                xmin = max(0, badx[ii] - rad)
-                xmax = min(nx, badx[ii] + rad)
-                ymin = max(0, bady[ii] - rad)
-                ymax = min(ny, bady[ii] + rad)
-                x = np.arange(nx)[xmin:xmax + 1]
-                y = np.arange(ny)[ymin:ymax + 1]
-                yy, xx = np.meshgrid(y, x)
-
-                rr = abs(xx + 1j * yy) * (
-                    1. - badmask[xmin:xmax + 1, ymin:ymax + 1])
-                numNearbyGoodPixels = (rr > 0).sum()
-
-            closestDistances = np.unique(np.sort(rr[rr > 0])[0:n])
-            numDistances = len(closestDistances)
-            localSum = 0.
-            localDenominator = 0.
-            for jj in range(numDistances):
-                localSum += data[xmin:xmax + 1, ymin:ymax +
-                                 1][rr == closestDistances[jj]].sum()
-                localDenominator += (rr == closestDistances[jj]).sum()
-
-            data[badx[ii], bady[ii]] = 1.0 * localSum / localDenominator
-
-        if retdat:
-            ret = data
-        else:
-            ret = None
-
-        return ret
 
     def ap_trace(self,
                  nspec=1,
@@ -2502,10 +2426,7 @@ class TwoDSpec:
         # Interpolate and fix bad pixels for extraction of standard
         # spectrum -- otherwise there can be 'holes' in the spectrum from
         # ill-placed bad pixels.
-        fixSkysubFrame = self._bfixpix(skysubFrame,
-                                       ~goodpixelmask,
-                                       n=8,
-                                       retdat=True)
+        fixSkysubFrame = bfixpix(skysubFrame, ~goodpixelmask, n=8, retdat=True)
 
         # Define new indices (in Marsh's appendix):
         N = pord + 1
@@ -2765,10 +2686,10 @@ class TwoDSpec:
                 "Rejected {} pixels in this iteration.".format(numberRejected))
 
             # Optimal Spectral Extraction: (Horne, Step 8)
-            fixSkysubFrame = self._bfixpix(skysubFrame,
-                                           ~goodpixelmask,
-                                           n=8,
-                                           retdat=True)
+            fixSkysubFrame = bfixpix(skysubFrame,
+                                     ~goodpixelmask,
+                                     n=8,
+                                     retdat=True)
 
             spectrum_marsh = np.zeros(spectral_size)
             spectrum_err_marsh = np.zeros(spectral_size)

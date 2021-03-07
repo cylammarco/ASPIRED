@@ -12,6 +12,8 @@ from ccdproc import Combiner
 from plotly import graph_objects as go
 from plotly import io as pio
 
+from .util import bfixpix, create_bad_mask, create_cutoff_mask
+
 __all__ = ['ImageReduction']
 
 
@@ -52,6 +54,10 @@ class ImageReduction:
                  psfmodel='gaussy',
                  psffwhm=2.5,
                  psfsize=7,
+                 cutoff=60000.,
+                 grow=False,
+                 iterations=1,
+                 diagonal=False,
                  verbose=True,
                  logger_name='ImageReduction',
                  log_level='WARNING',
@@ -266,6 +272,11 @@ class ImageReduction:
         self.psfsize = psfsize
         self.verbose = verbose
 
+        self.cutoff = cutoff
+        self.grow = grow
+        self.iterations = iterations
+        self.diagonal = diagonal
+
         self.bias_list = None
         self.dark_list = None
         self.flat_list = None
@@ -282,6 +293,7 @@ class ImageReduction:
         self.light_reduced = None
 
         self.image_fits = None
+        self.bad_mask = None
 
         self.bias_filename = []
         self.dark_filename = []
@@ -1008,6 +1020,38 @@ class ImageReduction:
         flat_CCDData = None
         flat_combiner = None
 
+    def create_bad_mask(self,
+                        cutoff=60000.,
+                        grow=False,
+                        iterations=1,
+                        diagonal=False):
+        """
+        Heal the bad pixels by taking the average of their n-nearest
+        good neighboring pixels. See more at util.bfixpix(). If you
+        wish to have fine control of the the bad mask creation, please
+        use the util.create_cutoff_mask() and util.create_bad_mask()
+        manually; or supply your own the bad masks.
+
+        Parameters
+        ----------
+        cutoff: float
+            This sets the (lower and) upper limit of electron count.
+        grow: bool
+            Set to True to grow the mask, see `grow_mask()`
+        iterations: int
+            The number of pixel growth along the Cartesian axes directions.
+        diagonal: boolean
+            Set to True to grow in the diagonal directions.
+
+        """
+
+        saturation_mask = create_cutoff_mask(self.light_reduced, cutoff, grow,
+                                             iterations, diagonal)
+        bad_mask = create_bad_mask(self.light_reduced, grow, iterations,
+                                   diagonal)
+
+        self.bad_mask = saturation_mask * bad_mask
+
     def reduce(self):
         '''
         Perform data reduction using the frames provided.
@@ -1043,6 +1087,47 @@ class ImageReduction:
 
         # Construct a FITS object of the reduced frame
         self.light_reduced = np.array((self.light_reduced))
+
+        # Create bad pixel mask
+        self.create_bad_mask()
+
+    def heal_bad_pixels(self, bad_mask=None, n=4):
+        """
+        Heal the bad pixels by taking the average of their n-nearest
+        good neighboring pixels. See more at util.bfixpix(). By default,
+        this is not used, becase any automatic tampering of data is
+        not a good idea.
+
+        Parameters
+        ----------
+        bad_mask: numpy.ndarray
+            The bad pixel mask for healing. If it is not provided, it
+            will be computed from the reduced data.
+        n: int
+            Number of nearest, good pixels to average over.
+
+        """
+
+        if bad_mask is None:
+
+            if self.bad_mask is None:
+
+                self.create_bad_mask()
+                logging.info('Created a bad_mask using the reduced data.')
+
+        elif np.shape(bad_mask) == np.shape(self.light_reduced):
+
+            self.bad_mask = bad_mask
+            logging.info('Bad_mask is set to the supplied mask.')
+
+        else:
+
+            err_msg = 'The bad_mask provided has to be the ' +\
+                'same shape as the data.'
+            logging.error(err_msg)
+            raise RuntimeError(err_msg)
+
+        bfixpix(self.light_reduced, self.bad_mask, n=n)
 
     def _create_image_fits(self):
         '''
