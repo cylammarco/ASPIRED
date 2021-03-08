@@ -152,6 +152,35 @@ def test_input_with_hdu():
         log_file_name=None)
 
 
+@pytest.mark.xfail(raises=ValueError)
+def test_input_with_wrong_light_combine_type():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328.list',
+        combinetype_light='FAIL',
+        log_file_name=None)
+
+
+def test_input_with_wrong_dark_combine_type():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328.list',
+        combinetype_dark='FAIL',
+        log_file_name=None)
+
+
+def test_input_with_wrong_flat_combine_type():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328.list',
+        combinetype_flat='FAIL',
+        log_file_name=None)
+
+
+def test_input_with_wrong_bias_combine_type():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328.list',
+        combinetype_bias='FAIL',
+        log_file_name=None)
+
+
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_only_one_column():
     image_reduction.ImageReduction(
@@ -164,6 +193,7 @@ def test_cosmicray_cleaning_x_then_y():
         filelist='test/test_data/sprat_LHS6328.list',
         cosmicray=True,
         psfmodel='gaussxy',
+        combinetype_light='average',
         log_file_name=None)
 
 
@@ -172,6 +202,7 @@ def test_cosmicray_cleaning_y_then_x():
         filelist='test/test_data/sprat_LHS6328.list',
         cosmicray=True,
         psfmodel='gaussyx',
+        combinetype_dark='average',
         log_file_name=None)
 
 
@@ -180,12 +211,14 @@ def test_cosmicray_cleaning():
         filelist='test/test_data/sprat_LHS6328.list',
         cosmicray=True,
         psfmodel='gaussx',
+        combinetype_bias='average',
         log_file_name=None)
 
 
 def test_input_with_multiple_frames_to_combine_and_reduction():
     img = image_reduction.ImageReduction(
         filelist='test/test_data/sprat_LHS6328_repeated_data.list',
+        combinetype_flat='average',
         log_file_name=None)
     img.reduce()
 
