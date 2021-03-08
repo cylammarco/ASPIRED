@@ -145,6 +145,28 @@ def test_add_wavelengthcalibration_science():
                                        stype='science')
 
 
+# science add_wavelengthcalibration to two traces
+def test_add_wavelengthcalibration_science_two_spec():
+    # Create a dummy WavelengthCalibration
+    dummy_wavecal = WavelengthCalibration(log_file_name=None)
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_science_spectrum1D(1)
+    onedspec.add_wavelengthcalibration(dummy_wavecal,
+                                       spec_id=[0, 1],
+                                       stype='science')
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+# science add_wavelengthcalibration to two traces
+def test_add_wavelengthcalibration_science_expect_fail():
+    # Create a dummy WavelengthCalibration
+    dummy_wavecal = WavelengthCalibration(log_file_name=None)
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_wavelengthcalibration(dummy_wavecal,
+                                       spec_id=[0, 1],
+                                       stype='science')
+
+
 # standard add_wavelengthcalibration
 def test_add_wavelengthcalibration_standard():
     # Create a dummy WavelengthCalibration
@@ -312,6 +334,22 @@ def test_add_wavelength_science():
     onedspec.add_wavelength([np.arange(200)], spec_id=1, stype='science')
 
 
+# science add_wavelengthcalibration to two traces
+def test_add_wavelength_science_two_spec():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_spec(np.arange(100), spec_id=1, stype='science')
+    onedspec.add_wavelength(np.arange(100), spec_id=[0, 1], stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+# science add_wavelengthcalibration to two traces
+def test_add_wavelength_science_expect_fail():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_wavelength(np.arange(100), spec_id=[0, 1], stype='science')
+
+
 @pytest.mark.xfail(raises=RuntimeError)
 def test_add_wavelength_science_fail_no_science_data():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
@@ -409,6 +447,26 @@ def test_add_wavelength_resampled_science():
          np.arange(100)],
         spec_id=[0, 1, 10],
         stype='science')
+
+
+# science add_wavelengthcalibration to two traces
+def test_add_wavelength_resampled_science_two_spec():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_spec(np.arange(100), spec_id=1, stype='science')
+    onedspec.add_wavelength_resampled(np.arange(100),
+                                      spec_id=[0, 1],
+                                      stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+# science add_wavelengthcalibration to two traces
+def test_add_wavelength_resampled_science_two_spec_expect_fail():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.add_wavelength_resampled(np.arange(100),
+                                      spec_id=[0, 1],
+                                      stype='science')
 
 
 @pytest.mark.xfail(raises=RuntimeError)
@@ -748,6 +806,12 @@ def test_calibrator_science():
     onedspec.do_hough_transform(spec_id=0)
     onedspec.do_hough_transform(spec_id=[1])
     onedspec.do_hough_transform(spec_id=[11, 75])
+
+    onedspec.set_known_pairs(pix=100, wave=4500., stype='science')
+    onedspec.set_known_pairs(pix=[100], wave=[4500.], stype='science')
+    onedspec.set_known_pairs(pix=[100, 200],
+                             wave=[4500., 5500.],
+                             stype='science')
 
 
 def test_extinction_function():

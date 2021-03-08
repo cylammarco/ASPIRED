@@ -286,7 +286,10 @@ class OneDSpec():
 
                 elif len(wavecal) == 1:
 
-                    wavecal = {spec_id[0]: wavecal[0]}
+                    wavecal = {
+                        spec_id[i]: wavecal[0]
+                        for i in range(len(spec_id))
+                    }
 
                 else:
 
@@ -390,7 +393,7 @@ class OneDSpec():
 
                 elif len(wave) == 1:
 
-                    wave = {spec_id[0]: wave[0]}
+                    wave = {spec_id[i]: wave[0] for i in range(len(spec_id))}
 
                 else:
 
@@ -522,7 +525,10 @@ class OneDSpec():
 
                 elif len(wave_resampled) == 1:
 
-                    wave_resampled = {spec_id[0]: wave_resampled[0]}
+                    wave_resampled = {
+                        spec_id[i]: wave_resampled[0]
+                        for i in range(len(spec_id))
+                    }
 
                 else:
 
@@ -2612,6 +2618,11 @@ class OneDSpec():
 
                 for i in spec_id:
 
+                    if fit_coeff is None:
+
+                        fit_coeff = self.science_wavecal[
+                            i].spectrum1D.calibrator.fit_coeff
+
                     self.science_wavecal[i].refine_fit(
                         fit_coeff=fit_coeff,
                         n_delta=n_delta,
@@ -2632,6 +2643,11 @@ class OneDSpec():
         if 'standard' in stype_split:
 
             if self.standard_wavecal_polynomial_available:
+
+                if fit_coeff is None:
+
+                    fit_coeff = self.standard_wavecal[
+                        0].spectrum1D.calibrator.fit_coeff
 
                 self.standard_wavecal.refine_fit(fit_coeff=fit_coeff,
                                                  n_delta=n_delta,

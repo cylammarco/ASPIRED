@@ -276,6 +276,7 @@ class ImageReduction:
         self.grow = grow
         self.iterations = iterations
         self.diagonal = diagonal
+        self.pixel_healed = False
 
         self.bias_list = None
         self.dark_list = None
@@ -1128,6 +1129,7 @@ class ImageReduction:
             raise RuntimeError(err_msg)
 
         bfixpix(self.light_reduced, self.bad_mask, n=n)
+        self.pixel_healed = True
 
     def _create_image_fits(self):
         '''
@@ -1259,6 +1261,59 @@ class ImageReduction:
             keyword='FCLIPHIG',
             value=self.clip_high_flat,
             comment='Higher threshold of sigma clipping of the flat frames.')
+        self.image_fits.header.set(
+            keyword='CCLEANED',
+            value=self.cosmicray,
+            comment='Indicate if cosmic ray cleaning was performed.')
+        self.image_fits.header.set(
+            keyword='CSIGMA',
+            value=self.sigclip,
+            comment='Sigma level of cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CRDNOISE',
+            value=self.readnoise,
+            comment='Readnoise value used for cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CGAIN',
+            value=self.gain,
+            comment='Gain value used for cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CFSMODE',
+            value=self.fsmode,
+            comment='The fine structure mode for cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CPSFMODEL',
+            value=self.psfmodel,
+            comment='The PSF model used for cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CPSFFWHM',
+            value=self.psffwhm,
+            comment='The PSF FWHM used for cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CPSFSIZE',
+            value=self.psfsize,
+            comment='The PSF kernel size used for cosmic ray cleaning.')
+        self.image_fits.header.set(
+            keyword='CUTOFF',
+            value=self.cutoff,
+            comment='The upper and lower limit of the good pixel values.')
+        self.image_fits.header.set(
+            keyword='GROW',
+            value=self.grow,
+            comment='Indicate if the bad pixel mask is grown outward.')
+        self.image_fits.header.set(
+            keyword='ITERATE',
+            value=self.iterations,
+            comment='The number of pixels the bad pixel mask is grown.')
+        self.image_fits.header.set(
+            keyword='DIAGONAL',
+            value=self.diagonal,
+            comment='If False, ITERATE is the number of pixels grown '
+            'in Mahattan distance.')
+        self.image_fits.header.set(
+            keyword='HEALED',
+            value=self.pixel_healed,
+            comment='Indicate if the pixels are healed (i.e. altered!).')
 
     def save_fits(self,
                   filename='reduced_image',

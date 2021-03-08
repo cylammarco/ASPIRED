@@ -172,6 +172,7 @@ def test_full_run():
     lhs6328_onedspec.fit(max_tries=200,
                          stype='science+standard',
                          display=False)
+    lhs6328_onedspec.refine_fit()
 
     # Apply the wavelength calibration and display it
     lhs6328_onedspec.apply_wavelength_calibration(stype='science+standard')

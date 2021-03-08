@@ -115,6 +115,11 @@ class TwoDSpec:
             self.logger.handlers.clear()
         self.logger.addHandler(self.handler)
 
+        self.img = None
+        self.header = None
+        self.arc = None
+        self.arc_header = None
+
         self.add_data(data, header)
         self.spectrum_list = {}
 
@@ -143,10 +148,13 @@ class TwoDSpec:
         # Default keywords to be searched in the order in the list
         self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
         self.gain_keyword = ['GAIN']
-        self.seeing_keyword = ['SEEING', 'L1SEEING', 'ESTSEE']
+        self.seeing_keyword = [
+            'SEEING', 'L1SEEING', 'ESTSEE', 'DIMMSEE', 'SEEDIMM', 'DSEEING'
+        ]
         self.exptime_keyword = [
             'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
         ]
+        self.airmass_keyword = ['AIRMASS', 'AMASS', 'AIRM', 'AIR']
 
         self.set_properties(**kwargs)
 
@@ -225,8 +233,7 @@ class TwoDSpec:
 
         elif data is None:
 
-            self.img = None
-            self.header = None
+            pass
 
         else:
 
@@ -236,7 +243,9 @@ class TwoDSpec:
             logging.critical(error_msg)
             raise TypeError(error_msg)
 
-        self.img_residual = self.img.copy()
+        if data is not None:
+
+            self.img_residual = self.img.copy()
 
     def set_properties(self,
                        saxis=None,
@@ -250,6 +259,7 @@ class TwoDSpec:
                        gain=None,
                        seeing=None,
                        exptime=None,
+                       airmass=None,
                        verbose=None):
         '''
         The read noise, detector gain, seeing and exposure time will be
@@ -325,6 +335,8 @@ class TwoDSpec:
             Esposure time for the observation, not important if absolute flux
             calibration is not needed.
             (Deafult is None, which will be replaced with 1.0)
+        airmass: float
+            The airmass where the observation carries out.
         verbose: boolean
             Set to False to suppress all verbose warnings, except for
             critical failure.
@@ -362,6 +374,12 @@ class TwoDSpec:
 
             self.flip = flip
 
+        self.set_readnoise(readnoise)
+        self.set_gain(gain)
+        self.set_seeing(seeing)
+        self.set_exptime(exptime)
+        self.set_airmass(airmass)
+
         # cosmic ray rejection
         if cosmicray is not None:
 
@@ -379,194 +397,6 @@ class TwoDSpec:
         if cosmicray_sigma is not None:
 
             self.cosmicray_sigma = cosmicray_sigma
-
-        # Get the Read Noise
-        if readnoise is not None:
-
-            self.readnoise = readnoise
-
-            if isinstance(readnoise, str):
-
-                # use the supplied keyword
-                self.readnoise = float(self.header[readnoise])
-
-            elif isinstance(readnoise,
-                            (float, int)) & (not np.isnan(readnoise)):
-
-                # use the given readnoise value
-                self.readnoise = float(readnoise)
-
-            else:
-
-                logging.warning(
-                    'readnoise has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(readnoise) + ' is ' +
-                    'given. It is set to 0.')
-
-        else:
-
-            # if None is given and header is provided, check if the read noise
-            # keyword exists in the default list.
-            if self.header is not None:
-
-                readnoise_keyword_matched = np.in1d(self.readnoise_keyword,
-                                                    self.header)
-
-                if readnoise_keyword_matched.any():
-
-                    self.readnoise = self.header[self.readnoise_keyword[
-                        np.where(readnoise_keyword_matched)[0][0]]]
-
-                else:
-
-                    logging.warning('Read Noise value cannot be identified. ' +
-                                    'It is set to 0.')
-
-            else:
-
-                logging.warning('Header is not provided. ' +
-                                'Read Noise value is not provided. ' +
-                                'It is set to 0.')
-
-        # Get the gain
-        if gain is not None:
-
-            self.gain = gain
-
-            if isinstance(gain, str):
-
-                # use the supplied keyword
-                self.gain = float(self.header[gain])
-
-            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
-
-                # use the given gain value
-                self.gain = float(gain)
-
-            else:
-
-                logging.warning(
-                    'Gain has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(gain) + ' is ' +
-                    'given. It is set to 1.')
-        else:
-
-            # if None is given and header is provided, check if the read noise
-            # keyword exists in the default list.
-            if self.header is not None:
-
-                gain_keyword_matched = np.in1d(self.gain_keyword, self.header)
-
-                if gain_keyword_matched.any():
-
-                    self.gain = self.header[self.gain_keyword[np.where(
-                        gain_keyword_matched)[0][0]]]
-
-                else:
-
-                    logging.warning('Gain value cannot be identified. ' +
-                                    'It is set to 1.')
-
-            else:
-
-                logging.warning('Header is not provide. ' +
-                                'Gain value is not provided. ' +
-                                'It is set to 1.')
-
-        # Get the Seeing
-        if seeing is not None:
-
-            self.seeing = seeing
-
-            if isinstance(seeing, str):
-
-                # use the supplied keyword
-                self.seeing = float(self.header[seeing])
-
-            elif isinstance(seeing, (float, int)) & (not np.isnan(seeing)):
-
-                # use the given gain value
-                self.seeing = float(seeing)
-
-            else:
-
-                logging.warning(
-                    'Seeing has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(seeing) + ' is ' +
-                    'given. It is set to 1.')
-
-        else:
-
-            # if None is given and header is provided, check if the read noise
-            # keyword exists in the default list.
-            if self.header is not None:
-
-                seeing_keyword_matched = np.in1d(self.seeing_keyword,
-                                                 self.header)
-
-                if seeing_keyword_matched.any():
-
-                    self.seeing = self.header[self.seeing_keyword[np.where(
-                        seeing_keyword_matched)[0][0]]]
-
-                else:
-
-                    logging.warning('Seeing value cannot be identified. ' +
-                                    'It is set to 1.')
-
-            else:
-
-                logging.warning('Header is not provide. ' +
-                                'Seeing value is not provided. ' +
-                                'It is set to 1.')
-
-        # Get the Exposure Time
-        if exptime is not None:
-
-            self.exptime = exptime
-
-            if isinstance(exptime, str):
-
-                # use the supplied keyword
-                self.exptime = float(self.header[exptime])
-
-            elif isinstance(exptime, (float, int)) & (not np.isnan(exptime)):
-
-                # use the given gain value
-                self.exptime = float(exptime)
-
-            else:
-
-                logging.warning(
-                    'Exposure Time has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(exptime) + ' is ' +
-                    'given. It is set to 1.')
-
-        else:
-
-            # if None is given and header is provided, check if the read noise
-            # keyword exists in the default list.
-            if self.header is not None:
-
-                exptime_keyword_matched = np.in1d(self.exptime_keyword,
-                                                  self.header)
-
-                if exptime_keyword_matched.any():
-
-                    self.exptime = self.header[self.exptime_keyword[np.where(
-                        exptime_keyword_matched)[0][0]]]
-
-                else:
-
-                    logging.warning(
-                        'Exposure Time value cannot be identified. ' +
-                        'It is set to 1.')
-
-            else:
-
-                logging.warning('Header is not provide. ' +
-                                'Exposure Time value is not provided. ' +
-                                'It is set to 1.')
 
         if verbose is not None:
 
@@ -623,20 +453,273 @@ class TwoDSpec:
             self.zmin = np.nanpercentile(img_log_finite, 5)
             self.zmax = np.nanpercentile(img_log_finite, 95)
 
-        else:
-
-            logging.critical(
-                'Please add the data when initialising the '
-                'TwoDSpec() or by using add_data(), before setting the '
-                'properties.')
-
         if variance is not None:
 
             self.variance = variance
 
-        else:
+        elif self.img is not None:
 
             self.variance = np.abs(self.img) + self.readnoise**2
+
+        else:
+
+            self.variance = None
+
+    # Get the readnoise
+    def set_readnoise(self, readnoise=None):
+
+        if readnoise is not None:
+
+            self.readnoise = readnoise
+
+            if isinstance(readnoise, str):
+
+                # use the supplied keyword
+                self.readnoise = float(self.header[readnoise])
+
+            elif isinstance(readnoise,
+                            (float, int)) & (not np.isnan(readnoise)):
+
+                # use the given readnoise value
+                self.readnoise = float(readnoise)
+
+            else:
+
+                self.readnoise = 0.
+                logging.warning(
+                    'readnoise has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(readnoise) + ' is ' +
+                    'given. It is set to 0.')
+
+        else:
+
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if self.header is not None:
+
+                readnoise_keyword_matched = np.in1d(self.readnoise_keyword,
+                                                    self.header)
+
+                if readnoise_keyword_matched.any():
+
+                    self.readnoise = self.header[self.readnoise_keyword[
+                        np.where(readnoise_keyword_matched)[0][0]]]
+
+                else:
+
+                    self.readnoise = 0.
+                    logging.warning('Readnoise value cannot be identified. ' +
+                                    'It is set to 0.')
+
+            else:
+
+                self.readnoise = 0.
+                logging.warning('Header is not provided. ' +
+                                'Readnoise value is not provided. ' +
+                                'It is set to 0.')
+
+    # Get the gain
+    def set_gain(self, gain=None):
+
+        if gain is not None:
+
+            if isinstance(gain, str):
+
+                # use the supplied keyword
+                self.gain = float(self.header[gain])
+
+            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
+
+                # use the given gain value
+                self.gain = float(gain)
+
+            else:
+
+                self.gain = 1.
+                logging.warning(
+                    'Gain has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(gain) + ' is ' +
+                    'given. It is set to 1.')
+        else:
+
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if self.header is not None:
+
+                gain_keyword_matched = np.in1d(self.gain_keyword, self.header)
+
+                if gain_keyword_matched.any():
+
+                    self.gain = self.header[self.gain_keyword[np.where(
+                        gain_keyword_matched)[0][0]]]
+
+                else:
+
+                    self.gain = 1.
+                    logging.warning('Gain value cannot be identified. ' +
+                                    'It is set to 1.')
+
+            else:
+
+                self.gain = 1.
+                logging.warning('Header is not provide. ' +
+                                'Gain value is not provided. ' +
+                                'It is set to 1.')
+
+    # Get the Seeing
+    def set_seeing(self, seeing=None):
+
+        if seeing is not None:
+
+            if isinstance(seeing, str):
+
+                # use the supplied keyword
+                self.seeing = float(self.header[seeing])
+
+            elif isinstance(seeing, (float, int)) & (not np.isnan(seeing)):
+
+                # use the given gain value
+                self.seeing = float(seeing)
+
+            else:
+
+                self.seeing = 1.
+                logging.warning(
+                    'Seeing has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(seeing) + ' is ' +
+                    'given. It is set to 1.')
+
+        else:
+
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if self.header is not None:
+
+                seeing_keyword_matched = np.in1d(self.seeing_keyword,
+                                                 self.header)
+
+                if seeing_keyword_matched.any():
+
+                    self.seeing = self.header[self.seeing_keyword[np.where(
+                        seeing_keyword_matched)[0][0]]]
+
+                else:
+
+                    self.seeing = 1.
+                    logging.warning('Seeing value cannot be identified. ' +
+                                    'It is set to 1.')
+
+            else:
+
+                self.seeing = 1.
+                logging.warning('Header is not provide. ' +
+                                'Seeing value is not provided. ' +
+                                'It is set to 1.')
+
+    # Get the Exposure Time
+    def set_exptime(self, exptime=None):
+
+        if exptime is not None:
+
+            self.exptime = exptime
+
+            if isinstance(exptime, str):
+
+                # use the supplied keyword
+                self.exptime = float(self.header[exptime])
+
+            elif isinstance(exptime, (float, int)) & (not np.isnan(exptime)):
+
+                # use the given gain value
+                self.exptime = float(exptime)
+
+            else:
+
+                self.exptime = 1.
+                logging.warning(
+                    'Exposure Time has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(exptime) + ' is ' +
+                    'given. It is set to 1.')
+
+        else:
+
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if self.header is not None:
+
+                exptime_keyword_matched = np.in1d(self.exptime_keyword,
+                                                  self.header)
+
+                if exptime_keyword_matched.any():
+
+                    self.exptime = self.header[self.exptime_keyword[np.where(
+                        exptime_keyword_matched)[0][0]]]
+
+                else:
+
+                    self.exptime = 1.
+                    logging.warning(
+                        'Exposure Time value cannot be identified. ' +
+                        'It is set to 1.')
+
+            else:
+
+                self.exptime = 1.
+                logging.warning('Header is not provide. ' +
+                                'Exposure Time value is not provided. ' +
+                                'It is set to 1.')
+
+    # Get the Exposure Time
+    def set_airmass(self, airmass=None):
+
+        if airmass is not None:
+
+            self.airmass = airmass
+
+            if isinstance(airmass, str):
+
+                # use the supplied keyword
+                self.airmass = float(self.header[airmass])
+
+            elif isinstance(airmass, (float, int)) & (not np.isnan(airmass)):
+
+                # use the given gain value
+                self.airmass = float(airmass)
+
+            else:
+
+                logging.warning(
+                    'Exposure Time has to be None, a numeric value or the ' +
+                    'FITS header keyword, ' + str(airmass) + ' is ' +
+                    'given. It is set to 1.')
+
+        else:
+
+            # if None is given and header is provided, check if the read noise
+            # keyword exists in the default list.
+            if self.header is not None:
+
+                airmass_keyword_matched = np.in1d(self.airmass_keyword,
+                                                  self.header)
+
+                if airmass_keyword_matched.any():
+
+                    self.airmass = self.header[self.airmass_keyword[np.where(
+                        airmass_keyword_matched)[0][0]]]
+
+                else:
+
+                    self.airmass = 1.
+                    logging.warning(
+                        'Exposure Time value cannot be identified. ' +
+                        'It is set to 1.')
+
+            else:
+
+                self.airmass = 1.
+                logging.warning('Header is not provide. ' +
+                                'Exposure Time value is not provided. ' +
+                                'It is set to 1.')
 
     def add_arc(self, arc, header=None):
         '''
@@ -659,11 +742,19 @@ class TwoDSpec:
             self.arc = arc
             self.set_arc_header(header)
 
+        # If it is a fits.hdu.hdulist.HDUList object
+        elif isinstance(arc, fits.hdu.hdulist.HDUList):
+
+            self.arc = arc[0].data
+            self.set_arc_header(arc[0].header)
+            logging.warning('An HDU list is provided, only the first '
+                            'HDU will be read.')
+
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
                 arc, fits.hdu.image.ImageHDU):
             self.arc = arc.data
-            self.set_arc_header(header)
+            self.set_arc_header(arc.header)
 
         # If it is an ImageReduction object
         elif isinstance(arc, ImageReduction):
@@ -687,7 +778,7 @@ class TwoDSpec:
             if arc[-1] == ']':
 
                 filepath, hdunum = arc.split('[')
-                hdunum = hdunum[:-1]
+                hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
             else:
@@ -735,7 +826,9 @@ class TwoDSpec:
         else:
 
             error_msg = 'Please provide a numpy array, an ' +\
-                'astropy.io.fits.hdu.image.PrimaryHDU object or an ' +\
+                'astropy.io.fits.hdu.image.PrimaryHDU object, an ' +\
+                'astropy.io.fits.hdu.image.ImageHDU object, an ' +\
+                'astropy.io.fits.HDUList object, or an ' +\
                 'aspired.ImageReduction object.'
             logging.critical(error_msg)
             raise TypeError(error_msg)
@@ -820,7 +913,7 @@ class TwoDSpec:
 
             self.arc = self.arc[spatial_mask]
 
-    def set_readnoise_keyword(self, keyword_list, append=False):
+    def set_readnoise_keyword(self, keyword_list, append=False, update=True):
         '''
         Set the exptime keyword list.
 
@@ -833,15 +926,36 @@ class TwoDSpec:
 
         '''
 
-        if append:
+        if isinstance(keyword_list, str):
 
-            self.readnoise_keyword += list(keyword_list)
+            keyword_list = [keyword_list]
+
+        elif isinstance(keyword_list, list):
+
+            pass
+
+        elif isinstance(keyword_list, np.ndarray):
+
+            keyword_list = list(keyword_list)
 
         else:
 
-            self.readnoise_keyword = list(keyword_list)
+            logging.error('Please provide the keyword list in str, list or '
+                          'numpy.ndarray.')
 
-    def set_gain_keyword(self, keyword_list, append=False):
+        if append:
+
+            self.readnoise_keyword += keyword_list
+
+        else:
+
+            self.readnoise_keyword = keyword_list
+
+        if update:
+
+            self.set_readnoise()
+
+    def set_gain_keyword(self, keyword_list, append=False, update=True):
         '''
         Set the exptime keyword list.
 
@@ -854,15 +968,36 @@ class TwoDSpec:
 
         '''
 
-        if append:
+        if isinstance(keyword_list, str):
 
-            self.gain_keyword += list(keyword_list)
+            keyword_list = [keyword_list]
+
+        elif isinstance(keyword_list, list):
+
+            pass
+
+        elif isinstance(keyword_list, np.ndarray):
+
+            keyword_list = list(keyword_list)
 
         else:
 
-            self.gain_keyword = list(keyword_list)
+            logging.error('Please provide the keyword list in str, list or '
+                          'numpy.ndarray.')
 
-    def set_seeing_keyword(self, keyword_list, append=False):
+        if append:
+
+            self.gain_keyword += keyword_list
+
+        else:
+
+            self.gain_keyword = keyword_list
+
+        if update:
+
+            self.set_gain()
+
+    def set_seeing_keyword(self, keyword_list, append=False, update=True):
         '''
         Set the exptime keyword list.
 
@@ -875,15 +1010,36 @@ class TwoDSpec:
 
         '''
 
-        if append:
+        if isinstance(keyword_list, str):
 
-            self.seeing_keyword += list(keyword_list)
+            keyword_list = [keyword_list]
+
+        elif isinstance(keyword_list, list):
+
+            pass
+
+        elif isinstance(keyword_list, np.ndarray):
+
+            keyword_list = list(keyword_list)
 
         else:
 
-            self.seeing_keyword = list(keyword_list)
+            logging.error('Please provide the keyword list in str, list or '
+                          'numpy.ndarray.')
 
-    def set_exptime_keyword(self, keyword_list, append=False):
+        if append:
+
+            self.seeing_keyword += keyword_list
+
+        else:
+
+            self.seeing_keyword = keyword_list
+
+        if update:
+
+            self.set_seeing()
+
+    def set_exptime_keyword(self, keyword_list, append=False, update=True):
         '''
         Set the exptime keyword list.
 
@@ -896,13 +1052,76 @@ class TwoDSpec:
 
         '''
 
-        if append:
+        if isinstance(keyword_list, str):
 
-            self.exptime_keyword += list(keyword_list)
+            keyword_list = [keyword_list]
+
+        elif isinstance(keyword_list, list):
+
+            pass
+
+        elif isinstance(keyword_list, np.ndarray):
+
+            keyword_list = list(keyword_list)
 
         else:
 
-            self.exptime_keyword = list(keyword_list)
+            logging.error('Please provide the keyword list in str, list or '
+                          'numpy.ndarray.')
+
+        if append:
+
+            self.exptime_keyword += keyword_list
+
+        else:
+
+            self.exptime_keyword = keyword_list
+
+        if update:
+
+            self.set_exptime()
+
+    def set_airmass_keyword(self, keyword_list, append=False, update=True):
+        '''
+        Set the airmass keyword list.
+
+        Parameters
+        ----------
+        keyword_list: list
+            List of keyword (string).
+        append: boolean (Default: False)
+            Set to False to overwrite the current list.
+
+        '''
+
+        if isinstance(keyword_list, str):
+
+            keyword_list = [keyword_list]
+
+        elif isinstance(keyword_list, list):
+
+            pass
+
+        elif isinstance(keyword_list, np.ndarray):
+
+            keyword_list = list(keyword_list)
+
+        else:
+
+            logging.error('Please provide the keyword list in str, list or '
+                          'numpy.ndarray.')
+
+        if append:
+
+            self.airmass_keyword += keyword_list
+
+        else:
+
+            self.airmass_keyword = keyword_list
+
+        if update:
+
+            self.set_airmass()
 
     def set_header(self, header):
         '''
@@ -1269,6 +1488,8 @@ class TwoDSpec:
             self.spectrum_list[i].add_gain(self.gain)
             self.spectrum_list[i].add_readnoise(self.readnoise)
             self.spectrum_list[i].add_exptime(self.exptime)
+            self.spectrum_list[i].add_seeing(self.seeing)
+            self.spectrum_list[i].add_airmass(self.airmass)
 
         # Plot
         if save_iframe or display or return_jsonstring:

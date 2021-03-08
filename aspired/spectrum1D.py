@@ -120,11 +120,13 @@ class Spectrum1D():
         self.gain = None
         self.readnoise = None
         self.exptime = None
+        self.seeing = None
 
         # Observing Condition
         self.relative_humidity = None
         self.pressure = None
         self.temperature = None
+        self.airmass = None
 
         # Trace properties
         self.trace = None
@@ -828,6 +830,36 @@ class Spectrum1D():
     def remove_exptime(self):
 
         self.exptime = None
+
+    def add_airmass(self, airmass):
+        """
+        Adding the airmass when the observation was carried out. This value
+        can be different from the one in the header as this can be
+        overwritten by an user input, while the header value is raw.
+
+        """
+
+        assert np.isfinite(airmass), 'airmass has to be finite.'
+        self.airmass = airmass
+
+    def remove_airmass(self):
+
+        self.airmass = None
+
+    def add_seeing(self, seeing):
+        """
+        Adding the seeing when the observation was carried out. This value
+        can be different from the one in the header as this can be
+        overwritten by an user input, while the header value is raw.
+
+        """
+
+        assert np.isfinite(seeing), 'airmass has to be finite.'
+        self.seeing = seeing
+
+    def remove_seeing(self):
+
+        self.seeing = None
 
     def add_weather_condition(self, pressure, temperature, relative_humidity):
         """
