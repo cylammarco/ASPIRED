@@ -2461,9 +2461,17 @@ class TwoDSpec:
 
             return to_return
 
-    def _tophat_extraction(self, source_slice, sky_source_slice, pix_frac,
-                           gain, sky_width_dn, sky_width_up, width_dn,
-                           width_up, source_bad_mask=None, sky_source_bad_mask=None):
+    def _tophat_extraction(self,
+                           source_slice,
+                           sky_source_slice,
+                           pix_frac,
+                           gain,
+                           sky_width_dn,
+                           sky_width_up,
+                           width_dn,
+                           width_up,
+                           source_bad_mask=None,
+                           sky_source_bad_mask=None):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second.
