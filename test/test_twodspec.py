@@ -5,6 +5,7 @@ import pytest
 from aspired import image_reduction
 from aspired import spectral_reduction
 from astropy.io import fits
+from aspired import util
 
 base_dir = os.path.dirname(__file__)
 abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
@@ -193,7 +194,7 @@ def test_set_all_properties():
                             verbose=True)
     assert twodspec.saxis == 1
     assert twodspec.waxis == 0
-    assert twodspec.variance == 10.
+    assert (twodspec.variance == 10.).all()
     assert twodspec.spatial_mask == (1, )
     assert twodspec.spec_mask == (1, )
     assert twodspec.flip
@@ -401,3 +402,40 @@ def test_add_arc_path_with_hdu_number():
 def test_add_arc_path_wrong_hdu_number_expect_fail():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_arc('test/test_data/v_a_20180810_13_1_0_1.fits.gz[10]')
+
+
+# Create some bad data
+some_bad_data = copy.copy(image_fits.data)
+len_x, len_y = image_fits.data.shape
+random_x = np.random.choice(np.arange(len_x), size=10, replace=False)
+random_y = np.random.choice(np.arange(len_y), size=10, replace=False)
+for i, j in zip(random_x, random_y):
+    some_bad_data[i, j] += 1e10
+
+# Add a bad pixel on the spectrum
+some_bad_data[130, 500] += 1e10
+
+cmask = util.create_cutoff_mask(image_fits.data, cutoff=1000)
+bmask = util.create_bad_mask(image_fits.data)
+bad_mask = bmask * bmask
+
+
+def test_add_bad_pixel_mask():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_bad_mask(bad_mask)
+
+
+def test_add_bad_pixel_mask():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_bad_mask(fits.ImagHDU(bad_mask))
+
+
+def test_add_bad_pixel_mask():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_bad_mask(fits.HDUList(fits.ImagHDU(bad_mask)))
+
+
+@pytest.mark.xfail()
+def test_add_bad_pixel_mask():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_bad_mask(np.polyval)

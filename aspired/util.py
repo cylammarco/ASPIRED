@@ -122,7 +122,7 @@ def create_cutoff_mask(data,
 
     elif isinstance(cutoff, (int, float)):
 
-        lower_limit = 0
+        lower_limit = -1e10
         upper_limit = cutoff
 
     else:

@@ -115,13 +115,6 @@ def test_full_run():
                                 display=False,
                                 save_iframe=False)
 
-    # Add a 2D arc image
-    lhs6328_twodspec.add_arc(lhs6328_frame)
-    hilt102_twodspec.add_arc(standard_frame)
-
-    lhs6328_twodspec.apply_twodspec_mask_to_arc()
-    hilt102_twodspec.apply_twodspec_mask_to_arc()
-
     # Extract the 1D arc by aperture sum of the traces provided
     lhs6328_twodspec.extract_arc_spec(
         display=False,

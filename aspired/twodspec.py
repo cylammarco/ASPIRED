@@ -119,9 +119,7 @@ class TwoDSpec:
         self.header = None
         self.arc = None
         self.arc_header = None
-
-        self.add_data(data, header)
-        self.spectrum_list = {}
+        self.bad_mask = None
 
         self.saxis = 1
         self.waxis = 0
@@ -156,7 +154,13 @@ class TwoDSpec:
         ]
         self.airmass_keyword = ['AIRMASS', 'AMASS', 'AIRM', 'AIR']
 
+        self.add_data(data, header)
+        self.spectrum_list = {}
         self.set_properties(**kwargs)
+
+        if self.arc is not None:
+
+            self.apply_twodspec_mask_to_arc()
 
     def add_data(self, data, header=None):
         """
@@ -179,12 +183,14 @@ class TwoDSpec:
             self.img = data
             logging.info('An numpy array is loaded as data.')
             self.header = header
+            self.bad_mask = np.zeros_like(self.img, dtype=bool)
 
         # If it is a fits.hdu.hdulist.HDUList object
         elif isinstance(data, fits.hdu.hdulist.HDUList):
 
             self.img = data[0].data
             self.header = data[0].header
+            self.bad_mask = np.zeros_like(self.img, dtype=bool)
             logging.warning('An HDU list is provided, only the first '
                             'HDU will be read.')
 
@@ -194,6 +200,7 @@ class TwoDSpec:
 
             self.img = data.data
             self.header = data.header
+            self.bad_mask = np.zeros_like(self.img, dtype=bool)
             logging.info('A PrimaryHDU is loaded as data.')
 
         # If it is an ImageReduction object
@@ -209,6 +216,7 @@ class TwoDSpec:
             self.header = data.image_fits.header
             self.arc = data.arc_master
             self.arc_header = data.arc_header[0]
+            self.bad_mask = data.bad_mask
 
         # If a filepath is provided
         elif isinstance(data, str):
@@ -229,6 +237,7 @@ class TwoDSpec:
             fitsfile_tmp = fits.open(filepath)[hdunum]
             self.img = fitsfile_tmp.data
             self.header = fitsfile_tmp.header
+            self.bad_mask = np.zeros_like(self.img, dtype=bool)
             fitsfile_tmp = None
 
         elif data is None:
@@ -414,11 +423,13 @@ class TwoDSpec:
 
                     self.img = self.img[self.spatial_mask]
                     self.img_residual = self.img_residual[self.spatial_mask]
+                    self.bad_mask = self.bad_mask[self.spatial_mask]
 
                 else:
 
                     self.img = self.img[:, self.spatial_mask]
                     self.img_residual = self.img_residual[:, self.spatial_mask]
+                    self.bad_mask = self.bad_mask[:, self.spatial_mask]
 
             # the valid x-range of the chip (i.e. spectral direction)
             if (len(self.spec_mask) > 1):
@@ -427,11 +438,13 @@ class TwoDSpec:
 
                     self.img = self.img[:, self.spec_mask]
                     self.img_residual = self.img_residual[:, self.spec_mask]
+                    self.bad_mask = self.bad_mask[:, self.spec_mask]
 
                 else:
 
                     self.img = self.img[self.spec_mask]
                     self.img_residual = self.img_residual[self.spec_mask]
+                    self.bad_mask = self.bad_mask[self.spec_mask]
 
             # get the length in the spectral and spatial directions
             self.spec_size = np.shape(self.img)[self.saxis]
@@ -441,11 +454,13 @@ class TwoDSpec:
 
                 self.img = np.transpose(self.img)
                 self.img_residual = np.transpose(self.img_residual)
+                self.bad_mask = np.transpose(self.bad_mask)
 
             if self.flip:
 
                 self.img = np.flip(self.img)
                 self.img_residual = np.flip(self.img_residual)
+                self.bad_mask = np.flip(self.bad_mask)
 
             # set the 2D histogram z-limits
             img_log = np.log10(self.img)
@@ -453,13 +468,22 @@ class TwoDSpec:
             self.zmin = np.nanpercentile(img_log_finite, 5)
             self.zmax = np.nanpercentile(img_log_finite, 95)
 
-        if variance is not None:
+        if self.img is not None:
 
-            self.variance = variance
+            if (variance is not None) & (np.shape(variance) == np.shape(
+                    self.img)):
 
-        elif self.img is not None:
+                self.variance = variance
 
-            self.variance = np.abs(self.img) + self.readnoise**2
+            elif isinstance(variance, (int, float)):
+
+                self.variance = np.ones_like(self.img) * variance
+
+            else:
+
+                logging.error('Please provide the variance in the same shape '
+                              'as the image.')
+                self.variance = np.abs(self.img) + self.readnoise**2
 
         else:
 
@@ -721,6 +745,103 @@ class TwoDSpec:
                                 'Exposure Time value is not provided. ' +
                                 'It is set to 1.')
 
+    def add_bad_mask(self, bad_mask=None):
+        '''
+        To provide a mask to ignore the bad pixels in the reduction.
+
+        Parameters
+        ----------
+        bad_mask: numpy.ndarray, PrimaryHDU/ImageHDU, ImageReduction, str
+            The bad pixel mask of the image, make sure it is of the same size
+            as the image and the right orientation.
+
+        '''
+
+        # If data provided is an numpy array
+        if isinstance(bad_mask, np.ndarray):
+
+            self.bad_mask = bad_mask
+
+        # If it is a fits.hdu.hdulist.HDUList object
+        elif isinstance(bad_mask, fits.hdu.hdulist.HDUList):
+
+            self.bad_mask = bad_mask[0].data
+            logging.warning('An HDU list is provided, only the first '
+                            'HDU will be read.')
+
+        # If it is a fits.hdu.image.PrimaryHDU object
+        elif isinstance(bad_mask, fits.hdu.image.PrimaryHDU) or isinstance(
+                bad_mask, fits.hdu.image.ImageHDU):
+            self.bad_mask = bad_mask.data
+
+        # If a filepath is provided
+        elif isinstance(bad_mask, str):
+
+            # If HDU number is provided
+            if bad_mask[-1] == ']':
+
+                filepath, hdunum = bad_mask.split('[')
+                hdunum = int(hdunum[:-1])
+
+            # If not, assume the HDU idnex is 0
+            else:
+
+                filepath = bad_mask
+                hdunum = 0
+
+            # Load the file and dereference it afterwards
+            fitsfile_tmp = fits.open(filepath)[hdunum]
+            if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
+
+                fitsfile_tmp = fitsfile_tmp[0]
+                logging.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
+            fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
+
+            # Normal case
+            if len(fitsfile_tmp_shape) == 2:
+
+                logging.debug('arc.data is 2 dimensional.')
+                self.bad_mask = fitsfile_tmp.data
+
+            # Try to trap common error when saving FITS file
+            # Case with multiple image extensions, we only take the first one
+            elif len(fitsfile_tmp_shape) == 3:
+
+                logging.debug('arc.data is 3 dimensional.')
+                self.bad_mask = fitsfile_tmp.data[0]
+
+            # Case with an extra bracket when saving
+            elif len(fitsfile_tmp_shape) == 1:
+
+                logging.debug('arc.data is 1 dimensional.')
+                # In case it in a multiple extension format, we take the
+                # first one only
+                if len(np.shape(fitsfile_tmp.data[0]) == 3):
+
+                    self.bad_mask = fitsfile_tmp.data[0][0]
+
+                else:
+
+                    self.bad_mask = fitsfile_tmp.data[0]
+
+            else:
+
+                error_msg = 'Please check the shape/dimension of the ' +\
+                            'input light frame, it is probably empty ' +\
+                            'or has an atypical output format.'
+                logging.critical(error_msg)
+                raise RuntimeError(error_msg)
+
+        else:
+
+            error_msg = 'Please provide a numpy array, an ' +\
+                'astropy.io.fits.hdu.image.PrimaryHDU object, an ' +\
+                'astropy.io.fits.hdu.image.ImageHDU object, an ' +\
+                'astropy.io.fits.HDUList object.'
+            logging.critical(error_msg)
+            raise TypeError(error_msg)
+
     def add_arc(self, arc, header=None):
         '''
         To provide an arc image. Make sure left (small index) is blue,
@@ -728,7 +849,7 @@ class TwoDSpec:
 
         Parameters
         ----------
-        arc: 2D numpy array, PrimaryHDU/ImageHDU or ImageReduction object
+        arc: numpy.ndarray, PrimaryHDU/ImageHDU, ImageReduction, str
             The image of the arc image.
         header: FITS header (deafult: None)
             An astropy.io.fits.Header object. This is not used if arc is
@@ -753,23 +874,9 @@ class TwoDSpec:
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
                 arc, fits.hdu.image.ImageHDU):
+
             self.arc = arc.data
             self.set_arc_header(arc.header)
-
-        # If it is an ImageReduction object
-        elif isinstance(arc, ImageReduction):
-            if arc.saxis == 1:
-                self.arc = arc.arc_master
-                if arc.arc_header is not []:
-                    self.set_arc_header(arc.arc_header[0])
-                else:
-                    self.set_arc_header(None)
-            else:
-                self.arc = np.transpose(arc.arc_master)
-                if arc.arc_header is not []:
-                    self.set_arc_header(arc.arc_header[0])
-                else:
-                    self.set_arc_header(None)
 
         # If a filepath is provided
         elif isinstance(arc, str):
@@ -789,34 +896,46 @@ class TwoDSpec:
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
             if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
+
                 fitsfile_tmp = fitsfile_tmp[0]
                 logging.warning('An HDU list is provided, only the first '
                                 'HDU will be read.')
+
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
+
                 logging.debug('arc.data is 2 dimensional.')
                 self.arc = fitsfile_tmp.data
                 self.set_arc_header(fitsfile_tmp.header)
+
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
+
                 logging.debug('arc.data is 3 dimensional.')
                 self.arc = fitsfile_tmp.data[0]
                 self.set_arc_header(fitsfile_tmp.header)
+
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
+
                 logging.debug('arc.data is 1 dimensional.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
+
                     self.arc = fitsfile_tmp.data[0][0]
                     self.set_arc_header(fitsfile_tmp[0].header)
+
                 else:
+
                     self.arc = fitsfile_tmp.data[0]
                     self.set_arc_header(fitsfile_tmp[0].header)
+
             else:
+
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input light frame, it is probably empty ' +\
                             'or has an atypical output format.'
@@ -1293,8 +1412,17 @@ class TwoDSpec:
 
         nresample = nspatial * resample_factor
 
+        # We perform the tracing on a *pixel healed* temporary image
+        if self.bad_mask is not None:
+
+            img_tmp = bfixpix(self.img, self.bad_mask, retdat=True)
+
+        else:
+
+            img_tmp = self.img
+
         # split the spectrum into subspectra
-        img_split = np.array_split(self.img, nwindow, axis=1)
+        img_split = np.array_split(img_tmp, nwindow, axis=1)
         start_window_idx = nwindow // 2
 
         lines_ref_init = np.nanmedian(img_split[start_window_idx], axis=1)
@@ -1646,17 +1774,19 @@ class TwoDSpec:
 
             self.spectrum_list[i].remove_trace()
 
-    def _fit_sky(self, extraction_slice, sky_width_dn, sky_width_up,
-                 sky_polyfit_order):
+    def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_width_dn,
+                 sky_width_up, sky_polyfit_order):
         """
         Fit the sky background from the given extraction_slice and the aperture
         parameters.
 
         Parameters
         ----------
-        extraction_slice: 1-d numpy array
+        extraction_slice: 1D numpy.ndarray
             The counts along the profile for extraction, including the sky
             regions to be fitted and subtracted from.
+        extraction_bad_mask: 1D numpy.ndarray
+            The mask of the bad pixels. They should be marked as 1 or True.
         sky_width_dn: int
             Number of pixels used for sky modelling on the lower side of the
             spectrum.
@@ -1679,6 +1809,8 @@ class TwoDSpec:
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_dn] = True
             sky_mask[-(sky_width_up + 1):-1] = True
+
+            sky_mask *= ~extraction_bad_mask
 
             if (sky_polyfit_order == 0):
 
@@ -1946,12 +2078,15 @@ class TwoDSpec:
 
                 # trace +/- aperture size
                 source_slice = self.img[source_pix, i].copy()
+                source_bad_mask = self.bad_mask[source_pix, i]
 
                 # trace +/- aperture and sky region size
                 extraction_slice = self.img[extraction_pix, i].copy()
+                extraction_bad_mask = self.bad_mask[extraction_pix, i]
 
                 count_sky_extraction_slice = self._fit_sky(
-                    extraction_slice, sky_width_dn, sky_width_up, skydeg)
+                    extraction_slice, extraction_bad_mask, sky_width_dn,
+                    sky_width_up, skydeg)
 
                 count_sky_source_slice = count_sky_extraction_slice[
                     source_pix - itrace].copy()
@@ -1969,7 +2104,7 @@ class TwoDSpec:
 
                 # if not optimal extraction or using marsh89, perform a
                 # tophat extraction
-                if not optimal or algorithm == 'marsh89':
+                if not optimal or (optimal & (algorithm == 'marsh89')):
 
                     count[i], count_err[i], is_optimal[i] =\
                         self._tophat_extraction(
@@ -2062,7 +2197,8 @@ class TwoDSpec:
                             gain=self.gain,
                             cosmicray_sigma=self.cosmicray_sigma,
                             forced=forced,
-                            variances=var_i)
+                            variances=var_i,
+                            bad_mask=source_bad_mask)
 
                     if var_i is None:
                         var[i] = var_temp
@@ -2081,7 +2217,7 @@ class TwoDSpec:
                         gain=self.gain,
                         readnoise=self.readnoise,
                         apwidth=(width_dn, width_up),
-                        goodpixelmask=None,
+                        goodpixelmask=~self.bad_mask,
                         npoly=npoly,
                         polyspacing=polyspacing,
                         pord=pord,
@@ -2327,7 +2463,7 @@ class TwoDSpec:
 
     def _tophat_extraction(self, source_slice, sky_source_slice, pix_frac,
                            gain, sky_width_dn, sky_width_up, width_dn,
-                           width_up):
+                           width_up, source_bad_mask=None, sky_source_bad_mask=None):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second.
@@ -2357,6 +2493,15 @@ class TwoDSpec:
             of the spectrum.
 
         """
+
+        if source_bad_mask is not None:
+
+            source_slice = source_slice[source_bad_mask]
+
+        if source_bad_mask is not None:
+
+            sky_source_slice = source_slice[sky_source_bad_mask]
+
         # Get the total count
         source_plus_sky = np.nansum(source_slice) - pix_frac * source_slice[
             0] - (1 - pix_frac) * source_slice[-1]
@@ -2396,7 +2541,8 @@ class TwoDSpec:
                                     readnoise=0.0,
                                     cosmicray_sigma=5.0,
                                     forced=False,
-                                    variances=None):
+                                    variances=None,
+                                    bad_mask=None):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second or ADU.
@@ -2472,6 +2618,7 @@ class TwoDSpec:
         is_optimal = True
 
         mask_cr = np.ones(len(P), dtype=bool)
+        mask_cr *= ~bad_mask
 
         if forced:
 
@@ -2626,9 +2773,10 @@ class TwoDSpec:
             width_up = 7
 
         if goodpixelmask is not None:
+            goodpixelmask = goodpixelmask.transpose()
             goodpixelmask = np.array(goodpixelmask, copy=True).astype(bool)
         else:
-            goodpixelmask = np.ones(frame.shape, dtype=bool)
+            goodpixelmask = np.ones_like(frame, dtype=bool)
 
         goodpixelmask *= (np.isfinite(frame) * np.isfinite(variance))
 

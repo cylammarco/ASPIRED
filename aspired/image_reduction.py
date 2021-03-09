@@ -1099,6 +1099,10 @@ class ImageReduction:
         this is not used, becase any automatic tampering of data is
         not a good idea.
 
+        If you trust the pixel healing process, please make sure you create
+        a new bad mask or the old one will be propagated downstream and this
+        will only serve an artistic purpose.
+
         Parameters
         ----------
         bad_mask: numpy.ndarray
@@ -1282,7 +1286,7 @@ class ImageReduction:
             value=self.fsmode,
             comment='The fine structure mode for cosmic ray cleaning.')
         self.image_fits.header.set(
-            keyword='CPSFMODEL',
+            keyword='CPSFMOD',
             value=self.psfmodel,
             comment='The PSF model used for cosmic ray cleaning.')
         self.image_fits.header.set(

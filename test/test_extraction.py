@@ -48,8 +48,7 @@ def test_spectral_extraction():
     assert trace == 35, 'Trace is at row ' + str(
         trace) + ', but it is expected to be at row 35.'
 
-    # Optimal extracting spectrum by summing over the aperture along the
-    # trace
+    # Optimal extracting spectrum by summing over the aperture along the trace
     dummy_twodspec.ap_extract(
         apwidth=5,
         optimal=False,
