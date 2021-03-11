@@ -12,7 +12,7 @@ from ccdproc import Combiner
 from plotly import graph_objects as go
 from plotly import io as pio
 
-from .util import bfixpix, create_bad_mask, create_cutoff_mask
+from .util import bfixpix, create_bad_pixel_mask, create_cutoff_mask
 
 __all__ = ['ImageReduction']
 
@@ -82,11 +82,9 @@ class ImageReduction:
             One of csv, tsv and ascii. Default is csv.
         delimiter: string
             Set the delimiter. This overrides ftype.
-        Sxais: int, 0 or 1
+        sxais: int, 0 or 1
             OVERRIDE the SAXIS value in the FITS header, or to provide the
             SAXIS if it does not exist
-        saxis_keyword: string
-            HDU keyword for the spectral axis direction
         combinetype_light: string
             Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
@@ -146,6 +144,31 @@ class ImageReduction:
             one if the keyword does not exist
         exptime_flat_keyword: string
             HDU keyword for the exposure time of the flat frame
+        cosmicray: bool (Default: False)
+            Set to True to remove cosmic rays, this directly alter the reduced
+            image data.
+        sigclip: float (Default: 5.0)
+
+        readnoise: float (Default: 0.0)
+
+        gain: float (Default: 1.0)
+
+        fsmode: str (Default: 'convolve')
+
+        psfmodel: str (Default: 'gaussy')
+
+        psffwhm: float (Default: 2.5)
+
+        psfsize: int (Default: 7)
+
+        cutoff: float (Default: 60000.)
+            This sets the (lower and) upper limit of electron count.
+        grow: bool (Default: False)
+            Set to True to grow the mask, see `grow_mask()`
+        iterations: int (Default: 1)
+            The number of pixel growth along the Cartesian axes directions.
+        diagonal: bool (Default: False)
+            Set to True to grow in the diagonal directions.
         verbose: boolean (Default: True)
             Set to False to suppress all verbose warnings, except for
             critical failure.
@@ -174,17 +197,29 @@ class ImageReduction:
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
+
         if (log_level == "CRITICAL") or (not verbose):
+
             self.logger.setLevel(logging.CRITICAL)
+
         elif log_level == "ERROR":
+
             self.logger.setLevel(logging.ERROR)
+
         elif log_level == "WARNING":
+
             self.logger.setLevel(logging.WARNING)
+
         elif log_level == "INFO":
+
             self.logger.setLevel(logging.INFO)
+
         elif log_level == "DEBUG":
+
             self.logger.setLevel(logging.DEBUG)
+
         else:
+
             raise ValueError('Unknonw logging level.')
 
         formatter = logging.Formatter(
@@ -193,15 +228,21 @@ class ImageReduction:
             datefmt='%a, %d %b %Y %H:%M:%S')
 
         if log_file_name is None:
+
             # Only print log to screen
             self.handler = logging.StreamHandler()
+
         else:
+
             if log_file_name == 'default':
+
                 log_file_name = '{}_{}.log'.format(
                     logger_name,
                     datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+
             # Save log to file
             if log_file_folder == 'default':
+
                 log_file_folder = ''
 
             self.handler = logging.FileHandler(
@@ -209,7 +250,9 @@ class ImageReduction:
 
         self.handler.setFormatter(formatter)
         if (self.logger.hasHandlers()):
+
             self.logger.handlers.clear()
+
         self.logger.addHandler(self.handler)
 
         if delimiter is not None:
@@ -220,11 +263,17 @@ class ImageReduction:
         else:
 
             self.ftype = ftype
+
             if ftype == 'csv':
+
                 self.delimiter = ','
+
             elif ftype == 'tsv':
+
                 self.delimiter = '\t'
+
             elif ftype == 'ascii':
+
                 self.delimiter = ' '
 
         # FITS keyword standard recommends XPOSURE, but most observatories
@@ -294,6 +343,10 @@ class ImageReduction:
         self.light_reduced = None
 
         self.image_fits = None
+        self.bad_pixel_mask = None
+        self.bad_pixels = False
+        self.saturation_mask = None
+        self.saturated = False
         self.bad_mask = None
 
         self.bias_filename = []
@@ -311,32 +364,44 @@ class ImageReduction:
         # file path
 
         if isinstance(filelist, str):
+
             if os.path.isabs(filelist):
+
                 self.filelist = filelist
+
             else:
+
                 self.filelist = os.path.abspath(filelist)
 
             logging.debug('The filelist is: {}'.format(self.filelist))
 
             # Check if running on Windows
             if os.name == 'nt':
+
                 self.filelist_abspath = self.filelist.rsplit('\\', 1)[0]
+
             else:
+
                 self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
 
             logging.debug('The absolute path of the filelist is: {}'.format(
                 self.filelist_abspath))
-
             logging.info('Loading filelist from {}.'.format(self.filelist))
             self.filelist = np.loadtxt(self.filelist,
                                        delimiter=self.delimiter,
                                        dtype='U',
                                        ndmin=2)
+
             if np.shape(self.filelist)[1] == 3:
+
                 logging.debug('filelist contains 3 columns.')
+
             elif np.shape(self.filelist)[1] == 2:
+
                 logging.debug('filelist contains 2 column.')
+
             else:
+
                 error_msg = 'Please provide a text file with 2 or 3 ' +\
                     'columns: where the first column is the image type ' +\
                     'and the second column is the file path, and optional ' +\
@@ -345,14 +410,20 @@ class ImageReduction:
                 raise RuntimeError(error_msg)
 
         elif isinstance(filelist, np.ndarray):
+
             self.filelist = filelist
             self.filelist_abspath = ''
             logging.info('Loading filelist from an numpy.ndarray.')
             if np.shape(self.filelist)[1] == 3:
+
                 logging.debug('filelist contains 3 columns.')
+
             elif np.shape(self.filelist)[1] == 2:
+
                 logging.debug('filelist contains 2 columns.')
+
             else:
+
                 error_msg = 'Please provide a numpy.ndarray with at ' +\
                     'least 2 columns: where the first column is the ' +\
                     'image type and the second column is the file ' +\
@@ -361,24 +432,29 @@ class ImageReduction:
                 raise RuntimeError(error_msg)
 
         else:
-            error_msg = 'Please provide a file path to the file list ' +\
-                'or a numpy array.'
+
+            error_msg = 'Please provide a file path to the file list.'
             logging.critical(error_msg)
             raise TypeError(error_msg)
 
         if np.shape(self.filelist)[1] == 3:
+
             logging.debug('filelist contains 3 columns.')
             self.imtype = self.filelist[:, 0].astype('object')
             self.impath = self.filelist[:, 1].astype('object')
             self.hdunum = self.filelist[:, 2].astype('int')
+
         else:
+
             logging.debug('filelist contains 2 columns.')
             self.imtype = self.filelist[:, 0].astype('object')
             self.impath = self.filelist[:, 1].astype('object')
             self.hdunum = np.zeros(len(self.imtype)).astype('int')
 
         for i, im in enumerate(self.impath):
+
             if not os.path.isabs(im):
+
                 self.impath[i] = os.path.join(self.filelist_abspath,
                                               im.strip())
 
@@ -386,6 +462,7 @@ class ImageReduction:
 
         # If there are multiple rows, which is in most of the cases
         if np.shape(self.filelist)[1] >= 2:
+
             self.bias_list = self.impath[self.imtype == 'bias']
             self.dark_list = self.impath[self.imtype == 'dark']
             self.flat_list = self.impath[self.imtype == 'flat']
@@ -400,7 +477,9 @@ class ImageReduction:
 
         # If there is only 1 row, which is in most of the cases
         else:
+
             if self.imtype == 'light':
+
                 self.light_list = np.array([self.impath])
                 self.bias_list = np.array([])
                 self.dark_list = np.array([])
@@ -412,7 +491,9 @@ class ImageReduction:
                 self.dark_hdunum = np.array([])
                 self.flat_hdunum = np.array([])
                 self.arc_hdunum = np.array([])
+
             else:
+
                 error_msg = 'You are only providing a single file, it has ' +\
                     'to be a light frame.'
                 logging.critical(error_msg)
@@ -421,41 +502,20 @@ class ImageReduction:
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
 
-        # FITS keyword standard for the spectral direction, if FITS header
-        # does not contain SAXIS, the image in assumed to have the spectra
-        # going across (left to right corresponds to blue to red). All frames
-        # get rotated in the anti-clockwise direction if the first light frame
-        # has a verticle spectrum (top to bottom corresponds to blue to red).
-        if saxis is None:
-            if saxis_keyword is None:
-                self.saxis_keyword = 'SAXIS'
-            else:
-                self.saxis_keyword = saxis_keyword
-            ''' To be implemented.
-            try:
-                self.saxis = int(light.header[self.saxis_keyword])
-            except:
-                if self.verbose:
-                    warnings.warn('saxis keyword "' + self.saxis_keyword +
-                                  '" is not in the header. saxis is set to 1.')
-            '''
-            self.saxis = 1
-        else:
-            self.saxis = saxis
-
-        logging.info('Saxis is found/set to be {}.'.format(self.saxis))
-
         # Only load the science data, other types of image data are loaded by
         # separate methods.
         light_CCDData = []
         light_time = []
 
         for i in range(self.light_list.size):
+
             # Open all the light frames
             logging.debug('Loading light frame: {}.'.format(
                 self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
+
             if type(light) == 'astropy.io.fits.hdu.hdulist.HDUList':
+
                 light = light[0]
                 logging.warning('An HDU list is provided, only the first '
                                 'HDU will be read.')
@@ -464,31 +524,42 @@ class ImageReduction:
 
             # Normal case
             if len(light_shape) == 2:
+
                 logging.debug('light.data is 2 dimensional.')
                 light_CCDData.append(
                     CCDData(light.data.astype('float'), unit=u.ct))
                 self.light_header.append(light.header)
+
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(light_shape) == 3:
+
                 logging.debug('light.data is 3 dimensional.')
                 light_CCDData.append(
                     CCDData(light.data[0].astype('float'), unit=u.ct))
                 self.light_header.append(light.header)
+
             # Case with an extra bracket when saving
             elif len(light_shape) == 1:
+
                 logging.debug('light.data is 1 dimensional.')
+
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(light.data[0]) == 3):
+
                     light_CCDData.append(
                         CCDData(light.data[0][0].astype('float'), unit=u.ct))
                     self.light_header.append(light[0].header)
+
                 else:
+
                     light_CCDData.append(
                         CCDData(light.data[0].astype('float'), unit=u.ct))
                     self.light_header.append(light[0].header)
+
             else:
+
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input light frame, it is probably empty ' +\
                             'or has an atypical output format.'
@@ -593,6 +664,19 @@ class ImageReduction:
             logging.debug('The light frame exposure time is {}.'.format(
                 light_time[i]))
 
+            saturation_mask, saturated = create_cutoff_mask(
+                light_CCDData[i].data, cutoff, grow, iterations, diagonal)
+
+            if self.saturation_mask is None:
+
+                self.saturation_mask = saturation_mask
+                self.saturated = saturated
+
+            else:
+
+                self.saturation_mask *= saturation_mask
+                self.saturated *= saturated
+
             light_CCDData[i].data /= light_time[i]
 
         # Put data into a Combiner
@@ -627,6 +711,27 @@ class ImageReduction:
 
         # Free memory
         light_combiner = None
+
+        # FITS keyword standard for the spectral direction, if FITS header
+        # does not contain SAXIS, the image in assumed to have the spectra
+        # going across (left to right corresponds to blue to red). All frames
+        # get rotated in the anti-clockwise direction if the first light frame
+        # has a verticle spectrum (top to bottom corresponds to blue to red).
+        if saxis is None:
+
+            if 'SAXIS' in light.header:
+
+                self.saxis = int(light.header['SAXIS'])
+
+            else:
+
+                self.saxis = 1
+
+        else:
+
+            self.saxis = saxis
+
+        logging.info('Saxis is found/set to be {}.'.format(self.saxis))
 
         if len(self.arc_list) > 0:
             # Combine the arcs
@@ -1021,11 +1126,12 @@ class ImageReduction:
         flat_CCDData = None
         flat_combiner = None
 
-    def create_bad_mask(self,
-                        cutoff=60000.,
-                        grow=False,
-                        iterations=1,
-                        diagonal=False):
+    def create_bad_pixel_mask(self,
+                              cutoff=60000.,
+                              grow=False,
+                              iterations=1,
+                              diagonal=False,
+                              create_bad_mask=True):
         """
         Heal the bad pixels by taking the average of their n-nearest
         good neighboring pixels. See more at util.bfixpix(). If you
@@ -1041,17 +1147,28 @@ class ImageReduction:
             Set to True to grow the mask, see `grow_mask()`
         iterations: int
             The number of pixel growth along the Cartesian axes directions.
-        diagonal: boolean
+        diagonal: bool
             Set to True to grow in the diagonal directions.
-
+        create_bad_mask: bool (Deafult: True)
+            If set to True, combine the the bad_pixel_mask and saturation_mask
         """
 
-        saturation_mask = create_cutoff_mask(self.light_reduced, cutoff, grow,
-                                             iterations, diagonal)
-        bad_mask = create_bad_mask(self.light_reduced, grow, iterations,
-                                   diagonal)
+        self.bad_pixel_mask, self.bad_pixels = create_bad_pixel_mask(
+            self.light_reduced.data, grow, iterations, diagonal)
 
-        self.bad_mask = saturation_mask * bad_mask
+        if create_bad_mask:
+
+            self.create_bad_mask()
+
+    def create_bad_mask(self):
+
+        if self.bad_pixel_mask is None:
+
+            self.create_bad_pixel_mask(create_bad_mask=False)
+
+        self.bad_mask = self.saturation_mask | self.bad_pixel_mask
+
+        return self.bad_mask
 
     def reduce(self):
         '''
@@ -1349,6 +1466,43 @@ class ImageReduction:
         # Save file to disk
         self.image_fits.writeto(filename + '.' + extension,
                                 overwrite=overwrite)
+        logging.info('FITS file saved to {}.'.format(filename + '.' +
+                                                     extension))
+
+    def save_masks(self,
+                   filename='reduced_image_mask',
+                   extension='fits',
+                   overwrite=False):
+        '''
+        Save the reduced image to disk.
+
+        Parameters
+        ----------
+        filename: String
+            Disk location to be written to. Default is at where the
+            process/subprocess is execuated.
+        extension: String
+            File extension without the dot.
+        overwrite: boolean
+            Default is False.
+
+        '''
+
+        if filename[-5:] == '.fits':
+            filename = filename[:-5]
+        if filename[-4:] == '.fit':
+            filename = filename[:-4]
+
+        bad_mask_fits = fits.PrimaryHDU(self.bad_mask.astype('int'))
+        bad_pixel_mask_fits = fits.ImageHDU(self.bad_pixel_mask.astype('int'))
+        saturation_mask_fits = fits.ImageHDU(
+            self.saturation_mask.astype('int'))
+
+        output_HDU = fits.HDUList(
+            [bad_mask_fits, bad_pixel_mask_fits, saturation_mask_fits])
+
+        # Save file to disk
+        output_HDU.writeto(filename + '.' + extension, overwrite=overwrite)
         logging.info('FITS file saved to {}.'.format(filename + '.' +
                                                      extension))
 

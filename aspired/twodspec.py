@@ -2238,9 +2238,13 @@ class TwoDSpec:
             spec.optimal_pixel = is_optimal
             spec.add_spectrum_header(self.header)
 
-            if optimal:
+            if optimal & (algorithm == 'horne86'):
 
-                spec.extraction_type = "Optimal"
+                spec.extraction_type = "OptimalHorne86"
+
+            if optimal & (algorithm == 'marsh89'):
+
+                spec.extraction_type = "OptimalMarsh89"
 
             else:
 
@@ -2561,12 +2565,12 @@ class TwoDSpec:
 
         Parameters
         ----------
-        pix: 1-d numpy array (N)
+        pix: 1D numpy.ndarray (N)
             pixel number along the spatial direction
-        source_slice: 1-d numpy array (N)
+        source_slice: 1D numpy.ndarray (N)
             The counts along the profile for extraction, including the sky
             regions to be fitted and subtracted from.
-        sky: 1-d numpy array (N)
+        sky: 1D numpy.ndarray (N)
             Count of the fitted sky along the pix, has to be the same
             length as pix
         mu: float
@@ -2585,7 +2589,7 @@ class TwoDSpec:
             Sigma-clipping threshold for cleaning & cosmic ray rejection.
         forced: boolean
             Forced extraction with the given weights.
-        variances: 2-d numpy array (N)
+        variances: 1D numpy.ndarray (N)
             The 1/weights of used for optimal extraction, has to be the
             same length as the pix. Only used if forced is True.
 
@@ -2626,7 +2630,7 @@ class TwoDSpec:
         is_optimal = True
 
         mask_cr = np.ones(len(P), dtype=bool)
-        mask_cr *= ~bad_mask
+        mask_cr = mask_cr & ~bad_mask.astype(bool)
 
         if forced:
 
@@ -2648,9 +2652,8 @@ class TwoDSpec:
             if i > 1:
 
                 ratio = (cosmicray_sigma**2. * var_f) / (f - P * f0)**2.
-                outlier = np.sum(ratio > 1)
 
-                if outlier > 0:
+                if (ratio > 1).any():
 
                     mask_cr[np.argmax(ratio)] = False
 

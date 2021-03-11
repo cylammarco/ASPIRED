@@ -415,27 +415,27 @@ for i, j in zip(random_x, random_y):
 # Add a bad pixel on the spectrum
 some_bad_data[130, 500] += 1e10
 
-cmask = util.create_cutoff_mask(image_fits.data, cutoff=1000)
-bmask = util.create_bad_mask(image_fits.data)
-bad_mask = bmask * bmask
+cmask, _ = util.create_cutoff_mask(image_fits.data, cutoff=1000)
+bmask, _ = util.create_bad_pixel_mask(image_fits.data)
+bad_mask = bmask & bmask
 
 
-def test_add_bad_pixel_mask():
+def test_add_bad_pixel_mask_numpy_array():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_bad_mask(bad_mask)
 
 
-def test_add_bad_pixel_mask():
+def test_add_bad_pixel_mask_hdu():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
-    twodspec.add_bad_mask(fits.ImagHDU(bad_mask))
+    twodspec.add_bad_mask(fits.ImageHDU(bad_mask.astype('int')))
 
 
-def test_add_bad_pixel_mask():
+def test_add_bad_pixel_mask_hdu_list():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
-    twodspec.add_bad_mask(fits.HDUList(fits.ImagHDU(bad_mask)))
+    twodspec.add_bad_mask(fits.HDUList(fits.ImageHDU(bad_mask.astype('int'))))
 
 
 @pytest.mark.xfail()
-def test_add_bad_pixel_mask():
+def test_add_bad_pixel_mask_expect_fail():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_bad_mask(np.polyval)

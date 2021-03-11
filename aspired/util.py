@@ -140,10 +140,17 @@ def create_cutoff_mask(data,
                                 iterations=iterations,
                                 diagonal=diagonal)
 
-    return cutoff_mask
+    if (data > upper_limit).any():
+
+        logging.warning('Saturated pixels detected.')
+        return cutoff_mask, True
+
+    else:
+
+        return cutoff_mask, False
 
 
-def create_bad_mask(data, grow=False, iterations=1, diagonal=False):
+def create_bad_pixel_mask(data, grow=False, iterations=1, diagonal=False):
     """
     Create a simple mask from a 2D numpy.ndarray, pixel with non-numeric
     values will be masked as bad pixels (True).
@@ -161,20 +168,27 @@ def create_bad_mask(data, grow=False, iterations=1, diagonal=False):
 
     Return
     ------
-    bad_mask: numpy.ndarray
+    bad_pixel_mask: numpy.ndarray
         Any pixel outside the cutoff values will be masked as True (bad).
 
     """
 
-    bad_mask = ~np.isfinite(data) | np.isnan(data)
+    bad_pixel_mask = ~np.isfinite(data) | np.isnan(data)
 
     if grow:
 
-        bad_mask = grow_mask(mask=bad_mask,
-                             iterations=iterations,
-                             diagonal=diagonal)
+        bad_pixel_mask = grow_mask(mask=bad_pixel_mask,
+                                   iterations=iterations,
+                                   diagonal=diagonal)
 
-    return bad_mask
+    if bad_pixel_mask.any():
+
+        logging.warning('Bad pixels detected.')
+        return bad_pixel_mask, True
+
+    else:
+
+        return bad_pixel_mask, False
 
 
 def grow_mask(mask, iterations, diagonal):
