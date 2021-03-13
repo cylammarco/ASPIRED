@@ -439,3 +439,32 @@ def test_add_bad_pixel_mask_hdu_list():
 def test_add_bad_pixel_mask_expect_fail():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_bad_mask(np.polyval)
+
+
+# gauss ap_extract
+def test_gauss_ap_extract():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(img)
+    twodspec.ap_trace()
+    twodspec.ap_extract(model='gauss')
+
+
+# lowess ap_extract
+def test_lowess_ap_extract():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(img)
+    twodspec.ap_trace()
+    twodspec.ap_extract(model='lowess')
+
+
+# compare gauss and lowess ap_extract
+def test_gauss_vs_lowess_ap_extract():
+    twodspec_gauss = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec_gauss.add_data(img)
+    twodspec_gauss.ap_trace()
+    twodspec_lowess = copy.copy(twodspec_gauss)
+    twodspec_gauss.ap_extract(model='gauss')
+    twodspec_lowess.ap_extract(model='lowess')
+    count_g = np.nansum(twodspec_gauss.spectrum_list[0].count)
+    count_l = np.nansum(twodspec_lowess.spectrum_list[0].count)
+    assert (count_l > count_g * 0.95) & (count_l < count_g * 1.05)

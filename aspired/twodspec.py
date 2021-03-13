@@ -12,6 +12,7 @@ from plotly import io as pio
 from scipy import signal
 from scipy.optimize import curve_fit
 from spectres import spectres
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .image_reduction import ImageReduction
 from .spectrum1D import Spectrum1D
@@ -255,6 +256,7 @@ class TwoDSpec:
         if data is not None:
 
             self.img_residual = self.img.copy()
+            self._get_image_size()
 
     def set_properties(self,
                        saxis=None,
@@ -446,10 +448,6 @@ class TwoDSpec:
                     self.img_residual = self.img_residual[self.spec_mask]
                     self.bad_mask = self.bad_mask[self.spec_mask]
 
-            # get the length in the spectral and spatial directions
-            self.spec_size = np.shape(self.img)[self.saxis]
-            self.spatial_size = np.shape(self.img)[self.waxis]
-
             if self.saxis == 0:
 
                 self.img = np.transpose(self.img)
@@ -470,6 +468,8 @@ class TwoDSpec:
 
         if self.img is not None:
 
+            self._get_image_size()
+
             if (variance is not None) & (np.shape(variance) == np.shape(
                     self.img)):
 
@@ -488,6 +488,12 @@ class TwoDSpec:
         else:
 
             self.variance = None
+
+    def _get_image_size(self):
+
+        # get the length in the spectral and spatial directions
+        self.spec_size = np.shape(self.img)[self.saxis]
+        self.spatial_size = np.shape(self.img)[self.waxis]
 
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
@@ -1850,6 +1856,10 @@ class TwoDSpec:
                    spec_id=None,
                    optimal=True,
                    algorithm='horne86',
+                   model='gauss',
+                   lowess_frac=0.8,
+                   lowess_it=3,
+                   lowess_delta=0.0,
                    tolerance=1e-6,
                    max_iter=99,
                    forced=False,
@@ -2198,6 +2208,10 @@ class TwoDSpec:
                             cosmicray_sigma=self.cosmicray_sigma,
                             forced=forced,
                             variances=var_i,
+                            model=model,
+                            lowess_frac=lowess_frac,
+                            lowess_it=lowess_it,
+                            lowess_delta=lowess_delta,
                             bad_mask=source_bad_mask)
 
                     if var_i is None:
@@ -2554,6 +2568,10 @@ class TwoDSpec:
                                     cosmicray_sigma=5.0,
                                     forced=False,
                                     variances=None,
+                                    model='lowess',
+                                    lowess_frac=0.666,
+                                    lowess_it=3,
+                                    lowess_delta=0.0,
                                     bad_mask=None):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
@@ -2563,13 +2581,17 @@ class TwoDSpec:
         Horne, 1986, PASP, 98, 609 (1986PASP...98..609H). The 'steps' in the
         inline comments are in reference to this article.
 
+        The LOWESS setting can be found at:
+        https://www.statsmodels.org/dev/generated/
+            statsmodels.nonparametric.smoothers_lowess.lowess.html
+
         Parameters
         ----------
         pix: 1D numpy.ndarray (N)
             pixel number along the spatial direction
         source_slice: 1D numpy.ndarray (N)
             The counts along the profile for extraction, including the sky
-            regions to be fitted and subtracted from.
+            regions to be fitted and subtracted from. (NOT count per second)
         sky: 1D numpy.ndarray (N)
             Count of the fitted sky along the pix, has to be the same
             length as pix
@@ -2592,6 +2614,18 @@ class TwoDSpec:
         variances: 1D numpy.ndarray (N)
             The 1/weights of used for optimal extraction, has to be the
             same length as the pix. Only used if forced is True.
+        model: str (Default: 'lowess')
+            Choice of 'gauss' and 'lowess' for gaussian profile and a LOWESS
+            local regression fitting.
+        lowess_frac: float (Default: 0.666)
+            The fraction of the data used when estimating each y-value.
+        lowess_it: int (Default: 3)
+            The number of residual-based reweightings to perform.
+        lowess_delta: float (Default: 0.0)
+            Distance within which to use linear-interpolation instead of
+            weighted regression.
+        bad_mask: list or None (Default: None)
+            Mask of the bad or usable pixels.
 
         Returns
         -------
@@ -2621,7 +2655,26 @@ class TwoDSpec:
         v1 = 1. / np.nansum(1. / var1)
 
         # step 5 - construct the spatial profile
-        P = self._gaus(pix, 1., 0., mu, sigma)
+        if not np.in1d(model, ['gauss', 'lowess']):
+
+            logging.error('The provided model has to be gauss or lowess, '
+                          '{} is given. lowess is used.'.format(model))
+            model = 'lowess'
+
+        if model == 'gauss':
+
+            P = self._gaus(pix, 1., 0., mu, sigma)
+
+        else:
+
+            P = lowess(f,
+                       pix,
+                       frac=lowess_frac,
+                       it=lowess_it,
+                       delta=lowess_delta,
+                       return_sorted=False)
+
+        P[P < 0] = 0.
         P /= np.nansum(P)
 
         f_diff = 1
