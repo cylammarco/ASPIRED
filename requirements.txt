@@ -6,4 +6,4 @@ git+git://github.com/astropy/astroscrappy@master#egg=astroscrappy
 spectres>=2.1.1
 numpy>=1.16
 scipy>=1.5.2
-statsmodel>=0.12
+statsmodels>=0.12
