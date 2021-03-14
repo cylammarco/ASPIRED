@@ -257,6 +257,7 @@ class TwoDSpec:
 
             self.img_residual = self.img.copy()
             self._get_image_size()
+            self._get_image_zminmax()
 
     def set_properties(self,
                        saxis=None,
@@ -460,15 +461,8 @@ class TwoDSpec:
                 self.img_residual = np.flip(self.img_residual)
                 self.bad_mask = np.flip(self.bad_mask)
 
-            # set the 2D histogram z-limits
-            img_log = np.log10(self.img)
-            img_log_finite = img_log[np.isfinite(img_log)]
-            self.zmin = np.nanpercentile(img_log_finite, 5)
-            self.zmax = np.nanpercentile(img_log_finite, 95)
-
-        if self.img is not None:
-
             self._get_image_size()
+            self._get_image_zminmax()
 
             if (variance is not None) & (np.shape(variance) == np.shape(
                     self.img)):
@@ -494,6 +488,14 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(self.img)[self.saxis]
         self.spatial_size = np.shape(self.img)[self.waxis]
+
+    def _get_image_zminmax(self):
+
+        # set the 2D histogram z-limits
+        img_log = np.log10(self.img)
+        img_log_finite = img_log[np.isfinite(img_log)]
+        self.zmin = np.nanpercentile(img_log_finite, 5)
+        self.zmax = np.nanpercentile(img_log_finite, 95)
 
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
@@ -2053,6 +2055,8 @@ class TwoDSpec:
                 sky_width_dn = 5
                 sky_width_up = 5
 
+            offset = 0
+
             spec = self.spectrum_list[j]
             len_trace = len(spec.trace)
             count_sky = np.zeros(len_trace)
@@ -2073,11 +2077,16 @@ class TwoDSpec:
 
                     # ending at the last pixel
                     width_up = self.spatial_size - itrace - 1
+                    sep_up = 0
+                    sky_width_up = 0
 
                 if (itrace - width_dn < 0):
 
+                    offset = width_dn - itrace
                     # starting at pixel row 0
                     width_dn = itrace - 1
+                    sep_dn = 0
+                    sky_width_dn = 0
 
                 # Pixels where the source spectrum and the sky regions are
                 source_pix = np.arange(itrace - width_dn,
@@ -2215,8 +2224,12 @@ class TwoDSpec:
                             bad_mask=source_bad_mask)
 
                     if var_i is None:
-                        var[i] = var_temp
+
+                        var[i,
+                            offset:offset + width_dn + width_up + 1] = var_temp
+
                     else:
+
                         var[i] = var_i
 
             if optimal & (algorithm == 'marsh89'):
@@ -2323,52 +2336,59 @@ class TwoDSpec:
                                showlegend=False))
 
                 # Lower red box on the image
-                lower_redbox_upper_bound = np.array(
-                    spec.trace) - width_dn - sep_dn - 1
-                lower_redbox_lower_bound = np.array(
-                    spec.trace)[::-1] - width_dn - sep_dn - sky_width_dn
-                lower_redbox_lower_bound[lower_redbox_lower_bound < 0] = 1
+                if offset == 0:
 
-                fig.add_trace(
-                    go.Scatter(x=list(
-                        np.concatenate(
-                            (np.arange(len_trace), np.arange(len_trace)[::-1],
-                             np.zeros(1)))),
-                               y=list(
-                                   np.concatenate(
-                                       (lower_redbox_upper_bound,
-                                        lower_redbox_lower_bound, np.ones(1) *
-                                        lower_redbox_upper_bound[0]))),
-                               line_color='red',
-                               xaxis='x',
-                               yaxis='y',
-                               mode='lines',
-                               showlegend=False))
+                    lower_redbox_upper_bound = np.array(
+                        spec.trace) - width_dn - sep_dn - 1
+                    lower_redbox_lower_bound = np.array(
+                        spec.trace)[::-1] - width_dn - sep_dn - sky_width_dn
+                    lower_redbox_lower_bound[lower_redbox_lower_bound < 0] = 1
+
+                    fig.add_trace(
+                        go.Scatter(x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                                   y=list(
+                                       np.concatenate(
+                                           (lower_redbox_upper_bound,
+                                            lower_redbox_lower_bound,
+                                            np.ones(1) *
+                                            lower_redbox_upper_bound[0]))),
+                                   line_color='red',
+                                   xaxis='x',
+                                   yaxis='y',
+                                   mode='lines',
+                                   showlegend=False))
 
                 # Upper red box on the image
-                upper_redbox_upper_bound = np.array(
-                    spec.trace) + width_up + sep_up + sky_width_up
-                upper_redbox_lower_bound = np.array(
-                    spec.trace)[::-1] + width_up + sep_up + 1
+                if sep_up + sky_width_up > 0:
 
-                upper_redbox_upper_bound[upper_redbox_upper_bound > self.
-                                         spatial_size] = self.spatial_size + 1
+                    upper_redbox_upper_bound = np.array(
+                        spec.trace) + width_up + sep_up + sky_width_up
+                    upper_redbox_lower_bound = np.array(
+                        spec.trace)[::-1] + width_up + sep_up + 1
 
-                fig.add_trace(
-                    go.Scatter(x=list(
-                        np.concatenate(
-                            (np.arange(len_trace), np.arange(len_trace)[::-1],
-                             np.zeros(1)))),
-                               y=list(
-                                   np.concatenate(
-                                       (upper_redbox_upper_bound,
-                                        upper_redbox_lower_bound, np.ones(1) *
-                                        upper_redbox_upper_bound[0]))),
-                               xaxis='x',
-                               yaxis='y',
-                               mode='lines',
-                               line_color='red',
-                               showlegend=False))
+                    upper_redbox_upper_bound[
+                        upper_redbox_upper_bound >
+                        self.spatial_size] = self.spatial_size + 1
+
+                    fig.add_trace(
+                        go.Scatter(x=list(
+                            np.concatenate(
+                                (np.arange(len_trace),
+                                 np.arange(len_trace)[::-1], np.zeros(1)))),
+                                   y=list(
+                                       np.concatenate(
+                                           (upper_redbox_upper_bound,
+                                            upper_redbox_lower_bound,
+                                            np.ones(1) *
+                                            upper_redbox_upper_bound[0]))),
+                                   xaxis='x',
+                                   yaxis='y',
+                                   mode='lines',
+                                   line_color='red',
+                                   showlegend=False))
 
                 # plot the SNR
                 fig.add_trace(

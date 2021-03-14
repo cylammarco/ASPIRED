@@ -468,3 +468,47 @@ def test_gauss_vs_lowess_ap_extract():
     count_g = np.nansum(twodspec_gauss.spectrum_list[0].count)
     count_l = np.nansum(twodspec_lowess.spectrum_list[0].count)
     assert (count_l > count_g * 0.95) & (count_l < count_g * 1.05)
+
+
+missing_lower_half_spectrum_image_fits = fits.open(
+    'test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
+missing_lower_half_spectrum_image_fits.data = missing_lower_half_spectrum_image_fits.data[
+    126:200]
+
+
+# ap_extract at detector edge
+def test_gauss_ap_extract_lower_detector_edge():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(missing_lower_half_spectrum_image_fits)
+    twodspec.ap_trace()
+    twodspec.ap_extract(model='gauss')
+
+
+# ap_extract at detector edge
+def test_lowess_ap_extract_lower_detector_edge():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(missing_lower_half_spectrum_image_fits)
+    twodspec.ap_trace()
+    twodspec.ap_extract(model='lowess')
+
+
+missing_upper_half_spectrum_image_fits = fits.open(
+    'test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
+missing_upper_half_spectrum_image_fits.data = missing_upper_half_spectrum_image_fits.data[
+    100:131]
+
+
+# ap_extract at detector edge
+def test_gauss_ap_extract_upper_detector_edge():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(missing_upper_half_spectrum_image_fits)
+    twodspec.ap_trace()
+    twodspec.ap_extract(model='gauss')
+
+
+# ap_extract at detector edge
+def test_lowess_ap_extract_upper_detector_edge():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(missing_upper_half_spectrum_image_fits)
+    twodspec.ap_trace()
+    twodspec.ap_extract(model='lowess')

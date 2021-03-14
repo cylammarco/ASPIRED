@@ -52,6 +52,6 @@ def test_saturated_data():
         log_level='DEBUG',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
+    lhs6328_twodspec.ap_trace(nspec=1)
 
-    lhs6328_twodspec.ap_extract(model='lowess', lowess_frac=0.8, display=True)
+    lhs6328_twodspec.ap_extract(model='lowess', lowess_frac=0.8)
