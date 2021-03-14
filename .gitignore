@@ -137,3 +137,5 @@ iframe_figures/
 test/test_output/*.csv
 test/test_output/*.fits
 test/test_output/*.html
+test/test_output/*.pdf
+test/test_output/*.svg
