@@ -461,43 +461,17 @@ class ImageReduction:
             logging.debug(self.impath[i])
 
         # If there are multiple rows, which is in most of the cases
-        if np.shape(self.filelist)[1] >= 2:
+        self.bias_list = self.impath[self.imtype == 'bias']
+        self.dark_list = self.impath[self.imtype == 'dark']
+        self.flat_list = self.impath[self.imtype == 'flat']
+        self.arc_list = self.impath[self.imtype == 'arc']
+        self.light_list = self.impath[self.imtype == 'light']
 
-            self.bias_list = self.impath[self.imtype == 'bias']
-            self.dark_list = self.impath[self.imtype == 'dark']
-            self.flat_list = self.impath[self.imtype == 'flat']
-            self.arc_list = self.impath[self.imtype == 'arc']
-            self.light_list = self.impath[self.imtype == 'light']
-
-            self.bias_hdunum = self.hdunum[self.imtype == 'bias']
-            self.dark_hdunum = self.hdunum[self.imtype == 'dark']
-            self.flat_hdunum = self.hdunum[self.imtype == 'flat']
-            self.arc_hdunum = self.hdunum[self.imtype == 'arc']
-            self.light_hdunum = self.hdunum[self.imtype == 'light']
-
-        # If there is only 1 row, which is in most of the cases
-        else:
-
-            if self.imtype == 'light':
-
-                self.light_list = np.array([self.impath])
-                self.bias_list = np.array([])
-                self.dark_list = np.array([])
-                self.flat_list = np.array([])
-                self.arc_list = np.array([])
-
-                self.light_hdunum = np.array([self.hdunum])
-                self.bias_hdunum = np.array([])
-                self.dark_hdunum = np.array([])
-                self.flat_hdunum = np.array([])
-                self.arc_hdunum = np.array([])
-
-            else:
-
-                error_msg = 'You are only providing a single file, it has ' +\
-                    'to be a light frame.'
-                logging.critical(error_msg)
-                raise ValueError(error_msg)
+        self.bias_hdunum = self.hdunum[self.imtype == 'bias']
+        self.dark_hdunum = self.hdunum[self.imtype == 'dark']
+        self.flat_hdunum = self.hdunum[self.imtype == 'flat']
+        self.arc_hdunum = self.hdunum[self.imtype == 'arc']
+        self.light_hdunum = self.hdunum[self.imtype == 'light']
 
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
@@ -637,16 +611,19 @@ class ImageReduction:
             # Get the exposure time for the light frames
             if exptime_light is None:
 
-                # Get the exposure time for the light frames
-                exptime_keyword_idx = int(
-                    np.where(
-                        np.in1d(self.exptime_keyword,
-                                self.light_header[i]))[0][0])
+                if np.in1d(self.exptime_keyword, self.light_header[i]).any():
+                    # Get the exposure time for the light frames
+                    exptime_keyword_idx = int(
+                        np.where(
+                            np.in1d(self.exptime_keyword,
+                                    self.light_header[i]))[0][0])
 
-                if np.isfinite(exptime_keyword_idx):
+                    if np.isfinite(exptime_keyword_idx):
 
-                    exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
-                    light_time.append(self.light_header[i][exptime_keyword])
+                        exptime_keyword = self.exptime_keyword[
+                            exptime_keyword_idx]
+                        light_time.append(
+                            self.light_header[i][exptime_keyword])
 
                 else:
 

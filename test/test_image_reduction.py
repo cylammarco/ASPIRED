@@ -152,6 +152,19 @@ def test_input_with_hdu():
         log_file_name=None)
 
 
+def test_input_with_data_cube():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328_fake_data_cube.list',
+        log_file_name=None)
+
+
+@pytest.mark.xfail(raises=RuntimeError)
+def test_input_with_one_dimensional_data():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328_one_dimensional_data.list',
+        log_file_name=None)
+
+
 @pytest.mark.xfail(raises=ValueError)
 def test_input_with_wrong_light_combine_type():
     image_reduction.ImageReduction(
