@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from astropy.io import fits
 from aspired import spectral_reduction
 from aspired import image_reduction
@@ -177,4 +178,22 @@ def test_marsh_extraction_slow_linear():
     lhs6328_twodspec.ap_extract(optimal=True,
                                 algorithm='marsh89',
                                 qmode='slow-linear',
+                                display=False)
+
+
+def test_marsh_extraction_fast_apwidth():
+
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                apwidth=5,
+                                algorithm='marsh89',
+                                qmode='fast-nearest',
+                                display=False)
+
+
+def test_marsh_extraction_fast_apwidth():
+
+    lhs6328_twodspec.ap_extract(optimal=True,
+                                apwidth='blabla',
+                                algorithm='marsh89',
+                                qmode='fast-nearest',
                                 display=False)

@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'ASPIRED'
-copyright = '2020, Marco Lam'
+copyright = '2020-2021, Marco Lam'
 author = 'Marco Lam'
 __version__ = '0.3.1'
 
@@ -51,16 +51,19 @@ source_encoding = 'utf-8-sig'
 
 # Produce API reference automatically for every public and private methods
 apidoc_args = [
-    '--force',         # Overwrite existing files
-    '--no-toc',        # Don't create a table of contents file
+    '--force',  # Overwrite existing files
+    '--no-toc',  # Don't create a table of contents file
     '--output-dir=.',  # Directory to place all output
 ]
 
 autodoc_mock_imports = [
-    'astropy', 'astroscrappy', 'ccdproc', 'rascal', 'plotly', 'spectres'
+    'astropy', 'astroscrappy', 'ccdproc', 'rascal', 'plotly', 'spectres',
+    'statsmodels'
 ]
 
 autoclass_content = 'both'
+
+mathjax_path = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 # -- Options for HTML output -------------------------------------------------
 

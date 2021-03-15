@@ -139,3 +139,5 @@ test/test_output/*.fits
 test/test_output/*.html
 test/test_output/*.pdf
 test/test_output/*.svg
+test/test_output/*.jpg
+test/test_output/*.png

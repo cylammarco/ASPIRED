@@ -1858,7 +1858,7 @@ class TwoDSpec:
                    spec_id=None,
                    optimal=True,
                    algorithm='horne86',
-                   model='gauss',
+                   model='lowess',
                    lowess_frac=0.8,
                    lowess_it=3,
                    lowess_delta=0.0,
@@ -1926,6 +1926,16 @@ class TwoDSpec:
             Set optimal extraction. (Default is True)
         algorithm: str (Default: 'horne86')
             Available algorithms are horne86 and marsh89.
+        model: str (Default: 'lowess')
+            Choice of model: 'lowess' and 'gauss'.
+        lowess_frac: float (Default: 0.8)
+            Fraction of "good data" retained for LOWESS fit.
+        lowess_it: int (Default: 3)
+            Number of iteration in LOWESS fit -- the number of residual-based
+            reweightings to perform.
+        lowess_delta: float (Default: 0.0)
+            The delta parameter in LOWESS fit -- distance within which to use
+            linear-interpolation instead of weighted regression.
         tolerance: float (Default: 1e-6)
             The tolerance limit for the convergence of the optimal extraction
         max_iter: float (Default: 99)
@@ -2147,7 +2157,7 @@ class TwoDSpec:
                         # Unit weighted
                         if np.ndim(variances) == 0:
 
-                            if np.isfinite(variances):
+                            if isinstance(variances, (int, float)):
 
                                 var_i = np.ones(width_dn + width_up +
                                                 1) * variances
@@ -2837,7 +2847,7 @@ class TwoDSpec:
         residual_frame = residual_frame.transpose()
         variance = variance.transpose()
 
-        if isinstance(apwidth, int):
+        if isinstance(apwidth, (float, int)):
 
             # first do the aperture count
             width_dn = apwidth
