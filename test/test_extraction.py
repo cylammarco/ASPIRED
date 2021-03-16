@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from astropy.io import fits
 from aspired import spectral_reduction
 from aspired import image_reduction
@@ -190,7 +189,7 @@ def test_marsh_extraction_fast_apwidth():
                                 display=False)
 
 
-def test_marsh_extraction_fast_apwidth():
+def test_marsh_extraction_fast_apwidth_str():
 
     lhs6328_twodspec.ap_extract(optimal=True,
                                 apwidth='blabla',
