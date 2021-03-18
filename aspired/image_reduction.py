@@ -1088,8 +1088,7 @@ class ImageReduction:
 
             else:
 
-                self.flat_redcued = self.flat_reduced.subtract(
-                    self.bias_main)
+                self.flat_redcued = self.flat_reduced.subtract(self.bias_main)
                 logging.info('Flat frame is bias subtracted.')
 
             self.flat_reduced = self.flat_reduced / np.nanmean(
