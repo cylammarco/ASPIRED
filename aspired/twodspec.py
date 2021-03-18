@@ -215,7 +215,7 @@ class TwoDSpec:
 
             self.img = data.image_fits.data
             self.header = data.image_fits.header
-            self.arc = data.arc_master
+            self.arc = data.arc_main
             self.arc_header = data.arc_header[0]
             self.bad_mask = data.bad_mask
 
@@ -1611,7 +1611,7 @@ class TwoDSpec:
                                 np.arange(start_idx, end_idx)[non_nan_mask],
                                 spec_spatial[start_idx:end_idx][non_nan_mask],
                                 p0=pguess)
-            ap_sigma = popt[3] / resample_factor
+            ap_sigma = abs(popt[3]) / resample_factor
 
             self.spectrum_list[i] = Spectrum1D(
                 spec_id=i,

@@ -333,11 +333,11 @@ class ImageReduction:
         self.arc_list = None
         self.light = None
 
-        self.bias_master = None
-        self.dark_master = None
-        self.flat_master = None
-        self.arc_master = None
-        self.light_master = None
+        self.bias_main = None
+        self.dark_main = None
+        self.flat_main = None
+        self.arc_main = None
+        self.light_main = None
 
         self.flat_reduced = None
         self.light_reduced = None
@@ -674,11 +674,11 @@ class ImageReduction:
                                                       self.clip_high_light))
         # Image combine by median or average
         if self.combinetype_light == 'median':
-            self.light_master = light_combiner.median_combine()
+            self.light_main = light_combiner.median_combine()
             self.exptime_light = np.nanmedian(light_time)
             logging.info('light frames are median_combined.')
         elif self.combinetype_light == 'average':
-            self.light_master = light_combiner.average_combine()
+            self.light_main = light_combiner.average_combine()
             self.exptime_light = np.nanmean(light_time)
             logging.info('light frames are mean_combined.')
         else:
@@ -763,7 +763,7 @@ class ImageReduction:
 
             # combine the arc frames
             arc_combiner = Combiner(arc_CCDData)
-            self.arc_master = arc_combiner.median_combine()
+            self.arc_main = arc_combiner.median_combine()
 
             # Free memory
             arc_CCDData = None
@@ -828,24 +828,24 @@ class ImageReduction:
 
         # Image combine by median or average
         if self.combinetype_bias == 'median':
-            self.bias_master = bias_combiner.median_combine()
+            self.bias_main = bias_combiner.median_combine()
         elif self.combinetype_bias == 'average':
-            self.bias_master = bias_combiner.average_combine()
+            self.bias_main = bias_combiner.average_combine()
         else:
             self.bias_filename = []
-            logging.error('Unknown combinetype for bias frames, master '
+            logging.error('Unknown combinetype for bias frames, main '
                           'bias cannot be created. Process continues '
                           'without bias subtraction.')
 
         # Bias subtract
-        if self.bias_master is None:
+        if self.bias_main is None:
 
-            logging.error('Master flat is not available, frame will '
+            logging.error('Main flat is not available, frame will '
                           'not be flattened.')
 
         else:
 
-            self.light_redcued = self.light_reduced.subtract(self.bias_master)
+            self.light_redcued = self.light_reduced.subtract(self.bias_main)
 
         # Free memory
         bias_CCDData = None
@@ -941,20 +941,20 @@ class ImageReduction:
                                          func=np.ma.median)
         # Image combine by median or average
         if self.combinetype_dark == 'median':
-            self.dark_master = dark_combiner.median_combine()
+            self.dark_main = dark_combiner.median_combine()
             self.exptime_dark = np.nanmedian(dark_time)
         elif self.combinetype_dark == 'average':
-            self.dark_master = dark_combiner.average_combine()
+            self.dark_main = dark_combiner.average_combine()
             self.exptime_dark = np.nanmean(dark_time)
         else:
             self.dark_filename = []
-            logging.error('Unknown combinetype for dark frames, master '
+            logging.error('Unknown combinetype for dark frames, main '
                           'dark cannot be created. Process continues '
                           'without dark subtraction.')
 
         # Dark subtraction adjusted for exposure time
         self.light_reduced =\
-            self.light_reduced.subtract(self.dark_master)
+            self.light_reduced.subtract(self.dark_main)
         logging.info('Light frame is dark subtracted.')
 
         # Free memory
@@ -1049,47 +1049,47 @@ class ImageReduction:
 
         # Image combine by median or average
         if self.combinetype_flat == 'median':
-            self.flat_master = flat_combiner.median_combine()
+            self.flat_main = flat_combiner.median_combine()
         elif self.combinetype_flat == 'average':
-            self.flat_master = flat_combiner.average_combine()
+            self.flat_main = flat_combiner.average_combine()
         else:
             self.flat_filename = []
-            logging.error('Unknown combinetype for flat frames, master '
+            logging.error('Unknown combinetype for flat frames, main '
                           'flat cannot be created. Process continues '
                           'without flatfielding.')
 
         # Field-flattening
-        if self.flat_master is None:
+        if self.flat_main is None:
 
-            logging.warning('Master flat is not available, frame will '
+            logging.warning('Main flat is not available, frame will '
                             'not be flattened.')
 
         else:
 
-            self.flat_reduced = copy.deepcopy(self.flat_master)
+            self.flat_reduced = copy.deepcopy(self.flat_main)
 
             # Dark subtract the flat field
-            if self.dark_master is None:
+            if self.dark_main is None:
 
-                logging.warning('Master dark is not available, master '
+                logging.warning('Main dark is not available, main '
                                 'flat will not be dark subtracted.')
 
             else:
 
                 self.flat_reduced =\
-                    self.flat_reduced.subtract(self.dark_master)
+                    self.flat_reduced.subtract(self.dark_main)
                 logging.info('Flat frame is flat subtracted.')
 
             # Bias subtract the flat field
-            if self.bias_master is None:
+            if self.bias_main is None:
 
-                logging.warning('Master bias is not available, master '
+                logging.warning('Main bias is not available, main '
                                 'flat will not be bias subtracted.')
 
             else:
 
                 self.flat_redcued = self.flat_reduced.subtract(
-                    self.bias_master)
+                    self.bias_main)
                 logging.info('Flat frame is bias subtracted.')
 
             self.flat_reduced = self.flat_reduced / np.nanmean(
@@ -1153,7 +1153,7 @@ class ImageReduction:
 
         '''
 
-        self.light_reduced = self.light_master
+        self.light_reduced = self.light_main
 
         # Bias subtraction
         if self.bias_list.size > 0:
@@ -1176,15 +1176,20 @@ class ImageReduction:
             logging.warning('No flat frames. Field-flattening is not '
                             'performed.')
 
-        # rotate the frame by 90 degrees anti-clockwise if saxis is 0
-        if self.saxis == 0:
-            self.light_reduced = np.rot90(self.light_reduced)
-
         # Construct a FITS object of the reduced frame
         self.light_reduced = np.array((self.light_reduced))
 
         # Create bad pixel mask
         self.create_bad_mask()
+
+        # rotate the frame by 90 degrees anti-clockwise if saxis is 0
+        if self.saxis == 0:
+
+            self.light_reduced = np.rot90(self.light_reduced)
+            self.bad_mask = np.rot90(self.bad_mask)
+            self.bad_pixel_mask = np.rot90(self.bad_pixel_mask)
+            self.saturation_mask = np.rot90(self.saturation_mask)
+            self.arc_main = np.rot90(self.arc_main)
 
     def heal_bad_pixels(self, bad_mask=None, n=4):
         """
