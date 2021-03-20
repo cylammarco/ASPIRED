@@ -9,6 +9,7 @@ from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
+from pyreduce.extract import extract_spectrum
 from scipy import signal
 from scipy.optimize import curve_fit
 from spectres import spectres
@@ -2261,6 +2262,31 @@ class TwoDSpec:
                         cosmicray_sigma=self.cosmicray_sigma,
                         qmode=qmode,
                         nreject=nreject)
+
+            if optimal & (algorithm == 'pwr21'):
+
+                count, profile, _, count_err = extract_spectrum(
+                    img=self.img,
+                    ycen=spec.trace,
+                    yrange=[0, self.spec_size],
+                    xrange=[min(spec.trace)-width_dn, max(spec.trace)+width_up],
+                    gain=self.gain,
+                    readnoise=self.readnoise,
+                    lambda_sf=0.1,
+                    lambda_sp=0,
+                    osample=1,
+                    swath_width=None,
+                    telluric=None,
+                    scatter=None,
+                    normalize=False,
+                    threshold=0,
+                    tilt=1,
+                    shear=1,
+                    plot=False,
+                    ord_num=0,
+                    im_norm=None,
+                    im_ordr=None
+                )
 
             # All the extraction methods return signal and noise in the
             # same format
