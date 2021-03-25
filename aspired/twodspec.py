@@ -1307,6 +1307,7 @@ class TwoDSpec:
                  nspec=1,
                  nwindow=25,
                  spec_sep=5,
+                 trace_width=15,
                  resample_factor=10,
                  rescale=False,
                  scaling_min=0.9995,
@@ -1364,6 +1365,8 @@ class TwoDSpec:
         spec_sep: int
             Minimum separation between spectra (only if there are multiple
             sources on the longslit).
+        trace_width: int
+            Distance from trace centre to be taken for profile fitting.
         resample_factor: int
             Number of times the collapsed 1D slices in the spatial directions
             are to be upsampled.
@@ -1416,10 +1419,7 @@ class TwoDSpec:
         '''
 
         # Get the shape of the 2D spectrum and define upsampling ratio
-        nwave = len(self.img[0])
-        nspatial = len(self.img)
-
-        nresample = nspatial * resample_factor
+        nresample = self.spatial_size * resample_factor
 
         # We perform the tracing on a *pixel healed* temporary image
         if self.bad_mask is not None:
@@ -1506,10 +1506,13 @@ class TwoDSpec:
             pix_resampled = pix_resampled * scale_solution[i] + shift_solution[
                 i]
 
-            spec_spatial += spectres(np.arange(nresample),
-                                     np.array(pix_resampled).reshape(-1),
-                                     np.array(lines).reshape(-1),
-                                     verbose=False)
+            spec_spatial_tmp = spectres(np.arange(nresample),
+                                        np.array(pix_resampled).reshape(-1),
+                                        np.array(lines).reshape(-1),
+                                        verbose=False)
+            spec_spatial_tmp[np.isnan(spec_spatial_tmp)] = np.nanmin(
+                spec_spatial_tmp)
+            spec_spatial += spec_spatial_tmp
 
             # Update (increment) the reference line
             if (i == nwindow - 1):
@@ -1583,18 +1586,18 @@ class TwoDSpec:
 
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
-            ap = np.polyval(ap_p, np.arange(nwave))
+            ap = np.polyval(ap_p, np.arange(self.spec_size))
 
             # Get the centre of the upsampled spectrum
             ap_centre_idx = ap[start_window_idx] * resample_factor
 
-            # Get the indices for the 10 pixels on the left and right of the
-            # spectrum, and apply the resampling factor.
-            start_idx = int(ap_centre_idx - 10 * resample_factor + 0.5)
-            end_idx = start_idx + 20 * resample_factor + 1
+            # Get the indices for the trace_width-pixels on the left and right
+            # of the spectrum, and apply the resampling factor.
+            start_idx = int(ap_centre_idx - trace_width * resample_factor)
+            end_idx = int(start_idx + 2 * trace_width * resample_factor + 1)
 
             start_idx = max(0, start_idx)
-            end_idx = min(nspatial * resample_factor, end_idx)
+            end_idx = min(self.spatial_size * resample_factor, end_idx)
 
             if start_idx == end_idx:
 
@@ -1608,6 +1611,7 @@ class TwoDSpec:
             ]
 
             non_nan_mask = np.isfinite(spec_spatial[start_idx:end_idx])
+
             popt, _ = curve_fit(self._gaus,
                                 np.arange(start_idx, end_idx)[non_nan_mask],
                                 spec_spatial[start_idx:end_idx][non_nan_mask],
@@ -1644,7 +1648,7 @@ class TwoDSpec:
             for i in range(len(spec_idx)):
 
                 fig.add_trace(
-                    go.Scatter(x=np.arange(nwave),
+                    go.Scatter(x=np.arange(self.spec_size),
                                y=self.spectrum_list[i].trace,
                                line=dict(color='black')))
                 fig.add_trace(
@@ -1872,6 +1876,18 @@ class TwoDSpec:
                    pord=2,
                    qmode='fast-linear',
                    nreject=100,
+                   lambda_sf=0.1,
+                   lambda_sp=0,
+                   osample=1,
+                   swath_width=None,
+                   scatter=None,
+                   threshold=0,
+                   tilt=None,
+                   shear=None,
+                   plot=False,
+                   ord_num=0,
+                   im_norm=None,
+                   im_ordr=None,
                    display=False,
                    renderer='default',
                    width=1280,
@@ -1926,7 +1942,7 @@ class TwoDSpec:
         optimal: boolean (Default: True)
             Set optimal extraction. (Default is True)
         algorithm: str (Default: 'horne86')
-            Available algorithms are horne86 and marsh89.
+            Available algorithms are horne86, marsh89 and pwr21
         model: str (Default: 'lowess')
             Choice of model: 'lowess' and 'gauss'.
         lowess_frac: float (Default: 0.8)
@@ -1943,32 +1959,48 @@ class TwoDSpec:
             The maximum number of iterations before optimal extraction fails
             and return to standard tophot extraction
         forced: boolean (Default: False)
-            To perform forced optimal extraction  by using the given aperture
+            To perform forced optimal extraction by using the given aperture
             profile as it is without interation, the resulting uncertainty
             will almost certainly be wrong. This is an experimental feature.
         variances: list or numpy.ndarray (Default: None, only used if algorithm
-                   is 'horne86')
+                   is horne86)
             The weight function for forced extraction. It is only used if force
             is set to True.
         npoly: int (Default: 21, only used if algorithm is marsh89)
             Number of profile to be use for polynomial fitting to evaluate
             (Marsh's "K"). For symmetry, this should be odd.
-        polyspacing: float (Default: 1)
+        polyspacing: float (Default: 1, only used if algorithm is marsh89)
             Spacing between profile polynomials, in pixels. (Marsh's "S").
             A few cursory tests suggests that the extraction precision
             (in the high S/N case) scales as S^-2 -- but the code slows down
             as S^2.
-        pord: int (Default: 2)
+        pord: int (Default: 2, only used if algorithm is marsh89)
             Order of profile polynomials; 1 = linear, etc.
-        qmode: str (Default: 'fast-linear')
+        qmode: str (Default: 'fast-linear', only used if algorithm is marsh89)
             How to compute Marsh's Q-matrix. Valid inputs are 'fast-linear',
             'slow-linear', 'fast-nearest', and 'slow-nearest'. These select
             between various methods of integrating the nearest-neighbor or
             linear interpolation schemes as described by Marsh; the 'linear'
             methods are preferred for accuracy. Use 'slow' if you are
             running out of memory when using the 'fast' array-based methods.
-        nreject: int (Default: 100)
+        nreject: int (Default: 100, only used if algorithm is marsh89)
             Number of outlier-pixels to reject at each iteration.
+        lambda_sf: float (Default: 0.1, only used if algorithm is pwr21)
+            Line spread function smoothing parameter, usually very small.
+        lambda_sp: int (Default: 0, only used if algorithm is pwr21)
+            Spectrum smoothing parameter, usually very small
+        osample: int (Default: 1, only used if algorithm is pwr21)
+            Oversampling factor.
+        swath_width: int (Default: None, only used if algorithm is pwr21)
+            Swath width suggestion, actual width depends also on ncol
+        scatter: numpy.ndarray (Default: None, only used if algorithm is pwr21)
+            Background scatter as 2d polynomial coefficients
+        tilt: numpy.ndarray (Default: None, only used if algorithm is pwr21)
+            The tilt (1st order curvature) of the slit in this order for the
+            curved extraction.
+        shear: numpy.ndarray (Default: None, only used if algorithm is pwr21)
+            The shear (2nd order curvature) of the slit in this order for the
+            curved extraction.
         display: boolean
             Set to True to display disgnostic plot.
         renderer: string
@@ -2267,26 +2299,25 @@ class TwoDSpec:
 
                 count, profile, _, count_err = extract_spectrum(
                     img=self.img,
-                    ycen=spec.trace,
-                    yrange=[0, self.spec_size],
-                    xrange=[min(spec.trace)-width_dn, max(spec.trace)+width_up],
+                    ycen=np.array(spec.trace),
+                    yrange=[width_dn, width_up],
+                    xrange=[0, self.spec_size],
                     gain=self.gain,
                     readnoise=self.readnoise,
-                    lambda_sf=0.1,
-                    lambda_sp=0,
-                    osample=1,
-                    swath_width=None,
+                    lambda_sf=lambda_sf,
+                    lambda_sp=lambda_sp,
+                    osample=osample,
+                    swath_width=swath_width,
                     telluric=None,
-                    scatter=None,
+                    scatter=scatter,
                     normalize=False,
                     threshold=0,
-                    tilt=1,
-                    shear=1,
+                    tilt=tilt,
+                    shear=shear,
                     plot=False,
                     ord_num=0,
                     im_norm=None,
-                    im_ordr=None
-                )
+                    im_ordr=None)
 
             # All the extraction methods return signal and noise in the
             # same format
@@ -2317,9 +2348,9 @@ class TwoDSpec:
             if np.sum(is_optimal) / len(is_optimal) < 0.333:
 
                 logging.warning(
-                    'Signal extracted is likely to be suboptimal, please '
-                    'try a longer iteration, larger tolerance or revert '
-                    'to top-hat extraction.')
+                    'Some signal extracted is likely to be suboptimal, it '
+                    'is most likely happening at the red and/or blue ends '
+                    'of the spectrum.')
 
             if save_iframe or display or return_jsonstring:
 

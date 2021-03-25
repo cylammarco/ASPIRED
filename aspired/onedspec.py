@@ -1,4 +1,3 @@
-import copy
 import datetime
 import logging
 import os
@@ -180,20 +179,24 @@ class OneDSpec():
         self.standard_flux_calibrated = False
 
     def add_science_spectrum1D(self, spec_id):
-        self.science_wavecal[spec_id] = WavelengthCalibration(
-            verbose=self.verbose,
-            logger_name=self.logger_name,
-            log_level=self.log_level,
-            log_file_folder=self.log_file_folder,
-            log_file_name=self.log_file_name)
+        self.science_wavecal.update({
+            spec_id:
+            WavelengthCalibration(verbose=self.verbose,
+                                  logger_name=self.logger_name,
+                                  log_level=self.log_level,
+                                  log_file_folder=self.log_file_folder,
+                                  log_file_name=self.log_file_name)
+        })
 
-        self.science_spectrum_list[spec_id] = Spectrum1D(
-            spec_id=spec_id,
-            verbose=self.verbose,
-            logger_name=self.logger_name,
-            log_level=self.log_level,
-            log_file_folder=self.log_file_folder,
-            log_file_name=self.log_file_name)
+        self.science_spectrum_list.update({
+            spec_id:
+            Spectrum1D(spec_id=spec_id,
+                       verbose=self.verbose,
+                       logger_name=self.logger_name,
+                       log_level=self.log_level,
+                       log_file_folder=self.log_file_folder,
+                       log_file_name=self.log_file_name)
+        })
 
         self.science_wavecal[spec_id].from_spectrum1D(
             self.science_spectrum_list[spec_id])
@@ -1293,11 +1296,7 @@ class OneDSpec():
 
             self.standard_wavecal_polynomial_available = True
 
-    def from_twodspec(self,
-                      twodspec,
-                      spec_id=None,
-                      copy_spec=False,
-                      stype='science+standard'):
+    def from_twodspec(self, twodspec, spec_id=None, stype='science+standard'):
         '''
         To add a TwoDSpec object or numpy array to provide the traces, line
         spread function of the traces, optionally the pixel values
@@ -1311,8 +1310,6 @@ class OneDSpec():
         twodspec: TwoDSpec object
             TwoDSpec of the science image containin the trace(s) and
             trace_sigma(s).
-        copy_spec: boolean
-            Set to true to clone the spectrum_list from twodspec.
         stype: string (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1322,22 +1319,14 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if copy_spec:
+            if isinstance(spec_id, int):
 
-                self.science_spectrum_list = copy.copy(twodspec.spectrum_list)
-
-            else:
-
-                self.science_spectrum_list = twodspec.spectrum_list
-
-            self.science_wavecal =\
-                [copy.copy(self.science_wavecal[0]) for i in range(
-                    len(self.science_spectrum_list))]
+                spec_id = [spec_id]
 
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                        list(twodspec.spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
@@ -1346,18 +1335,19 @@ class OneDSpec():
             else:
 
                 # if spec_id is None, calibrators are initialised to all
-                spec_id = list(self.science_spectrum_list.keys())
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
+                spec_id = list(twodspec.spectrum_list.keys())
 
             # reference the spectrum1D to the WavelengthCalibration
             for i in spec_id:
 
+                self.add_science_spectrum1D(i)
+                self.science_wavecal[i] = WavelengthCalibration()
+
                 # By reference
                 self.science_wavecal[i].from_spectrum1D(
-                    self.science_spectrum_list[i])
+                    twodspec.spectrum_list[i])
+                self.science_spectrum_list[i] =\
+                    self.science_wavecal[i].spectrum1D
 
             self.science_data_available = True
             self.science_arc_available = True
@@ -1365,18 +1355,11 @@ class OneDSpec():
 
         if 'standard' in stype_split:
 
-            if copy_spec:
-
-                self.standard_spectrum_list = copy.copy(twodspec.spectrum_list)
-
-            else:
-
-                self.standard_spectrum_list = twodspec.spectrum_list
-
             # By reference
-            self.standard_wavecal.from_spectrum1D(
-                self.standard_spectrum_list[0])
-            self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
+            self.standard_wavecal = WavelengthCalibration()
+            self.standard_wavecal.from_spectrum1D(twodspec.spectrum_list[0])
+            self.fluxcal.from_spectrum1D(twodspec.spectrum_list[0])
+            self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
 
             self.standard_data_available = True
             self.standard_arc_available = True
@@ -1583,14 +1566,6 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    if peaks is None:
-
-                        peaks = self.science_spectrum_list[i].peaks
-
-                    if arc_spec is None:
-
-                        arc_spec = self.science_spectrum_list[i].arc_spec
-
                     self.science_wavecal[i].from_spectrum1D(
                         self.science_spectrum_list[i])
                     self.science_wavecal[i].initialise_calibrator(
@@ -1605,14 +1580,6 @@ class OneDSpec():
         if 'standard' in stype_split:
 
             if self.standard_arc_lines_available:
-
-                if peaks is None:
-
-                    peaks = self.standard_spectrum_list[0].peaks
-
-                if arc_spec is None:
-
-                    arc_spec = self.standard_spectrum_list[0].count
 
                 self.standard_wavecal.from_spectrum1D(
                     self.standard_spectrum_list[0])
@@ -3024,7 +2991,7 @@ class OneDSpec():
 
             error_msg = "Standard star is not wavelength calibrated, " +\
                 "sensitivity curve cannot be computed."
-            logging.critial(error_msg)
+            logging.critical(error_msg)
             raise RuntimeError(error_msg)
 
     def save_sensitivity_func(self, filename='sensitivity_func.npy'):

@@ -425,6 +425,10 @@ class WavelengthCalibration():
 
                 peaks = getattr(self.spectrum1D, 'peaks_refined')
 
+            elif getattr(self.spectrum1D, 'peaks') is not None:
+
+                peaks = getattr(self.spectrum1D, 'peaks')
+
             else:
 
                 error_msg = 'arc_spec is not provided. Either provide when ' +\

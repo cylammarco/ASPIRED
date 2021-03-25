@@ -197,8 +197,8 @@ def test_marsh_extraction_fast_apwidth_str():
                                 qmode='fast-nearest',
                                 display=False)
 
+
 def test_pwr_extraction():
     lhs6328_twodspec.ap_extract(optimal=False,
                                 algorithm='pwr21',
                                 display=False)
-
