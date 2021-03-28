@@ -130,7 +130,8 @@ class TwoDSpec:
         self.spec_mask = (1, )
         self.flip = False
         self.cosmicray = False
-        self.cosmicray_sigma = 5.
+        self.fsmode = None
+        self.psfmodel = None
 
         # Default values if not supplied or cannot be automatically identified
         # from the header
@@ -267,13 +268,15 @@ class TwoDSpec:
                        spec_mask=None,
                        flip=None,
                        cosmicray=None,
-                       cosmicray_sigma=None,
-                       readnoise=None,
                        gain=None,
+                       readnoise=None,
+                       fsmode=None,
+                       psfmodel=None,
                        seeing=None,
                        exptime=None,
                        airmass=None,
-                       verbose=None):
+                       verbose=None,
+                       **kwargs):
         '''
         The read noise, detector gain, seeing and exposure time will be
         automatically extracted from the FITS header if it conforms with the
@@ -310,49 +313,64 @@ class TwoDSpec:
 
         Parameters
         ----------
-        saxis: int
+        saxis: int (Default: 1)
             Spectral direction, 0 for vertical, 1 for horizontal.
-            (Default is 1)
         variance: 2D numpy array (M, N)
             The per-pixel-variance of the frame.
-        spatial_mask: 1D numpy array (N)
+        spatial_mask: 1D numpy array (size: N. Default is (1,))
             Mask in the spatial direction, can be the indices of the pixels
             to be included (size <N) or a 1D numpy array of True/False (size N)
-            (Default is (1,) i.e. keep everything)
-        spec_mask: 1D numpy array (M)
+        spec_mask: 1D numpy array (Size: M. Default: (1,))
             Mask in the spectral direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
-            (Default is (1,) i.e. keep everything)
-        flip: boolean
+        flip: boolean (Deafult: False)
             If the frame has to be left-right flipped, set to True.
-            (Deafult is False)
-        cosmicray: boolean
-            Set to True to apply cosmic ray rejection by sigma clipping with
-            astroscrappy if available, otherwise a 2D median filter of size 5
-            would be used. (default is True)
-        cosmicray_sigma: float
-            Cosmic ray sigma clipping limit (Deafult is 5.0)
-        readnoise: float
-            Readnoise of the detector, not important if noise estimation is
-            not needed.
-            (Deafult is None, which will be replaced with 0.0)
-        gain: float
+        cosmicray: boolean (Default: True)
+            Set to True to remove cosmic rays, this directly alter the reduced
+            image data. We only explicitly include the 4 most important
+            parameters in this function: 'gain', 'readnoise', 'fsmode', and
+            'psfmodel', the rest can be configured with kwargs.
+        gain: float (Deafult: None. Use 1.0 if not set.)
             Gain of the detector, not important if noise estimation is
             not needed.
-            (Deafult is None, which will be replaced with 1.0)
-        seeing: float
+        readnoise: float (Deafult: None. Use 0.0 if not set.)
+            Readnoise of the detector, not important if noise estimation is
+            not needed.
+        fsmode: str (Default: None. Use 'convolve' if not set.)
+            Method to build the fine structure image: 'median': Use the median
+            filter in the standard LA Cosmic algorithm 'convolve': Convolve
+            the image with the psf kernel to calculate the fine structure
+            image.
+        psfmodel: str (Default: None. Use 'gaussy' if not set.)
+            Model to use to generate the psf kernel if fsmode == 'convolve'
+            and psfk is None. The current choices are Gaussian and Moffat
+            profiles. 'gauss' and 'moffat' produce circular PSF kernels. The
+            'gaussx' and 'gaussy' produce Gaussian kernels in the x and y
+            directions respectively. 'gaussxy' and 'gaussyx' apply the
+            Gaussian kernels in the x then the y direction, and first y then
+            x direction, respectively.
+        seeing: float (Deafult: None, which will be replaced with 1.0)
             Seeing in unit of arcsec, use as the first guess of the line
             spread function of the spectra.
-            (Deafult is None, which will be replaced with 1.0)
-        exptime: float
+        exptime: float (Deafult: None, which will be replaced with 1.0)
             Esposure time for the observation, not important if absolute flux
             calibration is not needed.
-            (Deafult is None, which will be replaced with 1.0)
         airmass: float
             The airmass where the observation carries out.
         verbose: boolean
             Set to False to suppress all verbose warnings, except for
             critical failure.
+        **kwargs:
+            Extra keyword arguments for the astroscrappy.detect_cosmics:
+            https://astroscrappy.readthedocs.io/en/latest/api/
+            astroscrappy.detect_cosmics.html
+            The default setting is:
+                astroscrappy.detect_cosmics(indat, inmask=None, bkg=None,
+                    var=None, sigclip=4.5, sigfrac=0.3, objlim=5.0, gain=1.0,
+                    readnoise=6.5, satlevel=65536.0, niter=4, sepmed=True,
+                    cleantype='meanmask', fsmode='median', psfmodel='gauss',
+                    psffwhm=2.5, psfsize=7, psfk=None, psfbeta=4.765,
+                    verbose=False)
 
         '''
 
@@ -393,23 +411,96 @@ class TwoDSpec:
         self.set_exptime(exptime)
         self.set_airmass(airmass)
 
-        # cosmic ray rejection
         if cosmicray is not None:
 
             self.cosmicray = cosmicray
 
-            self.img = detect_cosmics(self.img,
-                                      sigclip=self.cosmicray_sigma,
-                                      readnoise=self.readnoise,
-                                      gain=self.gain,
-                                      fsmode='convolve',
-                                      psfmodel='gaussy',
-                                      psfsize=31,
-                                      psffwhm=self.seeing)[1]
+        if fsmode is not None:
 
-        if cosmicray_sigma is not None:
+            self.fsmode = fsmode
 
-            self.cosmicray_sigma = cosmicray_sigma
+        else:
+
+            if self.fsmode is None:
+
+                self.fsmode = 'convolve'
+
+        if psfmodel is not None:
+
+            self.psfmodel = psfmodel
+
+        else:
+
+            if self.psfmodel is None:
+
+                self.psfmodel = 'gaussy'
+
+        if kwargs is not None:
+
+            self.cr_kwargs = kwargs
+
+        # cosmic ray rejection
+        if self.cosmicray:
+
+            logging.info('Removing cosmic rays in mode: {}.'.format(psfmodel))
+
+            if self.fsmode == 'convolve':
+
+                if psfmodel == 'gaussyx':
+
+                    self.img = detect_cosmics(
+                        self.img,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode='convolve',
+                        psfmodel='gaussy',
+                        **kwargs)[1]
+
+                    self.img = detect_cosmics(
+                        self.img,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode='convolve',
+                        psfmodel='gaussx',
+                        **kwargs)[1]
+
+                elif psfmodel == 'gaussxy':
+
+                    self.img = detect_cosmics(
+                        self.img,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode='convolve',
+                        psfmodel='gaussx',
+                        **kwargs)[1]
+
+                    self.img = detect_cosmics(
+                        self.img,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode='convolve',
+                        psfmodel='gaussy',
+                        **kwargs)[1]
+
+                else:
+
+                    self.img = detect_cosmics(
+                        self.img,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode='convolve',
+                        psfmodel=self.psfmodel,
+                        **kwargs)[1]
+
+            else:
+
+                self.img = detect_cosmics(
+                    self.img,
+                    gain=self.gain,
+                    readnoise=self.readnoise,
+                    fsmode=self.fsmode,
+                    psfmodel=self.psfmodel,
+                    **kwargs)[1]
 
         if verbose is not None:
 
@@ -1868,6 +1959,7 @@ class TwoDSpec:
                    lowess_it=3,
                    lowess_delta=0.0,
                    tolerance=1e-6,
+                   cosmicray_sigma=5.0,
                    max_iter=99,
                    forced=False,
                    variances=None,
@@ -1955,6 +2047,10 @@ class TwoDSpec:
             linear-interpolation instead of weighted regression.
         tolerance: float (Default: 1e-6)
             The tolerance limit for the convergence of the optimal extraction
+        cosmicray_sigma: float (Deafult: 5.0)
+            Cosmic ray sigma clipping limit. This is for rejecting pixels when
+            using horne87 and marsh93 optimal cleaning. Use sigclip in kwargs
+            for configuring cosmicray cleaning with astroscrappy.
         max_iter: float (Default: 99)
             The maximum number of iterations before optimal extraction fails
             and return to standard tophot extraction
@@ -2037,6 +2133,8 @@ class TwoDSpec:
 
             spec_id = list(self.spectrum_list.keys())
 
+        self.cosmicray_sigma = cosmicray_sigma
+        
         to_return = []
 
         for j in spec_id:

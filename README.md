@@ -42,6 +42,8 @@ We are to cover as many use cases as possible. If you would like to apply some r
 11. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
 12. [x] Save data in FITS (with header information) or ascii (csv).
 
+See the examples of these use cases at [aspired-example](https://github.com/cylammarco/ASPIRED-example/).
+
 ## Dependencies
 * python >= 3.6
 * numpy

@@ -47,13 +47,10 @@ class ImageReduction:
                  exptime_flat=None,
                  exptime_flat_keyword=None,
                  cosmicray=False,
-                 sigclip=5.0,
-                 readnoise=0.0,
                  gain=1.0,
+                 readnoise=0.0,
                  fsmode='convolve',
                  psfmodel='gaussy',
-                 psffwhm=2.5,
-                 psfsize=7,
                  cutoff=60000.,
                  grow=False,
                  iterations=1,
@@ -62,7 +59,8 @@ class ImageReduction:
                  logger_name='ImageReduction',
                  log_level='WARNING',
                  log_file_folder='default',
-                 log_file_name='default'):
+                 log_file_name='default',
+                 **kwargs):
         '''
         This class is not intented for quality data reduction, it exists for
         completeness such that users can produce a minimal pipeline with
@@ -146,21 +144,28 @@ class ImageReduction:
             HDU keyword for the exposure time of the flat frame
         cosmicray: bool (Default: False)
             Set to True to remove cosmic rays, this directly alter the reduced
-            image data.
-        sigclip: float (Default: 5.0)
-
-        readnoise: float (Default: 0.0)
-
+            image data. We only explicitly include the 4 most important
+            parameters in this function: 'gain', 'readnoise', 'fsmode', and
+            'psfmodel', the rest can be configured with kwargs.
         gain: float (Default: 1.0)
-
+            Gain of the image (electrons / ADU). We always need to work in
+            electrons for cosmic ray detection.
+        readnoise: float (Default: 0.0)
+            Read noise of the image (electrons). Used to generate the noise
+            model of the image.
         fsmode: str (Default: 'convolve')
-
+            Method to build the fine structure image: 'median': Use the median
+            filter in the standard LA Cosmic algorithm 'convolve': Convolve
+            the image with the psf kernel to calculate the fine structure
+            image.
         psfmodel: str (Default: 'gaussy')
-
-        psffwhm: float (Default: 2.5)
-
-        psfsize: int (Default: 7)
-
+            Model to use to generate the psf kernel if fsmode == 'convolve'
+            and psfk is None. The current choices are Gaussian and Moffat
+            profiles. 'gauss' and 'moffat' produce circular PSF kernels. The
+            'gaussx' and 'gaussy' produce Gaussian kernels in the x and y
+            directions respectively. 'gaussxy' and 'gaussyx' apply the
+            Gaussian kernels in the x then the y direction, and first y then
+            x direction, respectively.
         cutoff: float (Default: 60000.)
             This sets the (lower and) upper limit of electron count.
         grow: bool (Default: False)
@@ -192,6 +197,17 @@ class ImageReduction:
             current path.
         log_file_name: None or str (Default: "default")
             File name of the log, set to None to print to screen only.
+        **kwargs:
+            Extra keyword arguments for the astroscrappy.detect_cosmics:
+            https://astroscrappy.readthedocs.io/en/latest/api/
+            astroscrappy.detect_cosmics.html
+            The default setting is:
+                astroscrappy.detect_cosmics(indat, inmask=None, bkg=None,
+                    var=None, sigclip=4.5, sigfrac=0.3, objlim=5.0, gain=1.0,
+                    readnoise=6.5, satlevel=65536.0, niter=4, sepmed=True,
+                    cleantype='meanmask', fsmode='median', psfmodel='gauss',
+                    psffwhm=2.5, psfsize=7, psfk=None, psfbeta=4.765,
+                    verbose=False)
 
         '''
 
@@ -312,14 +328,11 @@ class ImageReduction:
         self.exptime_flat_keyword = exptime_flat_keyword
 
         self.cosmicray = cosmicray
-        self.sigclip = sigclip
-        self.readnoise = readnoise
         self.gain = gain
+        self.readnoise = readnoise
         self.fsmode = fsmode
         self.psfmodel = psfmodel
-        self.psffwhm = psffwhm
-        self.psfsize = psfsize
-        self.verbose = verbose
+        self.cr_kwargs = kwargs
 
         self.cutoff = cutoff
         self.grow = grow
@@ -545,61 +558,63 @@ class ImageReduction:
                 logging.info(
                     'Removing cosmic rays in mode: {}.'.format(psfmodel))
 
-                if psfmodel == 'gaussyx':
+                if self.fsmode == 'convolve':
 
-                    light_CCDData[i].data = detect_cosmics(
-                        light_CCDData[i].data,
-                        sigclip=self.sigclip,
-                        readnoise=self.readnoise,
-                        gain=self.gain,
-                        fsmode='convolve',
-                        psfmodel='gaussy',
-                        psffwhm=self.psffwhm,
-                        psfsize=self.psfsize)[1]
+                    if psfmodel == 'gaussyx':
 
-                    light_CCDData[i].data = detect_cosmics(
-                        light_CCDData[i].data,
-                        sigclip=self.sigclip,
-                        readnoise=self.readnoise,
-                        gain=self.gain,
-                        fsmode='convolve',
-                        psfmodel='gaussx',
-                        psffwhm=self.psffwhm,
-                        psfsize=self.psfsize)[1]
+                        light_CCDData[i].data = detect_cosmics(
+                            light_CCDData[i].data,
+                            gain=self.gain,
+                            readnoise=self.readnoise,
+                            fsmode='convolve',
+                            psfmodel='gaussy',
+                            **kwargs)[1]
 
-                elif psfmodel == 'gaussxy':
+                        light_CCDData[i].data = detect_cosmics(
+                            light_CCDData[i].data,
+                            gain=self.gain,
+                            readnoise=self.readnoise,
+                            fsmode='convolve',
+                            psfmodel='gaussx',
+                            **kwargs)[1]
 
-                    light_CCDData[i].data = detect_cosmics(
-                        light_CCDData[i].data,
-                        sigclip=self.sigclip,
-                        readnoise=self.readnoise,
-                        gain=self.gain,
-                        fsmode='convolve',
-                        psfmodel='gaussx',
-                        psffwhm=self.psffwhm,
-                        psfsize=self.psfsize)[1]
+                    elif psfmodel == 'gaussxy':
 
-                    light_CCDData[i].data = detect_cosmics(
-                        light_CCDData[i].data,
-                        sigclip=self.sigclip,
-                        readnoise=self.readnoise,
-                        gain=self.gain,
-                        fsmode='convolve',
-                        psfmodel='gaussy',
-                        psffwhm=self.psffwhm,
-                        psfsize=self.psfsize)[1]
+                        light_CCDData[i].data = detect_cosmics(
+                            light_CCDData[i].data,
+                            gain=self.gain,
+                            readnoise=self.readnoise,
+                            fsmode='convolve',
+                            psfmodel='gaussx',
+                            **kwargs)[1]
+
+                        light_CCDData[i].data = detect_cosmics(
+                            light_CCDData[i].data,
+                            gain=self.gain,
+                            readnoise=self.readnoise,
+                            fsmode='convolve',
+                            psfmodel='gaussy',
+                            **kwargs)[1]
+
+                    else:
+
+                        light_CCDData[i].data = detect_cosmics(
+                            light_CCDData[i].data,
+                            gain=self.gain,
+                            readnoise=self.readnoise,
+                            fsmode='convolve',
+                            psfmodel=self.psfmodel,
+                            **kwargs)[1]
 
                 else:
 
                     light_CCDData[i].data = detect_cosmics(
                         light_CCDData[i].data,
-                        sigclip=self.sigclip,
-                        readnoise=self.readnoise,
                         gain=self.gain,
+                        readnoise=self.readnoise,
                         fsmode=self.fsmode,
                         psfmodel=self.psfmodel,
-                        psffwhm=self.psffwhm,
-                        psfsize=self.psfsize)[1]
+                        **kwargs)[1]
 
             logging.debug('Light frame header: {}.'.format(
                 self.light_header[i]))
@@ -1368,17 +1383,13 @@ class ImageReduction:
             value=self.cosmicray,
             comment='Indicate if cosmic ray cleaning was performed.')
         self.image_fits.header.set(
-            keyword='CSIGMA',
-            value=self.sigclip,
-            comment='Sigma level of cosmic ray cleaning.')
+            keyword='CGAIN',
+            value=self.gain,
+            comment='Gain value used for cosmic ray cleaning.')
         self.image_fits.header.set(
             keyword='CRDNOISE',
             value=self.readnoise,
             comment='Readnoise value used for cosmic ray cleaning.')
-        self.image_fits.header.set(
-            keyword='CGAIN',
-            value=self.gain,
-            comment='Gain value used for cosmic ray cleaning.')
         self.image_fits.header.set(
             keyword='CFSMODE',
             value=self.fsmode,
@@ -1387,14 +1398,6 @@ class ImageReduction:
             keyword='CPSFMOD',
             value=self.psfmodel,
             comment='The PSF model used for cosmic ray cleaning.')
-        self.image_fits.header.set(
-            keyword='CPSFFWHM',
-            value=self.psffwhm,
-            comment='The PSF FWHM used for cosmic ray cleaning.')
-        self.image_fits.header.set(
-            keyword='CPSFSIZE',
-            value=self.psfsize,
-            comment='The PSF kernel size used for cosmic ray cleaning.')
         self.image_fits.header.set(
             keyword='CUTOFF',
             value=self.cutoff,
@@ -1416,6 +1419,11 @@ class ImageReduction:
             keyword='HEALED',
             value=self.pixel_healed,
             comment='Indicate if the pixels are healed (i.e. altered!).')
+        if self.cr_kwargs is not None:
+            for key, value in self.cr_kwargs.items():
+                self.image_fits.header.set(keyword=key,
+                                           value=value,
+                                           comment=key)
 
     def save_fits(self,
                   filename='reduced_image',
