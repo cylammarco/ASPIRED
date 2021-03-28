@@ -152,9 +152,22 @@ def test_input_with_hdu():
         log_file_name=None)
 
 
+def test_input_with_extra_bracket():
+    image_reduction.ImageReduction(
+        filelist='test/test_data/sprat_LHS6328_fake_extra_bracket.list',
+        log_file_name=None)
+
+
 def test_input_with_data_cube():
     image_reduction.ImageReduction(
         filelist='test/test_data/sprat_LHS6328_fake_data_cube.list',
+        log_file_name=None)
+
+
+def test_input_with_data_cube_extra_bracket():
+    image_reduction.ImageReduction(
+        filelist=
+        'test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list',
         log_file_name=None)
 
 

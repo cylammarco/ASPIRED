@@ -2134,7 +2134,7 @@ class TwoDSpec:
             spec_id = list(self.spectrum_list.keys())
 
         self.cosmicray_sigma = cosmicray_sigma
-        
+
         to_return = []
 
         for j in spec_id:

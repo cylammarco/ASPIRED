@@ -527,29 +527,33 @@ class ImageReduction:
                 self.light_header.append(light.header)
 
             # Case with an extra bracket when saving
-            elif len(light_shape) == 1:
+            elif len(light_shape) == 4:
 
-                logging.debug('light.data is 1 dimensional.')
+                logging.debug('light.data is 4 dimensional, there is most '
+                              'likely an extra bracket, attempting to go in '
+                              'one level.')
 
                 # In case it in a multiple extension format, we take the
                 # first one only
-                if len(np.shape(light.data[0]) == 3):
+                if len(np.shape(light.data[0])) == 3:
 
                     light_CCDData.append(
                         CCDData(light.data[0][0].astype('float'), unit=u.ct))
-                    self.light_header.append(light[0].header)
+                    self.light_header.append(light.header)
 
                 else:
 
                     light_CCDData.append(
                         CCDData(light.data[0].astype('float'), unit=u.ct))
-                    self.light_header.append(light[0].header)
+                    self.light_header.append(light.header)
 
             else:
 
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input light frame, it is probably empty ' +\
-                            'or has an atypical output format.'
+                            'or has an atypical format. The shape of the ' +\
+                            'data is: {}.'.format(light_shape) + '. The ' +\
+                            'data type is: {}'.format(type(light)) + '.'
                 logging.critical(error_msg)
                 raise RuntimeError(error_msg)
 
@@ -752,18 +756,21 @@ class ImageReduction:
                         CCDData(arc.data[0].astype('float'), unit=u.ct))
                     self.arc_header.append(arc.header)
                 # Case with an extra bracket when saving
-                elif len(arc_shape) == 1:
-                    logging.debug('arc.data is 1 dimensional.')
+                elif len(arc_shape) == 4:
+                    logging.debug(
+                        'arc.data is 4 dimensional, there is most '
+                        'likely an extra bracket, attempting to go in '
+                        'one level.')
                     # In case it in a multiple extension format, we take the
                     # first one only
-                    if len(np.shape(arc.data[0]) == 3):
+                    if len(np.shape(arc.data[0])) == 3:
                         arc_CCDData.append(
                             CCDData(arc.data[0][0].astype('float'), unit=u.ct))
-                        self.arc_header.append(arc[0].header)
+                        self.arc_header.append(arc.header)
                     else:
                         arc_CCDData.append(
                             CCDData(arc.data[0].astype('float'), unit=u.ct))
-                        self.arc_header.append(arc[0].header)
+                        self.arc_header.append(arc.header)
                 else:
                     error_msg = 'Please check the shape/dimension of the ' +\
                                 'input arc frame, it is probably empty ' +\
@@ -813,11 +820,13 @@ class ImageReduction:
                 bias_CCDData.append(
                     CCDData(bias.data[0].astype('float'), unit=u.ct))
             # Case with an extra bracket when saving
-            elif len(bias_shape) == 1:
-                logging.debug('bias.data is 1 dimensional.')
+            elif len(bias_shape) == 4:
+                logging.debug('bias.data is 4 dimensional, there is most '
+                              'likely an extra bracket, attempting to go in '
+                              'one level.')
                 # In case it in a multiple extension format, we take the
                 # first one only
-                if len(np.shape(bias.data[0]) == 3):
+                if len(np.shape(bias.data[0])) == 3:
                     bias_CCDData.append(
                         CCDData(bias.data[0][0].astype('float'), unit=u.ct))
                 else:
@@ -898,18 +907,20 @@ class ImageReduction:
                     CCDData(dark.data[0].astype('float'), unit=u.ct))
                 self.dark_header.append(dark.header)
             # Case with an extra bracket when saving
-            elif len(dark_shape) == 1:
-                logging.debug('dark.data is 1 dimensional.')
+            elif len(dark_shape) == 4:
+                logging.debug('dark.data is 4 dimensional, there is most '
+                              'likely an extra bracket, attempting to go in '
+                              'one level.')
                 # In case it in a multiple extension format, we take the
                 # first one only
-                if len(np.shape(dark.data[0]) == 3):
+                if len(np.shape(dark.data[0])) == 3:
                     dark_CCDData.append(
                         CCDData(dark.data[0][0].astype('float'), unit=u.ct))
-                    self.dark_header.append(dark[0].header)
+                    self.dark_header.append(dark.header)
                 else:
                     dark_CCDData.append(
                         CCDData(dark.data[0].astype('float'), unit=u.ct))
-                    self.dark_header.append(dark[0].header)
+                    self.dark_header.append(dark.header)
             else:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input dark frame, it is probably empty ' +\
