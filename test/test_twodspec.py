@@ -185,7 +185,6 @@ def test_set_all_properties():
                             spec_mask=(1, ),
                             flip=True,
                             cosmicray=True,
-                            cosmicray_sigma=2.,
                             readnoise=10.,
                             gain=2.6,
                             seeing=1.7,
@@ -199,7 +198,6 @@ def test_set_all_properties():
     assert twodspec.spec_mask == (1, )
     assert twodspec.flip
     assert twodspec.cosmicray
-    assert twodspec.cosmicray_sigma == 2.
     assert twodspec.readnoise == 10.
     assert twodspec.gain == 2.6
     assert twodspec.seeing == 1.7
@@ -217,7 +215,6 @@ def test_set_all_properties():
     assert twodspec.spec_mask == (1, )
     assert twodspec.flip
     assert twodspec.cosmicray
-    assert twodspec.cosmicray_sigma == 2.
     assert twodspec.readnoise == 0.
     # The gain is now read from the header, so it's 2.45
     assert twodspec.gain == 2.45
@@ -230,7 +227,7 @@ def test_set_all_properties():
     assert twodspec.verbose
 
     # Resetting all values to the header values
-    twodspec.set_properties(saxis=0, variance=None)
+    twodspec.set_properties(saxis=0, cosmicray=False, variance=None)
     # The readnoise is now set
     twodspec.set_readnoise(20.)
     # The gain is now set
