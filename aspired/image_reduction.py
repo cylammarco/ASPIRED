@@ -932,20 +932,26 @@ class ImageReduction:
 
             self.dark_filename.append(self.dark_list[i].split('/')[-1])
 
+            # Get the exposure time for the light frames
             if self.exptime_dark is None:
-                # Get the exposure time for the dark frames
-                exptime_keyword_idx = np.where(
-                    np.in1d(self.exptime_keyword, self.dark_header))[0][0]
-                logging.debug('Exposure time keyword index is {}.'.format(
-                    exptime_keyword_idx))
 
-                if np.isfinite(exptime_keyword_idx):
+                if np.in1d(self.exptime_keyword, self.dark_header[i]).any():
+                    # Get the exposure time for the light frames
+                    exptime_keyword_idx = int(
+                        np.where(
+                            np.in1d(self.exptime_keyword,
+                                    self.dark_header[i]))[0][0])
 
-                    exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
-                    dark_time.append(self.dark_header[i][exptime_keyword])
+                    if np.isfinite(exptime_keyword_idx):
+
+                        exptime_keyword = self.exptime_keyword[
+                            exptime_keyword_idx]
+                        dark_time.append(self.dark_header[i][exptime_keyword])
 
                 else:
 
+                    # If exposure time cannot be found from the header and
+                    # user failed to supply the exposure time, use 1 second
                     logging.warning(
                         'Dark frame exposure time cannot be found. '
                         '1 second is used as the exposure time.')
@@ -978,10 +984,11 @@ class ImageReduction:
                           'dark cannot be created. Process continues '
                           'without dark subtraction.')
 
-        # Dark subtraction adjusted for exposure time
-        self.light_reduced =\
-            self.light_reduced.subtract(self.dark_main)
-        logging.info('Light frame is dark subtracted.')
+        if self.dark_filename != []:
+            # Dark subtraction adjusted for exposure time
+            self.light_reduced =\
+                self.light_reduced.subtract(self.dark_main)
+            logging.info('Light frame is dark subtracted.')
 
         # Free memory
         dark_CCDData = None
@@ -1020,18 +1027,20 @@ class ImageReduction:
                     CCDData(flat.data[0].astype('float'), unit=u.ct))
                 self.flat_header.append(flat.header)
             # Case with an extra bracket when saving
-            elif len(flat_shape) == 1:
-                logging.debug('flat.data is 1 dimensional.')
+            elif len(flat_shape) == 4:
+                logging.debug('flat.data is 4 dimensional, there is most '
+                              'likely an extra bracket, attempting to go in '
+                              'one level.')
                 # In case it in a multiple extension format, we take the
                 # first one only
-                if len(np.shape(flat.data[0]) == 3):
+                if len(np.shape(flat.data[0])) == 3:
                     flat_CCDData.append(
                         CCDData(flat.data[0][0].astype('float'), unit=u.ct))
-                    self.flat_header.append(flat[0].header)
+                    self.flat_header.append(flat.header)
                 else:
                     flat_CCDData.append(
                         CCDData(flat.data[0].astype('float'), unit=u.ct))
-                    self.flat_header.append(flat[0].header)
+                    self.flat_header.append(flat.header)
             else:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input flat frame, it is probably empty ' +\
@@ -1041,28 +1050,36 @@ class ImageReduction:
 
             self.flat_filename.append(self.flat_list[i].split('/')[-1])
 
+            # Get the exposure time for the flat frames
             if self.exptime_flat is None:
-                # Get the exposure time for the flat frames
-                exptime_keyword_idx = np.where(
-                    np.in1d(self.exptime_keyword, self.flat_header))[0][0]
-                logging.debug('Exposure time keyword index is {}.'.format(
-                    exptime_keyword_idx))
 
-                if np.isfinite(exptime_keyword_idx):
-                    exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
-                    flat_time.append(self.flat_header[i][exptime_keyword])
-                    logging.debug('Exposure time is {}.'.format(flat_time[i]))
+                if np.in1d(self.exptime_keyword, self.flat_header[i]).any():
+                    # Get the exposure time for the light frames
+                    exptime_keyword_idx = int(
+                        np.where(
+                            np.in1d(self.exptime_keyword,
+                                    self.flat_header[i]))[0][0])
+
+                    if np.isfinite(exptime_keyword_idx):
+
+                        exptime_keyword = self.exptime_keyword[
+                            exptime_keyword_idx]
+                        flat_time.append(self.flat_header[i][exptime_keyword])
 
                 else:
 
+                    # If exposure time cannot be found from the header and
+                    # user failed to supply the exposure time, use 1 second
                     logging.warning(
-                        'Flat frame exposure time cannot be found. '
+                        'Dark frame exposure time cannot be found. '
                         '1 second is used as the exposure time.')
                     flat_time.append(1.0)
 
             else:
 
                 flat_time.append(self.exptime_flat)
+
+            flat_CCDData[i].data /= flat_time[i]
 
         # Put data into a Combiner
         flat_combiner = Combiner(flat_CCDData)
