@@ -448,59 +448,55 @@ class TwoDSpec:
 
                 if psfmodel == 'gaussyx':
 
-                    self.img = detect_cosmics(
-                        self.img,
-                        gain=self.gain,
-                        readnoise=self.readnoise,
-                        fsmode='convolve',
-                        psfmodel='gaussy',
-                        **kwargs)[1]
+                    self.img = detect_cosmics(self.img,
+                                              gain=self.gain,
+                                              readnoise=self.readnoise,
+                                              fsmode='convolve',
+                                              psfmodel='gaussy',
+                                              **kwargs)[1]
 
-                    self.img = detect_cosmics(
-                        self.img,
-                        gain=self.gain,
-                        readnoise=self.readnoise,
-                        fsmode='convolve',
-                        psfmodel='gaussx',
-                        **kwargs)[1]
+                    self.img = detect_cosmics(self.img,
+                                              gain=self.gain,
+                                              readnoise=self.readnoise,
+                                              fsmode='convolve',
+                                              psfmodel='gaussx',
+                                              **kwargs)[1]
 
                 elif psfmodel == 'gaussxy':
 
-                    self.img = detect_cosmics(
-                        self.img,
-                        gain=self.gain,
-                        readnoise=self.readnoise,
-                        fsmode='convolve',
-                        psfmodel='gaussx',
-                        **kwargs)[1]
+                    self.img = detect_cosmics(self.img,
+                                              gain=self.gain,
+                                              readnoise=self.readnoise,
+                                              fsmode='convolve',
+                                              psfmodel='gaussx',
+                                              **kwargs)[1]
 
-                    self.img = detect_cosmics(
-                        self.img,
-                        gain=self.gain,
-                        readnoise=self.readnoise,
-                        fsmode='convolve',
-                        psfmodel='gaussy',
-                        **kwargs)[1]
+                    self.img = detect_cosmics(self.img,
+                                              gain=self.gain,
+                                              readnoise=self.readnoise,
+                                              fsmode='convolve',
+                                              psfmodel='gaussy',
+                                              **kwargs)[1]
 
                 else:
 
-                    self.img = detect_cosmics(
-                        self.img,
-                        gain=self.gain,
-                        readnoise=self.readnoise,
-                        fsmode='convolve',
-                        psfmodel=self.psfmodel,
-                        **kwargs)[1]
+                    self.img = detect_cosmics(self.img,
+                                              gain=self.gain,
+                                              readnoise=self.readnoise,
+                                              fsmode='convolve',
+                                              psfmodel=self.psfmodel,
+                                              **kwargs)[1]
 
             else:
 
-                self.img = detect_cosmics(
-                    self.img,
-                    gain=self.gain,
-                    readnoise=self.readnoise,
-                    fsmode=self.fsmode,
-                    psfmodel=self.psfmodel,
-                    **kwargs)[1]
+                self.img = detect_cosmics(self.img,
+                                          gain=self.gain,
+                                          readnoise=self.readnoise,
+                                          fsmode=self.fsmode,
+                                          psfmodel=self.psfmodel,
+                                          **kwargs)[1]
+
+            self.img /= self.gain
 
         if verbose is not None:
 
@@ -2880,6 +2876,7 @@ class TwoDSpec:
             v0 = v1
 
             # step 6 - revise variance estimates
+            # var_f is the V in Horne87
             if not forced:
 
                 var_f = readnoise + np.abs(P * f0 + sky) / gain
