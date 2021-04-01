@@ -328,8 +328,8 @@ class TwoDSpec:
         cosmicray: boolean (Default: True)
             Set to True to remove cosmic rays, this directly alter the reduced
             image data. We only explicitly include the 4 most important
-            parameters in this function: 'gain', 'readnoise', 'fsmode', and
-            'psfmodel', the rest can be configured with kwargs.
+            parameters in this function: `gain`, `readnoise`, `fsmode`, and
+            `psfmodel`, the rest can be configured with kwargs.
         gain: float (Deafult: None. Use 1.0 if not set.)
             Gain of the detector, not important if noise estimation is
             not needed.
@@ -337,16 +337,16 @@ class TwoDSpec:
             Readnoise of the detector, not important if noise estimation is
             not needed.
         fsmode: str (Default: None. Use 'convolve' if not set.)
-            Method to build the fine structure image: 'median': Use the median
-            filter in the standard LA Cosmic algorithm 'convolve': Convolve
+            Method to build the fine structure image: `median`: Use the median
+            filter in the standard LA Cosmic algorithm. `convolve`: Convolve
             the image with the psf kernel to calculate the fine structure
             image.
         psfmodel: str (Default: None. Use 'gaussy' if not set.)
-            Model to use to generate the psf kernel if fsmode == 'convolve'
+            Model to use to generate the psf kernel if fsmode is `convolve`
             and psfk is None. The current choices are Gaussian and Moffat
             profiles. 'gauss' and 'moffat' produce circular PSF kernels. The
-            'gaussx' and 'gaussy' produce Gaussian kernels in the x and y
-            directions respectively. 'gaussxy' and 'gaussyx' apply the
+            `gaussx` and `gaussy` produce Gaussian kernels in the x and y
+            directions respectively. `gaussxy` and `gaussyx` apply the
             Gaussian kernels in the x then the y direction, and first y then
             x direction, respectively.
         seeing: float (Deafult: None, which will be replaced with 1.0)
@@ -364,7 +364,8 @@ class TwoDSpec:
             Extra keyword arguments for the astroscrappy.detect_cosmics:
             https://astroscrappy.readthedocs.io/en/latest/api/
             astroscrappy.detect_cosmics.html
-            The default setting is:
+            The default setting is::
+
                 astroscrappy.detect_cosmics(indat, inmask=None, bkg=None,
                     var=None, sigclip=4.5, sigfrac=0.3, objlim=5.0, gain=1.0,
                     readnoise=6.5, satlevel=65536.0, niter=4, sepmed=True,
