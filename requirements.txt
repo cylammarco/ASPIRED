@@ -7,4 +7,3 @@ spectres>=2.1.1
 numpy>=1.16
 scipy>=1.5.2
 statsmodels>=0.12
-pyreduce-astro~=0.4

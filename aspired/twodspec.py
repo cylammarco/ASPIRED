@@ -9,7 +9,7 @@ from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
-from pyreduce.extract import extract_spectrum
+from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
 from spectres import spectres
@@ -1478,24 +1478,24 @@ class TwoDSpec:
             The percentile tolerance of Count aperture to be used for
             fitting the trace. Note that this percentile is of the Count,
             not of the number of subspectra.
-        display: boolean
+        display: boolean (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (Default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
+        return_jsonstring: boolean (Default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
+        save_iframe: boolean (Default: Flase)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        filename: str
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: boolean (Default: False)
             Open the save_iframe in the default browser if set to True.
 
         Returns
@@ -1507,15 +1507,17 @@ class TwoDSpec:
 
         # Get the shape of the 2D spectrum and define upsampling ratio
         nresample = self.spatial_size * resample_factor
+        img_upsampled = ndimage.zoom(self.img, zoom=resample_factor)
+        bad_mask_upsampled = ndimage.zoom(self.bad_mask, zoom=resample_factor)
 
         # We perform the tracing on a *pixel healed* temporary image
         if self.bad_mask is not None:
 
-            img_tmp = bfixpix(self.img, self.bad_mask, retdat=True)
+            img_tmp = bfixpix(img_upsampled, bad_mask_upsampled, retdat=True)
 
         else:
 
-            img_tmp = self.img
+            img_tmp = img_upsampled
 
         # split the spectrum into subspectra
         img_split = np.array_split(img_tmp, nwindow, axis=1)
@@ -1523,7 +1525,6 @@ class TwoDSpec:
 
         lines_ref_init = np.nanmedian(img_split[start_window_idx], axis=1)
         lines_ref_init[np.isnan(lines_ref_init)] = 0.
-        lines_ref_init_resampled = signal.resample(lines_ref_init, nresample)
 
         # linear scaling limits
         if rescale:
@@ -1535,8 +1536,7 @@ class TwoDSpec:
             scaling_range = np.ones(1)
 
         # estimate the n-th percentile as the sky background level
-        lines_ref = lines_ref_init_resampled - np.percentile(
-            lines_ref_init_resampled, percentile)
+        lines_ref = lines_ref_init - np.percentile(lines_ref_init, percentile)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -1546,10 +1546,9 @@ class TwoDSpec:
 
         spec_spatial = np.zeros(nresample)
 
-        pix_init = np.arange(nresample)
-        pix_resampled = pix_init
+        pix = np.arange(nresample)
 
-        # Scipy correlate method
+        # Scipy correlate method, ignore first and last window
         for i in chain(range(start_window_idx, nwindow),
                        range(start_window_idx - 1, -1, -1)):
 
@@ -1567,8 +1566,12 @@ class TwoDSpec:
             for j, scale in enumerate(scaling_range):
 
                 # Upsampling the reference lines
-                lines_ref_j = signal.resample(lines_ref,
-                                              int(nresample * scale))
+                lines_ref_j = spectres(np.arange(int(nresample * scale)) /
+                                       scale,
+                                       np.arange(len(lines_ref)),
+                                       lines_ref,
+                                       fill=0.,
+                                       verbose=False)
 
                 # find the linear shift
                 corr = signal.correlate(lines_ref_j, lines)
@@ -1588,14 +1591,14 @@ class TwoDSpec:
             # Align the spatial profile before stacking
             if i == (start_window_idx - 1):
 
-                pix_resampled = pix_init
+                pix = np.arange(nresample)
 
-            pix_resampled = pix_resampled * scale_solution[i] + shift_solution[
-                i]
+            pix = pix * scale_solution[i] + shift_solution[i]
 
             spec_spatial_tmp = spectres(np.arange(nresample),
-                                        np.array(pix_resampled).reshape(-1),
+                                        np.array(pix).reshape(-1),
                                         np.array(lines).reshape(-1),
+                                        fill=0.,
                                         verbose=False)
             spec_spatial_tmp[np.isnan(spec_spatial_tmp)] = np.nanmin(
                 spec_spatial_tmp)
@@ -1604,7 +1607,7 @@ class TwoDSpec:
             # Update (increment) the reference line
             if (i == nwindow - 1):
 
-                lines_ref = lines_ref_init_resampled
+                lines_ref = lines_ref_init
 
             else:
 
@@ -1614,9 +1617,8 @@ class TwoDSpec:
 
         # Find the spectral position in the middle of the gram in the upsampled
         # pixel location location
-        peaks = signal.find_peaks(spec_spatial,
-                                  distance=spec_sep,
-                                  prominence=0)
+        # FWHM cannot be smaller than 3 pixels for any real signal
+        peaks = signal.find_peaks(spec_spatial, distance=spec_sep, width=3.)
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
@@ -1673,7 +1675,7 @@ class TwoDSpec:
 
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
-            ap = np.polyval(ap_p, np.arange(self.spec_size))
+            ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
 
             # Get the centre of the upsampled spectrum
             ap_centre_idx = ap[start_window_idx] * resample_factor
@@ -1704,6 +1706,7 @@ class TwoDSpec:
                                 spec_spatial[start_idx:end_idx][non_nan_mask],
                                 p0=pguess)
             ap_sigma = abs(popt[3]) / resample_factor
+            ap = ap
 
             self.spectrum_list[i] = Spectrum1D(
                 spec_id=i,
@@ -1739,20 +1742,20 @@ class TwoDSpec:
                                y=self.spectrum_list[i].trace,
                                line=dict(color='black')))
                 fig.add_trace(
-                    go.Scatter(x=spec_pix,
+                    go.Scatter(x=spec_pix / resample_factor,
                                y=spec_idx[i],
                                mode='markers',
                                marker=dict(color='grey')))
             fig.add_trace(
                 go.Scatter(x=np.ones(len(spec_idx)) *
-                           spec_pix[start_window_idx],
+                           spec_pix[start_window_idx] / resample_factor,
                            y=spec_idx[:, start_window_idx],
                            mode='markers',
                            marker=dict(color='firebrick')))
             fig.update_layout(yaxis_title='Spatial Direction / pixel',
                               xaxis=dict(zeroline=False,
                                          showgrid=False,
-                                         title='Spectral Direction / pixel'),
+                                         title='Dispersion Direction / pixel'),
                               bargap=0,
                               hovermode='closest',
                               showlegend=False)
@@ -1874,6 +1877,307 @@ class TwoDSpec:
 
             self.spectrum_list[i].remove_trace()
 
+    def rectify_image(self,
+                      upsample_factor=10,
+                      bin_size=6,
+                      n_bin=7,
+                      lowess_frac=0.04,
+                      spline_order=3,
+                      order=2,
+                      coeff=None,
+                      display=False,
+                      renderer='default',
+                      width=1280,
+                      height=720,
+                      return_jsonstring=False,
+                      save_iframe=False,
+                      filename=None,
+                      open_iframe=False):
+        '''
+        ONLY possible if there is ONE trace. If more than one trace is
+        provided, only the first one (i.e. spec_id = 0) will get
+        processed.
+
+        Parameters
+        ----------
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        upsample_factor: float (Default: 10)
+            The upsampling rate for the correlation (10 times means
+            precise to 1/10 of a pixel). The upsampling uses cubic
+            spline that is adopted in the scipy.ndimage.zoom() function.
+        bin_size: int (Default: 6)
+            Number of rows in a slice.
+        n_bin: int (Default: 7)
+            Number of slices parallel to the trace to be correlated to to
+            compute the distortion in the dispersion direction.
+        lowess_frac: float (Default: 0.04)
+            The fraction of data used when estimating each y-value
+        spline_order: int (Default: 3)
+            The order of spline for resampling.
+        order: int (Default: 2)
+            The order of polynomial to fit for the distortion in the
+            dispersion direction
+        coeff: list or numpy.ndarray (Default: None)
+            The polynomial coefficients for aligned the dispersion direction
+            as a function of distance from the trace.
+        display: boolean (Default: False)
+            Set to True to display disgnostic plot.
+        renderer: string (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: boolean (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_iframe: boolean (Default: Flase)
+            Save as an save_iframe, can work concurrently with other renderer
+            apart from exporting return_jsonstring.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: boolean (Default: False)
+            Open the save_iframe in the default browser if set to True.
+
+        '''
+
+        if self.arc is None:
+            logging.error('Arc frame is not available, only the data image '
+                          'will be rectified.')
+
+        if isinstance(n_bin, (int, float)):
+
+            n_down = int(n_bin // 2)
+            n_up = int(n_bin // 2)
+
+        elif isinstance(n_bin, (list, np.ndarray)):
+
+            n_down = n_bin[0]
+            n_up = n_bin[1]
+
+        else:
+
+            logging.error(
+                'The given n_bin is not numeric or a list/array of '
+                'size 2: {}. Using the default value to proceed.'.format(
+                    n_bin))
+            n_down = int(n_bin // 2)
+            n_up = int(n_bin // 2)
+
+        bin_half_size = int(bin_size // 2)
+
+        spec = self.spectrum_list[0]
+        spec_size_tmp = spec.len_trace * upsample_factor
+
+        if coeff is None:
+
+            # The y-coordinates of the trace (of length len_trace)
+            y = np.array(spec.trace)
+            # The x-coordinates of the trace (of length len_trace)
+            x = np.arange(spec.len_trace)
+
+            # s for "flattened signal of the slice"
+            s = [
+                np.sum([
+                    self.img[j - bin_half_size:j + bin_half_size, i]
+                    for i, j in zip(x, y.astype('int'))
+                ],
+                       axis=1)
+            ]
+            s_down = []
+            s_up = []
+
+            # Loop through the spectra below the trace
+            for k in range(n_down):
+                start = bin_half_size + (k + 1) * bin_size
+                end = start + bin_size
+                # Note the start and end are counting up, while the
+                # indices are increasingly negative.
+                s_down.append(
+                    np.sum([
+                        self.img[j - end:j - start, i]
+                        for i, j in zip(x, y.astype('int'))
+                    ],
+                           axis=1))
+
+            # Loop through the spectra above the trace
+            for k in range(n_up):
+                start = bin_half_size + (k + 1) * bin_size
+                end = start + bin_size
+                s_up.append(
+                    np.sum([
+                        self.img[j + start:j + end, i]
+                        for i, j in zip(x, y.astype('int'))
+                    ],
+                           axis=1))
+
+            s_all = s_down + s + s_up
+
+            # continuum subtraction
+            s_con_subtracted = [
+                s_i - lowess(s_i, x, frac=lowess_frac, return_sorted=False)
+                for s_i in s_all
+            ]
+
+            # upsample
+            scs_upsampled = [
+                spectres(np.arange(spec_size_tmp) / upsample_factor,
+                         np.arange(len(scs)),
+                         scs,
+                         fill=0.,
+                         verbose=False) for scs in s_con_subtracted
+            ]
+
+            y_trace = (np.arange(-n_down, n_up + 1)) * bin_size
+
+            # correlate to find the shifts
+            shift = np.zeros_like(y_trace)
+            for i, scsu in enumerate(scs_upsampled):
+                # Note: indice n_down is s
+                shift[i] = np.argmax(
+                    signal.correlate(scs_upsampled[n_down],
+                                     scsu)) - spec_size_tmp + 1
+
+            # fit the distortion in the spectral direction as a function
+            # of distance from trace. The coeff is for the original
+            # resolution
+            coeff = np.polynomial.polynomial.polyfit(y_trace,
+                                                     shift / upsample_factor,
+                                                     order)
+
+        # Upsample and shift in the dispersion direction
+        if self.arc is not None:
+
+            arc_tmp = ndimage.zoom(self.arc,
+                                   zoom=upsample_factor,
+                                   order=spline_order)
+
+        img_tmp = ndimage.zoom(self.img,
+                               zoom=upsample_factor,
+                               order=spline_order)
+        y_tmp = ndimage.zoom(np.array(spec.trace),
+                             zoom=upsample_factor,
+                             order=spline_order)
+
+        # Shift the spectrum to spatially aligned to the middle of the
+        # trace
+        for i in range(1, self.spec_size * upsample_factor):
+
+            shift_i = int(
+                np.round(
+                    (y_tmp[i] - y_tmp[len(y_tmp) // 2]) * upsample_factor))
+            img_column_i = img_tmp[:, i]
+            img_tmp[:, i] = np.roll(img_column_i, -shift_i)
+            if self.arc is not None:
+
+                arc_column_i = arc_tmp[:, i]
+                arc_tmp[:, i] = np.roll(arc_column_i, -shift_i)
+
+        # Upsample and shift in the spatial direction
+        ref = y_tmp[len(y_tmp) // 2]
+        for i in range(1, len(img_tmp)):
+
+            shift_i = int(
+                np.round(
+                    np.polynomial.polynomial.polyval(
+                        (i - ref) / upsample_factor, coeff)))
+            img_tmp[i] = np.roll(img_tmp[i], shift_i)
+
+            if self.arc is not None:
+
+                arc_tmp[i] = np.roll(arc_tmp[i], shift_i)
+
+        self.rec_coeff = coeff
+        self.rec_n_down = n_down
+        self.rec_n_up = n_up
+        self.rec_upsample_factor = upsample_factor
+        self.rec_bin_size = bin_size
+        self.rec_n_bin = n_bin
+        self.rec_lowess_frac = lowess_frac
+        self.rec_spline_order = spline_order
+        self.rec_order = order
+        self.img = ndimage.zoom(img_tmp,
+                                zoom=1. / upsample_factor,
+                                order=spline_order)
+        if self.arc is not None:
+            self.arc = ndimage.zoom(arc_tmp,
+                                    zoom=1. / upsample_factor,
+                                    order=spline_order)
+
+        if save_iframe or display or return_jsonstring:
+
+            fig = go.Figure(
+                layout=dict(autosize=False, height=height, width=width))
+
+            # show the image on the top
+            # the 3 is the show a little bit outside the extraction regions
+            fig.add_trace(
+                go.Heatmap(z=np.log10(self.img),
+                           colorscale="Viridis",
+                           zmin=np.nanpercentile(np.log10(self.img), 10),
+                           zmax=np.nanpercentile(np.log10(self.img), 90),
+                           xaxis='x',
+                           yaxis='y',
+                           colorbar=dict(title='log( e- / s )')))
+            if self.arc is not None:
+                fig.add_trace(
+                    go.Heatmap(z=np.log10(self.arc),
+                               colorscale="Viridis",
+                               zmin=np.nanpercentile(np.log10(self.arc), 10),
+                               zmax=np.nanpercentile(np.log10(self.arc), 90),
+                               xaxis='x2',
+                               yaxis='y2',
+                               colorbar=dict(title='log( e- / s )')))
+
+                # Decorative stuff
+                fig.update_layout(
+                    yaxis=dict(zeroline=False,
+                               domain=[0.5, 1],
+                               showgrid=False,
+                               title='Spatial Direction / pixel'),
+                    yaxis2=dict(
+                        zeroline=False,
+                        domain=[0, 0.5],
+                        showgrid=False,
+                        title='Spatial Direction / pixel',
+                    ),
+                    xaxis=dict(showticklabels=False),
+                    xaxis2=dict(title='Dispersion Direction / pixel',
+                                anchor="y2",
+                                matches="x"),
+                    bargap=0,
+                    hovermode='closest')
+
+            if save_iframe:
+
+                if filename is None:
+
+                    pio.write_html(fig,
+                                   'rectified_image.html',
+                                   auto_open=open_iframe)
+
+                else:
+
+                    pio.write_html(fig,
+                                   filename + '.html',
+                                   auto_open=open_iframe)
+
+            if display:
+
+                if renderer == 'default':
+
+                    fig.show()
+
+                else:
+
+                    fig.show(renderer)
+
+        if return_jsonstring:
+
+            return fig.to_json()
+
     def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_width_dn,
                  sky_width_up, sky_polyfit_order):
         """
@@ -1964,14 +2268,6 @@ class TwoDSpec:
                    pord=2,
                    qmode='fast-linear',
                    nreject=100,
-                   lambda_sf=0.1,
-                   lambda_sp=0,
-                   osample=1,
-                   swath_width=None,
-                   scatter=None,
-                   threshold=0,
-                   tilt=None,
-                   shear=None,
                    plot=False,
                    ord_num=0,
                    im_norm=None,
@@ -2030,7 +2326,7 @@ class TwoDSpec:
         optimal: boolean (Default: True)
             Set optimal extraction. (Default is True)
         algorithm: str (Default: 'horne86')
-            Available algorithms are horne86, marsh89 and pwr21
+            Available algorithms are horne86 and marsh89
         model: str (Default: 'lowess')
             Choice of model: 'lowess' and 'gauss'.
         lowess_frac: float (Default: 0.8)
@@ -2045,7 +2341,7 @@ class TwoDSpec:
             The tolerance limit for the convergence of the optimal extraction
         cosmicray_sigma: float (Deafult: 5.0)
             Cosmic ray sigma clipping limit. This is for rejecting pixels when
-            using horne87 and marsh93 optimal cleaning. Use sigclip in kwargs
+            using horne87 and marsh89 optimal cleaning. Use sigclip in kwargs
             for configuring cosmicray cleaning with astroscrappy.
         max_iter: float (Default: 99)
             The maximum number of iterations before optimal extraction fails
@@ -2077,40 +2373,24 @@ class TwoDSpec:
             running out of memory when using the 'fast' array-based methods.
         nreject: int (Default: 100, only used if algorithm is marsh89)
             Number of outlier-pixels to reject at each iteration.
-        lambda_sf: float (Default: 0.1, only used if algorithm is pwr21)
-            Line spread function smoothing parameter, usually very small.
-        lambda_sp: int (Default: 0, only used if algorithm is pwr21)
-            Spectrum smoothing parameter, usually very small
-        osample: int (Default: 1, only used if algorithm is pwr21)
-            Oversampling factor.
-        swath_width: int (Default: None, only used if algorithm is pwr21)
-            Swath width suggestion, actual width depends also on ncol
-        scatter: numpy.ndarray (Default: None, only used if algorithm is pwr21)
-            Background scatter as 2d polynomial coefficients
-        tilt: numpy.ndarray (Default: None, only used if algorithm is pwr21)
-            The tilt (1st order curvature) of the slit in this order for the
-            curved extraction.
-        shear: numpy.ndarray (Default: None, only used if algorithm is pwr21)
-            The shear (2nd order curvature) of the slit in this order for the
-            curved extraction.
-        display: boolean
+        display: boolean (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (Default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
+        return_jsonstring: boolean (Default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
+        save_iframe: boolean (Default: Flase)
             Save as an save_iframe, can work concurrently with other renderer
             apart from exporting return_jsonstring.
-        filename: str
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: boolean (Default: False)
             Open the save_iframe in the default browser if set to True.
 
         """
@@ -2389,30 +2669,6 @@ class TwoDSpec:
                         qmode=qmode,
                         nreject=nreject)
 
-            if optimal & (algorithm == 'pwr21'):
-
-                count, profile, _, count_err = extract_spectrum(
-                    img=self.img,
-                    ycen=np.array(spec.trace),
-                    yrange=[width_dn, width_up],
-                    xrange=[0, self.spec_size],
-                    gain=self.gain,
-                    readnoise=self.readnoise,
-                    lambda_sf=lambda_sf,
-                    lambda_sp=lambda_sp,
-                    osample=osample,
-                    swath_width=swath_width,
-                    telluric=None,
-                    scatter=scatter,
-                    normalize=False,
-                    threshold=0,
-                    tilt=tilt,
-                    shear=shear,
-                    plot=False,
-                    ord_num=0,
-                    im_norm=None,
-                    im_ordr=None)
-
             # All the extraction methods return signal and noise in the
             # same format
             count[i] /= self.exptime
@@ -2614,7 +2870,7 @@ class TwoDSpec:
                                 anchor="x2",
                                 overlaying="y2",
                                 side="right"),
-                    xaxis2=dict(title='Spectral Direction / pixel',
+                    xaxis2=dict(title='Dispersion Direction / pixel',
                                 anchor="y2",
                                 matches="x"),
                     legend=go.layout.Legend(x=0,
@@ -3453,7 +3709,7 @@ class TwoDSpec:
                                           anchor="x2",
                                           overlaying="y2",
                                           side="right"),
-                              xaxis2=dict(title='Spectral Direction / pixel',
+                              xaxis2=dict(title='Dispersion Direction / pixel',
                                           anchor="y2",
                                           matches="x"),
                               legend=go.layout.Legend(x=0,
@@ -3502,6 +3758,7 @@ class TwoDSpec:
 
     def extract_arc_spec(self,
                          spec_id=None,
+                         spec_width=None,
                          display=False,
                          renderer='default',
                          width=1280,
@@ -3580,7 +3837,13 @@ class TwoDSpec:
 
             len_trace = len(spec.trace)
             trace = np.nanmean(spec.trace)
-            trace_width = np.nanmean(spec.trace_sigma) * 3.
+            if spec_width is None:
+
+                trace_width = np.nanmean(spec.trace_sigma) * 3.
+
+            else:
+
+                trace_width = spec_width
 
             arc_trace = self.arc[
                 max(0, int(trace - trace_width -
@@ -3605,7 +3868,7 @@ class TwoDSpec:
                 fig.update_layout(xaxis=dict(
                     zeroline=False,
                     range=[0, len_trace],
-                    title='Spectral Direction / pixel'),
+                    title='Dispersion Direction / pixel'),
                                   yaxis=dict(zeroline=False,
                                              range=[0, max(arc_spec)],
                                              title='e- / s'),

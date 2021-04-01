@@ -966,8 +966,7 @@ class WavelengthCalibration():
 
         if display:
 
-            self.spectrum1D.calibrator.plot_fit(self.spectrum1D.arc_spec,
-                                                fit_coeff_new,
+            self.spectrum1D.calibrator.plot_fit(fit_coeff=fit_coeff_new,
                                                 plot_atlas=True,
                                                 log_spectrum=False,
                                                 tolerance=1.0,

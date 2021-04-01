@@ -176,8 +176,7 @@ def test_input_with_data_cube():
 
 def test_input_with_data_cube_extra_bracket():
     img = image_reduction.ImageReduction(
-        filelist=
-        'test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list',
+        filelist='test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list',
         log_file_name=None)
     img.reduce()
 

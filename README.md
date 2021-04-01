@@ -54,6 +54,7 @@ See the examples of these use cases at [aspired-example](https://github.com/cyla
 * [plotly](https://github.com/plotly/plotly.py) >= 4.0
 * [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.2
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
+* [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.12.2
 
 ## Installation
 Instructions can be found [here](https://aspired.readthedocs.io/en/latest/installation/pip.html).

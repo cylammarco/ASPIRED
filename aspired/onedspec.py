@@ -3455,10 +3455,20 @@ class OneDSpec():
                     np.array(fluxcount).reshape(-1)[wave_mask], 95) * 1.5
                 flux_mask = ((np.array(fluxcount).reshape(-1) > flux_low)
                              & (np.array(fluxcount).reshape(-1) < flux_high))
-                flux_min = np.log10(
-                    np.nanmin(np.array(fluxcount).reshape(-1)[flux_mask]))
-                flux_max = np.log10(
-                    np.nanmax(np.array(fluxcount).reshape(-1)[flux_mask]))
+
+                if np.sum(flux_mask) > 0:
+
+                    flux_min = np.log10(
+                        np.nanmin(np.array(fluxcount).reshape(-1)[flux_mask]))
+                    flux_max = np.log10(
+                        np.nanmax(np.array(fluxcount).reshape(-1)[flux_mask]))
+
+                else:
+
+                    flux_min = np.log10(
+                        np.nanmin(np.array(fluxcount).reshape(-1)))
+                    flux_max = np.log10(
+                        np.nanmax(np.array(fluxcount).reshape(-1)))
 
                 fig_sci = go.Figure(
                     layout=dict(autosize=False,
@@ -3583,54 +3593,72 @@ class OneDSpec():
 
             if self.standard_wavelength_calibrated:
 
-                wave = spec.wave
+                standard_wave = spec.wave
 
                 if self.standard_flux_calibrated:
-                    fluxcount = spec.flux
-                    fluxcount_sky = spec.flux_sky
-                    fluxcount_err = spec.flux_err
-                    fluxcount_name = 'Flux'
-                    fluxcount_sky_name = 'Sky Flux'
-                    fluxcount_err_name = 'Flux Uncertainty'
+                    standard_fluxcount = spec.flux
+                    standard_fluxcount_sky = spec.flux_sky
+                    standard_fluxcount_err = spec.flux_err
+                    standard_fluxcount_name = 'Flux'
+                    standard_fluxcount_sky_name = 'Sky Flux'
+                    standard_fluxcount_err_name = 'Flux Uncertainty'
                 else:
-                    fluxcount = spec.count
-                    fluxcount_sky = spec.count_sky
-                    fluxcount_err = spec.count_err
-                    fluxcount_name = 'Count / (e- / s)'
-                    fluxcount_sky_name = 'Sky Count / (e- / s)'
-                    fluxcount_err_name = 'Count Uncertainty / (e- / s)'
+                    standard_fluxcount = spec.count
+                    standard_fluxcount_sky = spec.count_sky
+                    standard_fluxcount_err = spec.count_err
+                    standard_fluxcount_name = 'Count / (e- / s)'
+                    standard_fluxcount_sky_name = 'Sky Count / (e- / s)'
+                    standard_fluxcount_err_name =\
+                        'Count Uncertainty / (e- / s)'
 
             if self.standard_wavelength_resampled:
 
-                wave = spec.wave_resampled
+                standard_wave = spec.wave_resampled
 
                 if self.standard_flux_calibrated:
-                    fluxcount = spec.flux_resampled
-                    fluxcount_sky = spec.flux_sky_resampled
-                    fluxcount_err = spec.flux_err_resampled
-                    fluxcount_name = 'Flux'
-                    fluxcount_sky_name = 'Sky Flux'
-                    fluxcount_err_name = 'Flux Uncertainty'
+                    standard_fluxcount = spec.flux_resampled
+                    standard_fluxcount_sky = spec.flux_sky_resampled
+                    standard_fluxcount_err = spec.flux_err_resampled
+                    standard_fluxcount_name = 'Flux'
+                    standard_fluxcount_sky_name = 'Sky Flux'
+                    standard_fluxcount_err_name = 'Flux Uncertainty'
                 else:
-                    fluxcount = spec.count_resampled
-                    fluxcount_sky = spec.count_sky_resampled
-                    fluxcount_err = spec.count_err_resampled
-                    fluxcount_name = 'Count / (e- / s)'
-                    fluxcount_sky_name = 'Sky Count / (e- / s)'
-                    fluxcount_err_name = 'Count Uncertainty / (e- / s)'
+                    standard_fluxcount = spec.count_resampled
+                    standard_fluxcount_sky = spec.count_sky_resampled
+                    standard_fluxcount_err = spec.count_err_resampled
+                    standard_fluxcount_name = 'Count / (e- / s)'
+                    standard_fluxcount_sky_name = 'Sky Count / (e- / s)'
+                    standard_fluxcount_err_name =\
+                        'Count Uncertainty / (e- / s)'
 
-            standard_wave_mask = ((np.array(wave).reshape(-1) > wave_min) &
-                                  (np.array(wave).reshape(-1) < wave_max))
+            standard_wave_mask = (
+                (np.array(standard_wave).reshape(-1) > wave_min) &
+                (np.array(standard_wave).reshape(-1) < wave_max))
             standard_flux_mask = (
-                (np.array(fluxcount).reshape(-1) > np.nanpercentile(
-                    np.array(fluxcount).reshape(-1)[standard_wave_mask], 5) /
-                 1.5) & (np.array(fluxcount).reshape(-1) < np.nanpercentile(
-                     np.array(fluxcount).reshape(-1)[standard_wave_mask], 95) *
-                         1.5))
-            standard_flux_min = np.log10(
-                np.nanmin(np.array(fluxcount).reshape(-1)[standard_flux_mask]))
-            standard_flux_max = np.log10(
-                np.nanmax(np.array(fluxcount).reshape(-1)[standard_flux_mask]))
+                (np.array(standard_fluxcount).reshape(-1) > np.nanpercentile(
+                    np.array(standard_fluxcount).reshape(-1)
+                    [standard_wave_mask], 5) / 1.5) &
+                (np.array(standard_fluxcount).reshape(-1) < np.nanpercentile(
+                    np.array(standard_fluxcount).reshape(-1)
+                    [standard_wave_mask], 95) * 1.5))
+
+            if np.nansum(standard_flux_mask) > 0:
+
+                standard_flux_min = np.log10(
+                    np.nanmin(
+                        np.array(standard_fluxcount).reshape(-1)
+                        [standard_flux_mask]))
+                standard_flux_max = np.log10(
+                    np.nanmax(
+                        np.array(standard_fluxcount).reshape(-1)
+                        [standard_flux_mask]))
+
+            else:
+
+                standard_flux_min = np.log10(
+                    np.nanmin(np.array(standard_fluxcount).reshape(-1)))
+                standard_flux_max = np.log10(
+                    np.nanmax(np.array(standard_fluxcount).reshape(-1)))
 
             fig_standard = go.Figure(layout=dict(updatemenus=list([
                 dict(
@@ -3666,26 +3694,26 @@ class OneDSpec():
 
             # show the image on the top
             fig_standard.add_trace(
-                go.Scatter(x=wave,
-                           y=fluxcount,
+                go.Scatter(x=standard_wave,
+                           y=standard_fluxcount,
                            line=dict(color='royalblue'),
-                           name=fluxcount_name))
+                           name=standard_fluxcount_name))
 
             if fluxcount_err is not None:
 
                 fig_standard.add_trace(
-                    go.Scatter(x=wave,
-                               y=fluxcount_err,
+                    go.Scatter(x=standard_wave,
+                               y=standard_fluxcount_err,
                                line=dict(color='firebrick'),
-                               name=fluxcount_err_name))
+                               name=standard_fluxcount_err_name))
 
             if fluxcount_sky is not None:
 
                 fig_standard.add_trace(
-                    go.Scatter(x=wave,
-                               y=fluxcount_sky,
+                    go.Scatter(x=standard_wave,
+                               y=standard_fluxcount_sky,
                                line=dict(color='orange'),
-                               name=fluxcount_sky_name))
+                               name=standard_fluxcount_sky_name))
 
             if self.fluxcal.standard_fluxmag_true is not None:
 
