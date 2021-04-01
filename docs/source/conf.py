@@ -57,8 +57,8 @@ apidoc_args = [
 ]
 
 autodoc_mock_imports = [
-    'astropy', 'astroscrappy', 'ccdproc', 'rascal', 'plotly', 'spectres',
-    'statsmodels'
+    'astropy', 'astroscrappy', 'ccdproc', 'rascal', 'plotly', 'scipy',
+    'spectres', 'statsmodels'
 ]
 
 autoclass_content = 'both'
