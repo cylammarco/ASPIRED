@@ -39,7 +39,7 @@ lhs6328_twodspec.ap_trace(nspec=2, display=False)
 def test_rectify():
     twodspec = copy.copy(lhs6328_twodspec)
     twodspec.rectify_image(bin_size=6,
-                           n_bin=7,
+                           n_bin=[2, 4],
                            display=False,
                            save_iframe=True)
 
@@ -48,7 +48,7 @@ def test_rectify_2():
     twodspec = copy.copy(lhs6328_twodspec)
     twodspec.rectify_image(
         bin_size=6,
-        n_bin=7,
+        n_bin='lala',
         display=False,
         save_iframe=True,
         filename='test/test_output/test_rectifying_image_manual_filename')

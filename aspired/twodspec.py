@@ -1910,7 +1910,8 @@ class TwoDSpec:
             Number of rows in a slice.
         n_bin: int (Default: 7)
             Number of slices parallel to the trace to be correlated to to
-            compute the distortion in the dispersion direction.
+            compute the distortion in the dispersion direction. (i.e.
+            there are 7 // 2 = 3 slices below and above the trace.)
         lowess_frac: float (Default: 0.04)
             The fraction of data used when estimating each y-value
         spline_order: int (Default: 3)
@@ -1963,8 +1964,8 @@ class TwoDSpec:
                 'The given n_bin is not numeric or a list/array of '
                 'size 2: {}. Using the default value to proceed.'.format(
                     n_bin))
-            n_down = int(n_bin // 2)
-            n_up = int(n_bin // 2)
+            n_down = 3
+            n_up = 3
 
         bin_half_size = int(bin_size // 2)
 

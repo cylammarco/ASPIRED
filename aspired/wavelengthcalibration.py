@@ -486,7 +486,7 @@ class WavelengthCalibration():
             range(num_pix), for example, in the case of accounting
             for chip gaps (10 pixels) in a 3-CCD setting, you should provide
             [0,1,2,...90, 100,101,...190, 200,201,...290]
-        plotting_library : string (Default: 'matplotlib')
+        plotting_library : string (Default: 'plotly')
             Choose between matplotlib and plotly.
         log_level : string (Default: 'info')
             Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
