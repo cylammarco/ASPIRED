@@ -1878,26 +1878,31 @@ class TwoDSpec:
 
             self.spectrum_list[i].remove_trace()
 
-    def rectify_image(self,
-                      upsample_factor=10,
-                      bin_size=6,
-                      n_bin=7,
-                      lowess_frac=0.04,
-                      spline_order=3,
-                      order=2,
-                      coeff=None,
-                      display=False,
-                      renderer='default',
-                      width=1280,
-                      height=720,
-                      return_jsonstring=False,
-                      save_iframe=False,
-                      filename=None,
-                      open_iframe=False):
+    def compute_rectification(self,
+                              upsample_factor=10,
+                              bin_size=6,
+                              n_bin=7,
+                              lowess_frac=0.04,
+                              spline_order=3,
+                              order=2,
+                              coeff=None,
+                              apply=False,
+                              display=False,
+                              renderer='default',
+                              width=1280,
+                              height=720,
+                              return_jsonstring=False,
+                              save_iframe=False,
+                              filename=None,
+                              open_iframe=False):
         '''
         ONLY possible if there is ONE trace. If more than one trace is
         provided, only the first one (i.e. spec_id = 0) will get
         processed.
+
+        The retification in the spatial direction depends on ONLY the
+        trace, while that in the dispersion direction depends on the
+        parameters provided here.
 
         Parameters
         ----------
@@ -1923,6 +1928,8 @@ class TwoDSpec:
         coeff: list or numpy.ndarray (Default: None)
             The polynomial coefficients for aligned the dispersion direction
             as a function of distance from the trace.
+        apply: bool (Default: False)
+            Apply the rectification directly without checking.
         display: boolean (Default: False)
             Set to True to display disgnostic plot.
         renderer: string (Default: 'default')
@@ -1949,31 +1956,31 @@ class TwoDSpec:
             logging.error('Arc frame is not available, only the data image '
                           'will be rectified.')
 
-        if isinstance(n_bin, (int, float)):
-
-            n_down = int(n_bin // 2)
-            n_up = int(n_bin // 2)
-
-        elif isinstance(n_bin, (list, np.ndarray)):
-
-            n_down = n_bin[0]
-            n_up = n_bin[1]
-
-        else:
-
-            logging.error(
-                'The given n_bin is not numeric or a list/array of '
-                'size 2: {}. Using the default value to proceed.'.format(
-                    n_bin))
-            n_down = 3
-            n_up = 3
-
-        bin_half_size = int(bin_size // 2)
-
         spec = self.spectrum_list[0]
         spec_size_tmp = spec.len_trace * upsample_factor
 
         if coeff is None:
+
+            if isinstance(n_bin, (int, float)):
+
+                n_down = int(n_bin // 2)
+                n_up = int(n_bin // 2)
+
+            elif isinstance(n_bin, (list, np.ndarray)):
+
+                n_down = n_bin[0]
+                n_up = n_bin[1]
+
+            else:
+
+                logging.error(
+                    'The given n_bin is not numeric or a list/array of '
+                    'size 2: {}. Using the default value to proceed.'.format(
+                        n_bin))
+                n_down = 3
+                n_up = 3
+
+            bin_half_size = int(bin_size // 2)
 
             # The y-coordinates of the trace (of length len_trace)
             y = np.array(spec.trace)
@@ -2100,13 +2107,17 @@ class TwoDSpec:
         self.rec_lowess_frac = lowess_frac
         self.rec_spline_order = spline_order
         self.rec_order = order
-        self.img = ndimage.zoom(img_tmp,
-                                zoom=1. / upsample_factor,
-                                order=spline_order)
+        self.img_rectified = ndimage.zoom(img_tmp,
+                                          zoom=1. / upsample_factor,
+                                          order=spline_order)
         if self.arc is not None:
-            self.arc = ndimage.zoom(arc_tmp,
-                                    zoom=1. / upsample_factor,
-                                    order=spline_order)
+            self.arc_rectified = ndimage.zoom(arc_tmp,
+                                              zoom=1. / upsample_factor,
+                                              order=spline_order)
+
+        if apply:
+
+            self.apply_rectification()
 
         if save_iframe or display or return_jsonstring:
 
@@ -2116,22 +2127,27 @@ class TwoDSpec:
             # show the image on the top
             # the 3 is the show a little bit outside the extraction regions
             fig.add_trace(
-                go.Heatmap(z=np.log10(self.img),
+                go.Heatmap(z=np.log10(self.img_rectified),
                            colorscale="Viridis",
-                           zmin=np.nanpercentile(np.log10(self.img), 10),
-                           zmax=np.nanpercentile(np.log10(self.img), 90),
+                           zmin=np.nanpercentile(np.log10(self.img_rectified),
+                                                 10),
+                           zmax=np.nanpercentile(np.log10(self.img_rectified),
+                                                 90),
                            xaxis='x',
                            yaxis='y',
                            colorbar=dict(title='log( e- / s )')))
-            if self.arc is not None:
+            if self.arc_rectified is not None:
                 fig.add_trace(
-                    go.Heatmap(z=np.log10(self.arc),
-                               colorscale="Viridis",
-                               zmin=np.nanpercentile(np.log10(self.arc), 10),
-                               zmax=np.nanpercentile(np.log10(self.arc), 90),
-                               xaxis='x2',
-                               yaxis='y2',
-                               colorbar=dict(title='log( e- / s )')))
+                    go.Heatmap(
+                        z=np.log10(self.arc_rectified),
+                        colorscale="Viridis",
+                        zmin=np.nanpercentile(np.log10(self.arc_rectified),
+                                              10),
+                        zmax=np.nanpercentile(np.log10(self.arc_rectified),
+                                              90),
+                        xaxis='x2',
+                        yaxis='y2',
+                        colorbar=dict(title='log( e- / s )')))
 
                 # Decorative stuff
                 fig.update_layout(
@@ -2179,6 +2195,20 @@ class TwoDSpec:
         if return_jsonstring:
 
             return fig.to_json()
+
+    def apply_rectification(self):
+        """
+        Accept the dispersion rectification computed.
+
+        """
+
+        if self.img_rectified is not None:
+
+            self.img = self.img_rectified
+
+        if self.arc_rectified is not None:
+
+            self.arc = self.arc_rectified
 
     def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_width_dn,
                  sky_width_up, sky_polyfit_order):

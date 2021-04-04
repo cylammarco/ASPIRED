@@ -271,7 +271,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise RuntimeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -964,10 +964,10 @@ class OneDSpec():
 
             else:
 
-                error_msg = 'wave must be the same length of shape ' +\
+                error_msg = 'peaks must be the same length of shape ' +\
                     'as spec_id.'
                 logging.critical(error_msg)
-                raise ValueError(error_msg)
+                raise RuntimeError(error_msg)
 
             for i in spec_id:
 
@@ -1078,10 +1078,10 @@ class OneDSpec():
 
             else:
 
-                error_msg = 'wave must be the same length of shape ' +\
+                error_msg = 'trace must be the same length of shape ' +\
                     'as spec_id.'
                 logging.critical(error_msg)
-                raise ValueError(error_msg)
+                raise RuntimeError(error_msg)
 
             # Check the sizes of the wave and spec_id and convert wave
             # into a dictionary
@@ -1154,8 +1154,7 @@ class OneDSpec():
 
         elif isinstance(fit_coeff, list):
 
-            if isinstance(fit_coeff[0], np.ndarray) or isinstance(
-                    fit_coeff[0], list):
+            if isinstance(fit_coeff[0], (list, np.ndarray)):
 
                 pass
 
@@ -1181,24 +1180,13 @@ class OneDSpec():
 
             fit_type = [fit_type]
 
-        elif all(isinstance(i, list) for i in fit_type):
+        elif all(isinstance(i, (str, list, np.ndarray)) for i in fit_type):
 
-            if isinstance(fit_type[0], np.ndarray) or isinstance(
-                    fit_type[0], list):
+            for i, ft in enumerate(fit_type):
 
-                pass
+                if isinstance(ft, (list, np.ndarray)):
 
-            elif isinstance(fit_coeff[0], str):
-
-                fit_type = [fit_type]
-
-            else:
-
-                pass
-
-        elif all(isinstance(i, np.ndarray) for i in fit_type):
-
-            pass
+                    fit_type[i] = ft[0]
 
         else:
 
@@ -1251,7 +1239,7 @@ class OneDSpec():
                     error_msg = 'fit_coeff must be the same length of ' +\
                         'shape as spec_id.'
                     logging.critical(error_msg)
-                    raise ValueError(error_msg)
+                    raise RuntimeError(error_msg)
 
                 # Check the sizes of the wave and spec_id and convert wave
                 # into a dictionary
@@ -1330,7 +1318,7 @@ class OneDSpec():
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
-                    raise TypeError(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
@@ -1437,23 +1425,24 @@ class OneDSpec():
 
             if self.science_arc_spec_available:
 
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
                 if spec_id is not None:
 
+                    print(list(self.science_spectrum_list.keys()))
                     if not set(spec_id).issubset(
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
-                    # if spec_id is None, calibrators are initialised to all
+                    # if spec_id is None
                     spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
 
                 for i in spec_id:
 
@@ -1638,7 +1627,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -1726,7 +1715,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -1827,7 +1816,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -1903,7 +1892,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2012,7 +2001,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2126,7 +2115,7 @@ class OneDSpec():
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
-                    raise TypeError(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
@@ -2201,7 +2190,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2258,7 +2247,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2317,7 +2306,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2370,7 +2359,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2463,7 +2452,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -2577,7 +2566,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
                 else:
 
                     # if spec_id is None, calibrators are initialised to all
@@ -2676,7 +2665,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -3101,7 +3090,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -3169,7 +3158,7 @@ class OneDSpec():
 
                 error_msg = 'The given spec_id does not exist.'
                 logging.critical(error_msg)
-                raise TypeError(error_msg)
+                raise ValueError(error_msg)
 
         else:
 
@@ -3238,7 +3227,7 @@ class OneDSpec():
 
                         error_msg = 'The given spec_id does not exist.'
                         logging.critical(error_msg)
-                        raise TypeError(error_msg)
+                        raise ValueError(error_msg)
 
                 else:
 
@@ -3397,7 +3386,7 @@ class OneDSpec():
 
                     error_msg = 'The given spec_id does not exist.'
                     logging.critical(error_msg)
-                    raise TypeError(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 

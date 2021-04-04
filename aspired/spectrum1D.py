@@ -878,8 +878,7 @@ class Spectrum1D():
         self.temperature = temperature
         self.relative_humidity = relative_humidity
 
-    def remove_weather_condition(self, pressure, temperature,
-                                 relative_humidity):
+    def remove_weather_condition(self):
 
         self.pressure = None
         self.temperature = None

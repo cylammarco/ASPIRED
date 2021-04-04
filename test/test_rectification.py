@@ -36,27 +36,40 @@ lhs6328_twodspec = spectral_reduction.TwoDSpec(
 lhs6328_twodspec.ap_trace(nspec=2, display=False)
 
 
+# assert the resampled image has the total photon count within 0.1% of the
+# input
 def test_rectify():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.rectify_image(bin_size=6,
-                           n_bin=[2, 4],
-                           display=False,
-                           save_iframe=True)
+    twodspec.compute_rectification(bin_size=6,
+                                   n_bin=[2, 4],
+                                   display=False,
+                                   save_iframe=True)
+    assert abs(np.sum(twodspec.img) / np.sum(twodspec.img_rectified) -
+               1.0) < 0.01
+    twodspec.apply_rectification()
 
 
+# assert the resampled image has the total photon count within 0.1% of the
+# input
 def test_rectify_2():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.rectify_image(
+    twodspec.compute_rectification(
         bin_size=6,
         n_bin='lala',
         display=False,
         save_iframe=True,
         filename='test/test_output/test_rectifying_image_manual_filename')
+    assert abs(np.sum(twodspec.img) / np.sum(twodspec.img_rectified) -
+               1.0) < 0.01
+    twodspec.apply_rectification()
 
 
+# assert the resampled image has replaced the input image
 def test_rectify_3():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.rectify_image(bin_size=6,
-                           n_bin=7,
-                           display=False,
-                           return_jsonstring=True)
+    twodspec.compute_rectification(bin_size=6,
+                                   n_bin=7,
+                                   apply=True,
+                                   display=False,
+                                   return_jsonstring=True)
+    assert np.sum(twodspec.img) == np.sum(twodspec.img_rectified)

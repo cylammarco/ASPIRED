@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pytest
+from aspired import image_reduction
 from aspired import spectral_reduction
 from aspired.wavelengthcalibration import WavelengthCalibration
 from aspired.fluxcalibration import FluxCalibration
@@ -156,7 +157,7 @@ def test_add_wavelengthcalibration_science_two_spec():
                                        stype='science')
 
 
-@pytest.mark.xfail(raises=RuntimeError)
+@pytest.mark.xfail(raises=ValueError)
 # science add_wavelengthcalibration to two traces
 def test_add_wavelengthcalibration_science_expect_fail():
     # Create a dummy WavelengthCalibration
@@ -191,7 +192,7 @@ def test_add_wavelengthcalibration_science_fail_type_list_of_None():
     onedspec.add_wavelengthcalibration([None], stype='science')
 
 
-@pytest.mark.xfail(raises=RuntimeError)
+@pytest.mark.xfail(raises=ValueError)
 def test_add_wavelengthcalibration_science_fail_spec_id():
     # Create a dummy WavelengthCalibration
     dummy_wavecal = WavelengthCalibration(log_file_name=None)
@@ -565,11 +566,22 @@ def test_add_arc_spec_science():
                           stype='science')
 
 
-# standard arc_spec
-def test_add_arc_spec_standard():
+# science find_arc_lines
+def test_find_arc_lines_science():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-    onedspec.add_arc_spec(np.arange(100), stype='standard')
-    onedspec.add_arc_spec([np.arange(100)], stype='standard')
+    onedspec.add_arc_spec(np.arange(100), stype='science')
+    onedspec.add_arc_spec([np.arange(100)], spec_id=0, stype='science')
+    onedspec.find_arc_lines(spec_id=0, stype='science')
+    onedspec.find_arc_lines(spec_id=[0], stype='science')
+
+
+# science find_arc_lines fail spec_id
+@pytest.mark.xfail(raises=ValueError)
+def test_find_arc_lines_science_fail_spec_id():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='science')
+    onedspec.add_arc_spec(np.arange(100), spec_id=0, stype='science')
+    onedspec.find_arc_lines(spec_id=7, stype='science')
 
 
 # science add_arc_lines
@@ -588,6 +600,14 @@ def test_add_arc_lines_science():
          np.arange(100)],
         spec_id=[0, 1, 10],
         stype='science')
+
+
+# mismatched spec lengths
+def test_add_arc_lines_science_fail_spec_id():
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_spec(np.arange(100), stype='science')
+    onedspec.add_arc_lines(np.arange(200), spec_id=0, stype='science')
+    onedspec.add_arc_lines(np.arange(200), spec_id=7, stype='science')
 
 
 @pytest.mark.xfail(raises=TypeError)
@@ -672,6 +692,12 @@ def test_add_fit_coeff_science():
     onedspec.add_fit_coeff(
         [np.arange(100), np.arange(200),
          np.arange(100)],
+        fit_type=['poly', 'poly', 'poly'],
+        spec_id=[0, 1, 10],
+        stype='science')
+    onedspec.add_fit_coeff(
+        [[np.arange(100)], [np.arange(200)], [np.arange(100)]],
+        fit_type=[['poly'], ['poly'], ['poly']],
         spec_id=[0, 1, 10],
         stype='science')
 
@@ -802,16 +828,298 @@ def test_calibrator_science():
     onedspec.add_atlas(spec_id=[1], elements=['Ar'] * 10, stype='science')
     onedspec.add_atlas(spec_id=[11, 75], elements=['Ar'] * 10, stype='science')
 
-    onedspec.do_hough_transform()
-    onedspec.do_hough_transform(spec_id=0)
-    onedspec.do_hough_transform(spec_id=[1])
-    onedspec.do_hough_transform(spec_id=[11, 75])
+    onedspec.do_hough_transform(stype='science')
+    onedspec.do_hough_transform(spec_id=0, stype='science')
+    onedspec.do_hough_transform(spec_id=[1], stype='science')
+    onedspec.do_hough_transform(spec_id=[11, 75], stype='science')
 
     onedspec.set_known_pairs(pix=100, wave=4500., stype='science')
     onedspec.set_known_pairs(pix=[100], wave=[4500.], stype='science')
     onedspec.set_known_pairs(pix=[100, 200],
                              wave=[4500., 5500.],
                              stype='science')
+
+
+# Fail at the RASCAL initilisation
+@pytest.mark.xfail(raises=TypeError)
+def test_calibrator_science2():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.initialise_calibrator(spec_id=[1, 5], stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_calibrator_properties_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_hough_properties_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_ransac_properties_science():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_known_pairs_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.set_known_pairs(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_add_user_atlas_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_user_atlas(elements=['bla'], wavelengths=[1234.], spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_add_atlas_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_atlas(elements=['Xe'], spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_remove_atlas_lines_range_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.remove_atlas_lines_range(wavelength=6000., spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_clear_atlas_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.clear_atlas(spec_id=0, stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.list_atlas(stype='science')
+    onedspec.list_atlas(spec_id=0, stype='science')
+    onedspec.clear_atlas(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_list_atlas_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.list_atlas(spec_id=[0, 1], stype='science')
+    onedspec.list_atlas(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_hough_transform_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.do_hough_transform(spec_id=0, stype='science')
+    onedspec.do_hough_transform(spec_id=[1, 11], stype='science')
+    onedspec.do_hough_transform(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_fit_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.do_hough_transform(stype='science')
+    onedspec.fit(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_refine_fit_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+
+    onedspec.add_arc_lines(np.arange(100),
+                           spec_id=[0, 1, 11, 75],
+                           stype='science')
+    onedspec.add_arc_spec(np.arange(100),
+                          spec_id=[0, 1, 11, 75],
+                          stype='science')
+
+    onedspec.initialise_calibrator(stype='science')
+    onedspec.set_calibrator_properties(stype='science')
+    onedspec.set_hough_properties(stype='science')
+    onedspec.set_ransac_properties(stype='science')
+    onedspec.add_atlas(elements=['Xe'], stype='science')
+    onedspec.do_hough_transform(stype='science')
+    onedspec.science_wavecal_polynomial_available = True
+    onedspec.refine_fit(spec_id=7, stype='science')
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_calibrator_science_fail_ap_extract_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.add_fit_coeff([1, 2, 3, 4, 5])
+    onedspec.apply_wavelength_calibration(spec_id=7)
+
+
+img = image_reduction.ImageReduction(
+    filelist='test/test_data/sprat_LHS6328.list', log_file_name=None)
+img.reduce()
+twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+twodspec.add_data(img)
+twodspec.ap_trace()
+twodspec.ap_extract(model='lowess')
+
+
+def test_from_twodspec():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.from_twodspec(twodspec, spec_id=0)
+
+
+@pytest.mark.xfail()
+def test_from_twodspec_fail_spec_id():
+
+    onedspec = spectral_reduction.OneDSpec(log_file_name=None)
+    onedspec.from_twodspec(twodspec, spec_id=10)
 
 
 def test_extinction_function():
