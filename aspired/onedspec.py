@@ -1559,6 +1559,7 @@ class OneDSpec():
                         self.science_spectrum_list[i])
                     self.science_wavecal[i].initialise_calibrator(
                         peaks=peaks, arc_spec=arc_spec)
+                    self.science_wavecal[i].set_calibrator_properties()
                     self.science_wavecal[i].set_hough_properties()
                     self.science_wavecal[i].set_ransac_properties()
 
@@ -1574,6 +1575,7 @@ class OneDSpec():
                     self.standard_spectrum_list[0])
                 self.standard_wavecal.initialise_calibrator(peaks=peaks,
                                                             arc_spec=arc_spec)
+                self.standard_wavecal.set_calibrator_properties()
                 self.standard_wavecal.set_hough_properties()
                 self.standard_wavecal.set_ransac_properties()
 
@@ -1586,6 +1588,7 @@ class OneDSpec():
                                   num_pix=None,
                                   pixel_list=None,
                                   plotting_library='plotly',
+                                  logger_name='Calibrator',
                                   log_level='info',
                                   stype='science+standard'):
         '''
@@ -1640,6 +1643,7 @@ class OneDSpec():
                         num_pix=num_pix,
                         pixel_list=pixel_list,
                         plotting_library=plotting_library,
+                        logger_name=logger_name,
                         log_level=log_level)
 
             else:
@@ -1654,6 +1658,7 @@ class OneDSpec():
                     num_pix=num_pix,
                     pixel_list=pixel_list,
                     plotting_library=plotting_library,
+                    logger_name=logger_name,
                     log_level=log_level)
 
             else:
@@ -3688,7 +3693,7 @@ class OneDSpec():
                            line=dict(color='royalblue'),
                            name=standard_fluxcount_name))
 
-            if fluxcount_err is not None:
+            if standard_fluxcount_err is not None:
 
                 fig_standard.add_trace(
                     go.Scatter(x=standard_wave,
@@ -3696,7 +3701,7 @@ class OneDSpec():
                                line=dict(color='firebrick'),
                                name=standard_fluxcount_err_name))
 
-            if fluxcount_sky is not None:
+            if standard_fluxcount_sky is not None:
 
                 fig_standard.add_trace(
                     go.Scatter(x=standard_wave,

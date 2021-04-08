@@ -469,9 +469,10 @@ class WavelengthCalibration():
             Calibrator(peaks=peaks, spectrum=arc_spec))
 
     def set_calibrator_properties(self,
-                                  num_pix,
-                                  pixel_list,
+                                  num_pix=None,
+                                  pixel_list=None,
                                   plotting_library='plotly',
+                                  logger_name='Calibrator',
                                   log_level='info'):
         '''
         Set the properties of the calibrator.
@@ -497,10 +498,14 @@ class WavelengthCalibration():
             num_pix=num_pix,
             pixel_list=pixel_list,
             plotting_library=plotting_library,
+            logger_name=logger_name,
             log_level=log_level)
 
-        self.spectrum1D.add_calibrator_properties(num_pix, pixel_list,
-                                                  plotting_library, log_level)
+        self.spectrum1D.add_calibrator_properties(
+            self.spectrum1D.calibrator.num_pix,
+            self.spectrum1D.calibrator.pixel_list,
+            self.spectrum1D.calibrator.plotting_library,
+            self.spectrum1D.calibrator.log_level)
 
     def set_hough_properties(self,
                              num_slopes=5000,
@@ -595,10 +600,14 @@ class WavelengthCalibration():
             candidate_weighted=candidate_weighted,
             hough_weight=hough_weight)
 
-        self.spectrum1D.add_ransac_properties(sample_size, top_n_candidate,
-                                              linear, filter_close,
-                                              ransac_tolerance,
-                                              candidate_weighted, hough_weight)
+        self.spectrum1D.add_ransac_properties(
+            sample_size=sample_size,
+            top_n_candidate=top_n_candidate,
+            linear=linear,
+            filter_close=filter_close,
+            ransac_tolerance=ransac_tolerance,
+            candidate_weighted=candidate_weighted,
+            hough_weight=hough_weight)
 
     def set_known_pairs(self, pix=None, wave=None):
         '''

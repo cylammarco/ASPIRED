@@ -564,8 +564,9 @@ class TwoDSpec:
 
             else:
 
-                logging.error('Please provide the variance in the same shape '
-                              'as the image.')
+                logging.warning(
+                    'Please provide the variance in the same shape '
+                    'as the image.')
                 self.variance = np.abs(self.img) + self.readnoise**2
 
         else:
@@ -635,9 +636,8 @@ class TwoDSpec:
             else:
 
                 self.readnoise = 0.
-                logging.warning('Header is not provided. ' +
-                                'Readnoise value is not provided. ' +
-                                'It is set to 0.')
+                logging.warning('Header is not provided. Readnoise value ' +
+                                'is not provided. It is set to 0.')
 
     # Get the gain
     def set_gain(self, gain=None):
@@ -658,9 +658,9 @@ class TwoDSpec:
 
                 self.gain = 1.
                 logging.warning(
-                    'Gain has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(gain) + ' is ' +
-                    'given. It is set to 1.')
+                    'Gain has to be None, a numeric value or the FITS ' +
+                    'header keyword, ' + str(gain) + ' is given. It is ' +
+                    'set to 1.')
         else:
 
             # if None is given and header is provided, check if the read noise
@@ -683,9 +683,8 @@ class TwoDSpec:
             else:
 
                 self.gain = 1.
-                logging.warning('Header is not provide. ' +
-                                'Gain value is not provided. ' +
-                                'It is set to 1.')
+                logging.warning('Header is not provide. Gain value is not ' +
+                                'provided. It is set to 1.')
 
     # Get the Seeing
     def set_seeing(self, seeing=None):
@@ -706,9 +705,9 @@ class TwoDSpec:
 
                 self.seeing = 1.
                 logging.warning(
-                    'Seeing has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(seeing) + ' is ' +
-                    'given. It is set to 1.')
+                    'Seeing has to be None, a numeric value or the FITS ' +
+                    'header keyword, ' + str(seeing) + ' is given. It is ' +
+                    'set to 1.')
 
         else:
 
@@ -733,9 +732,8 @@ class TwoDSpec:
             else:
 
                 self.seeing = 1.
-                logging.warning('Header is not provide. ' +
-                                'Seeing value is not provided. ' +
-                                'It is set to 1.')
+                logging.warning('Header is not provide. Seeing value is ' +
+                                'not provided. It is set to 1.')
 
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
@@ -759,8 +757,8 @@ class TwoDSpec:
                 self.exptime = 1.
                 logging.warning(
                     'Exposure Time has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(exptime) + ' is ' +
-                    'given. It is set to 1.')
+                    'FITS header keyword, ' + str(exptime) + ' is given. ' +
+                    'It is set to 1.')
 
         else:
 
