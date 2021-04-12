@@ -109,7 +109,7 @@ spec_mask = np.arange(50, 1024)
 lhs6328_frame = image_reduction.ImageReduction(
     'test/test_data/sprat_LHS6328.list',
     log_level='INFO',
-    log_file_name='None')
+    log_file_name=None)
 lhs6328_frame.reduce()
 
 lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
@@ -118,7 +118,7 @@ lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,
                                                cosmicray=True,
                                                readnoise=5.7,
                                                log_level='DEBUG',
-                                               log_file_name='None')
+                                               log_file_name=None)
 
 lhs6328_twodspec.ap_trace(nspec=1, display=False)
 

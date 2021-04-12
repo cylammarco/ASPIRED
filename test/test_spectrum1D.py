@@ -3,7 +3,7 @@ from aspired import spectrum1D
 
 
 def test_spectrum1D():
-    spec = spectrum1D.Spectrum1D()
+    spec = spectrum1D.Spectrum1D(log_file_name=None)
 
     spec.add_count(count=np.arange(10))
     assert (spec.count == np.arange(10)).all()

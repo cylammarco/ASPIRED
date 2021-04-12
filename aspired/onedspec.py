@@ -1329,7 +1329,12 @@ class OneDSpec():
             for i in spec_id:
 
                 self.add_science_spectrum1D(i)
-                self.science_wavecal[i] = WavelengthCalibration()
+                self.science_wavecal[i] = WavelengthCalibration(
+                    verbose=self.verbose,
+                    logger_name=self.logger_name,
+                    log_level=self.log_level,
+                    log_file_folder=self.log_file_folder,
+                    log_file_name=self.log_file_name)
 
                 # By reference
                 self.science_wavecal[i].from_spectrum1D(
@@ -1344,7 +1349,13 @@ class OneDSpec():
         if 'standard' in stype_split:
 
             # By reference
-            self.standard_wavecal = WavelengthCalibration()
+            self.standard_wavecal = WavelengthCalibration(
+                    verbose=self.verbose,
+                    logger_name=self.logger_name,
+                    log_level=self.log_level,
+                    log_file_folder=self.log_file_folder,
+                    log_file_name=self.log_file_name
+            )
             self.standard_wavecal.from_spectrum1D(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum1D(twodspec.spectrum_list[0])
             self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
