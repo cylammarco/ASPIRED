@@ -40,10 +40,12 @@ lhs6328_twodspec.ap_trace(nspec=2, display=False)
 # input
 def test_rectify():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.compute_rectification(bin_size=6,
-                                   n_bin=[2, 4],
-                                   display=False,
-                                   save_iframe=True)
+    twodspec.compute_rectification(
+        bin_size=6,
+        n_bin=[2, 4],
+        display=False,
+        save_iframe=True,
+        filename='test/test_output/test_rectifying_image')
     assert abs(np.sum(twodspec.img) / np.sum(twodspec.img_rectified) -
                1.0) < 0.01
     twodspec.apply_rectification()

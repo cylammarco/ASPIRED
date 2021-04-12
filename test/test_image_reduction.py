@@ -82,9 +82,13 @@ def test_logger():
     debug_error_length = file_len('test/test_output/imred_error.log')
     debug_critical_length = file_len('test/test_output/imred_critical.log')
 
-    assert debug_debug_length == 5, 'Expecting 5 lines in the log file, ' +\
+    # Note that the initialisation of the debugger logs 28 lines of debug info
+    # so there are 28 + 5 = 33 lines.
+    assert debug_debug_length == 33, 'Expecting 33 lines in the log file, ' +\
         '{} is logged.'.format(debug_debug_length)
-    assert debug_info_length == 4, 'Expecting 4 lines in the log file, ' +\
+    # Note that the initialisation of the debugger logs 4 lines of info info
+    # so there are 4 + 4 = 8 lines.
+    assert debug_info_length == 8, 'Expecting 8 lines in the log file, ' +\
         '{} is logged.'.format(debug_info_length)
     assert debug_warning_length == 3, 'Expecting 3 lines in the log file, ' +\
         '{} is logged.'.format(debug_warning_length)

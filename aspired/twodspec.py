@@ -184,7 +184,7 @@ class TwoDSpec:
         if isinstance(data, np.ndarray):
 
             self.img = data
-            logging.info('An numpy array is loaded as data.')
+            self.logger.info('An numpy array is loaded as data.')
             self.header = header
             self.bad_mask = np.zeros_like(self.img, dtype=bool)
 
@@ -194,8 +194,8 @@ class TwoDSpec:
             self.img = data[0].data
             self.header = data[0].header
             self.bad_mask = np.zeros_like(self.img, dtype=bool)
-            logging.warning('An HDU list is provided, only the first '
-                            'HDU will be read.')
+            self.logger.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
@@ -204,7 +204,7 @@ class TwoDSpec:
             self.img = data.data
             self.header = data.header
             self.bad_mask = np.zeros_like(self.img, dtype=bool)
-            logging.info('A PrimaryHDU is loaded as data.')
+            self.logger.info('A PrimaryHDU is loaded as data.')
 
         # If it is an ImageReduction object
         elif isinstance(data, ImageReduction):
@@ -252,7 +252,7 @@ class TwoDSpec:
             error_msg = 'Please provide a numpy array, an ' +\
                 'astropy.io.fits.hdu.image.PrimaryHDU object ' +\
                 'or an ImageReduction object.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
         if data is not None:
@@ -390,7 +390,7 @@ class TwoDSpec:
             else:
 
                 self.saxis = 0
-                logging.error(
+                self.logger.error(
                     "saxis can only be 0 or 1, {} is ".format(saxis) +
                     "given. It is set to 0.")
 
@@ -443,7 +443,8 @@ class TwoDSpec:
         # cosmic ray rejection
         if self.cosmicray:
 
-            logging.info('Removing cosmic rays in mode: {}.'.format(psfmodel))
+            self.logger.info(
+                'Removing cosmic rays in mode: {}.'.format(psfmodel))
 
             if self.fsmode == 'convolve':
 
@@ -564,7 +565,7 @@ class TwoDSpec:
 
             else:
 
-                logging.warning(
+                self.logger.warning(
                     'Please provide the variance in the same shape '
                     'as the image.')
                 self.variance = np.abs(self.img) + self.readnoise**2
@@ -608,7 +609,7 @@ class TwoDSpec:
             else:
 
                 self.readnoise = 0.
-                logging.warning(
+                self.logger.warning(
                     'readnoise has to be None, a numeric value or the ' +
                     'FITS header keyword, ' + str(readnoise) + ' is ' +
                     'given. It is set to 0.')
@@ -630,14 +631,16 @@ class TwoDSpec:
                 else:
 
                     self.readnoise = 0.
-                    logging.warning('Readnoise value cannot be identified. ' +
-                                    'It is set to 0.')
+                    self.logger.warning(
+                        'Readnoise value cannot be identified. ' +
+                        'It is set to 0.')
 
             else:
 
                 self.readnoise = 0.
-                logging.warning('Header is not provided. Readnoise value ' +
-                                'is not provided. It is set to 0.')
+                self.logger.warning(
+                    'Header is not provided. Readnoise value ' +
+                    'is not provided. It is set to 0.')
 
     # Get the gain
     def set_gain(self, gain=None):
@@ -657,7 +660,7 @@ class TwoDSpec:
             else:
 
                 self.gain = 1.
-                logging.warning(
+                self.logger.warning(
                     'Gain has to be None, a numeric value or the FITS ' +
                     'header keyword, ' + str(gain) + ' is given. It is ' +
                     'set to 1.')
@@ -677,14 +680,15 @@ class TwoDSpec:
                 else:
 
                     self.gain = 1.
-                    logging.warning('Gain value cannot be identified. ' +
-                                    'It is set to 1.')
+                    self.logger.warning('Gain value cannot be identified. ' +
+                                        'It is set to 1.')
 
             else:
 
                 self.gain = 1.
-                logging.warning('Header is not provide. Gain value is not ' +
-                                'provided. It is set to 1.')
+                self.logger.warning(
+                    'Header is not provide. Gain value is not ' +
+                    'provided. It is set to 1.')
 
     # Get the Seeing
     def set_seeing(self, seeing=None):
@@ -704,7 +708,7 @@ class TwoDSpec:
             else:
 
                 self.seeing = 1.
-                logging.warning(
+                self.logger.warning(
                     'Seeing has to be None, a numeric value or the FITS ' +
                     'header keyword, ' + str(seeing) + ' is given. It is ' +
                     'set to 1.')
@@ -726,14 +730,14 @@ class TwoDSpec:
                 else:
 
                     self.seeing = 1.
-                    logging.warning('Seeing value cannot be identified. ' +
-                                    'It is set to 1.')
+                    self.logger.warning('Seeing value cannot be identified. ' +
+                                        'It is set to 1.')
 
             else:
 
                 self.seeing = 1.
-                logging.warning('Header is not provide. Seeing value is ' +
-                                'not provided. It is set to 1.')
+                self.logger.warning('Header is not provided. Seeing value is ' +
+                                    'not provided. It is set to 1.')
 
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
@@ -755,7 +759,7 @@ class TwoDSpec:
             else:
 
                 self.exptime = 1.
-                logging.warning(
+                self.logger.warning(
                     'Exposure Time has to be None, a numeric value or the ' +
                     'FITS header keyword, ' + str(exptime) + ' is given. ' +
                     'It is set to 1.')
@@ -777,16 +781,16 @@ class TwoDSpec:
                 else:
 
                     self.exptime = 1.
-                    logging.warning(
+                    self.logger.warning(
                         'Exposure Time value cannot be identified. ' +
                         'It is set to 1.')
 
             else:
 
                 self.exptime = 1.
-                logging.warning('Header is not provide. ' +
-                                'Exposure Time value is not provided. ' +
-                                'It is set to 1.')
+                self.logger.warning('Header is not provided. ' +
+                                    'Exposure Time value is not provided. ' +
+                                    'It is set to 1.')
 
     # Get the Exposure Time
     def set_airmass(self, airmass=None):
@@ -807,7 +811,7 @@ class TwoDSpec:
 
             else:
 
-                logging.warning(
+                self.logger.warning(
                     'Exposure Time has to be None, a numeric value or the ' +
                     'FITS header keyword, ' + str(airmass) + ' is ' +
                     'given. It is set to 1.')
@@ -829,16 +833,16 @@ class TwoDSpec:
                 else:
 
                     self.airmass = 1.
-                    logging.warning(
+                    self.logger.warning(
                         'Exposure Time value cannot be identified. ' +
                         'It is set to 1.')
 
             else:
 
                 self.airmass = 1.
-                logging.warning('Header is not provide. ' +
-                                'Exposure Time value is not provided. ' +
-                                'It is set to 1.')
+                self.logger.warning('Header is not provided. ' +
+                                    'Exposure Time value is not provided. ' +
+                                    'It is set to 1.')
 
     def add_bad_mask(self, bad_mask=None):
         '''
@@ -861,8 +865,8 @@ class TwoDSpec:
         elif isinstance(bad_mask, fits.hdu.hdulist.HDUList):
 
             self.bad_mask = bad_mask[0].data
-            logging.warning('An HDU list is provided, only the first '
-                            'HDU will be read.')
+            self.logger.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(bad_mask, fits.hdu.image.PrimaryHDU) or isinstance(
@@ -889,27 +893,27 @@ class TwoDSpec:
             if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
 
                 fitsfile_tmp = fitsfile_tmp[0]
-                logging.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+                self.logger.warning('An HDU list is provided, only the first '
+                                    'HDU will be read.')
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
 
-                logging.debug('arc.data is 2 dimensional.')
+                self.logger.debug('arc.data is 2 dimensional.')
                 self.bad_mask = fitsfile_tmp.data
 
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
 
-                logging.debug('arc.data is 3 dimensional.')
+                self.logger.debug('arc.data is 3 dimensional.')
                 self.bad_mask = fitsfile_tmp.data[0]
 
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
 
-                logging.debug('arc.data is 1 dimensional.')
+                self.logger.debug('arc.data is 1 dimensional.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
@@ -925,7 +929,7 @@ class TwoDSpec:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input light frame, it is probably empty ' +\
                             'or has an atypical output format.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
         else:
@@ -934,7 +938,7 @@ class TwoDSpec:
                 'astropy.io.fits.hdu.image.PrimaryHDU object, an ' +\
                 'astropy.io.fits.hdu.image.ImageHDU object, an ' +\
                 'astropy.io.fits.HDUList object.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
     def add_arc(self, arc, header=None):
@@ -963,8 +967,8 @@ class TwoDSpec:
 
             self.arc = arc[0].data
             self.set_arc_header(arc[0].header)
-            logging.warning('An HDU list is provided, only the first '
-                            'HDU will be read.')
+            self.logger.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
@@ -993,15 +997,15 @@ class TwoDSpec:
             if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
 
                 fitsfile_tmp = fitsfile_tmp[0]
-                logging.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+                self.logger.warning('An HDU list is provided, only the first '
+                                    'HDU will be read.')
 
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
 
-                logging.debug('arc.data is 2 dimensional.')
+                self.logger.debug('arc.data is 2 dimensional.')
                 self.arc = fitsfile_tmp.data
                 self.set_arc_header(fitsfile_tmp.header)
 
@@ -1009,14 +1013,14 @@ class TwoDSpec:
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
 
-                logging.debug('arc.data is 3 dimensional.')
+                self.logger.debug('arc.data is 3 dimensional.')
                 self.arc = fitsfile_tmp.data[0]
                 self.set_arc_header(fitsfile_tmp.header)
 
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
 
-                logging.debug('arc.data is 1 dimensional.')
+                self.logger.debug('arc.data is 1 dimensional.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
@@ -1034,7 +1038,7 @@ class TwoDSpec:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input light frame, it is probably empty ' +\
                             'or has an atypical output format.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
         else:
@@ -1044,7 +1048,7 @@ class TwoDSpec:
                 'astropy.io.fits.hdu.image.ImageHDU object, an ' +\
                 'astropy.io.fits.HDUList object, or an ' +\
                 'aspired.ImageReduction object.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
     def set_arc_header(self, header):
@@ -1068,7 +1072,7 @@ class TwoDSpec:
             error_msg = 'Please provide a valid ' +\
                 'astropy.io.fits.header.Header object. Process continues ' +\
                 'without storing the header of the arc file.'
-            logging.warning(error_msg)
+            self.logger.warning(error_msg)
 
     def apply_twodspec_mask_to_arc(self):
         '''
@@ -1154,8 +1158,9 @@ class TwoDSpec:
 
         else:
 
-            logging.error('Please provide the keyword list in str, list or '
-                          'numpy.ndarray.')
+            self.logger.error(
+                'Please provide the keyword list in str, list or '
+                'numpy.ndarray.')
 
         if append:
 
@@ -1196,8 +1201,9 @@ class TwoDSpec:
 
         else:
 
-            logging.error('Please provide the keyword list in str, list or '
-                          'numpy.ndarray.')
+            self.logger.error(
+                'Please provide the keyword list in str, list or '
+                'numpy.ndarray.')
 
         if append:
 
@@ -1238,8 +1244,9 @@ class TwoDSpec:
 
         else:
 
-            logging.error('Please provide the keyword list in str, list or '
-                          'numpy.ndarray.')
+            self.logger.error(
+                'Please provide the keyword list in str, list or '
+                'numpy.ndarray.')
 
         if append:
 
@@ -1280,8 +1287,9 @@ class TwoDSpec:
 
         else:
 
-            logging.error('Please provide the keyword list in str, list or '
-                          'numpy.ndarray.')
+            self.logger.error(
+                'Please provide the keyword list in str, list or '
+                'numpy.ndarray.')
 
         if append:
 
@@ -1322,8 +1330,9 @@ class TwoDSpec:
 
         else:
 
-            logging.error('Please provide the keyword list in str, list or '
-                          'numpy.ndarray.')
+            self.logger.error(
+                'Please provide the keyword list in str, list or '
+                'numpy.ndarray.')
 
         if append:
 
@@ -1361,7 +1370,7 @@ class TwoDSpec:
 
             error_msg = 'Please provide an ' +\
                 'astropy.io.fits.header.Header object.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
     def _gaus(self, x, a, b, x0, sigma):
@@ -1951,8 +1960,9 @@ class TwoDSpec:
         '''
 
         if self.arc is None:
-            logging.error('Arc frame is not available, only the data image '
-                          'will be rectified.')
+            self.logger.error(
+                'Arc frame is not available, only the data image '
+                'will be rectified.')
 
         spec = self.spectrum_list[0]
         spec_size_tmp = spec.len_trace * upsample_factor
@@ -1971,7 +1981,7 @@ class TwoDSpec:
 
             else:
 
-                logging.error(
+                self.logger.error(
                     'The given n_bin is not numeric or a list/array of '
                     'size 2: {}. Using the default value to proceed.'.format(
                         n_bin))
@@ -2265,8 +2275,9 @@ class TwoDSpec:
 
             else:
 
-                logging.warning('sky_polyfit_order cannot be negative. sky '
-                                'background is set to zero.')
+                self.logger.warning(
+                    'sky_polyfit_order cannot be negative. sky '
+                    'background is set to zero.')
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
         else:
@@ -2458,9 +2469,9 @@ class TwoDSpec:
 
             else:
 
-                logging.error('apwidth can only be an int or a list ' +
-                              'of two ints. It is set to the default ' +
-                              'value to continue the extraction.')
+                self.logger.error('apwidth can only be an int or a list ' +
+                                  'of two ints. It is set to the default ' +
+                                  'value to continue the extraction.')
                 width_dn = 7
                 width_up = 7
 
@@ -2477,9 +2488,9 @@ class TwoDSpec:
 
             else:
 
-                logging.error('skysep can only be an int or a list of ' +
-                              'two ints. It is set to the default ' +
-                              'value to continue the extraction.')
+                self.logger.error('skysep can only be an int or a list of ' +
+                                  'two ints. It is set to the default ' +
+                                  'value to continue the extraction.')
                 sep_dn = 3
                 sep_up = 3
 
@@ -2496,9 +2507,9 @@ class TwoDSpec:
 
             else:
 
-                logging.error('skywidth can only be an int or a list of ' +
-                              'two ints. It is set to the default value ' +
-                              'to continue the extraction.')
+                self.logger.error('skywidth can only be an int or a list of ' +
+                                  'two ints. It is set to the default value ' +
+                                  'to continue the extraction.')
                 sky_width_dn = 5
                 sky_width_up = 5
 
@@ -2565,7 +2576,7 @@ class TwoDSpec:
                 self.img_residual[source_pix,
                                   i] = count_sky_source_slice.copy()
 
-                logging.debug('count_sky at pixel {} is {}.'.format(
+                self.logger.debug('count_sky at pixel {} is {}.'.format(
                     i, count_sky[i]))
 
                 # if not optimal extraction or using marsh89, perform a
@@ -2602,7 +2613,7 @@ class TwoDSpec:
                             else:
 
                                 var_i = np.ones(len(source_pix))
-                                logging.warning('Variances are set to 1.')
+                                self.logger.warning('Variances are set to 1.')
 
                         # A single LSF is given for the entire trace
                         elif np.ndim(variances) == 1:
@@ -2617,7 +2628,7 @@ class TwoDSpec:
                             else:
 
                                 var_i = np.ones(len(source_pix))
-                                logging.warning('Variances are set to 1.')
+                                self.logger.warning('Variances are set to 1.')
 
                         # A two dimensional LSF
                         elif np.ndim(variances) == 2:
@@ -2641,7 +2652,7 @@ class TwoDSpec:
                         else:
 
                             var_i = np.ones(len(source_pix))
-                            logging.warning('Variances are set to 1.')
+                            self.logger.warning('Variances are set to 1.')
 
                     else:
 
@@ -2727,7 +2738,7 @@ class TwoDSpec:
             # If more than a third of the spectrum is extracted suboptimally
             if np.sum(is_optimal) / len(is_optimal) < 0.333:
 
-                logging.warning(
+                self.logger.warning(
                     'Some signal extracted is likely to be suboptimal, it '
                     'is most likely happening at the red and/or blue ends '
                     'of the spectrum.')
@@ -3124,8 +3135,8 @@ class TwoDSpec:
         # step 5 - construct the spatial profile
         if not np.in1d(model, ['gauss', 'lowess']):
 
-            logging.error('The provided model has to be gauss or lowess, '
-                          '{} is given. lowess is used.'.format(model))
+            self.logger.error('The provided model has to be gauss or lowess, '
+                              '{} is given. lowess is used.'.format(model))
             model = 'lowess'
 
         if model == 'gauss':
@@ -3298,9 +3309,9 @@ class TwoDSpec:
 
         else:
 
-            logging.error('apwidth can only be an int or a list ' +
-                          'of two ints. It is set to the default ' +
-                          'value to continue the extraction.')
+            self.logger.error('apwidth can only be an int or a list ' +
+                              'of two ints. It is set to the default ' +
+                              'value to continue the extraction.')
             width_dn = 7
             width_up = 7
 
@@ -3319,8 +3330,9 @@ class TwoDSpec:
         bad_residual_frame_mask = ~np.isfinite(residual_frame)
         residual_frame[bad_residual_frame_mask] = 0.
         if np.any(bad_residual_frame_mask.nonzero()):
-            logging.warning("Found bad residual_frame values at: {}".format(
-                bad_residual_frame_mask.nonzero()))
+            self.logger.warning(
+                "Found bad residual_frame values at: {}".format(
+                    bad_residual_frame_mask.nonzero()))
 
         skysubFrame = frame - residual_frame
 
@@ -3476,12 +3488,12 @@ class TwoDSpec:
         Qsm = Q[:, Q_cols[0]:Q_cols[1] + 1, :]
 
         # Prepar to iteratively clip outliers
-        logging.info("Looking for bad pixel outliers.")
+        self.logger.info("Looking for bad pixel outliers.")
         newBadPixels = True
         i = -1
         while newBadPixels:
             i += 1
-            logging.debug("Beginning iteration {}.".format(i))
+            self.logger.debug("Beginning iteration {}.".format(i))
 
             # Compute pixel fractions (Marsh Eq. 5):
             #     (Note that values outside the desired polynomial region
@@ -3552,7 +3564,7 @@ class TwoDSpec:
             for i in range(spatial_size):
                 profile[i, :] = (Q[:, i, :] * Gsoln).sum(0)
 
-            logging.debug(profile)
+            self.logger.debug(profile)
             if profile.min() < 0:
                 profile[profile < 0] = 0.
             profile /= np.nansum(profile, axis=0)
@@ -3583,7 +3595,7 @@ class TwoDSpec:
                 newBadPixels = False
                 numberRejected = 0
 
-            logging.info(
+            self.logger.info(
                 "Rejected {} pixels in this iteration.".format(numberRejected))
 
             # Optimal Spectral Extraction: (Horne, Step 8)
@@ -3843,7 +3855,7 @@ class TwoDSpec:
             if spec_id not in list(self.spectrum_list.keys()):
 
                 error_msg = 'The given spec_id does not exist.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         else:
@@ -3856,7 +3868,7 @@ class TwoDSpec:
             error_msg = 'arc is not provided. Please provide arc by ' +\
                 'using add_arc() or with from_twodspec() before ' +\
                 'executing find_arc_lines().'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
         to_return = []
@@ -3974,7 +3986,7 @@ class TwoDSpec:
             if i not in ['trace', 'count']:
 
                 error_msg = '{} is not a valid output.'.format(i)
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file
@@ -4031,7 +4043,7 @@ class TwoDSpec:
             if i not in ['trace', 'count']:
 
                 error_msg = '{} is not a valid output.'.format(i)
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file

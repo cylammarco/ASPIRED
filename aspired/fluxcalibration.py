@@ -300,7 +300,7 @@ class StandardLibrary:
 
         except Exception as e:
 
-            logging.warning(str(e))
+            self.logger.warning(str(e))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
@@ -310,7 +310,7 @@ class StandardLibrary:
 
             if len(target_list) > 0:
 
-                logging.warning(
+                self.logger.warning(
                     'Requested standard star cannot be found, a list of ' +
                     'the closest matching names are returned: {}'.format(
                         target_list))
@@ -321,7 +321,7 @@ class StandardLibrary:
                 error_msg = 'Please check the name of your standard ' +\
                     'star, nothing share a similarity above {}.'.format(
                         cutoff)
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
@@ -363,7 +363,7 @@ class StandardLibrary:
 
                 self.library = libraries[0]
 
-                logging.warning(
+                self.logger.warning(
                     'The requested standard star cannot be found in the '
                     'given library,  or the library is not specified. '
                     'ASPIRED is using ' + self.library + '.')
@@ -375,7 +375,7 @@ class StandardLibrary:
             libraries, _ = self.lookup_standard_libraries(self.target)
             self.library = libraries[0]
 
-            logging.warning(
+            self.logger.warning(
                 'The requested library does not exist, ' + self.library +
                 ' is used because it has the closest matching name.')
 
@@ -384,8 +384,8 @@ class StandardLibrary:
             if library is None:
 
                 # Use the default library order
-                logging.warning('Standard library is not given, ' +
-                                self.library + ' is used.')
+                self.logger.warning('Standard library is not given, ' +
+                                    self.library + ' is used.')
 
         if self.library.startswith('iraf'):
 
@@ -563,7 +563,7 @@ class FluxCalibration(StandardLibrary):
         '''
 
         # Set-up logger
-        logger = logging.getLogger(logger_name)
+        self.logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
             logging.basicConfig(level=logging.CRITICAL)
         if log_level == "ERROR":
@@ -595,7 +595,7 @@ class FluxCalibration(StandardLibrary):
                 os.path.join(log_file_folder, log_file_name), 'a+')
 
         handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        self.logger.addHandler(handler)
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -855,7 +855,7 @@ class FluxCalibration(StandardLibrary):
         else:
 
             error_msg = '{} is not implemented.'.format(method)
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise NotImplementedError(error_msg)
 
         self.spectrum1D.add_sensitivity(sensitivity_masked)

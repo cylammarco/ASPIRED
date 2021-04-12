@@ -387,7 +387,7 @@ class ImageReduction:
 
                 self.filelist = os.path.abspath(filelist)
 
-            logging.debug('The filelist is: {}'.format(self.filelist))
+            self.logger.debug('The filelist is: {}'.format(self.filelist))
 
             # Check if running on Windows
             if os.name == 'nt':
@@ -398,9 +398,10 @@ class ImageReduction:
 
                 self.filelist_abspath = self.filelist.rsplit('/', 1)[0]
 
-            logging.debug('The absolute path of the filelist is: {}'.format(
-                self.filelist_abspath))
-            logging.info('Loading filelist from {}.'.format(self.filelist))
+            self.logger.debug(
+                'The absolute path of the filelist is: {}'.format(
+                    self.filelist_abspath))
+            self.logger.info('Loading filelist from {}.'.format(self.filelist))
             self.filelist = np.loadtxt(self.filelist,
                                        delimiter=self.delimiter,
                                        dtype='U',
@@ -408,11 +409,11 @@ class ImageReduction:
 
             if np.shape(self.filelist)[1] == 3:
 
-                logging.debug('filelist contains 3 columns.')
+                self.logger.debug('filelist contains 3 columns.')
 
             elif np.shape(self.filelist)[1] == 2:
 
-                logging.debug('filelist contains 2 column.')
+                self.logger.debug('filelist contains 2 column.')
 
             else:
 
@@ -420,21 +421,21 @@ class ImageReduction:
                     'columns: where the first column is the image type ' +\
                     'and the second column is the file path, and optional ' +\
                     'third column being the #HDU.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
         elif isinstance(filelist, np.ndarray):
 
             self.filelist = filelist
             self.filelist_abspath = ''
-            logging.info('Loading filelist from an numpy.ndarray.')
+            self.logger.info('Loading filelist from an numpy.ndarray.')
             if np.shape(self.filelist)[1] == 3:
 
-                logging.debug('filelist contains 3 columns.')
+                self.logger.debug('filelist contains 3 columns.')
 
             elif np.shape(self.filelist)[1] == 2:
 
-                logging.debug('filelist contains 2 columns.')
+                self.logger.debug('filelist contains 2 columns.')
 
             else:
 
@@ -442,25 +443,25 @@ class ImageReduction:
                     'least 2 columns: where the first column is the ' +\
                     'image type and the second column is the file ' +\
                     'path, and optional third column being the #HDU.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
         else:
 
             error_msg = 'Please provide a file path to the file list.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
         if np.shape(self.filelist)[1] == 3:
 
-            logging.debug('filelist contains 3 columns.')
+            self.logger.debug('filelist contains 3 columns.')
             self.imtype = self.filelist[:, 0].astype('object')
             self.impath = self.filelist[:, 1].astype('object')
             self.hdunum = self.filelist[:, 2].astype('int')
 
         else:
 
-            logging.debug('filelist contains 2 columns.')
+            self.logger.debug('filelist contains 2 columns.')
             self.imtype = self.filelist[:, 0].astype('object')
             self.impath = self.filelist[:, 1].astype('object')
             self.hdunum = np.zeros(len(self.imtype)).astype('int')
@@ -472,7 +473,7 @@ class ImageReduction:
                 self.impath[i] = os.path.join(self.filelist_abspath,
                                               im.strip())
 
-            logging.debug(self.impath[i])
+            self.logger.debug(self.impath[i])
 
         # If there are multiple rows, which is in most of the cases
         self.bias_list = self.impath[self.imtype == 'bias']
@@ -498,22 +499,22 @@ class ImageReduction:
         for i in range(self.light_list.size):
 
             # Open all the light frames
-            logging.debug('Loading light frame: {}.'.format(
+            self.logger.debug('Loading light frame: {}.'.format(
                 self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
 
             if type(light) == 'astropy.io.fits.hdu.hdulist.HDUList':
 
                 light = light[0]
-                logging.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+                self.logger.warning('An HDU list is provided, only the first '
+                                    'HDU will be read.')
             light_shape = np.shape(light.data)
-            logging.debug('light.data has shape {}.'.format(light_shape))
+            self.logger.debug('light.data has shape {}.'.format(light_shape))
 
             # Normal case
             if len(light_shape) == 2:
 
-                logging.debug('light.data is 2 dimensional.')
+                self.logger.debug('light.data is 2 dimensional.')
                 light_CCDData.append(
                     CCDData(light.data.astype('float'), unit=u.ct))
                 self.light_header.append(light.header)
@@ -522,7 +523,7 @@ class ImageReduction:
             # Case with multiple image extensions, we only take the first one
             elif len(light_shape) == 3:
 
-                logging.debug('light.data is 3 dimensional.')
+                self.logger.debug('light.data is 3 dimensional.')
                 light_CCDData.append(
                     CCDData(light.data[0].astype('float'), unit=u.ct))
                 self.light_header.append(light.header)
@@ -530,9 +531,10 @@ class ImageReduction:
             # Case with an extra bracket when saving
             elif len(light_shape) == 4:
 
-                logging.debug('light.data is 4 dimensional, there is most '
-                              'likely an extra bracket, attempting to go in '
-                              'one level.')
+                self.logger.debug(
+                    'light.data is 4 dimensional, there is most '
+                    'likely an extra bracket, attempting to go in '
+                    'one level.')
 
                 # In case it in a multiple extension format, we take the
                 # first one only
@@ -555,12 +557,12 @@ class ImageReduction:
                             'or has an atypical format. The shape of the ' +\
                             'data is: {}.'.format(light_shape) + '. The ' +\
                             'data type is: {}'.format(type(light)) + '.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             if self.cosmicray:
 
-                logging.info(
+                self.logger.info(
                     'Removing cosmic rays in mode: {}.'.format(psfmodel))
 
                 if self.fsmode == 'convolve':
@@ -621,10 +623,10 @@ class ImageReduction:
                         psfmodel=self.psfmodel,
                         **kwargs)[1]
 
-            logging.debug('Light frame header: {}.'.format(
+            self.logger.debug('Light frame header: {}.'.format(
                 self.light_header[i]))
 
-            logging.debug('Appending light filename: {}.'.format(
+            self.logger.debug('Appending light filename: {}.'.format(
                 self.light_list[i].split('/')[-1]))
             self.light_filename.append(self.light_list[i].split('/')[-1])
 
@@ -658,7 +660,7 @@ class ImageReduction:
 
                 light_time.append(exptime_light)
 
-            logging.debug('The light frame exposure time is {}.'.format(
+            self.logger.debug('The light frame exposure time is {}.'.format(
                 light_time[i]))
 
             saturation_mask, saturated = create_cutoff_mask(
@@ -678,32 +680,32 @@ class ImageReduction:
 
         # Put data into a Combiner
         light_combiner = Combiner(light_CCDData)
-        logging.debug('Combiner for the light frames is created.')
+        self.logger.debug('Combiner for the light frames is created.')
 
         # Free memory
         light_CCDData = None
-        logging.debug('light_CCDData is deleted.')
+        self.logger.debug('light_CCDData is deleted.')
 
         # Apply sigma clipping
         if self.sigma_clipping_light:
             light_combiner.sigma_clipping(low_thresh=self.clip_low_light,
                                           high_thresh=self.clip_high_light,
                                           func=np.ma.median)
-            logging.info('Sigma clipping with a lower and upper threshold '
-                         'of {} and {} sigma.'.format(self.clip_low_light,
-                                                      self.clip_high_light))
+            self.logger.info('Sigma clipping with a lower and upper threshold '
+                             'of {} and {} sigma.'.format(
+                                 self.clip_low_light, self.clip_high_light))
         # Image combine by median or average
         if self.combinetype_light == 'median':
             self.light_main = light_combiner.median_combine()
             self.exptime_light = np.nanmedian(light_time)
-            logging.info('light frames are median_combined.')
+            self.logger.info('light frames are median_combined.')
         elif self.combinetype_light == 'average':
             self.light_main = light_combiner.average_combine()
             self.exptime_light = np.nanmean(light_time)
-            logging.info('light frames are mean_combined.')
+            self.logger.info('light frames are mean_combined.')
         else:
             error_msg = 'Unknown combinetype for light frames.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
         # Free memory
@@ -728,7 +730,7 @@ class ImageReduction:
 
             self.saxis = saxis
 
-        logging.info('Saxis is found/set to be {}.'.format(self.saxis))
+        self.logger.info('Saxis is found/set to be {}.'.format(self.saxis))
 
         if len(self.arc_list) > 0:
             # Combine the arcs
@@ -738,27 +740,28 @@ class ImageReduction:
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
                 if type(arc) == 'astropy.io.fits.hdu.hdulist.HDUList':
                     arc = arc[0]
-                    logging.warning('A HDU list is provided, only the first '
-                                    'HDU will be read.')
+                    self.logger.warning(
+                        'A HDU list is provided, only the first '
+                        'HDU will be read.')
 
                 arc_shape = np.shape(arc)
 
                 # Normal case
                 if len(arc_shape) == 2:
-                    logging.debug('arc.data is 2 dimensional.')
+                    self.logger.debug('arc.data is 2 dimensional.')
                     arc_CCDData.append(
                         CCDData(arc.data.astype('float'), unit=u.ct))
                     self.arc_header.append(arc.header)
                 # Try to trap common error when saving FITS file
                 # Case with multiple extensions, we only take the first one
                 elif len(arc_shape) == 3:
-                    logging.debug('arc.data is 3 dimensional.')
+                    self.logger.debug('arc.data is 3 dimensional.')
                     arc_CCDData.append(
                         CCDData(arc.data[0].astype('float'), unit=u.ct))
                     self.arc_header.append(arc.header)
                 # Case with an extra bracket when saving
                 elif len(arc_shape) == 4:
-                    logging.debug(
+                    self.logger.debug(
                         'arc.data is 4 dimensional, there is most '
                         'likely an extra bracket, attempting to go in '
                         'one level.')
@@ -776,12 +779,12 @@ class ImageReduction:
                     error_msg = 'Please check the shape/dimension of the ' +\
                                 'input arc frame, it is probably empty ' +\
                                 'or has an atypical output format.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise RuntimeError(error_msg)
 
                 self.arc_filename.append(self.arc_list[i].split('/')[-1])
 
-                logging.debug('Arc frame header: {}.'.format(
+                self.logger.debug('Arc frame header: {}.'.format(
                     self.arc_header[i]))
 
             # combine the arc frames
@@ -805,26 +808,27 @@ class ImageReduction:
             bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
             if type(bias) == 'astropy.io.fits.hdu.hdulist.HDUList':
                 bias = bias[0]
-                logging.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+                self.logger.warning('An HDU list is provided, only the first '
+                                    'HDU will be read.')
             bias_shape = np.shape(bias)
 
             # Normal case
             if len(bias_shape) == 2:
-                logging.debug('bias.data is 2 dimensional.')
+                self.logger.debug('bias.data is 2 dimensional.')
                 bias_CCDData.append(
                     CCDData(bias.data.astype('float'), unit=u.ct))
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(bias_shape) == 3:
-                logging.debug('bias.data is 3 dimensional.')
+                self.logger.debug('bias.data is 3 dimensional.')
                 bias_CCDData.append(
                     CCDData(bias.data[0].astype('float'), unit=u.ct))
             # Case with an extra bracket when saving
             elif len(bias_shape) == 4:
-                logging.debug('bias.data is 4 dimensional, there is most '
-                              'likely an extra bracket, attempting to go in '
-                              'one level.')
+                self.logger.debug(
+                    'bias.data is 4 dimensional, there is most '
+                    'likely an extra bracket, attempting to go in '
+                    'one level.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(bias.data[0])) == 3:
@@ -837,7 +841,7 @@ class ImageReduction:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input bias frame, it is probably empty ' +\
                             'or has an atypical output format.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             self.bias_filename.append(self.bias_list[i].split('/')[-1])
@@ -858,15 +862,15 @@ class ImageReduction:
             self.bias_main = bias_combiner.average_combine()
         else:
             self.bias_filename = []
-            logging.error('Unknown combinetype for bias frames, main '
-                          'bias cannot be created. Process continues '
-                          'without bias subtraction.')
+            self.logger.error('Unknown combinetype for bias frames, main '
+                              'bias cannot be created. Process continues '
+                              'without bias subtraction.')
 
         # Bias subtract
         if self.bias_main is None:
 
-            logging.error('Main flat is not available, frame will '
-                          'not be flattened.')
+            self.logger.error('Main flat is not available, frame will '
+                              'not be flattened.')
 
         else:
 
@@ -890,28 +894,29 @@ class ImageReduction:
             dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
             if type(dark) == 'astropy.io.fits.hdu.hdulist.HDUList':
                 dark = dark[0]
-                logging.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+                self.logger.warning('An HDU list is provided, only the first '
+                                    'HDU will be read.')
             dark_shape = np.shape(dark)
 
             # Normal case
             if len(dark_shape) == 2:
-                logging.debug('dark.data is 2 dimensional.')
+                self.logger.debug('dark.data is 2 dimensional.')
                 dark_CCDData.append(
                     CCDData(dark.data.astype('float'), unit=u.ct))
                 self.dark_header.append(dark.header)
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(dark_shape) == 3:
-                logging.debug('dark.data is 3 dimensional.')
+                self.logger.debug('dark.data is 3 dimensional.')
                 dark_CCDData.append(
                     CCDData(dark.data[0].astype('float'), unit=u.ct))
                 self.dark_header.append(dark.header)
             # Case with an extra bracket when saving
             elif len(dark_shape) == 4:
-                logging.debug('dark.data is 4 dimensional, there is most '
-                              'likely an extra bracket, attempting to go in '
-                              'one level.')
+                self.logger.debug(
+                    'dark.data is 4 dimensional, there is most '
+                    'likely an extra bracket, attempting to go in '
+                    'one level.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(dark.data[0])) == 3:
@@ -926,10 +931,11 @@ class ImageReduction:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input dark frame, it is probably empty ' +\
                             'or has an atypical output format.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
-            logging.debug('Dark frame header: {}.'.format(self.dark_header[i]))
+            self.logger.debug('Dark frame header: {}.'.format(
+                self.dark_header[i]))
 
             self.dark_filename.append(self.dark_list[i].split('/')[-1])
 
@@ -953,7 +959,7 @@ class ImageReduction:
 
                     # If exposure time cannot be found from the header and
                     # user failed to supply the exposure time, use 1 second
-                    logging.warning(
+                    self.logger.warning(
                         'Dark frame exposure time cannot be found. '
                         '1 second is used as the exposure time.')
                     dark_time.append(1.0)
@@ -981,15 +987,15 @@ class ImageReduction:
             self.exptime_dark = np.nanmean(dark_time)
         else:
             self.dark_filename = []
-            logging.error('Unknown combinetype for dark frames, main '
-                          'dark cannot be created. Process continues '
-                          'without dark subtraction.')
+            self.logger.error('Unknown combinetype for dark frames, main '
+                              'dark cannot be created. Process continues '
+                              'without dark subtraction.')
 
         if self.dark_filename != []:
             # Dark subtraction adjusted for exposure time
             self.light_reduced =\
                 self.light_reduced.subtract(self.dark_main)
-            logging.info('Light frame is dark subtracted.')
+            self.logger.info('Light frame is dark subtracted.')
 
         # Free memory
         dark_CCDData = None
@@ -1009,29 +1015,30 @@ class ImageReduction:
             flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
             if type(flat) == 'astropy.io.fits.hdu.hdulist.HDUList':
                 flat = flat[0]
-                logging.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+                self.logger.warning('An HDU list is provided, only the first '
+                                    'HDU will be read.')
 
             flat_shape = np.shape(flat)
 
             # Normal case
             if len(flat_shape) == 2:
-                logging.debug('flat.data is 2 dimensional.')
+                self.logger.debug('flat.data is 2 dimensional.')
                 flat_CCDData.append(
                     CCDData(flat.data.astype('float'), unit=u.ct))
                 self.flat_header.append(flat.header)
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(flat_shape) == 3:
-                logging.debug('flat.data is 3 dimensional.')
+                self.logger.debug('flat.data is 3 dimensional.')
                 flat_CCDData.append(
                     CCDData(flat.data[0].astype('float'), unit=u.ct))
                 self.flat_header.append(flat.header)
             # Case with an extra bracket when saving
             elif len(flat_shape) == 4:
-                logging.debug('flat.data is 4 dimensional, there is most '
-                              'likely an extra bracket, attempting to go in '
-                              'one level.')
+                self.logger.debug(
+                    'flat.data is 4 dimensional, there is most '
+                    'likely an extra bracket, attempting to go in '
+                    'one level.')
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(flat.data[0])) == 3:
@@ -1046,7 +1053,7 @@ class ImageReduction:
                 error_msg = 'Please check the shape/dimension of the ' +\
                             'input flat frame, it is probably empty ' +\
                             'or has an atypical output format.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             self.flat_filename.append(self.flat_list[i].split('/')[-1])
@@ -1071,7 +1078,7 @@ class ImageReduction:
 
                     # If exposure time cannot be found from the header and
                     # user failed to supply the exposure time, use 1 second
-                    logging.warning(
+                    self.logger.warning(
                         'Dark frame exposure time cannot be found. '
                         '1 second is used as the exposure time.')
                     flat_time.append(1.0)
@@ -1098,15 +1105,15 @@ class ImageReduction:
             self.flat_main = flat_combiner.average_combine()
         else:
             self.flat_filename = []
-            logging.error('Unknown combinetype for flat frames, main '
-                          'flat cannot be created. Process continues '
-                          'without flatfielding.')
+            self.logger.error('Unknown combinetype for flat frames, main '
+                              'flat cannot be created. Process continues '
+                              'without flatfielding.')
 
         # Field-flattening
         if self.flat_main is None:
 
-            logging.warning('Main flat is not available, frame will '
-                            'not be flattened.')
+            self.logger.warning('Main flat is not available, frame will '
+                                'not be flattened.')
 
         else:
 
@@ -1115,32 +1122,32 @@ class ImageReduction:
             # Dark subtract the flat field
             if self.dark_main is None:
 
-                logging.warning('Main dark is not available, main '
-                                'flat will not be dark subtracted.')
+                self.logger.warning('Main dark is not available, main '
+                                    'flat will not be dark subtracted.')
 
             else:
 
                 self.flat_reduced =\
                     self.flat_reduced.subtract(self.dark_main)
-                logging.info('Flat frame is flat subtracted.')
+                self.logger.info('Flat frame is flat subtracted.')
 
             # Bias subtract the flat field
             if self.bias_main is None:
 
-                logging.warning('Main bias is not available, main '
-                                'flat will not be bias subtracted.')
+                self.logger.warning('Main bias is not available, main '
+                                    'flat will not be bias subtracted.')
 
             else:
 
                 self.flat_redcued = self.flat_reduced.subtract(self.bias_main)
-                logging.info('Flat frame is bias subtracted.')
+                self.logger.info('Flat frame is bias subtracted.')
 
             self.flat_reduced = self.flat_reduced / np.nanmean(
                 self.flat_reduced)
 
             # Flattenning the light frame
             self.light_reduced = self.light_reduced / self.flat_reduced
-            logging.info('Light frame is flattened.')
+            self.logger.info('Light frame is flattened.')
 
         # Free memory
         flat_CCDData = None
@@ -1202,22 +1209,22 @@ class ImageReduction:
         if self.bias_list.size > 0:
             self._bias_subtract()
         else:
-            logging.warning('No bias frames. Bias subtraction is not '
-                            'performed.')
+            self.logger.warning('No bias frames. Bias subtraction is not '
+                                'performed.')
 
         # Dark subtraction
         if self.dark_list.size > 0:
             self._dark_subtract()
         else:
-            logging.warning('No dark frames. Dark subtraction is not '
-                            'performed.')
+            self.logger.warning('No dark frames. Dark subtraction is not '
+                                'performed.')
 
         # Field flattening
         if self.flat_list.size > 0:
             self._flatfield()
         else:
-            logging.warning('No flat frames. Field-flattening is not '
-                            'performed.')
+            self.logger.warning('No flat frames. Field-flattening is not '
+                                'performed.')
 
         # Construct a FITS object of the reduced frame
         self.light_reduced = np.array((self.light_reduced))
@@ -1260,18 +1267,18 @@ class ImageReduction:
             if self.bad_mask is None:
 
                 self.create_bad_mask()
-                logging.info('Created a bad_mask using the reduced data.')
+                self.logger.info('Created a bad_mask using the reduced data.')
 
         elif np.shape(bad_mask) == np.shape(self.light_reduced):
 
             self.bad_mask = bad_mask
-            logging.info('Bad_mask is set to the supplied mask.')
+            self.logger.info('Bad_mask is set to the supplied mask.')
 
         else:
 
             err_msg = 'The bad_mask provided has to be the ' +\
                 'same shape as the data.'
-            logging.error(err_msg)
+            self.logger.error(err_msg)
             raise RuntimeError(err_msg)
 
         bfixpix(self.light_reduced, self.bad_mask, n=n)
@@ -1285,14 +1292,14 @@ class ImageReduction:
 
         self.image_fits = fits.ImageHDU(self.light_reduced)
 
-        logging.info('Appending the header from the first light frame.')
+        self.logger.info('Appending the header from the first light frame.')
         self.image_fits.header = self.light_header[0]
 
         # Add the names of all the light frames to header
         if len(self.light_filename) > 0:
             for i in range(len(self.light_filename)):
-                logging.debug('Light frame: {} is added to the header.'
-                              ''.format(self.light_filename[i]))
+                self.logger.debug('Light frame: {} is added to the header.'
+                                  ''.format(self.light_filename[i]))
                 self.image_fits.header.set(keyword='light' + str(i + 1),
                                            value=self.light_filename[i],
                                            comment='Light frames')
@@ -1300,8 +1307,8 @@ class ImageReduction:
         # Add the names of all the biad frames to header
         if len(self.bias_filename) > 0:
             for i in range(len(self.bias_filename)):
-                logging.debug('Bias frame: {} is added to the header.'
-                              ''.format(self.bias_filename[i]))
+                self.logger.debug('Bias frame: {} is added to the header.'
+                                  ''.format(self.bias_filename[i]))
                 self.image_fits.header.set(keyword='bias' + str(i + 1),
                                            value=self.bias_filename[i],
                                            comment='Bias frames')
@@ -1309,8 +1316,8 @@ class ImageReduction:
         # Add the names of all the dark frames to header
         if len(self.dark_filename) > 0:
             for i in range(len(self.dark_filename)):
-                logging.debug('Dark frame: {} is added to the header.'
-                              ''.format(self.dark_filename[i]))
+                self.logger.debug('Dark frame: {} is added to the header.'
+                                  ''.format(self.dark_filename[i]))
                 self.image_fits.header.set(keyword='dark' + str(i + 1),
                                            value=self.dark_filename[i],
                                            comment='Dark frames')
@@ -1318,8 +1325,8 @@ class ImageReduction:
         # Add the names of all the flat frames to header
         if len(self.flat_filename) > 0:
             for i in range(len(self.flat_filename)):
-                logging.debug('Flat frame: {} is added to the header.'
-                              ''.format(self.flat_filename[i]))
+                self.logger.debug('Flat frame: {} is added to the header.'
+                                  ''.format(self.flat_filename[i]))
                 self.image_fits.header.set(keyword='flat' + str(i + 1),
                                            value=self.flat_filename[i],
                                            comment='Flat frames')
@@ -1484,8 +1491,8 @@ class ImageReduction:
         # Save file to disk
         self.image_fits.writeto(filename + '.' + extension,
                                 overwrite=overwrite)
-        logging.info('FITS file saved to {}.'.format(filename + '.' +
-                                                     extension))
+        self.logger.info('FITS file saved to {}.'.format(filename + '.' +
+                                                         extension))
 
     def save_masks(self,
                    filename='reduced_image_mask',
@@ -1521,8 +1528,8 @@ class ImageReduction:
 
         # Save file to disk
         output_HDU.writeto(filename + '.' + extension, overwrite=overwrite)
-        logging.info('FITS file saved to {}.'.format(filename + '.' +
-                                                     extension))
+        self.logger.info('FITS file saved to {}.'.format(filename + '.' +
+                                                         extension))
 
     def inspect(self,
                 log=True,

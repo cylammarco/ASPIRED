@@ -60,7 +60,7 @@ class WavelengthCalibration():
             Folder in which the file is save, set to default to save to the
             current path.
         log_file_name: None or str (Default: "default")
-            File name of the log, set to None to logging.warning to screen
+            File name of the log, set to None to self.logger.warning to screen
             only.
 
         '''
@@ -312,14 +312,14 @@ class WavelengthCalibration():
                 error_msg = 'arc_spec is not provided. Either provide when ' +\
                     'executing this function or provide a spectrum1D that ' +\
                     'contains an arc_spec.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         else:
 
             if getattr(self.spectrum1D, 'arc_spec') is not None:
 
-                logging.warning('arc_spec is replaced with the new one.')
+                self.logger.warning('arc_spec is replaced with the new one.')
 
             setattr(self.spectrum1D, 'arc_spec', arc_spec)
 
@@ -434,13 +434,14 @@ class WavelengthCalibration():
                 error_msg = 'arc_spec is not provided. Either provide when ' +\
                     'executing this function or provide a spectrum1D that ' +\
                     'contains a peaks_refined.'
-                logging.warning(error_msg)
+                self.logger.warning(error_msg)
 
         else:
 
             if getattr(self.spectrum1D, 'peaks_refined') is not None:
 
-                logging.warning('peaks_refined is replaced with the new one.')
+                self.logger.warning(
+                    'peaks_refined is replaced with the new one.')
 
             self.spectrum1D.add_peaks_refined(peaks)
 
@@ -455,13 +456,13 @@ class WavelengthCalibration():
                 error_msg = 'arc_spec is not provided. Either provide when ' +\
                     'executing this function or provide a spectrum1D that ' +\
                     'contains an arc_spec.'
-                logging.warning(error_msg)
+                self.logger.warning(error_msg)
 
         else:
 
             if getattr(self.spectrum1D, 'arc_spec') is not None:
 
-                logging.warning('arc_spec is replaced with the new one.')
+                self.logger.warning('arc_spec is replaced with the new one.')
 
             self.spectrum1D.add_arc_spec(arc_spec)
 

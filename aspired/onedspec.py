@@ -219,7 +219,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a valid FluxCalibration object'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
     def add_wavelengthcalibration(self,
@@ -251,7 +251,7 @@ class OneDSpec():
 
             err_msg = 'Please provide a WavelengthCalibration object or ' +\
                 'a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -270,7 +270,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -298,7 +298,7 @@ class OneDSpec():
 
                     error_msg = 'wavecal must be the same length of shape ' +\
                         'as spec_id.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
@@ -311,7 +311,7 @@ class OneDSpec():
 
                         err_msg = 'Please provide a valid ' +\
                             'WavelengthCalibration object.'
-                        logging.critical(err_msg)
+                        self.logger.critical(err_msg)
                         raise TypeError(err_msg)
 
             if s == 'standard':
@@ -324,7 +324,7 @@ class OneDSpec():
 
                     err_msg = 'Please provide a valid ' +\
                         'WavelengthCalibration object'
-                    logging.critical(err_msg)
+                    self.logger.critical(err_msg)
                     raise TypeError(err_msg)
 
     def add_wavelength(self, wave, spec_id=None, stype='science+standard'):
@@ -361,7 +361,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -380,7 +380,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -402,7 +402,7 @@ class OneDSpec():
 
                     error_msg = 'wave must be the same length of shape ' +\
                         'as spec_id.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
@@ -417,7 +417,7 @@ class OneDSpec():
 
                         err_msg = 'The wavelength provided has a different ' +\
                             'size to that of the extracted science spectrum.'
-                        logging.critical(err_msg)
+                        self.logger.critical(err_msg)
                         raise RuntimeError(err_msg)
 
                 self.science_wavelength_calibrated = True
@@ -426,7 +426,7 @@ class OneDSpec():
 
                 err_msg = 'science data is not available, wavelength ' +\
                     'cannot be added.'
-                logging.critical(err_msg)
+                self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
         if 'standard' in stype_split:
@@ -441,7 +441,7 @@ class OneDSpec():
 
                     err_msg = 'The wavelength provided is of a different ' +\
                         'size to that of the extracted standard spectrum.'
-                    logging.critical(err_msg)
+                    self.logger.critical(err_msg)
                     raise RuntimeError(err_msg)
 
                 self.standard_wavelength_calibrated = True
@@ -450,7 +450,7 @@ class OneDSpec():
 
                 err_msg = 'standard data is not available, wavelength ' +\
                     'cannot be added.'
-                logging.critical(err_msg)
+                self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
     def add_wavelength_resampled(self,
@@ -490,7 +490,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -509,7 +509,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -537,7 +537,7 @@ class OneDSpec():
 
                     error_msg = 'wave must be the same length of shape ' +\
                         'as spec_id.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
@@ -552,7 +552,7 @@ class OneDSpec():
 
                         err_msg = 'The wavelength provided has a different ' +\
                             'size to that of the extracted science spectrum.'
-                        logging.critical(err_msg)
+                        self.logger.critical(err_msg)
                         raise RuntimeError(err_msg)
 
                 self.science_wavelength_resampled = True
@@ -561,7 +561,7 @@ class OneDSpec():
 
                 err_msg = 'science data is not available, ' +\
                     'wavelength_resampled cannot be added.'
-                logging.critical(err_msg)
+                self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
         if 'standard' in stype_split:
@@ -578,7 +578,7 @@ class OneDSpec():
 
                     err_msg = 'The wavelength provided is of a different ' +\
                         'size to that of the extracted standard spectrum.'
-                    logging.critical(err_msg)
+                    self.logger.critical(err_msg)
                     raise RuntimeError(err_msg)
 
                 self.standard_wavelength_resampled_calibrated = True
@@ -587,7 +587,7 @@ class OneDSpec():
 
                 err_msg = 'standard data is not available, ' +\
                     'wavelength_resampled cannot be added.'
-                logging.critical(err_msg)
+                self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
     def add_spec(self,
@@ -624,7 +624,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         if count_err is not None:
@@ -639,7 +639,7 @@ class OneDSpec():
             else:
 
                 err_msg = 'Please provide a numpy array or a list of them.'
-                logging.critical(err_msg)
+                self.logger.critical(err_msg)
                 raise TypeError(err_msg)
 
         else:
@@ -659,7 +659,7 @@ class OneDSpec():
             else:
 
                 err_msg = 'Please provide a numpy array or a list of them.'
-                logging.critical(err_msg)
+                self.logger.critical(err_msg)
                 raise TypeError(err_msg)
 
         else:
@@ -685,7 +685,7 @@ class OneDSpec():
 
                             self.add_science_spectrum1D(i)
 
-                            logging.warning(
+                            self.logger.warning(
                                 'The given spec_id, {}, does not exist. A new '
                                 'spectrum1D is created. Please check you are '
                                 'providing the correct spec_id.'.format(
@@ -714,7 +714,7 @@ class OneDSpec():
 
                 error_msg = 'count must be the same length of shape ' +\
                     'as spec_id, or of size 1.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             # Check the sizes of the count_sky and spec_id and convert
@@ -741,7 +741,7 @@ class OneDSpec():
 
                 error_msg = 'count_sky must be the same length of shape ' +\
                     'as spec_id, or of size 1.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             # Check the sizes of the count_err and spec_id and convert
@@ -768,7 +768,7 @@ class OneDSpec():
 
                 error_msg = 'count_err must be the same length of shape ' +\
                     'as spec_id, or of size 1.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             for i in spec_id:
@@ -811,7 +811,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -836,7 +836,7 @@ class OneDSpec():
 
                                 self.add_science_spectrum1D(i)
 
-                                logging.warning(
+                                self.logger.warning(
                                     'The given spec_id, {}, does not '
                                     'exist. A new spectrum1D is created. '
                                     'Please check you are providing the '
@@ -875,7 +875,7 @@ class OneDSpec():
 
                     error_msg = 'arc_spec must be the same length of shape ' +\
                         'as spec_id.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
@@ -919,7 +919,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -941,7 +941,7 @@ class OneDSpec():
 
                             self.add_science_spectrum1D(i)
 
-                            logging.warning(
+                            self.logger.warning(
                                 'The given spec_id, {}, does not '
                                 'exist. A new spectrum1D is created. '
                                 'Please check you are providing the '
@@ -966,7 +966,7 @@ class OneDSpec():
 
                 error_msg = 'peaks must be the same length of shape ' +\
                     'as spec_id.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             for i in spec_id:
@@ -1019,7 +1019,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         if type(trace_sigma) == np.ndarray:
@@ -1033,7 +1033,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -1055,7 +1055,7 @@ class OneDSpec():
 
                             self.add_science_spectrum1D(i)
 
-                            logging.warning(
+                            self.logger.warning(
                                 'The given spec_id, {}, does not '
                                 'exist. A new spectrum1D is created. '
                                 'Please check you are providing the '
@@ -1080,7 +1080,7 @@ class OneDSpec():
 
                 error_msg = 'trace must be the same length of shape ' +\
                     'as spec_id.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             # Check the sizes of the wave and spec_id and convert wave
@@ -1103,7 +1103,7 @@ class OneDSpec():
 
                 error_msg = 'wave must be the same length of shape ' +\
                     'as spec_id.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
             for i in spec_id:
@@ -1173,7 +1173,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         if type(fit_type) == str:
@@ -1191,7 +1191,7 @@ class OneDSpec():
         else:
 
             err_msg = 'Please provide a numpy array or a list of them.'
-            logging.critical(err_msg)
+            self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
         stype_split = stype.split('+')
@@ -1210,7 +1210,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -1238,7 +1238,7 @@ class OneDSpec():
 
                     error_msg = 'fit_coeff must be the same length of ' +\
                         'shape as spec_id.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise RuntimeError(error_msg)
 
                 # Check the sizes of the wave and spec_id and convert wave
@@ -1261,7 +1261,7 @@ class OneDSpec():
 
                     error_msg = 'wave must be the same length of shape ' +\
                         'as spec_id.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
@@ -1317,7 +1317,7 @@ class OneDSpec():
                         list(twodspec.spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -1436,7 +1436,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -1466,7 +1466,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc spectrum/a are not imported.')
+                self.logger.warning('Science arc spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -1492,7 +1492,8 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc spectrum/a are not imported.')
+                self.logger.warning(
+                    'Standard arc spectrum/a are not imported.')
 
     def initialise_calibrator(self,
                               spec_id=None,
@@ -1538,7 +1539,7 @@ class OneDSpec():
 
                                 self.add_science_spectrum1D(i)
 
-                                logging.warning(
+                                self.logger.warning(
                                     'The given spec_id, {}, does not '
                                     'exist. A new spectrum1D is created. '
                                     'Please check you are providing the '
@@ -1565,7 +1566,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                self.logger.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1581,7 +1582,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc lines are not available.')
+                self.logger.warning('Standard arc lines are not available.')
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -1629,7 +1630,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -1648,7 +1649,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                self.logger.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1663,7 +1664,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc lines are not available.')
+                self.logger.warning('Standard arc lines are not available.')
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -1719,7 +1720,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -1740,7 +1741,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                self.logger.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1757,7 +1758,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc lines are not available.')
+                self.logger.warning('Standard arc lines are not available.')
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -1820,7 +1821,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -1841,7 +1842,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                self.logger.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1858,7 +1859,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc lines are not available.')
+                self.logger.warning('Standard arc lines are not available.')
 
     def set_known_pairs(self,
                         pix=None,
@@ -1896,7 +1897,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -1910,7 +1911,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                self.logger.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -1920,7 +1921,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc lines are not available.')
+                self.logger.warning('Standard arc lines are not available.')
 
     def add_user_atlas(self,
                        elements,
@@ -1977,17 +1978,19 @@ class OneDSpec():
 
         if pressure is None:
             pressure = 101325.0
-            logging.warning('Pressure is not provided, set to 1 unit of '
-                            'standard atmosphere.')
+            self.logger.warning('Pressure is not provided, set to 1 unit of '
+                                'standard atmosphere.')
 
         if temperature is None:
             temperature = 273.15
-            logging.warning('Temperature is not provided, set to 0 degrees '
-                            'Celsius.')
+            self.logger.warning(
+                'Temperature is not provided, set to 0 degrees '
+                'Celsius.')
 
         if relative_humidity is None:
             relative_humidity = 0.
-            logging.warning('Relative humidity is not provided, set to 0%.')
+            self.logger.warning(
+                'Relative humidity is not provided, set to 0%.')
 
         stype_split = stype.split('+')
 
@@ -2005,7 +2008,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2030,7 +2033,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science arc lines are not available.')
+                self.logger.warning('Science arc lines are not available.')
 
         if 'standard' in stype_split:
 
@@ -2051,7 +2054,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard arc lines are not available.')
+                self.logger.warning('Standard arc lines are not available.')
 
     def add_atlas(self,
                   elements,
@@ -2119,7 +2122,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -2194,7 +2197,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2209,7 +2212,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science atlas is not available.')
+                self.logger.warning('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
@@ -2220,7 +2223,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard atlas is not available.')
+                self.logger.warning('Standard atlas is not available.')
 
     def clear_atlas(self, spec_id=None, stype='science+standard'):
         '''
@@ -2251,7 +2254,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2267,7 +2270,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science atlas is not available.')
+                self.logger.warning('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
@@ -2279,7 +2282,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard atlas is not available.')
+                self.logger.warning('Standard atlas is not available.')
 
     def list_atlas(self, spec_id=None, stype='science+standard'):
         '''
@@ -2310,7 +2313,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2324,7 +2327,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science atlas is not available.')
+                self.logger.warning('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
@@ -2334,7 +2337,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard atlas is not available.')
+                self.logger.warning('Standard atlas is not available.')
 
     def do_hough_transform(self, spec_id=None, stype='science+standard'):
         '''
@@ -2363,7 +2366,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2379,7 +2382,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science atlas is not available.')
+                self.logger.warning('Science atlas is not available.')
 
         if 'standard' in stype_split:
 
@@ -2391,7 +2394,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard atlas is not available.')
+                self.logger.warning('Standard atlas is not available.')
 
     def fit(self,
             spec_id=None,
@@ -2456,7 +2459,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2481,7 +2484,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science hough pairs are not available.')
+                self.logger.warning('Science hough pairs are not available.')
 
         if 'standard' in stype_split:
 
@@ -2502,7 +2505,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard spectrum/a are not imported.')
+                self.logger.warning('Standard spectrum/a are not imported.')
 
     def refine_fit(self,
                    spec_id=None,
@@ -2570,7 +2573,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
                 else:
 
@@ -2599,7 +2602,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science spectrum/a are not imported.')
+                self.logger.warning('Science spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -2624,7 +2627,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard spectrum/a are not imported.')
+                self.logger.warning('Standard spectrum/a are not imported.')
 
     def apply_wavelength_calibration(self,
                                      spec_id=None,
@@ -2669,7 +2672,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -2735,7 +2738,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Science spectrum/a are not imported.')
+                self.logger.warning('Science spectrum/a are not imported.')
 
         if 'standard' in stype_split:
 
@@ -2795,7 +2798,7 @@ class OneDSpec():
 
             else:
 
-                logging.warning('Standard spectrum is not imported.')
+                self.logger.warning('Standard spectrum is not imported.')
 
             self.standard_wavelength_calibrated = True
 
@@ -2820,7 +2823,8 @@ class OneDSpec():
         if (extinction_func is not None) and (callable(extinction_func)):
 
             self.extinction_func = extinction_func
-            logging.info('Manual extinction correction function is loaded.')
+            self.logger.info(
+                'Manual extinction correction function is loaded.')
 
         else:
 
@@ -2831,8 +2835,9 @@ class OneDSpec():
                                             extinction_table[:, 1],
                                             kind='cubic',
                                             fill_value='extrapolate')
-            logging.info('{} extinction correction function is loaded.'.format(
-                location))
+            self.logger.info(
+                '{} extinction correction function is loaded.'.format(
+                    location))
 
         self.atmospheric_extinction_correction_available = True
 
@@ -2985,7 +2990,7 @@ class OneDSpec():
 
             error_msg = "Standard star is not wavelength calibrated, " +\
                 "sensitivity curve cannot be computed."
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise RuntimeError(error_msg)
 
     def save_sensitivity_func(self, filename='sensitivity_func.npy'):
@@ -3094,7 +3099,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -3162,7 +3167,7 @@ class OneDSpec():
                     list(self.science_spectrum_list.keys())):
 
                 error_msg = 'The given spec_id does not exist.'
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         else:
@@ -3173,7 +3178,7 @@ class OneDSpec():
 
         if not self.atmospheric_extinction_correction_available:
 
-            logging.error(
+            self.logger.error(
                 "Atmospheric extinction correction is not configured, "
                 "sensitivity curve will be generated without extinction "
                 "correction.")
@@ -3189,7 +3194,7 @@ class OneDSpec():
                     if np.isfinite(standard_airmass):
 
                         standard_am = standard_airmass
-                        logging.info(
+                        self.logger.info(
                             'Airmass is set to be {}.'.format(standard_am))
 
                     if isinstance(standard_airmass, str):
@@ -3201,13 +3206,13 @@ class OneDSpec():
 
                         except Exception as e:
 
-                            logging.warning(str(e))
+                            self.logger.warning(str(e))
 
                             standard_am = 1.0
-                            logging.warning(
+                            self.logger.warning(
                                 'Keyword for airmass: {} cannot be found '
                                 'in header.'.format(standard_airmass))
-                            logging.warning('Airmass is set to be 1.0')
+                            self.logger.warning('Airmass is set to be 1.0')
 
                 else:
 
@@ -3217,13 +3222,13 @@ class OneDSpec():
 
                     except Exception as e:
 
-                        logging.warning(str(e))
+                        self.logger.warning(str(e))
 
                         standard_am = 1.0
-                        logging.warning(
+                        self.logger.warning(
                             'Keyword for airmass: AIRMASS cannot be found '
                             'in header.')
-                        logging.warning('Airmass is set to be 1.0')
+                        self.logger.warning('Airmass is set to be 1.0')
 
                 if spec_id is not None:
 
@@ -3231,7 +3236,7 @@ class OneDSpec():
                             list(self.science_spectrum_list.keys())):
 
                         error_msg = 'The given spec_id does not exist.'
-                        logging.critical(error_msg)
+                        self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
                 else:
@@ -3263,7 +3268,7 @@ class OneDSpec():
 
                             except Exception as e:
 
-                                logging.warning(str(e))
+                                self.logger.warning(str(e))
                                 science_am = 1.0
 
                     else:
@@ -3277,15 +3282,17 @@ class OneDSpec():
 
                             except Exception as e:
 
-                                logging.warning(str(e))
+                                self.logger.warning(str(e))
                                 science_am = 1.0
 
                     if science_am is None:
 
                         science_am = 1.0
 
-                    logging.info('Standard airmass is {}.'.format(standard_am))
-                    logging.info('Science airmass is {}.'.format(science_am))
+                    self.logger.info(
+                        'Standard airmass is {}.'.format(standard_am))
+                    self.logger.info(
+                        'Science airmass is {}.'.format(science_am))
 
                     # Get the atmospheric extinction correction factor
                     science_flux_extinction_factor = 10.**(
@@ -3308,14 +3315,14 @@ class OneDSpec():
                         standard_flux_resampled_extinction_factor)
 
                 self.atmospheric_extinction_corrected = True
-                logging.info('Atmospheric extinction is corrected.')
+                self.logger.info('Atmospheric extinction is corrected.')
 
             else:
 
-                logging.error('Flux calibration was not performed, the '
-                              'spectrum cannot be extinction corrected. '
-                              'Process continues with the uncorrected '
-                              'spectrum.')
+                self.logger.error('Flux calibration was not performed, the '
+                                  'spectrum cannot be extinction corrected. '
+                                  'Process continues with the uncorrected '
+                                  'spectrum.')
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
@@ -3390,7 +3397,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -3788,7 +3795,7 @@ class OneDSpec():
 
             error_msg = 'Unknown stype, please choose from (1) science; ' +\
                 'and/or (2) standard. use + as delimiter.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
     def create_fits(self,
@@ -3858,14 +3865,14 @@ class OneDSpec():
             ]:
 
                 error_msg = '{} is not a valid output.'.format(i)
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
 
             error_msg = 'Unknown stype, please choose from (1) science; ' +\
                 'and/or (2) standard. use + as delimiter.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
         if 'science' in stype_split:
@@ -3880,7 +3887,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -3942,7 +3949,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -3999,7 +4006,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4056,7 +4063,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4113,7 +4120,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4170,7 +4177,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4227,7 +4234,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4284,7 +4291,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4341,7 +4348,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4398,7 +4405,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4455,7 +4462,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4512,7 +4519,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4604,14 +4611,14 @@ class OneDSpec():
             ]:
 
                 error_msg = '{} is not a valid output.'.format(i)
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
 
             error_msg = 'Unknown stype, please choose from (1) science; ' +\
                 'and/or (2) standard. use + as delimiter.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
         if 'science' in stype_split:
@@ -4626,7 +4633,7 @@ class OneDSpec():
                         list(self.science_spectrum_list.keys())):
 
                     error_msg = 'The given spec_id does not exist.'
-                    logging.critical(error_msg)
+                    self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
             else:
@@ -4726,14 +4733,14 @@ class OneDSpec():
             ]:
 
                 error_msg = '{} is not a valid output.'.format(i)
-                logging.critical(error_msg)
+                self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         if ('science' not in stype_split) and ('standard' not in stype_split):
 
             error_msg = 'Unknown stype, please choose from (1) science; ' +\
                 'and/or (2) standard. use + as delimiter.'
-            logging.critical(error_msg)
+            self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
         if 'science' in stype_split:
