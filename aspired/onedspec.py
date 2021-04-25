@@ -1350,12 +1350,11 @@ class OneDSpec():
 
             # By reference
             self.standard_wavecal = WavelengthCalibration(
-                    verbose=self.verbose,
-                    logger_name=self.logger_name,
-                    log_level=self.log_level,
-                    log_file_folder=self.log_file_folder,
-                    log_file_name=self.log_file_name
-            )
+                verbose=self.verbose,
+                logger_name=self.logger_name,
+                log_level=self.log_level,
+                log_file_folder=self.log_file_folder,
+                log_file_name=self.log_file_name)
             self.standard_wavecal.from_spectrum1D(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum1D(twodspec.spectrum_list[0])
             self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
@@ -1367,8 +1366,8 @@ class OneDSpec():
     def find_arc_lines(self,
                        spec_id=None,
                        background=None,
-                       percentile=25.,
-                       prominence=10.,
+                       percentile=2.,
+                       prominence=5.,
                        distance=5.,
                        refine=True,
                        refine_window_width=5,
@@ -1388,12 +1387,12 @@ class OneDSpec():
             The ID corresponding to the spectrum1D object
         background: int or None (Default: None)
             User-supplied estimated background level
-        percentile: float (Default: 25.)
+        percentile: float (Default: 2.)
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
             is None. [Count]
-        prominence: float (Default: 10.)
-            The minimum prominence to be considered as a peak
+        prominence: float (Default: 5.)
+            The minimum prominence to be considered as a peak (normalised)
         distance: float (Default: 5.)
             Minimum separation between peaks
         refine: boolean (Default: True)

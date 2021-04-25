@@ -235,8 +235,8 @@ class WavelengthCalibration():
     def find_arc_lines(self,
                        arc_spec=None,
                        background=None,
-                       percentile=10.,
-                       prominence=10.,
+                       percentile=2.,
+                       prominence=5.,
                        distance=5.,
                        refine=True,
                        refine_window_width=5,
@@ -264,13 +264,13 @@ class WavelengthCalibration():
             If not provided, it will look for the arc_spec in the spectrum1D.
             Otherwise, the input arc_spec will be used.
         background: int
-            User-supplied estimated background level.
+            User-supplied estimated background level (percentage of max).
         percentile: float
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
             is None. [Count]
         prominence: float
-            The minimum prominence to be considered as a peak.
+            The minimum prominence to be considered as a peak (% of max).
         distance: float
             Minimum separation between peaks.
         refine: boolean
@@ -323,20 +323,24 @@ class WavelengthCalibration():
 
             setattr(self.spectrum1D, 'arc_spec', arc_spec)
 
+        arc_spec = getattr(self.spectrum1D, 'arc_spec')
+        arc_spec -= np.nanmin(arc_spec)
+        arc_spec /= np.nanmax(arc_spec)
+
         if background is None:
 
-            background = np.nanpercentile(self.spectrum1D.arc_spec, percentile)
+            background = np.nanpercentile(arc_spec, percentile)
 
-        peaks = signal.find_peaks(getattr(self.spectrum1D, 'arc_spec'),
+        peaks = signal.find_peaks(arc_spec,
                                   distance=distance,
                                   height=background,
-                                  prominence=prominence)[0]
+                                  prominence=prominence / 100.)[0]
         self.spectrum1D.add_peaks(peaks)
 
         # Fine tuning
         if refine:
 
-            peaks = refine_peaks(getattr(self.spectrum1D, 'arc_spec'),
+            peaks = refine_peaks(arc_spec,
                                  getattr(self.spectrum1D, 'peaks'),
                                  window_width=int(refine_window_width))
             self.spectrum1D.add_peaks(peaks)
@@ -357,26 +361,24 @@ class WavelengthCalibration():
                 layout=dict(autosize=False, height=height, width=width))
 
             fig.add_trace(
-                go.Scatter(x=np.arange(len(self.spectrum1D.arc_spec)),
-                           y=self.spectrum1D.arc_spec,
+                go.Scatter(x=np.arange(len(arc_spec)),
+                           y=arc_spec,
                            mode='lines',
                            line=dict(color='royalblue', width=1)))
             fig.add_trace(
                 go.Scatter(x=peaks,
-                           y=np.array(self.spectrum1D.arc_spec)[np.rint(
-                               peaks).astype('int')],
+                           y=np.array(arc_spec)[np.rint(peaks).astype('int')],
                            mode='markers',
                            line=dict(color='firebrick', width=1)))
 
-            fig.update_layout(
-                xaxis=dict(zeroline=False,
-                           range=[0, len(self.spectrum1D.arc_spec)],
-                           title='Spectral Direction / pixel'),
-                yaxis=dict(zeroline=False,
-                           range=[0, max(self.spectrum1D.arc_spec)],
-                           title='e- / s'),
-                hovermode='closest',
-                showlegend=False)
+            fig.update_layout(xaxis=dict(zeroline=False,
+                                         range=[0, len(arc_spec)],
+                                         title='Spectral Direction / pixel'),
+                              yaxis=dict(zeroline=False,
+                                         range=[0, max(arc_spec)],
+                                         title='e- / s'),
+                              hovermode='closest',
+                              showlegend=False)
 
             if save_iframe:
 
@@ -877,14 +879,13 @@ class WavelengthCalibration():
         self.spectrum1D.add_fit_output_rascal(fit_coeff, rms, residual,
                                               peak_utilisation)
 
-        if display:
-
-            self.spectrum1D.calibrator.plot_fit(fit_coeff=fit_coeff,
-                                                plot_atlas=True,
-                                                log_spectrum=False,
-                                                tolerance=1.0,
-                                                savefig=savefig,
-                                                filename=filename)
+        self.spectrum1D.calibrator.plot_fit(fit_coeff=fit_coeff,
+                                            plot_atlas=True,
+                                            log_spectrum=False,
+                                            tolerance=1.0,
+                                            display=display,
+                                            savefig=savefig,
+                                            filename=filename)
 
         if return_values:
 

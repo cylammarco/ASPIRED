@@ -157,6 +157,9 @@ class TwoDSpec:
         ]
         self.airmass_keyword = ['AIRMASS', 'AMASS', 'AIRM', 'AIR']
 
+        self.img_rectified = None
+        self.arc_rectified = None
+
         self.add_data(data, header)
         self.spectrum_list = {}
         self.set_properties(**kwargs)
@@ -736,8 +739,9 @@ class TwoDSpec:
             else:
 
                 self.seeing = 1.
-                self.logger.warning('Header is not provided. Seeing value is ' +
-                                    'not provided. It is set to 1.')
+                self.logger.warning(
+                    'Header is not provided. Seeing value is ' +
+                    'not provided. It is set to 1.')
 
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
@@ -1887,9 +1891,9 @@ class TwoDSpec:
 
     def compute_rectification(self,
                               upsample_factor=10,
-                              bin_size=6,
-                              n_bin=7,
-                              lowess_frac=0.04,
+                              bin_size=5,
+                              n_bin=9,
+                              lowess_frac=0.05,
                               spline_order=3,
                               order=2,
                               coeff=None,
@@ -1919,12 +1923,12 @@ class TwoDSpec:
             The upsampling rate for the correlation (10 times means
             precise to 1/10 of a pixel). The upsampling uses cubic
             spline that is adopted in the scipy.ndimage.zoom() function.
-        bin_size: int (Default: 6)
+        bin_size: int (Default: 5)
             Number of rows in a slice.
-        n_bin: int (Default: 7)
+        n_bin: int (Default: 9)
             Number of slices parallel to the trace to be correlated to to
             compute the distortion in the dispersion direction. (i.e.
-            there are 7 // 2 = 3 slices below and above the trace.)
+            there are 9 // 2 = 3 slices below and above the trace.)
         lowess_frac: float (Default: 0.04)
             The fraction of data used when estimating each y-value
         spline_order: int (Default: 3)
@@ -1960,14 +1964,21 @@ class TwoDSpec:
         '''
 
         if self.arc is None:
-            self.logger.error(
+            self.logger.warning(
                 'Arc frame is not available, only the data image '
                 'will be rectified.')
+
+        smoothed_image = signal.medfilt2d(self.img, kernel_size=5)
 
         spec = self.spectrum_list[0]
         spec_size_tmp = spec.len_trace * upsample_factor
 
-        if coeff is None:
+        if coeff is not None:
+
+            n_down = None
+            n_up = None
+
+        else:
 
             if isinstance(n_bin, (int, float)):
 
@@ -1998,7 +2009,7 @@ class TwoDSpec:
             # s for "flattened signal of the slice"
             s = [
                 np.sum([
-                    self.img[j - bin_half_size:j + bin_half_size, i]
+                    smoothed_image[j - bin_half_size:j + bin_half_size, i]
                     for i, j in zip(x, y.astype('int'))
                 ],
                        axis=1)
@@ -2008,24 +2019,24 @@ class TwoDSpec:
 
             # Loop through the spectra below the trace
             for k in range(n_down):
-                start = bin_half_size + (k + 1) * bin_size
+                start = int(bin_half_size + (k + 1) * bin_size * 0.5)
                 end = start + bin_size
                 # Note the start and end are counting up, while the
                 # indices are increasingly negative.
                 s_down.append(
                     np.sum([
-                        self.img[j - end:j - start, i]
+                        smoothed_image[j - end:j - start, i]
                         for i, j in zip(x, y.astype('int'))
                     ],
                            axis=1))
 
             # Loop through the spectra above the trace
             for k in range(n_up):
-                start = bin_half_size + (k + 1) * bin_size
+                start = int(bin_half_size + (k + 1) * bin_size * 0.5)
                 end = start + bin_size
                 s_up.append(
                     np.sum([
-                        self.img[j + start:j + end, i]
+                        smoothed_image[j + start:j + end, i]
                         for i, j in zip(x, y.astype('int'))
                     ],
                            axis=1))
@@ -2049,20 +2060,24 @@ class TwoDSpec:
 
             y_trace = (np.arange(-n_down, n_up + 1)) * bin_size
 
-            # correlate to find the shifts
+            # correlate with the neighbouring slice to compute the shifts
             shift = np.zeros_like(y_trace)
-            for i, scsu in enumerate(scs_upsampled):
+            for i in range(1, len(scs_upsampled)):
                 # Note: indice n_down is s
-                shift[i] = np.argmax(
-                    signal.correlate(scs_upsampled[n_down],
-                                     scsu)) - spec_size_tmp + 1
+                shift[i:] += np.argmax(
+                    signal.correlate(scs_upsampled[i - 1],
+                                     scs_upsampled[i])) - spec_size_tmp + 1
+
+            shift -= shift[n_down]
 
             # fit the distortion in the spectral direction as a function
             # of distance from trace. The coeff is for the original
             # resolution
-            coeff = np.polynomial.polynomial.polyfit(y_trace,
-                                                     shift / upsample_factor,
-                                                     order)
+            coeff = np.polynomial.polynomial.polyfit(
+                lowess(shift / upsample_factor,
+                       y_trace,
+                       frac=lowess_frac,
+                       return_sorted=False), shift / upsample_factor, order)
 
         # Upsample and shift in the dispersion direction
         if self.arc is not None:
@@ -2071,6 +2086,7 @@ class TwoDSpec:
                                    zoom=upsample_factor,
                                    order=spline_order)
 
+        # This is to create the rectified image, so drop the smoothed image
         img_tmp = ndimage.zoom(self.img,
                                zoom=upsample_factor,
                                order=spline_order)
