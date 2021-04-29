@@ -1,0 +1,15 @@
+version: 2
+registries:
+  python-index-pypi-org-simple:
+    type: python-index
+    url: https://pypi.org/simple/
+
+updates:
+- package-ecosystem: pip
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "11:00"
+  open-pull-requests-limit: 10
+  registries:
+  - python-index-pypi-org-simple
