@@ -90,11 +90,11 @@ def test_logger():
     debug_error_length = file_len('test/test_output/twodspec_error.log')
     debug_critical_length = file_len('test/test_output/twodspec_critical.log')
 
-    assert debug_debug_length == 10, 'Expecting 10 lines in the log file, ' +\
+    assert debug_debug_length == 5, 'Expecting 10 lines in the log file, ' +\
         '{} is logged.'.format(debug_debug_length)
-    assert debug_info_length == 9, 'Expecting 9 lines in the log file, ' +\
+    assert debug_info_length == 4, 'Expecting 9 lines in the log file, ' +\
         '{} is logged.'.format(debug_info_length)
-    assert debug_warning_length == 8, 'Expecting 8 lines in the log file, ' +\
+    assert debug_warning_length == 3, 'Expecting 8 lines in the log file, ' +\
         '{} is logged.'.format(debug_warning_length)
     assert debug_error_length == 2, 'Expecting 2 lines in the log file, ' +\
         '{} is logged.'.format(debug_error_length)
@@ -208,14 +208,19 @@ def test_set_all_properties():
     assert (twodspec.img != img.image_fits.data).all()
 
     # Changing the saxis, and everything else should still be the same
-    twodspec.set_properties(saxis=0, variance=None)
+    twodspec.set_properties(saxis=0,
+                            gain=None,
+                            seeing=None,
+                            exptime=None,
+                            airmass=None,
+                            variance=None)
     assert twodspec.saxis == 0
     assert twodspec.waxis == 1
     assert twodspec.spatial_mask == (1, )
     assert twodspec.spec_mask == (1, )
     assert twodspec.flip
     assert twodspec.cosmicray
-    assert twodspec.readnoise == 0.
+    assert twodspec.readnoise == 10.
     # The gain is now read from the header, so it's 2.45
     assert twodspec.gain == 2.45
     # The seeing is now read from the header, so it's 0.712134
@@ -469,8 +474,8 @@ def test_gauss_vs_lowess_ap_extract():
 
 missing_lower_half_spectrum_image_fits = fits.open(
     'test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
-missing_lower_half_spectrum_image_fits.data = missing_lower_half_spectrum_image_fits.data[
-    126:200]
+missing_lower_half_spectrum_image_fits.data =\
+    missing_lower_half_spectrum_image_fits.data[126:200]
 
 
 # ap_extract at detector edge
@@ -491,8 +496,8 @@ def test_lowess_ap_extract_lower_detector_edge():
 
 missing_upper_half_spectrum_image_fits = fits.open(
     'test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
-missing_upper_half_spectrum_image_fits.data = missing_upper_half_spectrum_image_fits.data[
-    100:131]
+missing_upper_half_spectrum_image_fits.data =\
+    missing_upper_half_spectrum_image_fits.data[100:131]
 
 
 # ap_extract at detector edge

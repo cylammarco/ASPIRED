@@ -1158,7 +1158,7 @@ class OneDSpec():
 
                 pass
 
-            elif isinstance(fit_coeff[0], (int, float, complex)):
+            elif isinstance(fit_coeff[0], (int, float)):
 
                 fit_coeff = [fit_coeff]
 
@@ -1368,6 +1368,7 @@ class OneDSpec():
                        background=None,
                        percentile=2.,
                        prominence=5.,
+                       top_n_peaks=None,
                        distance=5.,
                        refine=True,
                        refine_window_width=5,
@@ -1460,6 +1461,7 @@ class OneDSpec():
                         background=background,
                         percentile=percentile,
                         prominence=prominence,
+                        top_n_peaks=top_n_peaks,
                         distance=distance,
                         refine=refine,
                         refine_window_width=refine_window_width,
@@ -1486,6 +1488,7 @@ class OneDSpec():
                     background=background,
                     percentile=percentile,
                     prominence=prominence,
+                    top_n_peaks=top_n_peaks,
                     distance=distance,
                     refine=refine,
                     refine_window_width=refine_window_width,
@@ -2951,7 +2954,9 @@ class OneDSpec():
                             mask_fit_size=1,
                             extinction_correction=False,
                             airmass=None,
-                            return_function=False):
+                            return_function=False,
+                            use_lowess=True,
+                            **kwargs):
         '''
         Parameters
         ----------
@@ -2993,7 +2998,9 @@ class OneDSpec():
                                              mask_range=mask_range,
                                              mask_fit_order=mask_fit_order,
                                              mask_fit_size=mask_fit_size,
-                                             return_function=return_function)
+                                             return_function=return_function,
+                                             use_lowess=use_lowess,
+                                             **kwargs)
             self.sensitivity_curve_available = True
 
         else:
@@ -3201,7 +3208,7 @@ class OneDSpec():
 
                 if standard_airmass is not None:
 
-                    if np.isfinite(standard_airmass):
+                    if isinstance(standard_airmass, (int, float)):
 
                         standard_am = standard_airmass
                         self.logger.info(
@@ -3265,7 +3272,7 @@ class OneDSpec():
 
                     if science_airmass is not None:
 
-                        if np.isfinite(science_airmass):
+                        if isinstance(science_airmass, (int, float)):
 
                             science_am = science_airmass
 

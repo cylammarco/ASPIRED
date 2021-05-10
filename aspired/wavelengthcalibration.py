@@ -237,6 +237,7 @@ class WavelengthCalibration():
                        background=None,
                        percentile=2.,
                        prominence=5.,
+                       top_n_peaks=None,
                        distance=5.,
                        refine=True,
                        refine_window_width=5,
@@ -324,17 +325,24 @@ class WavelengthCalibration():
             setattr(self.spectrum1D, 'arc_spec', arc_spec)
 
         arc_spec = getattr(self.spectrum1D, 'arc_spec')
-        arc_spec -= np.nanmin(arc_spec)
-        arc_spec /= np.nanmax(arc_spec)
 
         if background is None:
 
             background = np.nanpercentile(arc_spec, percentile)
 
-        peaks = signal.find_peaks(arc_spec,
-                                  distance=distance,
-                                  height=background,
-                                  prominence=prominence / 100.)[0]
+        arc_spec -= background
+        arc_spec /= np.nanmax(arc_spec)
+
+        peaks, prop = signal.find_peaks(arc_spec,
+                                        distance=distance,
+                                        prominence=prominence / 100.)
+        prom = prop['prominences']
+        prom_sorted_arg = np.argsort(prom)[::-1]
+
+        if isinstance(top_n_peaks, (int, float)):
+
+            peaks = peaks[prom_sorted_arg][:int(top_n_peaks)]
+
         self.spectrum1D.add_peaks(peaks)
 
         # Fine tuning

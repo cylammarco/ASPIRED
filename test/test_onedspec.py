@@ -943,7 +943,10 @@ def test_calibrator_science_fail_add_user_atlas_spec_id():
     onedspec.set_calibrator_properties(stype='science')
     onedspec.set_hough_properties(stype='science')
     onedspec.set_ransac_properties(stype='science')
-    onedspec.add_user_atlas(elements=['bla'], wavelengths=[1234.], spec_id=7, stype='science')
+    onedspec.add_user_atlas(elements=['bla'],
+                            wavelengths=[1234.],
+                            spec_id=7,
+                            stype='science')
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -982,7 +985,9 @@ def test_calibrator_science_fail_remove_atlas_lines_range_spec_id():
     onedspec.set_hough_properties(stype='science')
     onedspec.set_ransac_properties(stype='science')
     onedspec.add_atlas(elements=['Xe'], stype='science')
-    onedspec.remove_atlas_lines_range(wavelength=6000., spec_id=7, stype='science')
+    onedspec.remove_atlas_lines_range(wavelength=6000.,
+                                      spec_id=7,
+                                      stype='science')
 
 
 @pytest.mark.xfail(raises=ValueError)
@@ -1168,13 +1173,16 @@ def test_sensitivity():
         return_jsonstring=True,
         save_iframe=True,
         filename='test/test_output/test_onedspec_inspect_standard')
+
+    coeff = np.polynomial.polynomial.polyfit(np.arange(1, 1001),
+                                             np.random.random(1000) * 20, 2)
+
     onedspec.add_sensitivity_func(
-        np.polyfit(np.arange(1, 1001),
-                   np.random.random(1000) * 20, 2))
+        lambda x: np.polynomial.polynomial.polyval(x, coeff))
+
     # Not implemented yet
     # onedspec.save_sensitivity_func('test/test_output/' +\
     # 'test_onedspec_sensitivity_func')
-    onedspec.compute_sensitivity()
     onedspec.inspect_sensitivity(
         display=False,
         return_jsonstring=True,
@@ -1198,13 +1206,15 @@ onedspec.apply_wavelength_calibration(wave_bin=100.,
                                       wave_end=9000.)
 
 onedspec.load_standard(target='cd32d9927')
+coeff = np.polynomial.polynomial.polyfit(np.arange(1, 1001),
+                                         np.random.random(1000) * 20, 2)
+
 onedspec.add_sensitivity_func(
-    np.polyfit(np.arange(1, 1001),
-               np.random.random(1000) * 20, 2))
+    lambda x: np.polynomial.polynomial.polyval(x, coeff))
 # Not implemented yet
 # onedspec.save_sensitivity_func('test/test_output/' +\
 # 'test_onedspec_sensitivity_func')
-onedspec.compute_sensitivity()
+#onedspec.compute_sensitivity()
 onedspec.set_atmospheric_extinction()
 onedspec.apply_flux_calibration()
 

@@ -135,10 +135,45 @@ class TwoDSpec:
 
         # Default values if not supplied or cannot be automatically identified
         # from the header
-        self.readnoise = 0.
-        self.gain = 1.
-        self.seeing = 1.
-        self.exptime = 1.
+        if 'airmass' in kwargs:
+
+            self.set_airmass(kwargs['airmass'])
+
+        else:
+
+            self.set_airmass(1.)
+
+        if 'readnoise' in kwargs:
+
+            self.set_readnoise(kwargs['readnoise'])
+
+        else:
+
+            self.set_readnoise(0.)
+
+        if 'gain' in kwargs:
+
+            self.set_gain(kwargs['gain'])
+
+        else:
+
+            self.set_gain(1.)
+
+        if 'seeing' in kwargs:
+
+            self.set_seeing(kwargs['seeing'])
+
+        else:
+
+            self.set_seeing(1.)
+
+        if 'exptime' in kwargs:
+
+            self.set_exptime(kwargs['exptime'])
+
+        else:
+
+            self.set_exptime(1.)
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -271,13 +306,13 @@ class TwoDSpec:
                        spec_mask=None,
                        flip=None,
                        cosmicray=None,
-                       gain=None,
-                       readnoise=None,
+                       gain=-1,
+                       readnoise=-1,
                        fsmode=None,
                        psfmodel=None,
-                       seeing=None,
-                       exptime=None,
-                       airmass=None,
+                       seeing=-1,
+                       exptime=-1,
+                       airmass=-1,
                        verbose=None,
                        **kwargs):
         '''
@@ -333,12 +368,16 @@ class TwoDSpec:
             image data. We only explicitly include the 4 most important
             parameters in this function: `gain`, `readnoise`, `fsmode`, and
             `psfmodel`, the rest can be configured with kwargs.
-        gain: float (Deafult: None. Use 1.0 if not set.)
-            Gain of the detector, not important if noise estimation is
-            not needed.
-        readnoise: float (Deafult: None. Use 0.0 if not set.)
-            Readnoise of the detector, not important if noise estimation is
-            not needed.
+        gain: float (Deafult: -1)
+            Gain of the detector in unit of electron per photon, not important
+            if noise estimation is not needed. Negative value means "pass",
+            i.e. do nothing. None means grabbing from the header, though if it
+            is not found, it is set to 1.0.
+        readnoise: float (Deafult: -1)
+            Readnoise of the detector in unit of electron, not important if
+            noise estimation is not needed. Negative value means "pass",
+            i.e. do nothing. None means grabbing from the header, though if it
+            is not found, it is set to 0.0.
         fsmode: str (Default: None. Use 'convolve' if not set.)
             Method to build the fine structure image: `median`: Use the median
             filter in the standard LA Cosmic algorithm. `convolve`: Convolve
@@ -352,14 +391,20 @@ class TwoDSpec:
             directions respectively. `gaussxy` and `gaussyx` apply the
             Gaussian kernels in the x then the y direction, and first y then
             x direction, respectively.
-        seeing: float (Deafult: None, which will be replaced with 1.0)
+        seeing: float (Deafult: -1)
             Seeing in unit of arcsec, use as the first guess of the line
-            spread function of the spectra.
-        exptime: float (Deafult: None, which will be replaced with 1.0)
+            spread function of the spectra. Negative value means "pass",
+            i.e. do nothing. None means grabbing from the header, though if it
+            is not found, it is set to 1.0.
+        exptime: float (Deafult: -1)
             Esposure time for the observation, not important if absolute flux
-            calibration is not needed.
-        airmass: float
-            The airmass where the observation carries out.
+            calibration is not needed. Negative value means "pass",
+            i.e. do nothing. None means grabbing from the header, though if it
+            is not found, it is set to 1.0.
+        airmass: float (Default: -1)
+            The airmass where the observation carries out. Negative value
+            means "pass", i.e. do nothing. None means grabbing from the
+            header, though if it is not found, it is set to 0.0.
         verbose: boolean
             Set to False to suppress all verbose warnings, except for
             critical failure.
@@ -568,9 +613,9 @@ class TwoDSpec:
 
             else:
 
-                self.logger.warning(
-                    'Please provide the variance in the same shape '
-                    'as the image.')
+                self.logger.info(
+                    'Variance image is created from the modulus of the image '
+                    'and the readnoise value.')
                 self.variance = np.abs(self.img) + self.readnoise**2
 
         else:
@@ -596,18 +641,22 @@ class TwoDSpec:
 
         if readnoise is not None:
 
-            self.readnoise = readnoise
-
             if isinstance(readnoise, str):
 
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
 
             elif isinstance(readnoise,
-                            (float, int)) & (not np.isnan(readnoise)):
+                            (float, int)) & (~np.isnan(readnoise)):
 
-                # use the given readnoise value
-                self.readnoise = float(readnoise)
+                if readnoise < 0:
+
+                    pass
+
+                else:
+
+                    # use the given readnoise value
+                    self.readnoise = float(readnoise)
 
             else:
 
@@ -655,10 +704,16 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
 
-            elif isinstance(gain, (float, int)) & (not np.isnan(gain)):
+            elif isinstance(gain, (float, int)) & (~np.isnan(gain)):
 
-                # use the given gain value
-                self.gain = float(gain)
+                if gain < 0:
+
+                    pass
+
+                else:
+
+                    # use the given gain value
+                    self.gain = float(gain)
 
             else:
 
@@ -703,10 +758,16 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
 
-            elif isinstance(seeing, (float, int)) & (not np.isnan(seeing)):
+            elif isinstance(seeing, (float, int)) & (~np.isnan(seeing)):
 
-                # use the given gain value
-                self.seeing = float(seeing)
+                if seeing < 0:
+
+                    pass
+
+                else:
+
+                    # use the given seeing value
+                    self.seeing = float(seeing)
 
             else:
 
@@ -748,17 +809,21 @@ class TwoDSpec:
 
         if exptime is not None:
 
-            self.exptime = exptime
-
             if isinstance(exptime, str):
 
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
 
-            elif isinstance(exptime, (float, int)) & (not np.isnan(exptime)):
+            elif isinstance(exptime, (float, int)) & (~np.isnan(exptime)):
 
-                # use the given gain value
-                self.exptime = float(exptime)
+                if exptime < 0:
+
+                    pass
+
+                else:
+
+                    # use the given exptime value
+                    self.exptime = float(exptime)
 
             else:
 
@@ -801,17 +866,21 @@ class TwoDSpec:
 
         if airmass is not None:
 
-            self.airmass = airmass
-
             if isinstance(airmass, str):
 
                 # use the supplied keyword
                 self.airmass = float(self.header[airmass])
 
-            elif isinstance(airmass, (float, int)) & (not np.isnan(airmass)):
+            elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
 
-                # use the given gain value
-                self.airmass = float(airmass)
+                if airmass < 0:
+
+                    pass
+
+                else:
+
+                    # use the given airmass value
+                    self.airmass = float(airmass)
 
             else:
 
@@ -1531,6 +1600,10 @@ class TwoDSpec:
 
             img_tmp = img_upsampled
 
+        img_tmp = img_tmp.astype(float)
+        img_tmp[np.isnan(img_tmp)] = 0.
+        img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
+
         # split the spectrum into subspectra
         img_split = np.array_split(img_tmp, nwindow, axis=1)
         start_window_idx = nwindow // 2
@@ -1968,7 +2041,7 @@ class TwoDSpec:
                 'Arc frame is not available, only the data image '
                 'will be rectified.')
 
-        smoothed_image = signal.medfilt2d(self.img, kernel_size=5)
+        smoothed_image = signal.medfilt2d(self.img, kernel_size=3)
 
         spec = self.spectrum_list[0]
         spec_size_tmp = spec.len_trace * upsample_factor
@@ -2267,8 +2340,8 @@ class TwoDSpec:
 
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
-            sky_mask[0:sky_width_dn] = True
-            sky_mask[-(sky_width_up + 1):-1] = True
+            sky_mask[0:sky_width_up] = True
+            sky_mask[-(sky_width_dn + 1):-1] = True
 
             sky_mask *= ~extraction_bad_mask
 
@@ -2708,11 +2781,15 @@ class TwoDSpec:
 
             if optimal & (algorithm == 'marsh89'):
 
+                if variances is None:
+
+                    variances = self.variance
+
                 count, count_err, is_optimal, profile, var =\
                     self._optimal_extraction_marsh89(
                         frame=self.img,
                         residual_frame=self.img_residual,
-                        variance=self.variance,
+                        variance=variances,
                         trace=spec.trace,
                         spectrum=count,
                         gain=self.gain,
@@ -2749,7 +2826,7 @@ class TwoDSpec:
 
             else:
 
-                spec.extraction_type = "Aperture"
+                spec.extraction_type = "Tophat"
 
             # If more than a third of the spectrum is extracted suboptimally
             if np.sum(is_optimal) / len(is_optimal) < 0.333:

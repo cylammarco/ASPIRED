@@ -11,6 +11,7 @@ from plotly import io as pio
 from scipy import signal
 from scipy import interpolate as itp
 from spectres import spectres
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .spectrum1D import Spectrum1D
 
@@ -698,13 +699,15 @@ class FluxCalibration(StandardLibrary):
                             k=3,
                             smooth=True,
                             method='interpolate',
-                            slength=5,
+                            slength=7,
                             sorder=3,
                             mask_range=[[6850, 6960], [7575, 7700],
                                         [8925, 9050], [9265, 9750]],
                             mask_fit_order=1,
                             mask_fit_size=1,
-                            return_function=True):
+                            return_function=True,
+                            use_lowess=True,
+                            **kwargs):
         '''
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
@@ -743,6 +746,8 @@ class FluxCalibration(StandardLibrary):
         return_function: boolean
             Set to True to return the callable function of the sensitivity
             curve.
+        use_lowess: bool (Default: True)
+            Use a lowess function to get the continuum.
 
         Returns
         -------
@@ -784,6 +789,21 @@ class FluxCalibration(StandardLibrary):
                 verbose=True)
             standard_wave_true = wave
 
+        # apply a Savitzky-Golay filter to remove noise and Telluric lines
+        if smooth:
+
+            standard_flux = signal.savgol_filter(standard_flux, slength,
+                                                 sorder)
+            # Set the smoothing parameters
+            self.spectrum1D.add_smoothing(smooth, slength, sorder)
+
+        if use_lowess:
+
+            standard_flux = lowess(standard_flux,
+                                   standard_wave_true,
+                                   return_sorted=False,
+                                   **kwargs)
+
         # Get the sensitivity curve
         sensitivity = standard_flux_true / standard_flux
         sensitivity_masked = sensitivity.copy()
@@ -814,27 +834,23 @@ class FluxCalibration(StandardLibrary):
                     (sensitivity[left_start:left_end],
                      sensitivity[right_start:right_end]))
 
+                finite_mask = ~np.isnan(sensitivity_temp) & (sensitivity_temp >
+                                                             0)
+
                 # Fit the polynomial across the masked region
                 coeff = np.polynomial.polynomial.polyfit(
-                    wave_temp, sensitivity_temp, mask_fit_order)
+                    wave_temp[finite_mask], sensitivity_temp[finite_mask],
+                    mask_fit_order)
 
                 # Replace the snsitivity values with the fitted values
                 sensitivity_masked[
                     left_end:right_start] = np.polynomial.polynomial.polyval(
                         standard_wave_true[left_end:right_start], coeff)
 
-        mask = np.isfinite(sensitivity_masked)
+        mask = np.isfinite(sensitivity_masked) & (sensitivity_masked > 0)
         sensitivity_masked = sensitivity_masked[mask]
         standard_wave_masked = standard_wave_true[mask]
         standard_flux_masked = standard_flux_true[mask]
-
-        # apply a Savitzky-Golay filter to remove noise and Telluric lines
-        if smooth:
-
-            sensitivity_masked = signal.savgol_filter(sensitivity_masked,
-                                                      slength, sorder)
-            # Set the smoothing parameters
-            self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
         if method == 'interpolate':
             tck = itp.splrep(standard_wave_masked,
@@ -880,6 +896,8 @@ class FluxCalibration(StandardLibrary):
 
         # Add to both science and standard spectrum_list
         self.spectrum1D.add_sensitivity_func(sensitivity_func=sensitivity_func)
+        self.spectrum1D.add_literature_standard(self.standard_wave_true,
+                                                self.standard_fluxmag_true)
 
     def get_sensitivity_func(self):
         pass
@@ -1085,6 +1103,8 @@ class FluxCalibration(StandardLibrary):
         spectrum.
 
         Note: This function directly modify the *target_spectrum1D*.
+
+        Note 2: the wave_min and wave_max are for DISPLAY purpose only.
 
         Parameters
         ----------

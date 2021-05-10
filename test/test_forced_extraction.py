@@ -7,25 +7,66 @@ from aspired import spectral_reduction
 base_dir = os.path.dirname(__file__)
 abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
-# Line list
-atlas = [
-    4193.5, 4385.77, 4500.98, 4524.68, 4582.75, 4624.28, 4671.23, 4697.02,
-    4734.15, 4807.02, 4921.48, 5028.28, 5618.88, 5823.89, 5893.29, 5934.17,
-    6182.42, 6318.06, 6472.841, 6595.56, 6668.92, 6728.01, 6827.32, 6976.18,
-    7119.60, 7257.9, 7393.8, 7584.68, 7642.02, 7740.31, 7802.65, 7887.40,
-    7967.34, 8057.258
-]
-element = ['Xe'] * len(atlas)
-
 spatial_mask = np.arange(35, 200)
 spec_mask = np.arange(50, 1024)
 
 # Science frame
 lhs6328_frame = image_reduction.ImageReduction(
     'test/test_data/sprat_LHS6328.list',
-    log_level='DEBUG',
+    log_level='INFO',
     log_file_folder='test/test_output/')
 lhs6328_frame.reduce()
+
+lhs6328_twodspec = spectral_reduction.TwoDSpec(
+    lhs6328_frame,
+    spatial_mask=spatial_mask,
+    spec_mask=spec_mask,
+    cosmicray=True,
+    readnoise=5.7,
+    gain=2.45,
+    log_level='INFO',
+    log_file_folder='test/test_output/')
+
+lhs6328_twodspec.ap_trace(nspec=1, display=False)
+
+# Tophat extraction to get the LSF for force extraction below
+lhs6328_twodspec.ap_extract(apwidth=15,
+                            skywidth=10,
+                            skydeg=1,
+                            optimal=False,
+                            display=False,
+                            save_iframe=False)
+
+trace = copy.copy(lhs6328_twodspec.spectrum_list[0].trace)
+trace_sigma = copy.copy(lhs6328_twodspec.spectrum_list[0].trace_sigma)
+
+# Store the extracted count
+tophat_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
+
+# Optimal extraction to get the LSF for force extraction below
+lhs6328_twodspec.ap_extract(apwidth=15,
+                            skywidth=10,
+                            skydeg=1,
+                            optimal=True,
+                            display=False,
+                            save_iframe=False)
+
+# Store the extracted count
+horne86_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
+horne86_var = copy.copy(lhs6328_twodspec.spectrum_list[0].var)
+
+# Optimal extraction to get the LSF for force extraction below
+lhs6328_twodspec.ap_extract(apwidth=15,
+                            skywidth=10,
+                            skydeg=1,
+                            optimal=True,
+                            algorithm='marsh89',
+                            display=False,
+                            save_iframe=False)
+
+# Store the extracted count
+marsh89_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
+marsh89_var = copy.copy(lhs6328_twodspec.spectrum_list[0].var)
 
 
 def test_forced_extraction_tophat():
@@ -35,38 +76,26 @@ def test_forced_extraction_tophat():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
-        log_level='DEBUG',
+        gain=2.45,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
+    lhs6328_twodspec.add_trace(trace, trace_sigma)
 
-    # Optimal extraction to get the LSF for force extraction below
+    # Force extraction
     lhs6328_twodspec.ap_extract(apwidth=15,
                                 skywidth=10,
                                 skydeg=1,
                                 optimal=False,
+                                forced=True,
                                 display=False,
                                 save_iframe=False)
-
-    # Store the extracted count
-    count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
-
-    # Force extraction
-    lhs6328_twodspec.ap_extract(
-        apwidth=15,
-        skywidth=10,
-        skydeg=1,
-        optimal=False,
-        forced=True,
-        variances=lhs6328_twodspec.spectrum_list[0].var,
-        display=False,
-        save_iframe=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(count) >= np.nansum(count_forced) * 0.9999) & (
-        np.nansum(count) <= np.nansum(count_forced) * 1.0001)
+    assert (np.nansum(tophat_count) >= np.nansum(count_forced) * 0.999) & (
+        np.nansum(tophat_count) <= np.nansum(count_forced) * 1.001)
 
 
 def test_forced_extraction_horne86_gauss():
@@ -76,38 +105,27 @@ def test_forced_extraction_horne86_gauss():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
-        log_level='DEBUG',
+        gain=2.45,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
+    lhs6328_twodspec.add_trace(trace, trace_sigma)
 
-    # Optimal extraction to get the LSF for force extraction below
+    # Force extraction
     lhs6328_twodspec.ap_extract(apwidth=15,
                                 skywidth=10,
                                 skydeg=1,
                                 optimal=True,
+                                forced=True,
+                                variances=horne86_var,
                                 display=False,
                                 save_iframe=False)
-
-    # Store the extracted count
-    count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
-
-    # Force extraction
-    lhs6328_twodspec.ap_extract(
-        apwidth=15,
-        skywidth=10,
-        skydeg=1,
-        optimal=True,
-        forced=True,
-        variances=lhs6328_twodspec.spectrum_list[0].var,
-        display=False,
-        save_iframe=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(count) >= np.nansum(count_forced) * 0.9999) & (
-        np.nansum(count) <= np.nansum(count_forced) * 1.0001)
+    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.999) & (
+        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.001)
 
 
 def test_forced_extraction_horne86_lowess():
@@ -117,40 +135,28 @@ def test_forced_extraction_horne86_lowess():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
-        log_level='DEBUG',
+        gain=2.45,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
+    lhs6328_twodspec.add_trace(trace, trace_sigma)
 
-    # Optimal extraction to get the LSF for force extraction below
+    # Force extraction
     lhs6328_twodspec.ap_extract(apwidth=15,
                                 skywidth=10,
                                 skydeg=1,
                                 optimal=True,
                                 model='lowess',
+                                forced=True,
+                                variances=horne86_var,
                                 display=False,
                                 save_iframe=False)
-
-    # Store the extracted count
-    count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
-
-    # Force extraction
-    lhs6328_twodspec.ap_extract(
-        apwidth=15,
-        skywidth=10,
-        skydeg=1,
-        optimal=True,
-        model='lowess',
-        forced=True,
-        variances=lhs6328_twodspec.spectrum_list[0].var,
-        display=False,
-        save_iframe=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(count) >= np.nansum(count_forced) * 0.9999) & (
-        np.nansum(count) <= np.nansum(count_forced) * 1.0001)
+    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.999) & (
+        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.001)
 
 
 def test_forced_extraction_marsh89():
@@ -160,40 +166,28 @@ def test_forced_extraction_marsh89():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
-        log_level='DEBUG',
+        gain=2.45,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
+    lhs6328_twodspec.add_trace(trace, trace_sigma)
 
-    # Optimal extraction to get the LSF for force extraction below
+    # Force extraction
     lhs6328_twodspec.ap_extract(apwidth=15,
                                 skywidth=10,
                                 skydeg=1,
                                 optimal=True,
                                 algorithm='marsh89',
+                                forced=True,
+                                variances=np.transpose(marsh89_var),
                                 display=False,
                                 save_iframe=False)
-
-    # Store the extracted count
-    count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
-
-    # Force extraction
-    lhs6328_twodspec.ap_extract(
-        apwidth=15,
-        skywidth=10,
-        skydeg=1,
-        optimal=True,
-        algorithm='marsh89',
-        forced=True,
-        variances=lhs6328_twodspec.spectrum_list[0].var,
-        display=False,
-        save_iframe=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(count) >= np.nansum(count_forced) * 0.9999) & (
-        np.nansum(count) <= np.nansum(count_forced) * 1.0001)
+    assert (np.nansum(marsh89_count) >= np.nansum(count_forced) * 0.999) & (
+        np.nansum(marsh89_count) <= np.nansum(count_forced) * 1.001)
 
 
 def test_forced_extraction_horne86_lowess_int_var():
@@ -203,22 +197,11 @@ def test_forced_extraction_horne86_lowess_int_var():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
-        log_level='DEBUG',
+        gain=2.45,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
-
-    # Optimal extraction to get the LSF for force extraction below
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=10,
-                                skydeg=1,
-                                optimal=True,
-                                model='lowess',
-                                display=False,
-                                save_iframe=False)
-
-    # Store the extracted count
-    count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
+    lhs6328_twodspec.add_trace(trace, trace_sigma)
 
     # Force extraction
     lhs6328_twodspec.ap_extract(apwidth=15,
@@ -227,16 +210,15 @@ def test_forced_extraction_horne86_lowess_int_var():
                                 optimal=True,
                                 model='lowess',
                                 forced=True,
-                                variances=np.nanmedian(
-                                    lhs6328_twodspec.spectrum_list[0].var),
+                                variances=np.nanmedian(horne86_var),
                                 display=False,
                                 save_iframe=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(count) >= np.nansum(count_forced) * 0.99) & (
-        np.nansum(count) <= np.nansum(count_forced) * 1.01)
+    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.99) & (
+        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.01)
 
 
 def test_forced_extraction_horne86_lowess_str_var():
@@ -246,22 +228,11 @@ def test_forced_extraction_horne86_lowess_str_var():
         spec_mask=spec_mask,
         cosmicray=True,
         readnoise=5.7,
-        log_level='DEBUG',
+        gain=2.45,
+        log_level='INFO',
         log_file_folder='test/test_output/')
 
-    lhs6328_twodspec.ap_trace(nspec=1, display=False)
-
-    # Optimal extraction to get the LSF for force extraction below
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=10,
-                                skydeg=1,
-                                optimal=True,
-                                model='lowess',
-                                display=False,
-                                save_iframe=False)
-
-    # Store the extracted count
-    count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
+    lhs6328_twodspec.add_trace(trace, trace_sigma)
 
     # Force extraction
     lhs6328_twodspec.ap_extract(apwidth=15,
@@ -277,5 +248,5 @@ def test_forced_extraction_horne86_lowess_str_var():
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(count) >= np.nansum(count_forced) * 0.95) & (
-        np.nansum(count) <= np.nansum(count_forced) * 1.05)
+    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.95) & (
+        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.05)
