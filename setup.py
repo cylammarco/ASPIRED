@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup_requires = ['numpy>=1.16']
+setup_requires = ['numpy>=1.16', 'Cython>=0.29.23']
 
 install_requires = [
     'scipy>=1.5.2', 'astropy>=4.0,<4.3', 'ccdproc>=2.1', 'astroscrappy>=1.0.8',
