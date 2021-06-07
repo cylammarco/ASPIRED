@@ -596,8 +596,8 @@ def test_add_arc_lines_science():
     onedspec.add_arc_lines([np.arange(7)], spec_id=0, stype='science')
     onedspec.add_arc_lines([np.arange(15)], spec_id=1, stype='science')
     onedspec.add_arc_lines(
-        [np.arange(100), np.arange(200),
-         np.arange(100)],
+        [np.arange(7), np.arange(15),
+         np.arange(7)],
         spec_id=[0, 1, 10],
         stype='science')
 
