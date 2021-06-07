@@ -643,8 +643,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
 
-            elif isinstance(readnoise,
-                            (float, int)) & (~np.isnan(readnoise)):
+            elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
 
                 if readnoise < 0:
 
@@ -1618,7 +1617,8 @@ class TwoDSpec:
             scaling_range = np.ones(1)
 
         # estimate the n-th percentile as the sky background level
-        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init, percentile)
+        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init,
+                                                      percentile)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)

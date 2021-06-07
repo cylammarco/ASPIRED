@@ -1214,7 +1214,7 @@ onedspec.add_sensitivity_func(
 # Not implemented yet
 # onedspec.save_sensitivity_func('test/test_output/' +\
 # 'test_onedspec_sensitivity_func')
-#onedspec.compute_sensitivity()
+# onedspec.compute_sensitivity()
 onedspec.set_atmospheric_extinction()
 onedspec.apply_flux_calibration()
 
