@@ -592,7 +592,7 @@ def test_add_arc_lines_science():
     onedspec.add_spec(np.arange(200), spec_id=1, stype='science')
     onedspec.add_spec(np.arange(100), spec_id=10, stype='science')
     onedspec.add_arc_lines(np.arange(7), spec_id=0, stype='science')
-    onedspec.add_arc_lines(np.arange(15), spec_id=1, stype='science')
+    onedspec.add_arc_lines(np.arange(5), spec_id=1, stype='science')
     onedspec.add_arc_lines([np.arange(7)], spec_id=0, stype='science')
     onedspec.add_arc_lines([np.arange(15)], spec_id=1, stype='science')
     onedspec.add_arc_lines(
@@ -606,8 +606,8 @@ def test_add_arc_lines_science():
 def test_add_arc_lines_science_fail_spec_id():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_spec(np.arange(100), stype='science')
-    onedspec.add_arc_lines(np.arange(15), spec_id=0, stype='science')
-    onedspec.add_arc_lines(np.arange(15), spec_id=7, stype='science')
+    onedspec.add_arc_lines(np.arange(5), spec_id=0, stype='science')
+    onedspec.add_arc_lines(np.arange(5), spec_id=7, stype='science')
 
 
 @pytest.mark.xfail(raises=TypeError)
@@ -622,7 +622,7 @@ def test_add_arc_lines_standard():
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.add_spec(np.arange(100), stype='standard')
     onedspec.add_spec(np.arange(100), spec_id=0, stype='standard')
-    onedspec.add_arc_lines(np.arange(15), spec_id=0, stype='standard')
+    onedspec.add_arc_lines(np.arange(5), spec_id=0, stype='standard')
     onedspec.add_arc_lines([np.arange(15)], spec_id=0, stype='standard')
     onedspec.add_arc_lines([np.arange(15)], spec_id=[0], stype='standard')
 
@@ -750,7 +750,7 @@ def test_calibrator_science():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -846,7 +846,7 @@ def test_calibrator_science2():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -862,7 +862,7 @@ def test_calibrator_science_fail_calibrator_properties_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -878,7 +878,7 @@ def test_calibrator_science_fail_hough_properties_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -895,7 +895,7 @@ def test_calibrator_ransac_properties_science():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -913,7 +913,7 @@ def test_calibrator_science_fail_known_pairs_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -932,7 +932,7 @@ def test_calibrator_science_fail_add_user_atlas_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -954,7 +954,7 @@ def test_calibrator_science_fail_add_atlas_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -973,7 +973,7 @@ def test_calibrator_science_fail_remove_atlas_lines_range_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -995,7 +995,7 @@ def test_calibrator_science_fail_clear_atlas_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -1019,7 +1019,7 @@ def test_calibrator_science_fail_list_atlas_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -1037,7 +1037,7 @@ def test_calibrator_science_fail_hough_transform_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -1059,7 +1059,7 @@ def test_calibrator_science_fail_fit_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
@@ -1080,7 +1080,7 @@ def test_calibrator_science_fail_refine_fit_spec_id():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(15),
+    onedspec.add_arc_lines(np.arange(5),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),
