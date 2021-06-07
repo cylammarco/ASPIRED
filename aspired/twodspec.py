@@ -554,9 +554,6 @@ class TwoDSpec:
 
         if self.img is not None:
 
-            self.img = self.img / self.exptime
-            self.img_residual = self.img_residual / self.exptime
-
             # the valid y-range of the chip (i.e. spatial direction)
             if (len(self.spatial_mask) > 1):
 
@@ -1206,7 +1203,7 @@ class TwoDSpec:
 
     def set_readnoise_keyword(self, keyword_list, append=False, update=True):
         '''
-        Set the exptime keyword list.
+        Set the readnoise keyword list.
 
         Parameters
         ----------
@@ -1249,7 +1246,7 @@ class TwoDSpec:
 
     def set_gain_keyword(self, keyword_list, append=False, update=True):
         '''
-        Set the exptime keyword list.
+        Set the gain keyword list.
 
         Parameters
         ----------
@@ -1292,7 +1289,7 @@ class TwoDSpec:
 
     def set_seeing_keyword(self, keyword_list, append=False, update=True):
         '''
-        Set the exptime keyword list.
+        Set the seeing keyword list.
 
         Parameters
         ----------
@@ -1621,7 +1618,7 @@ class TwoDSpec:
             scaling_range = np.ones(1)
 
         # estimate the n-th percentile as the sky background level
-        lines_ref = lines_ref_init - np.percentile(lines_ref_init, percentile)
+        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init, percentile)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -2395,13 +2392,9 @@ class TwoDSpec:
                    variances=None,
                    npoly=21,
                    polyspacing=1,
-                   pord=2,
+                   pord=5,
                    qmode='fast-linear',
                    nreject=100,
-                   plot=False,
-                   ord_num=0,
-                   im_norm=None,
-                   im_ordr=None,
                    display=False,
                    renderer='default',
                    width=1280,
@@ -2492,7 +2485,7 @@ class TwoDSpec:
             A few cursory tests suggests that the extraction precision
             (in the high S/N case) scales as S^-2 -- but the code slows down
             as S^2.
-        pord: int (Default: 2, only used if algorithm is marsh89)
+        pord: int (Default: 5, only used if algorithm is marsh89)
             Order of profile polynomials; 1 = linear, etc.
         qmode: str (Default: 'fast-linear', only used if algorithm is marsh89)
             How to compute Marsh's Q-matrix. Valid inputs are 'fast-linear',
@@ -2674,9 +2667,9 @@ class TwoDSpec:
 
                     count[i], count_err[i], is_optimal[i] =\
                         self._tophat_extraction(
-                            source_slice=source_slice * self.exptime,
+                            source_slice=source_slice,
                             sky_source_slice=(
-                                count_sky_source_slice * self.exptime),
+                                count_sky_source_slice),
                             pix_frac=pix_frac,
                             gain=self.gain,
                             sky_width_dn=sky_width_dn,
@@ -2753,8 +2746,8 @@ class TwoDSpec:
                         var_temp) =\
                         self._optimal_extraction_horne86(
                             pix=source_pix,
-                            source_slice=source_slice * self.exptime,
-                            sky=count_sky_source_slice * self.exptime,
+                            source_slice=source_slice,
+                            sky=count_sky_source_slice,
                             mu=pos,
                             sigma=spec.trace_sigma[i],
                             tol=tolerance,
@@ -2792,7 +2785,6 @@ class TwoDSpec:
                         variance=variances,
                         trace=spec.trace,
                         spectrum=count,
-                        gain=self.gain,
                         readnoise=self.readnoise,
                         apwidth=(width_dn, width_up),
                         goodpixelmask=~self.bad_mask,
@@ -2805,8 +2797,8 @@ class TwoDSpec:
 
             # All the extraction methods return signal and noise in the
             # same format
-            count[i] /= self.exptime
-            count_err[i] /= self.exptime
+            count /= self.exptime
+            count_err /= self.exptime
 
             spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
                               sky_width_up)
@@ -3311,7 +3303,6 @@ class TwoDSpec:
                                     variance,
                                     trace,
                                     spectrum=None,
-                                    gain=1.0,
                                     readnoise=0.0,
                                     apwidth=7,
                                     goodpixelmask=None,
@@ -3319,7 +3310,7 @@ class TwoDSpec:
                                     polyspacing=1,
                                     pord=2,
                                     cosmicray_sigma=5,
-                                    qmode='fast-linear',
+                                    qmode='slow-nearest',
                                     nreject=100):
         """
         Optimally extract curved spectra taken and updated from

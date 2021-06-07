@@ -816,14 +816,14 @@ class WavelengthCalibration():
 
         self.spectrum1D.calibrator.clear_atlas()
 
-    def do_hough_transform(self):
+    def do_hough_transform(self, brute_force=True):
         '''
         Perform Hough transform on the pixel-wavelength pairs with the
         configuration set by the set_hough_properties().
 
         '''
 
-        self.spectrum1D.calibrator.do_hough_transform()
+        self.spectrum1D.calibrator.do_hough_transform(brute_force=brute_force)
 
     def fit(self,
             max_tries=5000,

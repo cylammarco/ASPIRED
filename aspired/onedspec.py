@@ -2352,7 +2352,7 @@ class OneDSpec():
 
                 self.logger.warning('Standard atlas is not available.')
 
-    def do_hough_transform(self, spec_id=None, stype='science+standard'):
+    def do_hough_transform(self, spec_id=None, brute_force=True, stype='science+standard'):
         '''
         Parameters
         ----------
@@ -2389,7 +2389,7 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    self.science_wavecal[i].do_hough_transform()
+                    self.science_wavecal[i].do_hough_transform(brute_force=brute_force)
 
                 self.science_hough_pairs_available = True
 
@@ -2401,7 +2401,7 @@ class OneDSpec():
 
             if self.standard_atlas_available:
 
-                self.standard_wavecal.do_hough_transform()
+                self.standard_wavecal.do_hough_transform(brute_force=brute_force)
 
                 self.standard_hough_pairs_available = True
 
@@ -2952,8 +2952,6 @@ class OneDSpec():
                                         [8925, 9050], [9265, 9750]],
                             mask_fit_order=1,
                             mask_fit_size=1,
-                            extinction_correction=False,
-                            airmass=None,
                             return_function=False,
                             use_lowess=True,
                             **kwargs):

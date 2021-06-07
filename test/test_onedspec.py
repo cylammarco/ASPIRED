@@ -750,7 +750,7 @@ def test_calibrator_science():
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
-    onedspec.add_arc_lines(np.arange(100),
+    onedspec.add_arc_lines(np.arange(15),
                            spec_id=[0, 1, 11, 75],
                            stype='science')
     onedspec.add_arc_spec(np.arange(100),

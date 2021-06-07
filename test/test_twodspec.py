@@ -185,6 +185,7 @@ def test_set_all_properties():
                             spec_mask=(1, ),
                             flip=True,
                             cosmicray=True,
+                            sigclip=3.,
                             readnoise=10.,
                             gain=2.6,
                             seeing=1.7,
@@ -204,8 +205,8 @@ def test_set_all_properties():
     assert twodspec.exptime == 300.
     assert twodspec.airmass == 1.5
     assert twodspec.verbose
-    # Assert the cosmic ray cleaning has changed the data
-    assert (twodspec.img != img.image_fits.data).all()
+    # Assert the cosmic ray cleaning is a different copy of the data
+    assert twodspec.img is not img.image_fits.data
 
     # Changing the saxis, and everything else should still be the same
     twodspec.set_properties(saxis=0,

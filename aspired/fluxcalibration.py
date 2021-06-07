@@ -163,7 +163,7 @@ class StandardLibrary:
 
             if self.library != 'esoxshooter':
 
-                self.standard_fluxmag_true *= 1e-16
+                self.standard_fluxmag_true /= 10.0**16.0
 
     def _get_ing_standard(self):
         '''

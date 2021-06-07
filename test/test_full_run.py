@@ -175,8 +175,7 @@ def test_full_run():
 
     lhs6328_onedspec.compute_sensitivity(k=3,
                                          method='interpolate',
-                                         mask_fit_size=1,
-                                         extinction_correction=True)
+                                         mask_fit_size=1)
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
