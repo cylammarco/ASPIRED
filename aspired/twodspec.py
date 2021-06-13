@@ -1963,7 +1963,7 @@ class TwoDSpec:
                               upsample_factor=10,
                               bin_size=5,
                               n_bin=9,
-                              lowess_frac=0.05,
+                              lowess_frac=0.04,
                               spline_order=3,
                               order=2,
                               coeff=None,
@@ -2382,7 +2382,7 @@ class TwoDSpec:
                    optimal=True,
                    algorithm='horne86',
                    model='lowess',
-                   lowess_frac=0.8,
+                   lowess_frac=0.1,
                    lowess_it=3,
                    lowess_delta=0.0,
                    tolerance=1e-6,
@@ -2452,7 +2452,7 @@ class TwoDSpec:
             Available algorithms are horne86 and marsh89
         model: str (Default: 'lowess')
             Choice of model: 'lowess' and 'gauss'.
-        lowess_frac: float (Default: 0.8)
+        lowess_frac: float (Default: 0.1)
             Fraction of "good data" retained for LOWESS fit.
         lowess_it: int (Default: 3)
             Number of iteration in LOWESS fit -- the number of residual-based
@@ -3132,7 +3132,7 @@ class TwoDSpec:
                                     forced=False,
                                     variances=None,
                                     model='lowess',
-                                    lowess_frac=0.666,
+                                    lowess_frac=0.1,
                                     lowess_it=3,
                                     lowess_delta=0.0,
                                     bad_mask=None):
@@ -3180,7 +3180,7 @@ class TwoDSpec:
         model: str (Default: 'lowess')
             Choice of 'gauss' and 'lowess' for gaussian profile and a LOWESS
             local regression fitting.
-        lowess_frac: float (Default: 0.666)
+        lowess_frac: float (Default: 0.1)
             The fraction of the data used when estimating each y-value.
         lowess_it: int (Default: 3)
             The number of residual-based reweightings to perform.

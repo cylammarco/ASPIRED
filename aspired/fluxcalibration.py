@@ -707,6 +707,7 @@ class FluxCalibration(StandardLibrary):
                             mask_fit_size=1,
                             return_function=True,
                             use_lowess=True,
+                            lowess_frac=0.1,
                             **kwargs):
         '''
         The sensitivity curve is computed by dividing the true values by the
@@ -802,6 +803,7 @@ class FluxCalibration(StandardLibrary):
             standard_flux = lowess(standard_flux,
                                    standard_wave_true,
                                    return_sorted=False,
+                                   frac=lowess_frac,
                                    **kwargs)
 
         # Get the sensitivity curve
