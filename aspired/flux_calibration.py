@@ -1294,11 +1294,11 @@ class FluxCalibration(StandardLibrary):
 
             if filename is None:
 
-                filename_output = "spectrum_" + str(self.target_spec_id)
+                filename = "spectrum_" + str(self.target_spec_id)
 
             else:
 
-                filename_output = os.path.splitext(filename)[0] + "_" + str(
+                filename = os.path.splitext(filename)[0] + "_" + str(
                     self.target_spec_id)
 
             if save_fig:

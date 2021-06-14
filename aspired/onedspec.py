@@ -3585,7 +3585,7 @@ class OneDSpec():
 
                 if filename is None:
 
-                    filename_output = "spectrum_" + str(i)
+                    filename = "spectrum"
 
                 if save_fig:
 
@@ -3596,12 +3596,13 @@ class OneDSpec():
                         if t == 'iframe':
 
                             pio.write_html(fig_sci,
-                                           filename + '.' + t,
+                                           filename + '_' + str(i) + '.' + t,
                                            auto_open=open_iframe)
 
                         elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                            pio.write_image(fig_sci, filename + '.' + t)
+                            pio.write_image(fig_sci,
+                                            filename + '_' + str(i) + '.' + t)
 
                 if display:
 

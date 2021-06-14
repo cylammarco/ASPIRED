@@ -4132,8 +4132,7 @@ class TwoDSpec:
             self.spectrum_list[i].create_fits(
                 output=output,
                 recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu,
-                return_hdu_list=return_hdu_list)
+                empty_primary_hdu=empty_primary_hdu)
 
     def save_fits(self,
                   output='trace+count',
