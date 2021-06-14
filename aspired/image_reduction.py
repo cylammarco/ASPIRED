@@ -37,7 +37,7 @@ class ImageReduction:
                  exptime_dark=None,
                  exptime_dark_keyword=None,
                  combinetype_bias='median',
-                 sigma_clipping_bias=True,
+                 sigma_clipping_bias=False,
                  clip_low_bias=5,
                  clip_high_bias=5,
                  combinetype_flat='median',
@@ -65,82 +65,85 @@ class ImageReduction:
         This class is not intented for quality data reduction, it exists for
         completeness such that users can produce a minimal pipeline with
         a single pacakge. Users should preprocess calibration frames, for
-        example, arc frames taken with long and short exposures for
-        wavelength calibration with both bright and faint lines; fringing
-        correction of flat frames; light frames with various exposure times.
+        example, we cannot properly combine arc frames taken with long and
+        short exposures for wavelength calibration with both bright and faint
+        lines; fringing correction with flat frames; light frames with various
+        exposure times.
 
-        If a field-flattening 2D spectrum is already avaialble, it can be
+        If a field-flattened 2D spectrum is already avaialble, it can be
         the only listed item. Set it as a 'light' frame.
 
         Parameters
         ----------
-        filelist: string
+        filelist: str
             File location, does not support URL
-        ftype: string
+        ftype: str (Default: "csv")
             One of csv, tsv and ascii. Default is csv.
-        delimiter: string
+        delimiter: str (Default: None)
             Set the delimiter. This overrides ftype.
-        sxais: int, 0 or 1
+        sxais: int, 0 or 1 (Default: None)
             OVERRIDE the SAXIS value in the FITS header, or to provide the
             SAXIS if it does not exist
-        combinetype_light: string
+        saxis_keyword: str (Default: None)
+            Supply the saxis keyword used in the header.
+        combinetype_light: str (Default: 'median')
             Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_light: boolean
+        sigma_clipping_light: bool (Default: True)
             Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
-        clip_low_light: float
+        clip_low_light: float (Default: 5)
             Set the lower threshold of the sigma clipping
-        clip_high_light: float
+        clip_high_light: float (Default: 5)
             Set the upper threshold of the sigma clipping
-        exptime_light: float
+        exptime_light: float (Default: None)
             OVERRIDE the exposure time value in the FITS header, or to provide
             one if the keyword does not exist
-        exptime_light_keyword: string
+        exptime_light_keyword: str (Default: None)
             HDU keyword for the exposure time of the light frame
-        combinetype_dark: string
+        combinetype_dark: str (Default: 'median')
             average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_dark: boolean
+        sigma_clipping_dark: bool (Default: True)
             Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
-        clip_low_dark: float
+        clip_low_dark: float (Default: 5)
             Set the lower threshold of the sigma clipping
-        clip_high_dark: float
+        clip_high_dark: float (Default: 5)
             Set the upper threshold of the sigma clipping
-        exptime_dark: float
+        exptime_dark: float (Default: None)
             OVERRIDE the exposure time value in the FITS header, or to provide
             one if the keyword does not exist
-        exptime_dark_keyword: string
+        exptime_dark_keyword: str (Default: None)
             HDU keyword for the exposure time of the dark frame
-        combinetype_bias: string
+        combinetype_bias: str (Default: 'median')
             Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_bias: boolean
+        sigma_clipping_bias: bool (Default: False)
             Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
-        clip_low_bias: float
+        clip_low_bias: float (Default: 5)
             Set the lower threshold of the sigma clipping
-        clip_high_bias: float
+        clip_high_bias: float (Default: 5)
             Set the upper threshold of the sigma clipping
-        combinetype_flat: string
+        combinetype_flat: str (Default: 'median')
             Average of median for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
             the same combinetype.
-        sigma_clipping_flat: boolean
+        sigma_clipping_flat: bool (Default: True)
             Perform sigma clipping if set to True. sigma is computed with the
             numpy.ma.std method
-        clip_low_flat: float
+        clip_low_flat: float (Default: 5)
             Set the lower threshold of the sigma clipping
-        clip_high_flat: float
+        clip_high_flat: float (Default: 5)
             Set the upper threshold of the sigma clipping
-        exptime_flat: float
+        exptime_flat: float (Default: None)
             OVERRIDE the exposure time value in the FITS header, or to provide
             one if the keyword does not exist
-        exptime_flat_keyword: string
+        exptime_flat_keyword: str (Default: None)
             HDU keyword for the exposure time of the flat frame
         cosmicray: bool (Default: False)
             Set to True to remove cosmic rays, this directly alter the reduced
@@ -376,7 +379,6 @@ class ImageReduction:
 
         # import file with first column as image type and second column as
         # file path
-
         if isinstance(filelist, str):
 
             if os.path.isabs(filelist):
@@ -560,6 +562,7 @@ class ImageReduction:
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
+            # Cosmic ray cleaning
             if self.cosmicray:
 
                 self.logger.info(
@@ -732,6 +735,7 @@ class ImageReduction:
 
         self.logger.info('Saxis is found/set to be {}.'.format(self.saxis))
 
+        # Collect and stack the arcs
         if len(self.arc_list) > 0:
             # Combine the arcs
             arc_CCDData = []
@@ -1168,16 +1172,17 @@ class ImageReduction:
 
         Parameters
         ----------
-        cutoff: float
+        cutoff: float (Default: 60000)
             This sets the (lower and) upper limit of electron count.
-        grow: bool
+        grow: bool (Default: False)
             Set to True to grow the mask, see `grow_mask()`
-        iterations: int
+        iterations: int (Default: 1)
             The number of pixel growth along the Cartesian axes directions.
-        diagonal: bool
+        diagonal: bool (Default: False)
             Set to True to grow in the diagonal directions.
         create_bad_mask: bool (Deafult: True)
             If set to True, combine the the bad_pixel_mask and saturation_mask
+
         """
 
         self.bad_pixel_mask, self.bad_pixels = create_bad_pixel_mask(
@@ -1247,10 +1252,6 @@ class ImageReduction:
         good neighboring pixels. See more at util.bfixpix(). By default,
         this is not used, becase any automatic tampering of data is
         not a good idea.
-
-        If you trust the pixel healing process, please make sure you create
-        a new bad mask or the old one will be propagated downstream and this
-        will only serve an artistic purpose.
 
         Parameters
         ----------
@@ -1470,12 +1471,12 @@ class ImageReduction:
 
         Parameters
         ----------
-        filename: String
+        filename: str
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        extension: String
+        extension: str
             File extension without the dot.
-        overwrite: boolean
+        overwrite: bool
             Default is False.
 
         '''
@@ -1503,12 +1504,12 @@ class ImageReduction:
 
         Parameters
         ----------
-        filename: String
+        filename: str
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        extension: String
+        extension: str
             File extension without the dot.
-        overwrite: boolean
+        overwrite: bool
             Default is False.
 
         '''
@@ -1538,11 +1539,8 @@ class ImageReduction:
                 width=1280,
                 height=720,
                 return_jsonstring=False,
-                save_iframe=False,
-                save_png=False,
-                save_jpg=False,
-                save_svg=False,
-                save_pdf=False,
+                save_fig=False,
+                fig_type='iframe+png',
                 filename=None,
                 open_iframe=False):
         '''
@@ -1551,26 +1549,30 @@ class ImageReduction:
 
         Parameters
         ----------
-        log: boolean
+        log: bool
             Log the ADU count per second in the display. Default is True.
-        display: boolean
+        display: bool
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: str
             plotly renderer options.
         width: int/float
             Number of pixels in the horizontal direction of the outputs
         height: int/float
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
+        return_jsonstring: bool (Default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
-            Save as an save_iframe, can work concurrently with other renderer
-            apart from exporting return_jsonstring.
-        filename: str
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
+        open_iframe: bool (Default: False)
             Open the save_iframe in the default browser if set to True.
 
         Returns
@@ -1605,9 +1607,21 @@ class ImageReduction:
 
             filename = 'reduced_image'
 
-        if save_iframe:
+        if save_fig:
 
-            pio.write_html(fig, filename + '.html', auto_open=open_iframe)
+            fig_type_split = fig_type.split('+')
+
+            for t in fig_type_split:
+
+                if t == 'iframe':
+
+                    pio.write_html(fig,
+                                filename + '.' + t,
+                                auto_open=open_iframe)
+
+                elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                    pio.write_image(fig, filename + '.' + t)
 
         if display:
 
@@ -1618,22 +1632,6 @@ class ImageReduction:
             else:
 
                 fig.show(renderer)
-
-        if save_jpg:
-
-            fig.write_image(filename + '.jpg', format='jpg')
-
-        if save_png:
-
-            fig.write_image(filename + '.png', format='png')
-
-        if save_svg:
-
-            fig.write_image(filename + '.svg', format='svg')
-
-        if save_pdf:
-
-            fig.write_image(filename + '.pdf', format='pdf')
 
         if return_jsonstring:
 

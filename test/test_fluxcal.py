@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspired.fluxcalibration import FluxCalibration
+from aspired.flux_calibration import FluxCalibration
 from aspired.spectrum1D import Spectrum1D
 
 
@@ -56,11 +56,8 @@ def test_sensitivity():
     sens.load_standard('hiltner102')
     sens.inspect_standard(display=False,
                           return_jsonstring=True,
-                          save_iframe=True,
-                          save_png=True,
-                          save_jpg=True,
-                          save_svg=True,
-                          save_pdf=True,
+                          save_fig=True,
+                          fig_type='iframe+png',
                           filename='test/test_output/fluxcal_inspect_standard')
 
     sens.compute_sensitivity()
@@ -117,9 +114,6 @@ def test_fluxcalibration():
         inspect=True,
         display=False,
         return_jsonstring=True,
-        save_iframe=True,
-        save_png=True,
-        save_jpg=True,
-        save_svg=True,
-        save_pdf=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/fluxcal_flux_calibration')

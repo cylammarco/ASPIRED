@@ -35,7 +35,8 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             skydeg=1,
                             optimal=False,
                             display=False,
-                            save_iframe=False)
+                            save_fig=True,
+                            fig_type='iframe+png')
 
 trace = copy.copy(lhs6328_twodspec.spectrum_list[0].trace)
 trace_sigma = copy.copy(lhs6328_twodspec.spectrum_list[0].trace_sigma)
@@ -49,7 +50,8 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             skydeg=1,
                             optimal=True,
                             display=False,
-                            save_iframe=False)
+                            save_fig=True,
+                            fig_type='iframe+png')
 
 # Store the extracted count
 horne86_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -62,7 +64,8 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             optimal=True,
                             algorithm='marsh89',
                             display=False,
-                            save_iframe=False)
+                            save_fig=True,
+                            fig_type='iframe+png')
 
 # Store the extracted count
 marsh89_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -89,7 +92,8 @@ def test_forced_extraction_tophat():
                                 optimal=False,
                                 forced=True,
                                 display=False,
-                                save_iframe=False)
+                                save_fig=True,
+                                fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -118,8 +122,7 @@ def test_forced_extraction_horne86_gauss():
                                 optimal=True,
                                 forced=True,
                                 variances=horne86_var,
-                                display=False,
-                                save_iframe=False)
+                                display=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -149,8 +152,7 @@ def test_forced_extraction_horne86_lowess():
                                 model='lowess',
                                 forced=True,
                                 variances=horne86_var,
-                                display=False,
-                                save_iframe=False)
+                                display=False)
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -181,7 +183,8 @@ def test_forced_extraction_marsh89():
                                 forced=True,
                                 variances=np.transpose(marsh89_var),
                                 display=False,
-                                save_iframe=False)
+                                save_fig=True,
+                                fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -212,7 +215,8 @@ def test_forced_extraction_horne86_lowess_int_var():
                                 forced=True,
                                 variances=np.nanmedian(horne86_var),
                                 display=False,
-                                save_iframe=False)
+                                save_fig=True,
+                                fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -243,7 +247,8 @@ def test_forced_extraction_horne86_lowess_str_var():
                                 forced=True,
                                 variances='blabla',
                                 display=False,
-                                save_iframe=False)
+                                save_fig=True,
+                                fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)

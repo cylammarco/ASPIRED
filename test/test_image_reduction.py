@@ -180,7 +180,8 @@ def test_input_with_data_cube():
 
 def test_input_with_data_cube_extra_bracket():
     img = image_reduction.ImageReduction(
-        filelist='test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list',
+        filelist=
+        'test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list',
         log_file_name=None)
     img.reduce()
 
@@ -295,11 +296,8 @@ def test_reduction_and_save():
     img.save_fits('test/test_output/reduced_image', overwrite=True)
     img.inspect(display=False,
                 filename='test/test_output/reduced_image',
-                save_iframe=True,
-                save_jpg=True,
-                save_png=True,
-                save_svg=True,
-                save_pdf=True)
+                save_fig=True,
+                fig_type='iframe+png+svg+pdf+jpg')
     img.list_files()
 
 

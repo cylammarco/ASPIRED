@@ -2,7 +2,7 @@ import copy
 import numpy as np
 import pytest
 from astropy.io import fits
-from aspired.wavelengthcalibration import WavelengthCalibration
+from aspired.wavelength_calibration import WavelengthCalibration
 from aspired.spectrum1D import Spectrum1D
 from aspired import spectral_reduction
 
@@ -40,7 +40,8 @@ def test_wavecal():
 
     # Find the peaks of the arc
     wavecal.find_arc_lines(
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_wavecal_find_arc_lines',
         display=False,
         return_jsonstring=True)
@@ -92,7 +93,8 @@ def test_setting_a_known_pair():
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_wavecal_find_arc_lines',
         display=False,
         return_jsonstring=True)
@@ -110,7 +112,8 @@ def test_setting_known_pairs():
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_wavecal_find_arc_lines',
         display=False,
         return_jsonstring=True)
@@ -129,7 +132,8 @@ def test_setting_a_none_to_known_pairs_expect_fail():
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_wavecal_find_arc_lines',
         display=False,
         return_jsonstring=True)
@@ -146,7 +150,8 @@ def test_setting_nones_to_known_pairs_expect_fail():
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_wavecal_find_arc_lines',
         display=False,
         return_jsonstring=True)

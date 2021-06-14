@@ -49,7 +49,7 @@ class TwoDSpec:
             2D spectral image in either format
         header: FITS header (deafult: None)
             THIS WILL OVERRIDE the header from the astropy.io.fits object
-        verbose: boolean (Default: True)
+        verbose: bool (Default: True)
             Set to False to suppress all verbose warnings, except for
             critical failure.
         logger_name: str (Default: TwoDSpec)
@@ -361,9 +361,9 @@ class TwoDSpec:
         spec_mask: 1D numpy array (Size: M. Default: (1,))
             Mask in the spectral direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
-        flip: boolean (Deafult: False)
+        flip: bool (Deafult: False)
             If the frame has to be left-right flipped, set to True.
-        cosmicray: boolean (Default: True)
+        cosmicray: bool (Default: True)
             Set to True to remove cosmic rays, this directly alter the reduced
             image data. We only explicitly include the 4 most important
             parameters in this function: `gain`, `readnoise`, `fsmode`, and
@@ -405,7 +405,7 @@ class TwoDSpec:
             The airmass where the observation carries out. Negative value
             means "pass", i.e. do nothing. None means grabbing from the
             header, though if it is not found, it is set to 0.0.
-        verbose: boolean
+        verbose: bool
             Set to False to suppress all verbose warnings, except for
             critical failure.
         **kwargs:
@@ -1208,7 +1208,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (Default: False)
+        append: bool (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -1251,7 +1251,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (Default: False)
+        append: bool (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -1294,7 +1294,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (Default: False)
+        append: bool (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -1337,7 +1337,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (Default: False)
+        append: bool (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -1380,7 +1380,7 @@ class TwoDSpec:
         ----------
         keyword_list: list
             List of keyword (string).
-        append: boolean (Default: False)
+        append: bool (Default: False)
             Set to False to overwrite the current list.
 
         '''
@@ -1486,7 +1486,8 @@ class TwoDSpec:
                  width=1280,
                  height=720,
                  return_jsonstring=False,
-                 save_iframe=False,
+                         save_fig=False,
+                         fig_type='iframe+png',
                  filename=None,
                  open_iframe=False):
         '''
@@ -1534,7 +1535,7 @@ class TwoDSpec:
         resample_factor: int
             Number of times the collapsed 1D slices in the spatial directions
             are to be upsampled.
-        rescale: boolean
+        rescale: bool
             Fit for the linear scaling factor between adjacent slices.
         scaling_min: float
             Minimum scaling factor to be fitted.
@@ -1555,29 +1556,33 @@ class TwoDSpec:
             The percentile tolerance of Count aperture to be used for
             fitting the trace. Note that this percentile is of the Count,
             not of the number of subspectra.
-        display: boolean (Default: False)
+        display: bool (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string (Default: 'default')
+        renderer: str (Default: 'default')
             plotly renderer options.
         width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
         height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean (Default: False)
-            set to True to return json string that can be rendered by Plotly
+        return_jsonstring: bool (Default: False)
+            set to True to return json str that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean (Default: Flase)
-            Save as an save_iframe, can work concurrently with other renderer
-            apart from exporting return_jsonstring.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean (Default: False)
-            Open the save_iframe in the default browser if set to True.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
 
         Returns
         -------
-        json string if return_jsonstring is True, otherwise only an image is
+        JSON-string if return_jsonstring is True, otherwise only an image is
         displayed
 
         '''
@@ -1805,7 +1810,7 @@ class TwoDSpec:
             self.spectrum_list[i].add_airmass(self.airmass)
 
         # Plot
-        if save_iframe or display or return_jsonstring:
+        if save_fig or display or return_jsonstring:
 
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width))
@@ -1842,17 +1847,25 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=False)
 
-            if save_iframe:
+            if filename is None:
 
-                if filename is None:
+                filename = 'ap_trace'
 
-                    pio.write_html(fig, 'ap_trace.html', auto_open=open_iframe)
+            if save_fig:
 
-                else:
+                fig_type_split = fig_type.split('+')
 
-                    pio.write_html(fig,
-                                   filename + '.html',
-                                   auto_open=open_iframe)
+                for t in fig_type_split:
+
+                    if t == 'iframe':
+
+                        pio.write_html(fig,
+                                    filename + '.' + t,
+                                    auto_open=open_iframe)
+
+                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                        pio.write_image(fig, filename + '.' + t)
 
             if display:
 
@@ -1973,7 +1986,8 @@ class TwoDSpec:
                               width=1280,
                               height=720,
                               return_jsonstring=False,
-                              save_iframe=False,
+                         save_fig=False,
+                         fig_type='iframe+png',
                               filename=None,
                               open_iframe=False):
         '''
@@ -2011,25 +2025,29 @@ class TwoDSpec:
             as a function of distance from the trace.
         apply: bool (Default: False)
             Apply the rectification directly without checking.
-        display: boolean (Default: False)
+        display: bool (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string (Default: 'default')
+        renderer: str (Default: 'default')
             plotly renderer options.
         width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
         height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean (Default: False)
-            set to True to return json string that can be rendered by Plotly
+        return_jsonstring: bool (Default: False)
+            set to True to return json str that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean (Default: Flase)
-            Save as an save_iframe, can work concurrently with other renderer
-            apart from exporting return_jsonstring.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean (Default: False)
-            Open the save_iframe in the default browser if set to True.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
 
         '''
 
@@ -2213,7 +2231,7 @@ class TwoDSpec:
 
             self.apply_rectification()
 
-        if save_iframe or display or return_jsonstring:
+        if save_fig or display or return_jsonstring:
 
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width))
@@ -2262,19 +2280,25 @@ class TwoDSpec:
                     bargap=0,
                     hovermode='closest')
 
-            if save_iframe:
+            if filename is None:
 
-                if filename is None:
+                filename = 'rectified_image'
 
-                    pio.write_html(fig,
-                                   'rectified_image.html',
-                                   auto_open=open_iframe)
+            if save_fig:
 
-                else:
+                fig_type_split = fig_type.split('+')
 
-                    pio.write_html(fig,
-                                   filename + '.html',
-                                   auto_open=open_iframe)
+                for t in fig_type_split:
+
+                    if t == 'iframe':
+
+                        pio.write_html(fig,
+                                    filename + '.' + t,
+                                    auto_open=open_iframe)
+
+                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                        pio.write_image(fig, filename + '.' + t)
 
             if display:
 
@@ -2400,7 +2424,8 @@ class TwoDSpec:
                    width=1280,
                    height=720,
                    return_jsonstring=False,
-                   save_iframe=False,
+                         save_fig=False,
+                         fig_type='iframe+png',
                    filename=None,
                    open_iframe=False):
         """
@@ -2446,7 +2471,7 @@ class TwoDSpec:
             The polynomial order to fit between the sky windows.
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
-        optimal: boolean (Default: True)
+        optimal: bool (Default: True)
             Set optimal extraction. (Default is True)
         algorithm: str (Default: 'horne86')
             Available algorithms are horne86 and marsh89
@@ -2469,7 +2494,7 @@ class TwoDSpec:
         max_iter: float (Default: 99)
             The maximum number of iterations before optimal extraction fails
             and return to standard tophot extraction
-        forced: boolean (Default: False)
+        forced: bool (Default: False)
             To perform forced optimal extraction by using the given aperture
             profile as it is without interation, the resulting uncertainty
             will almost certainly be wrong. This is an experimental feature.
@@ -2496,25 +2521,29 @@ class TwoDSpec:
             running out of memory when using the 'fast' array-based methods.
         nreject: int (Default: 100, only used if algorithm is marsh89)
             Number of outlier-pixels to reject at each iteration.
-        display: boolean (Default: False)
+        display: bool (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string (Default: 'default')
+        renderer: str (Default: 'default')
             plotly renderer options.
         width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
         height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean (Default: False)
-            set to True to return json string that can be rendered by Plotly
+        return_jsonstring: bool (Default: False)
+            set to True to return json str that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean (Default: Flase)
-            Save as an save_iframe, can work concurrently with other renderer
-            apart from exporting return_jsonstring.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean (Default: False)
-            Open the save_iframe in the default browser if set to True.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
 
         """
 
@@ -2828,7 +2857,7 @@ class TwoDSpec:
                     'is most likely happening at the red and/or blue ends '
                     'of the spectrum.')
 
-            if save_iframe or display or return_jsonstring:
+            if save_fig or display or return_jsonstring:
 
                 min_trace = int(min(spec.trace) + 0.5)
                 max_trace = int(max(spec.trace) + 0.5)
@@ -3010,19 +3039,25 @@ class TwoDSpec:
                     hovermode='closest',
                     showlegend=True)
 
-                if save_iframe:
+                if filename is None:
 
-                    if filename is None:
+                    filename = 'ap_extract'
 
-                        pio.write_html(fig,
-                                       'ap_extract_' + str(j) + '.html',
-                                       auto_open=open_iframe)
+                if save_fig:
 
-                    else:
+                    fig_type_split = fig_type.split('+')
 
-                        pio.write_html(fig,
-                                       filename + '_' + str(j) + '.html',
-                                       auto_open=open_iframe)
+                    for t in fig_type_split:
+
+                        if t == 'iframe':
+
+                            pio.write_html(fig,
+                                        filename + '_' + str(j) + '.' + t,
+                                        auto_open=open_iframe)
+
+                        elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                            pio.write_image(fig, filename + '_' + str(j) + '.' + t)
 
                 if display:
 
@@ -3172,7 +3207,7 @@ class TwoDSpec:
             Detector readnoise, in electrons.
         cosmicray_sigma: int (Default: 5)
             Sigma-clipping threshold for cleaning & cosmic ray rejection.
-        forced: boolean
+        forced: bool
             Forced extraction with the given weights.
         variances: 1D numpy.ndarray (N)
             The 1/weights of used for optimal extraction, has to be the
@@ -3196,7 +3231,7 @@ class TwoDSpec:
             The optimal signal.
         noise: float
             The noise associated with the optimal signal.
-        is_optimal: boolean
+        is_optimal: bool
             List indicating whether the extraction at that pixel was
             optimal or not. True = optimal, False = suboptimal.
         P: numpy array
@@ -3725,7 +3760,8 @@ class TwoDSpec:
                                    width=1280,
                                    height=720,
                                    return_jsonstring=False,
-                                   save_iframe=False,
+                         save_fig=False,
+                         fig_type='iframe+png',
                                    filename=None,
                                    open_iframe=False):
         """
@@ -3733,25 +3769,29 @@ class TwoDSpec:
         ----------
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
-        display: boolean
+        display: bool
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: str
             plotly renderer options.
         width: int/float
             Number of pixels in the horizontal direction of the outputs
         height: int/float
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
+        return_jsonstring: bool
+            set to True to return json str that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
-            Save as an save_iframe, can work concurrently with other renderer
-            apart from exporting return_jsonstring.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
-            Open the save_iframe in the default browser if set to True.
+        open_iframe: bool
+            Open the iframe in the default browser if set to True.
 
         """
 
@@ -3850,19 +3890,25 @@ class TwoDSpec:
                               hovermode='closest',
                               showlegend=True)
 
-            if save_iframe:
+            if filename is None:
 
-                if filename is None:
+                filename = 'extracted_spectrum'
 
-                    pio.write_html(fig,
-                                   'extracted_spectrum_' + str(j) + '.html',
-                                   auto_open=open_iframe)
+            if save_fig:
 
-                else:
+                fig_type_split = fig_type.split('+')
 
-                    pio.write_html(fig,
-                                   filename + '_' + str(j) + '.html',
-                                   auto_open=open_iframe)
+                for t in fig_type_split:
+
+                    if t == 'iframe':
+
+                        pio.write_html(fig,
+                                    filename + '_' + str(j) + '.' + t,
+                                    auto_open=open_iframe)
+
+                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                        pio.write_image(fig, filename + '_' + str(j) + '.' + t)
 
             if display:
 
@@ -3890,7 +3936,8 @@ class TwoDSpec:
                          width=1280,
                          height=720,
                          return_jsonstring=False,
-                         save_iframe=False,
+                         save_fig=False,
+                         fig_type='iframe+png',
                          filename=None,
                          open_iframe=False):
         '''
@@ -3908,25 +3955,29 @@ class TwoDSpec:
         ----------
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
-        display: boolean
+        display: bool
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: str
             plotly renderer options.
         width: int/float
             Number of pixels in the horizontal direction of the outputs
         height: int/float
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: boolean
-            set to True to return json string that can be rendered by Plotly
+        return_jsonstring: bool
+            set to True to return json str that can be rendered by Plotly
             in any support language.
-        save_iframe: boolean
-            Save as an save_iframe, can work concurrently with other renderer
-            apart from exporting return_jsonstring.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: boolean
-            Open the save_iframe in the default browser if set to True.
+        open_iframe: bool
+            Open the iframe in the default browser if set to True.
 
         '''
 
@@ -3980,7 +4031,7 @@ class TwoDSpec:
             spec.add_arc_header(self.arc_header)
 
             # note that the display is adjusted for the chip gaps
-            if save_iframe or display or return_jsonstring:
+            if save_fig or display or return_jsonstring:
 
                 fig = go.Figure(
                     layout=dict(autosize=False, height=height, width=width))
@@ -4001,19 +4052,25 @@ class TwoDSpec:
                                   hovermode='closest',
                                   showlegend=False)
 
-                if save_iframe:
+                if filename is None:
 
-                    if filename is None:
+                    filename = 'arc_spec'
 
-                        pio.write_html(fig,
-                                       'arc_spec_' + str(i) + '.html',
-                                       auto_open=open_iframe)
+                if save_fig:
 
-                    else:
+                    fig_type_split = fig_type.split('+')
 
-                        pio.write_html(fig,
-                                       filename + '_' + str(i) + '.html',
-                                       auto_open=open_iframe)
+                    for t in fig_type_split:
+
+                        if t == 'iframe':
+
+                            pio.write_html(fig,
+                                        filename + '_' + str(i) + '.' + t,
+                                        auto_open=open_iframe)
+
+                        elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                            pio.write_image(fig, filename + '_' + str(i) + '.' + t)
 
                 if display:
 
@@ -4036,15 +4093,14 @@ class TwoDSpec:
     def create_fits(self,
                     output,
                     recreate=False,
-                    empty_primary_hdu=True,
-                    return_hdu_list=False):
+                    empty_primary_hdu=True):
         '''
         Parameters
         ----------
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
-            input strings are delimited by "+",
+            input strs are delimited by "+",
 
                 trace: 2 HDUs
                     Trace, and trace width (pixel)
@@ -4056,12 +4112,10 @@ class TwoDSpec:
                     1D arc spectrum, arc line pixels, and arc line effective
                     pixels
 
-        recreate: boolean (Default: False)
+        recreate: bool (Default: False)
             Set to True to overwrite the FITS data and header.
-        empty_primary_hdu: boolean (Default: True)
-            Set to True to leave the Primary HDU blank (Default: True)
-        return_hdu_list: boolean (Default: False)
-            Set to True to return the HDU List
+        empty_primary_hdu: bool (Default: True)
+            Set to True to leave the Primary HDU blank
 
         '''
 
@@ -4096,7 +4150,7 @@ class TwoDSpec:
         output: String
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
-            input strings are delimited by "+",
+            input strs are delimited by "+",
 
                 trace: 2 HDUs
                     Trace, and trace width (pixel)
@@ -4111,12 +4165,12 @@ class TwoDSpec:
         filename: str
             Filename for the output, all of them will share the same name but
             will have different extension.
-        overwrite: boolean
+        overwrite: bool
             Default is False.
-        recreate: boolean (Default: False)
+        recreate: bool (Default: False)
             Set to True to overwrite the FITS data and header.
-        empty_primary_hdu: boolean (Default: True)
-            Set to True to leave the Primary HDU blank (Default: True)
+        empty_primary_hdu: bool (Default: True)
+            Set to True to leave the Primary HDU blank
 
         '''
 

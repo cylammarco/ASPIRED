@@ -41,7 +41,8 @@ def test_spectral_extraction():
     # spatial_mask
     dummy_twodspec.ap_trace(rescale=True,
                             ap_faint=0,
-                            save_iframe=True,
+                            save_fig=True,
+                            fig_type='iframe+png',
                             filename='test/test_output/test_full_run_aptrace',
                             return_jsonstring=True)
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
@@ -53,7 +54,8 @@ def test_spectral_extraction():
         apwidth=5,
         optimal=False,
         filename='test/test_output/test_full_run_apextract',
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         return_jsonstring=True)
 
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
@@ -63,7 +65,8 @@ def test_spectral_extraction():
     dummy_twodspec.inspect_extracted_spectrum(
         display=False,
         filename='test/test_output/test_full_run_extracted_spectrum',
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         return_jsonstring=True)
 
 
@@ -107,9 +110,7 @@ spec_mask = np.arange(50, 1024)
 
 # Science frame
 lhs6328_frame = image_reduction.ImageReduction(
-    'test/test_data/sprat_LHS6328.list',
-    log_level='INFO',
-    log_file_name=None)
+    'test/test_data/sprat_LHS6328.list', log_level='INFO', log_file_name=None)
 lhs6328_frame.reduce()
 
 lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,

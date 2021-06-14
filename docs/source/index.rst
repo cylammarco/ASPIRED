@@ -28,6 +28,7 @@ User Guide
 
    background/imagereduction
    background/aptrace
+   background/rectification
    background/apextract
    background/wavecal
    background/fluxcal

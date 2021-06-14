@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 from aspired import image_reduction
 from aspired import spectral_reduction
-from aspired.wavelengthcalibration import WavelengthCalibration
-from aspired.fluxcalibration import FluxCalibration
+from aspired.wavelength_calibration import WavelengthCalibration
+from aspired.flux_calibration import FluxCalibration
 
 base_dir = os.path.dirname(__file__)
 abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
@@ -1171,7 +1171,7 @@ def test_sensitivity():
     onedspec.inspect_standard(
         display=False,
         return_jsonstring=True,
-        save_iframe=True,
+        save_fig=True,
         filename='test/test_output/test_onedspec_inspect_standard')
 
     coeff = np.polynomial.polynomial.polyfit(np.arange(1, 1001),
@@ -1186,7 +1186,7 @@ def test_sensitivity():
     onedspec.inspect_sensitivity(
         display=False,
         return_jsonstring=True,
-        save_iframe=True,
+        save_fig=True,
         filename='test/test_output/test_onedspec_inspect_sensitivity')
 
 
@@ -1278,21 +1278,15 @@ def test_miscellaneous():
         spec_id=0,
         renderer='default',
         return_jsonstring=True,
-        save_iframe=True,
-        save_png=True,
-        save_jpg=True,
-        save_svg=True,
-        save_pdf=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_onedspec_inspect_reduced_spectrum')
     onedspec.inspect_sensitivity(
         display=False,
         renderer='default',
         return_jsonstring=True,
-        save_iframe=True,
-        save_png=True,
-        save_jpg=True,
-        save_svg=True,
-        save_pdf=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_onedspec_inspect_reduced_spectrum')
 
     onedspec.create_fits(output='trace+count+weight_map+arc_spec+wavecal+'
@@ -1302,7 +1296,6 @@ def test_miscellaneous():
     onedspec.create_fits(output='trace+count+weight_map+arc_spec+wavecal+'
                          'wavelength+count_resampled+sensitivity+flux+'
                          'sensitivity_resampled+flux_resampled',
-                         return_id=True,
                          recreate=True)
     onedspec.create_fits(output='trace+count+weight_map+arc_spec+wavecal+'
                          'wavelength+count_resampled+sensitivity+flux+'

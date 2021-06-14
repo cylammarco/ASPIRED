@@ -48,8 +48,7 @@ def test_full_run():
                                 skywidth=10,
                                 skydeg=1,
                                 optimal=True,
-                                display=False,
-                                save_iframe=False)
+                                display=False)
 
     # Force extraction
     lhs6328_twodspec.ap_extract(
@@ -59,8 +58,7 @@ def test_full_run():
         optimal=True,
         forced=True,
         variances=lhs6328_twodspec.spectrum_list[1].var,
-        display=False,
-        save_iframe=False)
+        display=False)
 
     # Aperture extraction
     lhs6328_twodspec.ap_extract(
@@ -69,7 +67,7 @@ def test_full_run():
         skydeg=1,
         optimal=False,
         display=False,
-        save_iframe=True,
+        save_fig=True,
         filename='test/test_output/test_full_run_extract')
 
     # Optimal extraction
@@ -81,7 +79,7 @@ def test_full_run():
         forced=True,
         variances=1000000.,
         display=False,
-        save_iframe=True,
+        save_fig=True,
         filename='test/test_output/test_full_run_extract')
 
     lhs6328_twodspec.save_fits(
@@ -112,14 +110,12 @@ def test_full_run():
                                 skywidth=5,
                                 skydeg=1,
                                 optimal=True,
-                                display=False,
-                                save_iframe=False)
+                                display=False)
 
     # Extract the 1D arc by aperture sum of the traces provided
     lhs6328_twodspec.extract_arc_spec(
         display=False,
         filename='test/test_output/test_full_run_arc_spec',
-        save_iframe=False,
         return_jsonstring=True)
     hilt102_twodspec.extract_arc_spec(display=False)
 
@@ -234,4 +230,5 @@ def test_full_run():
     lhs6328_onedspec.inspect_reduced_spectrum(
         filename='test/test_output/test_full_run',
         display=False,
-        save_iframe=True)
+        save_fig=True,
+        fig_type='iframe+png')

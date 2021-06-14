@@ -44,7 +44,8 @@ def test_rectify():
         bin_size=6,
         n_bin=[2, 4],
         display=False,
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_rectifying_image')
     assert abs(np.sum(twodspec.img) / np.sum(twodspec.img_rectified) -
                1.0) < 0.01
@@ -59,7 +60,8 @@ def test_rectify_2():
         bin_size=6,
         n_bin='lala',
         display=False,
-        save_iframe=True,
+        save_fig=True,
+        fig_type='iframe+png',
         filename='test/test_output/test_rectifying_image_manual_filename')
     assert abs(np.sum(twodspec.img) / np.sum(twodspec.img_rectified) -
                1.0) < 0.01
