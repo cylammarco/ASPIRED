@@ -1486,8 +1486,8 @@ class TwoDSpec:
                  width=1280,
                  height=720,
                  return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
+                 save_fig=False,
+                 fig_type='iframe+png',
                  filename=None,
                  open_iframe=False):
         '''
@@ -1860,8 +1860,8 @@ class TwoDSpec:
                     if t == 'iframe':
 
                         pio.write_html(fig,
-                                    filename + '.' + t,
-                                    auto_open=open_iframe)
+                                       filename + '.' + t,
+                                       auto_open=open_iframe)
 
                     elif t in ['jpg', 'png', 'svg', 'pdf']:
 
@@ -1986,8 +1986,8 @@ class TwoDSpec:
                               width=1280,
                               height=720,
                               return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
+                              save_fig=False,
+                              fig_type='iframe+png',
                               filename=None,
                               open_iframe=False):
         '''
@@ -2293,8 +2293,8 @@ class TwoDSpec:
                     if t == 'iframe':
 
                         pio.write_html(fig,
-                                    filename + '.' + t,
-                                    auto_open=open_iframe)
+                                       filename + '.' + t,
+                                       auto_open=open_iframe)
 
                     elif t in ['jpg', 'png', 'svg', 'pdf']:
 
@@ -2424,8 +2424,8 @@ class TwoDSpec:
                    width=1280,
                    height=720,
                    return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
+                   save_fig=False,
+                   fig_type='iframe+png',
                    filename=None,
                    open_iframe=False):
         """
@@ -3052,12 +3052,13 @@ class TwoDSpec:
                         if t == 'iframe':
 
                             pio.write_html(fig,
-                                        filename + '_' + str(j) + '.' + t,
-                                        auto_open=open_iframe)
+                                           filename + '_' + str(j) + '.' + t,
+                                           auto_open=open_iframe)
 
                         elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                            pio.write_image(fig, filename + '_' + str(j) + '.' + t)
+                            pio.write_image(fig,
+                                            filename + '_' + str(j) + '.' + t)
 
                 if display:
 
@@ -3760,8 +3761,8 @@ class TwoDSpec:
                                    width=1280,
                                    height=720,
                                    return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
+                                   save_fig=False,
+                                   fig_type='iframe+png',
                                    filename=None,
                                    open_iframe=False):
         """
@@ -3903,8 +3904,8 @@ class TwoDSpec:
                     if t == 'iframe':
 
                         pio.write_html(fig,
-                                    filename + '_' + str(j) + '.' + t,
-                                    auto_open=open_iframe)
+                                       filename + '_' + str(j) + '.' + t,
+                                       auto_open=open_iframe)
 
                     elif t in ['jpg', 'png', 'svg', 'pdf']:
 
@@ -4065,12 +4066,13 @@ class TwoDSpec:
                         if t == 'iframe':
 
                             pio.write_html(fig,
-                                        filename + '_' + str(i) + '.' + t,
-                                        auto_open=open_iframe)
+                                           filename + '_' + str(i) + '.' + t,
+                                           auto_open=open_iframe)
 
                         elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                            pio.write_image(fig, filename + '_' + str(i) + '.' + t)
+                            pio.write_image(fig,
+                                            filename + '_' + str(i) + '.' + t)
 
                 if display:
 
@@ -4090,10 +4092,7 @@ class TwoDSpec:
 
             return to_return
 
-    def create_fits(self,
-                    output,
-                    recreate=False,
-                    empty_primary_hdu=True):
+    def create_fits(self, output, recreate=False, empty_primary_hdu=True):
         '''
         Parameters
         ----------

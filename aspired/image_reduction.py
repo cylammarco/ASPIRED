@@ -1616,8 +1616,8 @@ class ImageReduction:
                 if t == 'iframe':
 
                     pio.write_html(fig,
-                                filename + '.' + t,
-                                auto_open=open_iframe)
+                                   filename + '.' + t,
+                                   auto_open=open_iframe)
 
                 elif t in ['jpg', 'png', 'svg', 'pdf']:
 
