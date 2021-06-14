@@ -17,6 +17,6 @@ Optimal (marsh89)
 -----------------
 An optimal extraction that fits the change in the profile across the dispersion direction. Detailed descriptions can be found in `Marsh 1989 <https://ui.adsabs.harvard.edu/abs/1989PASP..101.1032M/abstract>`_.
 
-.. image: ../_static/fig_03_extraction_profile.jpg
+.. image:: ../_static/fig_03_extraction_profile.jpg
 
-.. image: ../_static/fig_04_extraction_compared.jpg
+.. image:: ../_static/fig_04_extraction_compared.jpg

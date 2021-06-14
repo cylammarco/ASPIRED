@@ -16,7 +16,7 @@ The ``ap_trace`` works by dividing the 2D spectrum into subspectra, and then eac
 
 5. While the spatial spectra are being cross-correlatd. They are aligned and stacked for peak finding and gaussian fitting. Peak finding is performed with ``scipy.signal.find_peaks()`` and returned the list of peaks sorted by their ``prominence``. Only centroiding has to be accurate at this stage, so a gaussian function is sufficient. The standard deviation of the gaussian is only served as a first guess of the profile when performing optimal extraction; it would not be used in the case of top-hat extraction.
 
-.. image: ../_static/fig_01_tracing.jpg
+.. image:: ../_static/fig_01_tracing.jpg
 
 Manual
 ------

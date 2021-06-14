@@ -13,7 +13,7 @@ Sensitivity Curve
 
 The sensitivity curve is the ratio of the real flux from the standard and the ADU from the observation. The higher resolution among the template and the observation is resampled to match the lower resolution one. Then, the template is divided by the oserved spectrum to generate the sensitivity curve which is interpolated by the ``scipy.interpolate.interp1d()``. A `Satvisky Golay smoothing <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html>`_ can be applied before the interpolation, which is not used by default.
 
-.. image: ../_static/fig_06_flux_calibration.jpg
+.. image:: ../_static/fig_06_flux_calibration_diagnostics.jpg
 
 Masking
 -------
