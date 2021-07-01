@@ -828,7 +828,7 @@ class WavelengthCalibration():
 
         self.spectrum1D.calibrator.clear_atlas()
 
-    def do_hough_transform(self, brute_force=True):
+    def do_hough_transform(self, brute_force=False):
         '''
         Perform Hough transform on the pixel-wavelength pairs with the
         configuration set by the set_hough_properties().
@@ -852,7 +852,7 @@ class WavelengthCalibration():
                           filename=None,
                           return_jsonstring=False,
                           renderer='default',
-                          display=True):
+                          display=False):
         '''
         A wrapper function to plot the search space in the Hough space.
 
@@ -872,7 +872,7 @@ class WavelengthCalibration():
             Save an image if set to True. matplotlib uses the pyplot.save_fig()
             while the plotly uses the pio.write_html() or pio.write_image().
             The support format types should be provided in fig_type.
-        fig_type: string (default: 'png')
+        fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
             jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: (default: None)

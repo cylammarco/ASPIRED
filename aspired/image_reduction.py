@@ -23,7 +23,6 @@ class ImageReduction:
                  ftype='csv',
                  delimiter=None,
                  saxis=None,
-                 saxis_keyword=None,
                  combinetype_light='median',
                  sigma_clipping_light=True,
                  clip_low_light=5,
@@ -1158,7 +1157,7 @@ class ImageReduction:
         flat_combiner = None
 
     def create_bad_pixel_mask(self,
-                              cutoff=60000.,
+                              cutoff=65535.,
                               grow=False,
                               iterations=1,
                               diagonal=False,
@@ -1200,8 +1199,6 @@ class ImageReduction:
 
         self.bad_mask = self.saturation_mask | self.bad_pixel_mask
 
-        return self.bad_mask
-
     def reduce(self):
         '''
         Perform data reduction using the frames provided.
@@ -1235,7 +1232,7 @@ class ImageReduction:
         self.light_reduced = np.array((self.light_reduced))
 
         # Create bad pixel mask
-        self.create_bad_mask()
+        self.heal_bad_pixels()
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:

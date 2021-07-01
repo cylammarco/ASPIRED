@@ -694,17 +694,18 @@ class FluxCalibration(StandardLibrary):
 
     def compute_sensitivity(self,
                             k=3,
-                            smooth=True,
+                            smooth=False,
                             method='interpolate',
                             slength=7,
                             sorder=3,
                             mask_range=[[6850, 6960], [7575, 7700],
-                                        [8925, 9050], [9265, 9750]],
+                                        [8925, 9050]],
                             mask_fit_order=1,
                             mask_fit_size=1,
                             return_function=True,
                             use_lowess=True,
                             lowess_frac=0.1,
+                            sens_deg=7,
                             **kwargs):
         '''
         The sensitivity curve is computed by dividing the true values by the
@@ -715,7 +716,7 @@ class FluxCalibration(StandardLibrary):
         A Savitzky-Golay filter is available for smoothing before the
         interpolation but it is not used by default.
 
-        6850 - 6960, 7575 - 7700, 8925 - 9050 and 9265 - 9750 A are masked by
+        6850 - 6960, 7575 - 7700, and 8925 - 9050 A are masked by
         default.
 
         Parameters
@@ -734,9 +735,9 @@ class FluxCalibration(StandardLibrary):
         sorder: int
             SG-filter polynomial order
         mask_range: None or list of list
-            Masking out regions not suitable for fitting the sensitivity curve.
-            None for no mask. List of list has the pattern
-            [[min1, max1], [min2, max2],...]
+            Masking out regions of Telluric absorption when fitting the
+            sensitivity curve. None for no mask. List of list has the pattern
+            [[min_pix_1, max_pix_1], [min_pix_2, max_pix_2],...]
         mask_fit_order: int
             Order of polynomial to be fitted over the masked regions
         mask_fit_size: int
@@ -746,6 +747,8 @@ class FluxCalibration(StandardLibrary):
             curve.
         use_lowess: bool (Default: True)
             Use a lowess function to get the continuum.
+        sens_deg: int (Default: 7)
+            The degree of polynomial of the sensitivity curve.
 
         Returns
         -------
@@ -765,12 +768,12 @@ class FluxCalibration(StandardLibrary):
         if np.nanmedian(np.array(np.ediff1d(wave))) < np.nanmedian(
                 np.array(np.ediff1d(self.standard_wave_true))):
 
-            standard_flux, standard_flux_err = spectres(
-                np.array(self.standard_wave_true).reshape(-1),
-                np.array(wave).reshape(-1),
-                np.array(count).reshape(-1),
-                np.array(count_err).reshape(-1),
-                verbose=True)
+            standard_flux, _ = spectres(np.array(
+                self.standard_wave_true).reshape(-1),
+                                        np.array(wave).reshape(-1),
+                                        np.array(count).reshape(-1),
+                                        np.array(count_err).reshape(-1),
+                                        verbose=True)
             standard_flux_true = self.standard_fluxmag_true
             standard_wave_true = self.standard_wave_true
 
@@ -790,22 +793,30 @@ class FluxCalibration(StandardLibrary):
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
 
-            standard_flux = signal.savgol_filter(standard_flux, slength,
-                                                 sorder)
+            standard_flux_smoothed = signal.savgol_filter(
+                standard_flux, slength, sorder)
             # Set the smoothing parameters
             self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
+        else:
+
+            standard_flux_smoothed = standard_flux.copy()
+
         if use_lowess:
 
-            standard_flux = lowess(standard_flux,
-                                   standard_wave_true,
-                                   return_sorted=False,
-                                   frac=lowess_frac,
-                                   **kwargs)
+            standard_flux_smoothed = lowess(standard_flux_smoothed,
+                                            standard_wave_true,
+                                            return_sorted=False,
+                                            frac=lowess_frac,
+                                            **kwargs)
 
         # Get the sensitivity curve
-        sensitivity = standard_flux_true / standard_flux
+        sensitivity = standard_flux_true / standard_flux_smoothed
         sensitivity_masked = sensitivity.copy()
+
+        telluric_profile = np.zeros_like(wave)
+        telluric_filler = np.zeros_like(wave)
+        telluric_func = None
 
         if mask_range is not None:
 
@@ -836,6 +847,10 @@ class FluxCalibration(StandardLibrary):
                 finite_mask = ~np.isnan(sensitivity_temp) & (sensitivity_temp >
                                                              0)
 
+                if np.sum(finite_mask) == 0:
+
+                    continue
+
                 # Fit the polynomial across the masked region
                 coeff = np.polynomial.polynomial.polyfit(
                     wave_temp[finite_mask], sensitivity_temp[finite_mask],
@@ -846,7 +861,45 @@ class FluxCalibration(StandardLibrary):
                     left_end:right_start] = np.polynomial.polynomial.polyval(
                         standard_wave_true[left_end:right_start], coeff)
 
-        mask = np.isfinite(sensitivity_masked) & (sensitivity_masked > 0)
+                # Get the indices for the two sides of the masking region
+                # at the native pixel scale
+                left_telluric_start = int(max(np.where(wave <= m[0])[0]))
+                right_telluric_end = int(min(np.where(wave >= m[1])[0]))
+
+                # Filled-in place Telluric Profile
+                telluric_filler_itp = itp.interp1d(
+                    standard_wave_true,
+                    standard_flux_smoothed * np.polynomial.polynomial.polyval(
+                        standard_wave_true, coeff),
+                    fill_value='extrapolate')
+                # resample to match the shape of "wave"
+                telluric_filler[left_telluric_start:
+                                right_telluric_end] = telluric_filler_itp(
+                                    wave
+                                )[left_telluric_start:right_telluric_end]
+
+                # Telluric profile
+                standard_flux_smoothed_itp = itp.interp1d(
+                    standard_wave_true,
+                    (standard_flux_smoothed * np.polynomial.polynomial.polyval(
+                        standard_wave_true, coeff)),
+                    fill_value='extrapolate')
+
+                # resample to match the shape of "wave"
+                telluric_profile[left_telluric_start:right_telluric_end] = (
+                    standard_flux_smoothed_itp(wave) -
+                    count * np.polynomial.polynomial.polyval(wave, coeff)
+                )[left_telluric_start:right_telluric_end]
+
+            telluric_func = itp.interp1d(wave,
+                                         telluric_profile,
+                                         fill_value='extrapolate')
+
+            telluric_filler_func = itp.interp1d(wave,
+                                                telluric_filler,
+                                                fill_value='extrapolate')
+
+        mask = np.isfinite(sensitivity_masked) & ~np.isnan(sensitivity_masked)
         sensitivity_masked = sensitivity_masked[mask]
         standard_wave_masked = standard_wave_true[mask]
         standard_flux_masked = standard_flux_true[mask]
@@ -862,7 +915,9 @@ class FluxCalibration(StandardLibrary):
         elif method == 'polynomial':
 
             coeff = np.polynomial.polynomial.polyfit(
-                standard_wave_masked, np.log10(sensitivity_masked), deg=7)
+                standard_wave_masked,
+                np.log10(sensitivity_masked),
+                deg=sens_deg)
 
             def sensitivity_func(x):
                 return np.polynomial.polynomial.polyval(x, coeff)
@@ -879,6 +934,11 @@ class FluxCalibration(StandardLibrary):
 
         # Add to each Spectrum1D object
         self.spectrum1D.add_sensitivity_func(sensitivity_func)
+
+        # Add the Telluric profile(s)
+        if telluric_func is not None:
+
+            self.spectrum1D.add_telluric(telluric_func, telluric_filler_func)
 
         if return_function:
 

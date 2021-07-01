@@ -7,13 +7,29 @@ import numpy as np
 from plotly import graph_objects as go
 from plotly import io as pio
 from spectres import spectres
+from scipy import optimize
 from scipy.interpolate import interp1d
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
 from .spectrum1D import Spectrum1D
 
 __all__ = ['OneDSpec']
+
+
+def _min_std(factor, flux, telluric_profile, norm_level):
+
+    if factor < 0:
+
+        return np.inf
+
+    # multiplied by 1e15 because the fluxes are usally at the order of
+    # magnitude of 1e-13
+    mad = np.median(
+        np.abs((flux + factor * telluric_profile) - norm_level)) * 1e15
+
+    return mad
 
 
 class OneDSpec():
@@ -1916,43 +1932,31 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].set_known_pairs(pix=pix, wave=wave)
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                self.logger.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_wavecal[i].set_known_pairs(pix=pix, wave=wave)
 
         if 'standard' in stype_split:
 
-            if self.standard_arc_lines_available:
-
-                self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
-
-            else:
-
-                self.logger.warning('Standard arc lines are not available.')
+            self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
 
     def add_user_atlas(self,
                        elements,
@@ -2376,7 +2380,7 @@ class OneDSpec():
 
     def do_hough_transform(self,
                            spec_id=None,
-                           brute_force=True,
+                           brute_force=False,
                            stype='science+standard'):
         '''
         Parameters
@@ -2439,6 +2443,88 @@ class OneDSpec():
 
                 self.logger.warning('Standard atlas is not available.')
 
+    def plot_search_space(self,
+                          spec_id=None,
+                          fit_coeff=None,
+                          top_n_candidate=3,
+                          weighted=True,
+                          save_fig=False,
+                          fig_type='iframe+png',
+                          filename=None,
+                          return_jsonstring=False,
+                          renderer='default',
+                          display=False,
+                          stype='science+standard'):
+        '''
+        Parameters
+        ----------
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_hough_pairs_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        self.logger.critical(error_msg)
+                        raise ValueError(error_msg)
+
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.science_wavecal[i].plot_search_space(
+                        fit_coeff=fit_coeff,
+                        top_n_candidate=top_n_candidate,
+                        weighted=weighted,
+                        save_fig=save_fig,
+                        fig_type=fig_type,
+                        filename=filename,
+                        return_jsonstring=return_jsonstring,
+                        renderer=renderer,
+                        display=display)
+
+            else:
+
+                self.logger.warning('Science atlas is not available.')
+
+        if 'standard' in stype_split:
+
+            if self.standard_hough_pairs_available:
+
+                self.standard_wavecal.plot_search_space(
+                    fit_coeff=fit_coeff,
+                    top_n_candidate=top_n_candidate,
+                    weighted=weighted,
+                    save_fig=save_fig,
+                    fig_type=fig_type,
+                    filename=filename,
+                    return_jsonstring=return_jsonstring,
+                    renderer=renderer,
+                    display=display)
+
+            else:
+
+                self.logger.warning('Standard atlas is not available.')
+
     def fit(self,
             spec_id=None,
             max_tries=5000,
@@ -2450,6 +2536,7 @@ class OneDSpec():
             progress=True,
             display=False,
             save_fig=False,
+            fig_type='iframe+png',
             filename=None,
             stype='science+standard'):
         '''
@@ -2478,6 +2565,9 @@ class OneDSpec():
             Set to show diagnostic plot.
         save_fig: bool (Default: False)
             Set to save figure.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
         filename: str or None (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
@@ -2521,6 +2611,7 @@ class OneDSpec():
                                                 progress=progress,
                                                 display=display,
                                                 save_fig=save_fig,
+                                                fig_type=fig_type,
                                                 filename=filename)
 
                 self.science_wavecal_polynomial_available = True
@@ -2542,6 +2633,7 @@ class OneDSpec():
                                           progress=progress,
                                           display=display,
                                           save_fig=save_fig,
+                                          fig_type=fig_type,
                                           filename=filename)
 
                 self.standard_wavecal_polynomial_available = True
@@ -2983,11 +3075,13 @@ class OneDSpec():
                             slength=5,
                             sorder=3,
                             mask_range=[[6850, 6960], [7575, 7700],
-                                        [8925, 9050], [9265, 9750]],
+                                        [8925, 9050]],
                             mask_fit_order=1,
                             mask_fit_size=1,
                             return_function=False,
                             use_lowess=True,
+                            lowess_frac=0.1,
+                            sens_deg=7,
                             **kwargs):
         '''
         Parameters
@@ -3009,7 +3103,7 @@ class OneDSpec():
         sorder: int (Default: 3)
             SG-filter polynomial order
         mask_range: None or list of list
-            (Default: 6850-6960, 7575-7700, 8925-9050, 9265-9750)
+            (Default: 6850-6960, 7575-7700, 8925-9050)
             Masking out regions not suitable for fitting the sensitivity curve.
             None for no mask. List of list has the pattern
             [[min1, max1], [min2, max2],...]
@@ -3032,6 +3126,8 @@ class OneDSpec():
                                              mask_fit_size=mask_fit_size,
                                              return_function=return_function,
                                              use_lowess=use_lowess,
+                                             lowess_frac=lowess_frac,
+                                             sens_deg=sens_deg,
                                              **kwargs)
             self.sensitivity_curve_available = True
 
@@ -3172,6 +3268,108 @@ class OneDSpec():
                     self.standard_spectrum_list[0].spectrum_header)
 
                 self.standard_flux_calibrated = True
+
+    def apply_telluric_correction(self, spec_id=None, ignore_standard=False):
+        '''
+        Parameters
+        ----------
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        ignore_standard: bool (Default: False)
+            Set the True to extract the Telluric absorption from the science
+            instead of from the standard. If standard star is not available,
+            this will be forced to True.
+
+        '''
+
+        # If there isn't a telluric profile from the standard star
+        # the ignore_standard flag will be switched to True
+        if self.standard_spectrum_list[0].telluric_func is None:
+
+            ignore_standard = True
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())):
+
+                error_msg = 'The given spec_id does not exist.'
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+        else:
+
+            # if spec_id is None, contraints are applied to all
+            #  calibrators
+            spec_id = list(self.science_spectrum_list.keys())
+
+        if not ignore_standard:
+
+            telluric_func = self.standard_spectrum_list[0].telluric_func
+
+        # Get the telluric profile
+        for i in spec_id:
+
+            science_spec = self.science_spectrum_list[i]
+
+            # If choose/forced to correct for the telluric from THIS spectrum
+            if ignore_standard:
+
+                telluric_func = science_spec.telluric_func
+
+            wave = science_spec.wave
+            wave_resampled = science_spec.wave_resampled
+
+            flux = science_spec.flux
+            flux_resampled = science_spec.flux_resampled
+
+            telluric_absorption = telluric_func(wave)
+            telluric_absorption_resampled = telluric_func(wave_resampled)
+
+            telluric_filler = lowess(flux, wave, return_sorted=False, frac=0.1)
+            telluric_filler_resampled = lowess(flux_resampled,
+                                               wave_resampled,
+                                               return_sorted=False,
+                                               frac=0.1)
+
+            mask = np.where(telluric_absorption != 0.0)
+            mask_resampled = np.where(telluric_absorption_resampled != 0.0)
+
+            telluric_factor = optimize.minimize(
+                _min_std,
+                1.0,
+                args=(flux[mask], telluric_absorption[mask],
+                      telluric_filler[mask]),
+                options={
+                    'maxiter': 10000
+                }).x
+            telluric_factor_resampled = optimize.minimize(
+                _min_std,
+                1.0,
+                args=(flux_resampled[mask_resampled],
+                      telluric_absorption_resampled[mask_resampled],
+                      telluric_filler_resampled[mask_resampled]),
+                options={
+                    'maxiter': 10000
+                }).x
+
+            telluric_factor_avg = 0.5 * (telluric_factor +
+                                         telluric_factor_resampled)
+
+            self.logger.info('telluric_factor is {}.'.format(telluric_factor))
+            self.logger.info('telluric_factor_resampled is {}.'.format(
+                telluric_factor_resampled))
+            self.logger.info(
+                'telluric_factor_avg is {}.'.format(telluric_factor_avg))
+
+            science_spec.flux +=\
+                telluric_factor_avg * telluric_absorption
+            science_spec.flux_resampled +=\
+                telluric_factor_avg * telluric_absorption_resampled
 
     def apply_atmospheric_extinction_correction(self,
                                                 science_airmass=None,

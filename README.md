@@ -16,9 +16,6 @@ Example notebooks can be found [here](https://github.com/cylammarco/ASPIRED-exam
 ## Use cases
 We are to cover as many use cases as possible. If you would like to apply some reduction techniques that we have overseen, please use the [issue tracker](https://github.com/cylammarco/ASPIRED/issues) to request new features. The following is the list of scenarios that we can handle:
 
-### Image
-0. [x] Dataset with light frame and any combination (including none) of dark(s), bias(s) and flat(s) frames.
-
 ### Spectrum - full reduction
 1. [x] Dataset with science and standard field-flattened images and the respective arc image.
 
@@ -35,8 +32,7 @@ We are to cover as many use cases as possible. If you would like to apply some r
 7. [x] User supplied line list.
 8. [x] User supplied pixel-to-wavelength mapping (not fitted).
 9. [x] User supplied sensitivity curve.
-10. [x] User supplied wavelength calibrated standard.
-11. [x] Flux calibration for user supplied wavelength calibrated science and standard 1D spectra.
+10. [x] Flux calibration for user supplied wavelength calibrated science and standard 1D spectra.
 
 ### Output
 11. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).

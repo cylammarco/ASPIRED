@@ -175,6 +175,8 @@ def test_full_run():
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
+    lhs6328_onedspec.apply_telluric_correction()
+
     # Apply atmospheric extinction correction
     lhs6328_onedspec.set_atmospheric_extinction(location='orm')
     lhs6328_onedspec.apply_atmospheric_extinction_correction()

@@ -1,3 +1,4 @@
+import copy
 import datetime
 import logging
 import os
@@ -17,7 +18,7 @@ from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .image_reduction import ImageReduction
 from .spectrum1D import Spectrum1D
-from .util import bfixpix
+from .util import create_bad_pixel_mask, bfixpix
 
 __all__ = ['TwoDSpec']
 
@@ -224,14 +225,14 @@ class TwoDSpec:
             self.img = data
             self.logger.info('An numpy array is loaded as data.')
             self.header = header
-            self.bad_mask = np.zeros_like(self.img, dtype=bool)
+            self.bad_mask = create_bad_pixel_mask(self.img)[0]
 
         # If it is a fits.hdu.hdulist.HDUList object
         elif isinstance(data, fits.hdu.hdulist.HDUList):
 
             self.img = data[0].data
             self.header = data[0].header
-            self.bad_mask = np.zeros_like(self.img, dtype=bool)
+            self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.warning('An HDU list is provided, only the first '
                                 'HDU will be read.')
 
@@ -241,7 +242,7 @@ class TwoDSpec:
 
             self.img = data.data
             self.header = data.header
-            self.bad_mask = np.zeros_like(self.img, dtype=bool)
+            self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.info('A PrimaryHDU is loaded as data.')
 
         # If it is an ImageReduction object
@@ -276,9 +277,9 @@ class TwoDSpec:
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
-            self.img = fitsfile_tmp.data
-            self.header = fitsfile_tmp.header
-            self.bad_mask = np.zeros_like(self.img, dtype=bool)
+            self.img = copy.deepcopy(fitsfile_tmp.data)
+            self.header = copy.deepcopy(fitsfile_tmp.header)
+
             fitsfile_tmp = None
 
         elif data is None:
@@ -293,7 +294,14 @@ class TwoDSpec:
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
-        if data is not None:
+        if self.img is not None:
+
+            # We perform the tracing on a *pixel healed* temporary image
+            if self.bad_mask is not None:
+
+                if self.bad_mask.shape == self.img.shape:
+
+                    self.img = bfixpix(self.img, self.bad_mask, retdat=True)
 
             self.img_residual = self.img.copy()
             self._get_image_size()
@@ -561,13 +569,19 @@ class TwoDSpec:
 
                     self.img = self.img[self.spatial_mask]
                     self.img_residual = self.img_residual[self.spatial_mask]
-                    self.bad_mask = self.bad_mask[self.spatial_mask]
+
+                    if self.bad_mask is not None:
+
+                        self.bad_mask = self.bad_mask[self.spatial_mask]
 
                 else:
 
                     self.img = self.img[:, self.spatial_mask]
                     self.img_residual = self.img_residual[:, self.spatial_mask]
-                    self.bad_mask = self.bad_mask[:, self.spatial_mask]
+
+                    if self.bad_mask is not None:
+
+                        self.bad_mask = self.bad_mask[:, self.spatial_mask]
 
             # the valid x-range of the chip (i.e. spectral direction)
             if (len(self.spec_mask) > 1):
@@ -576,25 +590,37 @@ class TwoDSpec:
 
                     self.img = self.img[:, self.spec_mask]
                     self.img_residual = self.img_residual[:, self.spec_mask]
-                    self.bad_mask = self.bad_mask[:, self.spec_mask]
+
+                    if self.bad_mask is not None:
+
+                        self.bad_mask = self.bad_mask[:, self.spec_mask]
 
                 else:
 
                     self.img = self.img[self.spec_mask]
                     self.img_residual = self.img_residual[self.spec_mask]
-                    self.bad_mask = self.bad_mask[self.spec_mask]
+
+                    if self.bad_mask is not None:
+
+                        self.bad_mask = self.bad_mask[self.spec_mask]
 
             if self.saxis == 0:
 
                 self.img = np.transpose(self.img)
                 self.img_residual = np.transpose(self.img_residual)
-                self.bad_mask = np.transpose(self.bad_mask)
+
+                if self.bad_mask is not None:
+
+                    self.bad_mask = np.transpose(self.bad_mask)
 
             if self.flip:
 
                 self.img = np.flip(self.img)
                 self.img_residual = np.flip(self.img_residual)
-                self.bad_mask = np.flip(self.bad_mask)
+
+                if self.bad_mask is not None:
+
+                    self.bad_mask = np.flip(self.bad_mask)
 
             self._get_image_size()
             self._get_image_zminmax()
@@ -622,8 +648,8 @@ class TwoDSpec:
     def _get_image_size(self):
 
         # get the length in the spectral and spatial directions
-        self.spec_size = np.shape(self.img)[self.saxis]
-        self.spatial_size = np.shape(self.img)[self.waxis]
+        self.spec_size = np.shape(self.img)[1]
+        self.spatial_size = np.shape(self.img)[0]
 
     def _get_image_zminmax(self):
 
@@ -1131,15 +1157,25 @@ class TwoDSpec:
 
             self.arc_header = header
 
-        elif isinstance(header[0], fits.header.Header):
+        elif isinstance(header, (list, tuple)):
 
-            self.arc_header = header[0]
+            if isinstance(header[0], fits.header.Header):
+
+                self.arc_header = header[0]
+
+            else:
+
+                self.arc_header = None
+                error_msg = 'Please provide a valid ' +\
+                    'astropy.io.fits.header.Header object. Process ' +\
+                    'without storing the header of the arc file.'
+                self.logger.warning(error_msg)
 
         else:
 
             self.arc_header = None
             error_msg = 'Please provide a valid ' +\
-                'astropy.io.fits.header.Header object. Process continues ' +\
+                'astropy.io.fits.header.Header object. Process ' +\
                 'without storing the header of the arc file.'
             self.logger.warning(error_msg)
 
@@ -1159,8 +1195,14 @@ class TwoDSpec:
 
             self.arc = np.flip(self.arc)
 
-        self.apply_spec_mask_to_arc(self.spec_mask)
-        self.apply_spatial_mask_to_arc(self.spatial_mask)
+        if np.shape(self.arc) == np.shape(self.img):
+
+            pass
+
+        else:
+
+            self.apply_spec_mask_to_arc(self.spec_mask)
+            self.apply_spatial_mask_to_arc(self.spatial_mask)
 
     def apply_spec_mask_to_arc(self, spec_mask):
         '''
@@ -1477,7 +1519,7 @@ class TwoDSpec:
                  scaling_min=0.9995,
                  scaling_max=1.0005,
                  scaling_step=0.001,
-                 percentile=5,
+                 percentile=2,
                  shift_tol=10,
                  fit_deg=3,
                  ap_faint=10,
@@ -1590,18 +1632,8 @@ class TwoDSpec:
         # Get the shape of the 2D spectrum and define upsampling ratio
         nresample = self.spatial_size * resample_factor
         img_upsampled = ndimage.zoom(self.img, zoom=resample_factor)
-        bad_mask_upsampled = ndimage.zoom(self.bad_mask, zoom=resample_factor)
 
-        # We perform the tracing on a *pixel healed* temporary image
-        if self.bad_mask is not None:
-
-            img_tmp = bfixpix(img_upsampled, bad_mask_upsampled, retdat=True)
-
-        else:
-
-            img_tmp = img_upsampled
-
-        img_tmp = img_tmp.astype(float)
+        img_tmp = img_upsampled.astype(float)
         img_tmp[np.isnan(img_tmp)] = 0.
         img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
 
@@ -2410,7 +2442,7 @@ class TwoDSpec:
                    lowess_it=3,
                    lowess_delta=0.0,
                    tolerance=1e-6,
-                   cosmicray_sigma=5.0,
+                   cosmicray_sigma=4.0,
                    max_iter=99,
                    forced=False,
                    variances=None,
@@ -2487,7 +2519,7 @@ class TwoDSpec:
             linear-interpolation instead of weighted regression.
         tolerance: float (Default: 1e-6)
             The tolerance limit for the convergence of the optimal extraction
-        cosmicray_sigma: float (Deafult: 5.0)
+        cosmicray_sigma: float (Deafult: 4.0)
             Cosmic ray sigma clipping limit. This is for rejecting pixels when
             using horne87 and marsh89 optimal cleaning. Use sigclip in kwargs
             for configuring cosmicray cleaning with astroscrappy.
@@ -2666,11 +2698,18 @@ class TwoDSpec:
 
                 # trace +/- aperture size
                 source_slice = self.img[source_pix, i].copy()
-                source_bad_mask = self.bad_mask[source_pix, i]
+                if self.bad_mask is not None:
+                    source_bad_mask = self.bad_mask[source_pix, i]
+                else:
+                    source_bad_mask = np.zeros_like(source_slice, dtype='bool')
 
                 # trace +/- aperture and sky region size
                 extraction_slice = self.img[extraction_pix, i].copy()
-                extraction_bad_mask = self.bad_mask[extraction_pix, i]
+                if self.bad_mask is not None:
+                    extraction_bad_mask = self.bad_mask[extraction_pix, i]
+                else:
+                    extraction_bad_mask = np.zeros_like(extraction_slice,
+                                                        dtype='bool')
 
                 count_sky_extraction_slice = self._fit_sky(
                     extraction_slice, extraction_bad_mask, sky_width_dn,
@@ -3138,9 +3177,9 @@ class TwoDSpec:
             1 - pix_frac) * sky_source_slice[-1]
 
         # number of bkgd pixels
-        nB = sky_width_dn + sky_width_up
+        nB = sky_width_dn + sky_width_up - np.sum(np.isnan(sky_source_slice))
         # number of aperture pixels
-        nA = width_dn + width_up
+        nA = width_dn + width_up - np.sum(np.isnan(source_slice))
 
         # Based on aperture phot err description by F. Masci,
         # Caltech:

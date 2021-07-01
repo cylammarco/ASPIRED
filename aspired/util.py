@@ -76,7 +76,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
 
 
 def create_cutoff_mask(data,
-                       cutoff=60000.,
+                       cutoff=65535.,
                        grow=False,
                        iterations=1,
                        diagonal=False):

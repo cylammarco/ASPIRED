@@ -207,6 +207,8 @@ class Spectrum1D():
         self.slength = None
         self.sorder = None
 
+        self.telluric_func = None
+        self.telluric_filler_func = None
         self.sensitivity = None
         self.sensitivity_resampled = None
         self.sensitivity_func = None
@@ -1179,6 +1181,28 @@ class Spectrum1D():
 
         self.wave_literature = None
         self.flux_literature = None
+
+    def add_telluric(self, telluric_func, telluric_filler_func):
+        """
+        Adding the Telluric profiles.
+
+        Parameters
+        ----------
+        telluric: Callable function
+            A callable function to interpolate the telluric features
+        telluric_filler: Callable function
+            A callable function to interpolate the flux used to replace the
+            Telluric features when computing the sensitivity curve
+
+        """
+
+        self.telluric_func = telluric_func
+        self.telluric_filler_func = telluric_filler_func
+
+    def remove_telluric(self):
+
+        self.telluric_func = None
+        self.telluric_filler_func = None
 
     def add_flux(self, flux, flux_err, flux_sky):
         """

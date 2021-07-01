@@ -15,7 +15,7 @@ dummy_sum = np.sum(dummy_image)
 
 # Healing the diagonal of pixels with 65000 count
 def test_cutoff_mask():
-    cutoff_mask, _ = util.create_cutoff_mask(dummy_image)
+    cutoff_mask, _ = util.create_cutoff_mask(dummy_image, cutoff=60000)
     healed_image = util.bfixpix(dummy_image, cutoff_mask, retdat=True)
     assert np.sum(healed_image) == np.size(dummy_image)
 
@@ -51,7 +51,7 @@ def test_cutoff_mask_expect_fail_str():
 # Repeat with grow set to True
 # Healing the diagonal of pixels with 65000 count
 def test_cutoff_mask_grow():
-    cutoff_mask, _ = util.create_cutoff_mask(dummy_image, grow=True)
+    cutoff_mask, _ = util.create_cutoff_mask(dummy_image, cutoff=60000, grow=True)
     healed_image = util.bfixpix(dummy_image, cutoff_mask, retdat=True)
     assert np.sum(healed_image) == np.size(dummy_image)
 
