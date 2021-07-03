@@ -650,6 +650,9 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(self.img)[1]
         self.spatial_size = np.shape(self.img)[0]
+        self.logger.info('spec_size is found to be {}.'.format(self.spec_size))
+        self.logger.info('spatial_size is found to be '
+                         '{}.'.format(self.spatial_size))
 
     def _get_image_zminmax(self):
 
@@ -658,6 +661,8 @@ class TwoDSpec:
         img_log_finite = img_log[np.isfinite(img_log)]
         self.zmin = np.nanpercentile(img_log_finite, 5)
         self.zmax = np.nanpercentile(img_log_finite, 95)
+        self.logger.info('zmin is set to {}.'.format(self.zmin))
+        self.logger.info('zmax is set to {}.'.format(self.zmax))
 
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
@@ -668,6 +673,8 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
+                self.logger.info('readnoise is found to be {}.'.format(
+                    self.readnoise))
 
             elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
 
@@ -679,6 +686,8 @@ class TwoDSpec:
 
                     # use the given readnoise value
                     self.readnoise = float(readnoise)
+                    self.logger.info('readnoise is set to {}.'.format(
+                        self.readnoise))
 
             else:
 
@@ -701,6 +710,8 @@ class TwoDSpec:
 
                     self.readnoise = self.header[self.readnoise_keyword[
                         np.where(readnoise_keyword_matched)[0][0]]]
+                    self.logger.info('readnoise is found to be {}.'.format(
+                        self.readnoise))
 
                 else:
 
@@ -725,6 +736,7 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
+                self.logger.info('gain is found to be {}.'.format(self.gain))
 
             elif isinstance(gain, (float, int)) & (~np.isnan(gain)):
 
@@ -736,6 +748,7 @@ class TwoDSpec:
 
                     # use the given gain value
                     self.gain = float(gain)
+                    self.logger.info('gain is set to {}.'.format(self.gain))
 
             else:
 
@@ -756,6 +769,8 @@ class TwoDSpec:
 
                     self.gain = self.header[self.gain_keyword[np.where(
                         gain_keyword_matched)[0][0]]]
+                    self.logger.info('gain is found to be {}.'.format(
+                        self.gain))
 
                 else:
 
@@ -779,6 +794,8 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
+                self.logger.info('seeing is found to be {}.'.format(
+                    self.seeing))
 
             elif isinstance(seeing, (float, int)) & (~np.isnan(seeing)):
 
@@ -790,6 +807,8 @@ class TwoDSpec:
 
                     # use the given seeing value
                     self.seeing = float(seeing)
+                    self.logger.info('seeing is set to {}.'.format(
+                        self.seeing))
 
             else:
 
@@ -812,6 +831,8 @@ class TwoDSpec:
 
                     self.seeing = self.header[self.seeing_keyword[np.where(
                         seeing_keyword_matched)[0][0]]]
+                    self.logger.info('seeing is found to be {}.'.format(
+                        self.seeing))
 
                 else:
 
@@ -835,6 +856,8 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
+                self.logger.info('exptime is found to be {}.'.format(
+                    self.exptime))
 
             elif isinstance(exptime, (float, int)) & (~np.isnan(exptime)):
 
@@ -846,6 +869,8 @@ class TwoDSpec:
 
                     # use the given exptime value
                     self.exptime = float(exptime)
+                    self.logger.info('exptime is set to {}.'.format(
+                        self.exptime))
 
             else:
 
@@ -868,6 +893,8 @@ class TwoDSpec:
 
                     self.exptime = self.header[self.exptime_keyword[np.where(
                         exptime_keyword_matched)[0][0]]]
+                    self.logger.info('exptime is found to be {}.'.format(
+                        self.exptime))
 
                 else:
 
@@ -892,6 +919,8 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.airmass = float(self.header[airmass])
+                self.logger.info('exptime is found to be {}.'.format(
+                    self.exptime))
 
             elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
 
@@ -903,6 +932,8 @@ class TwoDSpec:
 
                     # use the given airmass value
                     self.airmass = float(airmass)
+                    self.logger.info('airmass is set to {}.'.format(
+                        self.airmass))
 
             else:
 
@@ -924,6 +955,8 @@ class TwoDSpec:
 
                     self.airmass = self.header[self.airmass_keyword[np.where(
                         airmass_keyword_matched)[0][0]]]
+                    self.logger.info('exptime is found to be {}.'.format(
+                        self.airmass))
 
                 else:
 
@@ -1162,6 +1195,7 @@ class TwoDSpec:
             if isinstance(header[0], fits.header.Header):
 
                 self.arc_header = header[0]
+                self.logger.info('arc_header is set.')
 
             else:
 
@@ -1206,7 +1240,6 @@ class TwoDSpec:
 
     def apply_spec_mask_to_arc(self, spec_mask):
         '''
-        **EXPERIMENTAL, as of 17 Jan 2021**
         Apply to use only the valid x-range of the chip (i.e. dispersion
         direction)
 
@@ -1222,10 +1255,15 @@ class TwoDSpec:
         if (len(spec_mask) > 1):
 
             self.arc = self.arc[:, spec_mask]
+            self.logger.info('spec_mask is applied to arc.')
+
+        else:
+
+            self.logger.info('spec_mask has zero length, it cannot be '
+                             'applied to the arc.')
 
     def apply_spatial_mask_to_arc(self, spatial_mask):
         '''
-        **EXPERIMENTAL, as of 17 Jan 2021**
         Apply to use only the valid y-range of the chip (i.e. spatial
         direction)
 
@@ -1241,6 +1279,12 @@ class TwoDSpec:
         if (len(spatial_mask) > 1):
 
             self.arc = self.arc[spatial_mask]
+            self.logger.info('spatial_mask is applied to arc.')
+
+        else:
+
+            self.logger.info('spatial_mask has zero length, it cannot be '
+                             'applied to the arc.')
 
     def set_readnoise_keyword(self, keyword_list, append=False, update=True):
         '''
@@ -1276,14 +1320,24 @@ class TwoDSpec:
         if append:
 
             self.readnoise_keyword += keyword_list
+            self.logger.info('{} is appended to '.format(keyword_list) +
+                             'the readnoise_keyword list.')
 
         else:
 
             self.readnoise_keyword = keyword_list
+            self.logger.info('{} is used as '.format(keyword_list) +
+                             'the readnoise_keyword list.')
 
         if update:
 
             self.set_readnoise()
+
+        else:
+
+            self.logger.info(
+                'readnoise_keyword list is updated, but it is '
+                'opted not to update the readnoise automatically.')
 
     def set_gain_keyword(self, keyword_list, append=False, update=True):
         '''
@@ -1319,14 +1373,23 @@ class TwoDSpec:
         if append:
 
             self.gain_keyword += keyword_list
+            self.logger.info('{} is appended to '.format(keyword_list) +
+                             'the gain_keyword list.')
 
         else:
 
             self.gain_keyword = keyword_list
+            self.logger.info('{} is used as '.format(keyword_list) +
+                             'the gain_keyword list.')
 
         if update:
 
             self.set_gain()
+
+        else:
+
+            self.logger.info('gain_keyword list is updated, but it is '
+                             'opted not to update the gain automatically.')
 
     def set_seeing_keyword(self, keyword_list, append=False, update=True):
         '''
@@ -1362,14 +1425,23 @@ class TwoDSpec:
         if append:
 
             self.seeing_keyword += keyword_list
+            self.logger.info('{} is appended to '.format(keyword_list) +
+                             'the seeing_keyword list.')
 
         else:
 
             self.seeing_keyword = keyword_list
+            self.logger.info('{} is used as '.format(keyword_list) +
+                             'the seeing_keyword list.')
 
         if update:
 
             self.set_seeing()
+
+        else:
+
+            self.logger.info('seeing_keyword list is updated, but it is '
+                             'opted not to update the seeing automatically.')
 
     def set_exptime_keyword(self, keyword_list, append=False, update=True):
         '''
@@ -1405,14 +1477,23 @@ class TwoDSpec:
         if append:
 
             self.exptime_keyword += keyword_list
+            self.logger.info('{} is appended to '.format(keyword_list) +
+                             'the exptime_keyword list.')
 
         else:
 
             self.exptime_keyword = keyword_list
+            self.logger.info('{} is used as '.format(keyword_list) +
+                             'the exptime_keyword list.')
 
         if update:
 
             self.set_exptime()
+
+        else:
+
+            self.logger.info('exptime_keyword list is updated, but it is '
+                             'opted not to update the exptime automatically.')
 
     def set_airmass_keyword(self, keyword_list, append=False, update=True):
         '''
@@ -1448,14 +1529,23 @@ class TwoDSpec:
         if append:
 
             self.airmass_keyword += keyword_list
+            self.logger.info('{} is appended to '.format(keyword_list) +
+                             'the airmass_keyword list.')
 
         else:
 
             self.airmass_keyword = keyword_list
+            self.logger.info('{} is used as '.format(keyword_list) +
+                             'the airmass_keyword list.')
 
         if update:
 
             self.set_airmass()
+
+        else:
+
+            self.logger.info('airmass_keyword list is updated, but it is '
+                             'opted not to update the airmass automatically.')
 
     def set_header(self, header):
         '''
@@ -1671,6 +1761,8 @@ class TwoDSpec:
         for i in chain(range(start_window_idx, nwindow),
                        range(start_window_idx - 1, -1, -1)):
 
+            self.logger.info('Correlating the {}-th window.'.format(i))
+
             # smooth by taking the median
             lines = np.nanmedian(img_split[i], axis=1)
             lines[np.isnan(lines)] = 0.
@@ -1742,6 +1834,8 @@ class TwoDSpec:
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
         self.nspec_traced = min(len(peaks[0]), nspec)
+        self.logger.info('{} spectra are identified.'.format(
+            self.nspec_traced))
 
         # Sort the positions by the prominences, and return to the original
         # scale (i.e. with subpixel position)
@@ -1795,6 +1889,7 @@ class TwoDSpec:
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
             ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
+            self.logger.info('The trace is found at {}.'.format(zip(ap_p, ap)))
 
             # Get the centre of the upsampled spectrum
             ap_centre_idx = ap[start_window_idx] * resample_factor
@@ -1826,6 +1921,8 @@ class TwoDSpec:
                                 p0=pguess)
             ap_sigma = abs(popt[3]) / resample_factor
             ap = ap
+            self.logger.info('Aperture is fitte with a Gaussian sigma of '
+                             '{} pix.'.format(ap_sigma))
 
             self.spectrum_list[i] = Spectrum1D(
                 spec_id=i,
@@ -1898,6 +1995,11 @@ class TwoDSpec:
                     elif t in ['jpg', 'png', 'svg', 'pdf']:
 
                         pio.write_image(fig, filename + '.' + t)
+
+                    self.logger.info(
+                        'Figure is saved to {} for the '.format(filename +
+                                                                '.' + t) +
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             if display:
 
@@ -2162,6 +2264,8 @@ class TwoDSpec:
                            axis=1))
 
             s_all = s_down + s + s_up
+            self.logger.info(
+                '{} subspectra is used for cross-correlation.'.format(s_all))
 
             # continuum subtraction
             s_con_subtracted = [
@@ -2198,6 +2302,9 @@ class TwoDSpec:
                        y_trace,
                        frac=lowess_frac,
                        return_sorted=False), shift / upsample_factor, order)
+            self.logger.info(
+                'Best fit polynomial for rectifying in the spatial direction.'
+                'is {}.'.format(coeff))
 
         # Upsample and shift in the dispersion direction
         if self.arc is not None:
@@ -2205,6 +2312,7 @@ class TwoDSpec:
             arc_tmp = ndimage.zoom(self.arc,
                                    zoom=upsample_factor,
                                    order=spline_order)
+            self.logger.info('The arc frame is upsampled.')
 
         # This is to create the rectified image, so drop the smoothed image
         img_tmp = ndimage.zoom(self.img,
@@ -2332,6 +2440,10 @@ class TwoDSpec:
 
                         pio.write_image(fig, filename + '.' + t)
 
+                    self.logger.info(
+                        'Figure is saved to {} for the '.format(filename +
+                                                                '.' + t))
+
             if display:
 
                 if renderer == 'default':
@@ -2355,10 +2467,22 @@ class TwoDSpec:
         if self.img_rectified is not None:
 
             self.img = self.img_rectified
+            self.logger.info('Image rectification is applied')
+
+        else:
+
+            self.logger.info('Rectification is not computed, it cannot be '
+                             'applied to the image.')
 
         if self.arc_rectified is not None:
 
             self.arc = self.arc_rectified
+            self.logger.info('Arc rectification is applied')
+
+        else:
+
+            self.logger.info('Rectification is not computed, it cannot be '
+                             'applied to the arc.')
 
     def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_width_dn,
                  sky_width_up, sky_polyfit_order):
@@ -2422,10 +2546,15 @@ class TwoDSpec:
                     'background is set to zero.')
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
+            self.logger.debug('Background sky flux is '
+                              '{}.'.format(count_sky_extraction_slice))
+
         else:
 
             # get the indexes of the sky regions
             count_sky_extraction_slice = np.zeros_like(extraction_slice)
+            self.logger.debug('Sky region is not provided, backgound is set '
+                              'to zero.')
 
         return count_sky_extraction_slice
 
@@ -2748,9 +2877,13 @@ class TwoDSpec:
                 # Get the optimal signals
                 if optimal & (algorithm == 'horne86'):
 
+                    self.logger.debug('Using Horne 1986 algorithm.')
+
                     # If the weights are given externally to perform forced
                     # extraction
                     if forced:
+
+                        self.logger.debug('Using forced extraction.')
 
                         # Unit weighted
                         if np.ndim(variances) == 0:
@@ -2842,6 +2975,8 @@ class TwoDSpec:
 
             if optimal & (algorithm == 'marsh89'):
 
+                self.logger.debug('Using Marsh 1989 algorithm.')
+
                 if variances is None:
 
                     variances = self.variance
@@ -2875,6 +3010,8 @@ class TwoDSpec:
             spec.gain = self.gain
             spec.optimal_pixel = is_optimal
             spec.add_spectrum_header(self.header)
+
+            self.logger.info('Spectrum extracted for spec_id: {}.'.format(j))
 
             if optimal & (algorithm == 'horne86'):
 
@@ -3088,16 +3225,21 @@ class TwoDSpec:
 
                     for t in fig_type_split:
 
+                        save_path = filename + '_' + str(j) + '.' + t
+
                         if t == 'iframe':
 
                             pio.write_html(fig,
-                                           filename + '_' + str(j) + '.' + t,
+                                           save_path,
                                            auto_open=open_iframe)
 
                         elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                            pio.write_image(fig,
-                                            filename + '_' + str(j) + '.' + t)
+                            pio.write_image(fig, save_path)
+
+                        self.logger.info(
+                            'Figure is saved to {} '.format(save_path) +
+                            'for spec_id: {}.'.format(j))
 
                 if display:
 
@@ -3190,6 +3332,9 @@ class TwoDSpec:
         # uncertainty
         signal = source_plus_sky - sky
         noise = np.sqrt(signal / gain + (nA + nA**2. / nB) * (sigB**2.))
+
+        self.logger.debug('The signal and noise from the tophat extraction '
+                          'are {} and {}.'.format(signal, noise))
 
         return signal, noise, False
 
@@ -3369,6 +3514,9 @@ class TwoDSpec:
 
         signal = f1
         noise = np.sqrt(v1)
+
+        self.logger.debug('The signal and noise from the tophat extraction '
+                          'are {} and {}.'.format(signal, noise))
 
         return signal, noise, is_optimal, P, var_f
 
@@ -3790,6 +3938,10 @@ class TwoDSpec:
         spectrum_marsh = spectrum_marsh
         spectrum_err_marsh = spectrum_err_marsh
 
+        self.logger.debug('The signal and noise from the tophat extraction '
+                          'are {} and {}.'.format(spectrum_marsh,
+                                                  spectrum_err_marsh))
+
         return (spectrum_marsh, spectrum_err_marsh, is_optimal, profile,
                 variance0)
 
@@ -3940,15 +4092,19 @@ class TwoDSpec:
 
                 for t in fig_type_split:
 
+                    save_path = filename + '_' + str(j) + '.' + t
+
                     if t == 'iframe':
 
-                        pio.write_html(fig,
-                                       filename + '_' + str(j) + '.' + t,
-                                       auto_open=open_iframe)
+                        pio.write_html(fig, save_path, auto_open=open_iframe)
 
                     elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                        pio.write_image(fig, filename + '_' + str(j) + '.' + t)
+                        pio.write_image(fig, save_path)
+
+                    self.logger.info(
+                        'Figure is saved to {} '.format(save_path) +
+                        'for spec_id: {}.'.format(j))
 
             if display:
 
@@ -4102,16 +4258,21 @@ class TwoDSpec:
 
                     for t in fig_type_split:
 
+                        save_path = filename + '_' + str(i) + '.' + t
+
                         if t == 'iframe':
 
                             pio.write_html(fig,
-                                           filename + '_' + str(i) + '.' + t,
+                                           save_path,
                                            auto_open=open_iframe)
 
                         elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                            pio.write_image(fig,
-                                            filename + '_' + str(i) + '.' + t)
+                            pio.write_image(fig, save_path)
+
+                        self.logger.info(
+                            'Figure is saved to {} '.format(save_path) +
+                            'for spec_id: {}.'.format(i))
 
                 if display:
 
@@ -4172,6 +4333,7 @@ class TwoDSpec:
                 output=output,
                 recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu)
+            self.logger.info('FITS file is created for spec_id: {}.'.format(i))
 
     def save_fits(self,
                   output='trace+count',
@@ -4232,3 +4394,5 @@ class TwoDSpec:
                 overwrite=overwrite,
                 recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu)
+            self.logger.info('FITS file is saved to {} '.format(filename_i) +
+                             'for spec_id: {}.'.format(i))

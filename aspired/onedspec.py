@@ -195,6 +195,18 @@ class OneDSpec():
         self.standard_flux_calibrated = False
 
     def add_science_spectrum1D(self, spec_id):
+        '''
+        Add a new Spectrum1D with the ID spec_id. This overwrite the existing
+        Spectrum1D object if it already exists.
+
+        Parameters
+        ----------
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+
+        '''
+
+        # Create the wavelength calibration object for the given spec_id
         self.science_wavecal.update({
             spec_id:
             WavelengthCalibration(verbose=self.verbose,
@@ -204,6 +216,7 @@ class OneDSpec():
                                   log_file_name=self.log_file_name)
         })
 
+        # Create the Spectrum1D object for the given spec_id
         self.science_spectrum_list.update({
             spec_id:
             Spectrum1D(spec_id=spec_id,
@@ -214,8 +227,12 @@ class OneDSpec():
                        log_file_name=self.log_file_name)
         })
 
+        # Reference the wavecal to the Spectrum1D object just created
         self.science_wavecal[spec_id].from_spectrum1D(
             self.science_spectrum_list[spec_id])
+
+        self.logger.info(
+            'spectrm1D object is added to spec_id: {}'.format(spec_id))
 
     def add_fluxcalibration(self, fluxcal):
         '''
@@ -231,6 +248,7 @@ class OneDSpec():
         if type(fluxcal) == FluxCalibration:
 
             self.fluxcal = fluxcal
+            self.logger.info('fluxcal object is added')
 
         else:
 
@@ -274,76 +292,73 @@ class OneDSpec():
 
         stype_split = stype.split('+')
 
-        for s in stype_split:
+        if 'science' in stype_split:
 
-            if s == 'science':
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                # Check the sizes of the wave and spec_id and convert wave
-                # into a dictionary
-                if len(wavecal) == len(spec_id):
-
-                    wavecal = {
-                        spec_id[i]: wavecal[i]
-                        for i in range(len(spec_id))
-                    }
-
-                elif len(wavecal) == 1:
-
-                    wavecal = {
-                        spec_id[i]: wavecal[0]
-                        for i in range(len(spec_id))
-                    }
-
-                else:
-
-                    error_msg = 'wavecal must be the same length of shape ' +\
-                        'as spec_id.'
+                    error_msg = 'The given spec_id does not exist.'
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
-                for i in spec_id:
+            else:
 
-                    if type(wavecal[i]) == WavelengthCalibration:
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                        self.science_wavecal[i] = wavecal[i]
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(wavecal) == len(spec_id):
 
-                    else:
+                wavecal = {spec_id[i]: wavecal[i] for i in range(len(spec_id))}
 
-                        err_msg = 'Please provide a valid ' +\
-                            'WavelengthCalibration object.'
-                        self.logger.critical(err_msg)
-                        raise TypeError(err_msg)
+            elif len(wavecal) == 1:
 
-            if s == 'standard':
+                wavecal = {spec_id[i]: wavecal[0] for i in range(len(spec_id))}
 
-                if type(wavecal[0]) == WavelengthCalibration:
+            else:
 
-                    self.standard_wavecal = wavecal[0]
+                error_msg = 'wavecal must be the same length of shape ' +\
+                    'as spec_id.'
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+            for i in spec_id:
+
+                if type(wavecal[i]) == WavelengthCalibration:
+
+                    self.science_wavecal[i] = wavecal[i]
+                    self.logger.info(
+                        'Added WavelengthCalibration to the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 else:
 
                     err_msg = 'Please provide a valid ' +\
-                        'WavelengthCalibration object'
+                        'WavelengthCalibration object.'
                     self.logger.critical(err_msg)
                     raise TypeError(err_msg)
+
+        if 'standard' in stype_split:
+
+            if type(wavecal[0]) == WavelengthCalibration:
+
+                self.standard_wavecal = wavecal[0]
+                self.logger.info('Added WavelengthCalibration to '
+                                 'the standard spectrum_list.')
+
+            else:
+
+                err_msg = 'Please provide a valid ' +\
+                    'WavelengthCalibration object'
+                self.logger.critical(err_msg)
+                raise TypeError(err_msg)
 
     def add_wavelength(self, wave, spec_id=None, stype='science+standard'):
         '''
@@ -430,6 +445,9 @@ class OneDSpec():
 
                         self.science_spectrum_list[i].add_wavelength(
                             wave=wave[i])
+                        self.logger.info(
+                            'Added wavelength list to the '
+                            'science_spectrum_list for spec_id: {}.'.format(i))
 
                     else:
 
@@ -565,6 +583,10 @@ class OneDSpec():
 
                         self.science_spectrum_list[i].add_wavelength_resampled(
                             wave_resampled=wave_resampled[i])
+                        self.logger.info(
+                            'Added wavelength_resampled list to '
+                            'the science_spectrum_list for spec_id: '
+                            '{}.'.format(i))
 
                     else:
 
@@ -591,6 +613,8 @@ class OneDSpec():
 
                     self.standard_spectrum_list[0].add_wavelength_resampled(
                         wave_resampled=wave_resampled[0])
+                    self.logger.info('Added wavelength list to the '
+                                     'standard_spectrum_list.')
 
                 else:
 
@@ -646,6 +670,7 @@ class OneDSpec():
             raise TypeError(err_msg)
 
         if count_err is not None:
+
             if type(count_err) == np.ndarray:
 
                 count_err = [count_err]
@@ -794,6 +819,9 @@ class OneDSpec():
                 self.science_spectrum_list[i].add_count(count=count[i],
                                                         count_err=count_err[i],
                                                         count_sky=count_sky[i])
+                self.logger.info(
+                    'Added count, count_err, and count_sky to'
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
             self.science_data_available = True
 
@@ -802,6 +830,8 @@ class OneDSpec():
             self.standard_spectrum_list[0].add_count(count=count[0],
                                                      count_err=count_err[0],
                                                      count_sky=count_sky[0])
+            self.logger.info('Added count, count_err, and count_sky to '
+                             'standard_spectrum_list.')
 
             self.standard_data_available = True
 
@@ -900,6 +930,9 @@ class OneDSpec():
 
                     self.science_spectrum_list[i].add_arc_spec(
                         arc_spec=arc_spec[i])
+                    self.logger.info(
+                        'Added arc_spec to'
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_arc_spec_available = True
 
@@ -909,6 +942,7 @@ class OneDSpec():
 
                 self.standard_spectrum_list[0].add_arc_spec(
                     arc_spec=arc_spec[0])
+                self.logger.info('Added arc_spec to' 'standard_spectrum_list.')
 
                 self.standard_arc_spec_available = True
 
@@ -990,12 +1024,16 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].add_peaks(peaks=peaks[i])
+                self.logger.info(
+                    'Added peaks to'
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
             self.science_arc_lines_available = True
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].add_peaks(peaks=peaks[0])
+            self.logger.info('Added peaks to standard_spectrum_list.')
 
             self.standard_arc_lines_available = True
 
@@ -1130,6 +1168,9 @@ class OneDSpec():
                     trace=trace[i],
                     trace_sigma=trace_sigma[i],
                     pixel_list=pixel_list)
+                self.logger.info(
+                    'Added trace, trace_sigma, and pixel_list to'
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
             self.science_trace_available = True
 
@@ -1139,6 +1180,8 @@ class OneDSpec():
                 trace=trace[0],
                 trace_sigma=trace_sigma[0],
                 pixel_list=pixel_list)
+            self.logger.info('Added trace, trace_sigma, and pixel_list to'
+                             'standard_spectrum_list')
 
             self.standard_trace_available = True
 
@@ -1288,6 +1331,9 @@ class OneDSpec():
                         fit_coeff=fit_coeff[i])
                     self.science_spectrum_list[i].add_fit_type(
                         fit_type=fit_type[i])
+                    self.logger.info(
+                        'Added fit_coeff and fit_type to'
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             self.science_wavecal_polynomial_available = True
 
@@ -1299,6 +1345,8 @@ class OneDSpec():
                     fit_coeff=fit_coeff[0])
                 self.standard_spectrum_list[0].add_fit_type(
                     fit_type=fit_type[0])
+                self.logger.info('Added fit_coeff and fit_type to'
+                                 'standard_spectrum_list.')
 
             self.standard_wavecal_polynomial_available = True
 
@@ -1362,6 +1410,11 @@ class OneDSpec():
                 self.science_spectrum_list[i] =\
                     self.science_wavecal[i].spectrum1D
 
+                self.logger.info(
+                    'Referenced Spectrum1D of the'
+                    'science_spectrum_list for spec_id: {}.'.format(i) +
+                    'to the corresponding science_wavecal.')
+
             self.science_data_available = True
             self.science_arc_available = True
             self.science_arc_spec_available = True
@@ -1378,6 +1431,9 @@ class OneDSpec():
             self.standard_wavecal.from_spectrum1D(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum1D(twodspec.spectrum_list[0])
             self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
+
+            self.logger.info('Referenced Spectrum1D of the'
+                             'standard_spectrum_list to the standard_wavecal.')
 
             self.standard_data_available = True
             self.standard_arc_available = True
@@ -1502,6 +1558,11 @@ class OneDSpec():
                         filename=filename,
                         open_iframe=open_iframe)
 
+                    n_peaks = len(self.science_spectrum_list[i].peaks)
+                    self.logger.info(
+                        '{} arc lines are found in '.format(n_peaks) +
+                        'science_spectrum_list for spec_id: {}.'.format(i))
+
                 self.science_arc_lines_available = True
 
             else:
@@ -1529,6 +1590,10 @@ class OneDSpec():
                     fig_type=fig_type,
                     filename=filename,
                     open_iframe=open_iframe)
+
+                n_peaks = len(self.standard_spectrum_list[0].peaks)
+                self.logger.info('{} arc lines are found in '.format(n_peaks) +
+                                 'standard_spectrum_list.')
 
                 self.standard_arc_lines_available = True
 
@@ -1606,6 +1671,10 @@ class OneDSpec():
                     self.science_wavecal[i].set_hough_properties()
                     self.science_wavecal[i].set_ransac_properties()
 
+                    self.logger.info(
+                        'Calibrator is initialised for '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
+
             else:
 
                 self.logger.warning('Science arc lines are not available.')
@@ -1621,6 +1690,9 @@ class OneDSpec():
                 self.standard_wavecal.set_calibrator_properties()
                 self.standard_wavecal.set_hough_properties()
                 self.standard_wavecal.set_ransac_properties()
+
+                self.logger.info('Calibrator is initialised for the '
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -1693,6 +1765,9 @@ class OneDSpec():
                         plotting_library=plotting_library,
                         logger_name=logger_name,
                         log_level=log_level)
+                    self.logger.info(
+                        'Calibrator properties are set for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -1708,6 +1783,8 @@ class OneDSpec():
                     plotting_library=plotting_library,
                     logger_name=logger_name,
                     log_level=log_level)
+                self.logger.info('Calibrator properties are set for the '
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -1785,6 +1862,9 @@ class OneDSpec():
                         max_wavelength=max_wavelength,
                         range_tolerance=range_tolerance,
                         linearity_tolerance=linearity_tolerance)
+                    self.logger.info(
+                        'Hough properties are set for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -1802,6 +1882,8 @@ class OneDSpec():
                     max_wavelength=max_wavelength,
                     range_tolerance=range_tolerance,
                     linearity_tolerance=linearity_tolerance)
+                self.logger.info('Hough properties are set for the '
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -1886,6 +1968,9 @@ class OneDSpec():
                         ransac_tolerance=ransac_tolerance,
                         candidate_weighted=candidate_weighted,
                         hough_weight=hough_weight)
+                    self.logger.info(
+                        'Ransac properties are set for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -1903,6 +1988,8 @@ class OneDSpec():
                     ransac_tolerance=ransac_tolerance,
                     candidate_weighted=candidate_weighted,
                     hough_weight=hough_weight)
+                self.logger.info('Ransac properties are set for the '
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -1953,10 +2040,15 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_wavecal[i].set_known_pairs(pix=pix, wave=wave)
+                self.logger.info(
+                    'Known pixel-wavelength pairs are added to '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
+            self.logger.info('Known pixel-wavelength pairs are added to '
+                             'standard_spectrum_list.')
 
     def add_user_atlas(self,
                        elements,
@@ -2063,6 +2155,9 @@ class OneDSpec():
                         pressure=pressure,
                         temperature=temperature,
                         relative_humidity=relative_humidity)
+                    self.logger.info(
+                        'Added user supplied atlas to '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_atlas_available = True
 
@@ -2084,6 +2179,8 @@ class OneDSpec():
                     pressure=pressure,
                     temperature=temperature,
                     relative_humidity=relative_humidity)
+                self.logger.info('Added user supplied atlas to '
+                                 'standard_spectrum_list.')
 
                 self.standard_atlas_available = True
 
@@ -2179,6 +2276,9 @@ class OneDSpec():
                     pressure=pressure,
                     temperature=temperature,
                     relative_humidity=relative_humidity)
+                self.logger.info(
+                    'Added atlas to '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
             self.science_atlas_available = True
 
@@ -2196,6 +2296,9 @@ class OneDSpec():
                 pressure=pressure,
                 temperature=temperature,
                 relative_humidity=relative_humidity)
+            self.logger.info(
+                'Added atlas to '
+                'science_spectrum_list for spec_id: {}.'.format(i))
 
             self.standard_atlas_available = True
 
@@ -2248,6 +2351,10 @@ class OneDSpec():
 
                     self.science_wavecal[i].remove_atlas_lines_range(
                         wavelength, tolerance)
+                    self.logger.info(
+                        'Remove atlas in the range of '
+                        '{} +/- {}'.format(wavelength, tolerance) +
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -2259,6 +2366,9 @@ class OneDSpec():
 
                 self.standard_wavecal.remove_atlas_lines_range(
                     wavelength, tolerance)
+                self.logger.info('Remove atlas in the range of '
+                                 '{} +/- {}'.format(wavelength, tolerance) +
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -2304,6 +2414,9 @@ class OneDSpec():
                 for i in spec_id:
 
                     self.science_wavecal[i].clear_atlas()
+                    self.logger.info(
+                        'Atlas is removed from '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_atlas_available = False
 
@@ -2316,6 +2429,8 @@ class OneDSpec():
             if self.standard_atlas_available:
 
                 self.standard_wavecal.clear_atlas()
+                self.logger.info(
+                    'Atlas is removed from standard_spectrum_list.')
 
                 self.standard_atlas_available = False
 
@@ -2363,6 +2478,9 @@ class OneDSpec():
                 for i in spec_id:
 
                     self.science_wavecal[i].list_atlas()
+                    self.logger.info(
+                        'Listing the atlas of '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -2373,6 +2491,8 @@ class OneDSpec():
             if self.standard_atlas_available:
 
                 self.standard_wavecal.list_atlas()
+                self.logger.info('Listing the atlas of '
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -2423,6 +2543,9 @@ class OneDSpec():
 
                     self.science_wavecal[i].do_hough_transform(
                         brute_force=brute_force)
+                    self.logger.info(
+                        'Hough Transform is performed on '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_hough_pairs_available = True
 
@@ -2436,6 +2559,8 @@ class OneDSpec():
 
                 self.standard_wavecal.do_hough_transform(
                     brute_force=brute_force)
+                self.logger.info('Hough Transform is performed on '
+                                 'standard_spectrum_list.')
 
                 self.standard_hough_pairs_available = True
 
@@ -2501,6 +2626,9 @@ class OneDSpec():
                         return_jsonstring=return_jsonstring,
                         renderer=renderer,
                         display=display)
+                    self.logger.info(
+                        'Search area of the Hough space is plotted for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -2520,6 +2648,9 @@ class OneDSpec():
                     return_jsonstring=return_jsonstring,
                     renderer=renderer,
                     display=display)
+                self.logger.info(
+                    'Search area of the Hough space is plotted for the '
+                    'standard_spectrum_list.')
 
             else:
 
@@ -2613,6 +2744,9 @@ class OneDSpec():
                                                 save_fig=save_fig,
                                                 fig_type=fig_type,
                                                 filename=filename)
+                    self.logger.info(
+                        'Wavelength solution is fitted for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_wavecal_polynomial_available = True
 
@@ -2635,6 +2769,8 @@ class OneDSpec():
                                           save_fig=save_fig,
                                           fig_type=fig_type,
                                           filename=filename)
+                self.logger.info('Wavelength solution is fitted for the '
+                                 'standard_spectrum_list.')
 
                 self.standard_wavecal_polynomial_available = True
 
@@ -2736,6 +2872,9 @@ class OneDSpec():
                         display=display,
                         save_fig=save_fig,
                         filename=filename)
+                    self.logger.info(
+                        'Wavelength solution is refined for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
             else:
 
@@ -2761,6 +2900,8 @@ class OneDSpec():
                                                  display=display,
                                                  save_fig=save_fig,
                                                  filename=filename)
+                self.logger.info('Wavelength solution is refined for the '
+                                 'standard_spectrum_list.')
 
             else:
 
@@ -2870,6 +3011,9 @@ class OneDSpec():
                                              count_err_resampled,
                                              count_sky_resampled)
 
+                self.logger.info(
+                    'Wavelength calibration is applied for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
                 self.science_wavelength_calibrated = True
                 self.science_wavelength_resampled = True
 
@@ -2930,6 +3074,8 @@ class OneDSpec():
                 spec.add_count_resampled(count_resampled, count_err_resampled,
                                          count_sky_resampled)
 
+                self.logger.info('Wavelength calibration is applied for the '
+                                 'standard_spectrum_list.')
                 self.standard_wavelength_calibrated = True
                 self.standard_wavelength_resampled = True
 
@@ -3010,6 +3156,7 @@ class OneDSpec():
                                    library=library,
                                    ftype=ftype,
                                    cutoff=cutoff)
+        self.logger.info('Loaded standard: {} from {}'.format(target, library))
 
     def inspect_standard(self,
                          display=True,
@@ -3063,6 +3210,7 @@ class OneDSpec():
                                       fig_type=fig_type,
                                       filename=filename,
                                       open_iframe=open_iframe)
+        self.logger.info('Inspect standard.')
 
         if return_jsonstring:
 
@@ -3129,6 +3277,7 @@ class OneDSpec():
                                              lowess_frac=lowess_frac,
                                              sens_deg=sens_deg,
                                              **kwargs)
+            self.logger.info('Sensitivity curve computed.')
             self.sensitivity_curve_available = True
 
         else:
@@ -3148,6 +3297,7 @@ class OneDSpec():
         '''
 
         self.fluxcal.save_sensitivity_func(filename=filename)
+        self.logger.info('Sensitivity curve saved at {}.'.format(filename))
 
     def add_sensitivity_func(self, sensitivity_func):
         '''
@@ -3161,6 +3311,7 @@ class OneDSpec():
         '''
 
         self.fluxcal.add_sensitivity_func(sensitivity_func=sensitivity_func)
+        self.logger.info('User supplied sensitivity curve added.')
         self.sensitivity_curve_available = True
 
     def inspect_sensitivity(self,
@@ -3214,6 +3365,12 @@ class OneDSpec():
                 fig_type=fig_type,
                 filename=filename,
                 open_iframe=open_iframe)
+            self.logger.info('Inspect sensitivity function.')
+
+        else:
+
+            self.logger.warning('Sensitivity function not available, it '
+                                'cannot be inspected.')
 
     def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
         '''
@@ -3257,6 +3414,9 @@ class OneDSpec():
                         target_spectrum1D=self.science_spectrum_list[i])
                     self.science_spectrum_list[i].add_standard_header(
                         self.standard_spectrum_list[0].spectrum_header)
+                    self.logger.info(
+                        'Flux calibration is applied for the '
+                        'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_flux_calibrated = True
 
@@ -3266,8 +3426,15 @@ class OneDSpec():
                     target_spectrum1D=self.standard_spectrum_list[0])
                 self.standard_spectrum_list[0].add_standard_header(
                     self.standard_spectrum_list[0].spectrum_header)
+                self.logger.info('Flux calibration is applied for the '
+                                 'standard_spectrum_list.')
 
                 self.standard_flux_calibrated = True
+
+        else:
+
+            self.logger.warning('Sensitivity function is not available, '
+                                'flux calibration is not possible.')
 
     def apply_telluric_correction(self, spec_id=None, ignore_standard=False):
         '''
@@ -3791,16 +3958,22 @@ class OneDSpec():
 
                     for t in fig_type_split:
 
+                        save_path = filename + '_' + str(i) + '.' + t
+
                         if t == 'iframe':
 
                             pio.write_html(fig_sci,
-                                           filename + '_' + str(i) + '.' + t,
+                                           save_path,
                                            auto_open=open_iframe)
 
                         elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                            pio.write_image(fig_sci,
-                                            filename + '_' + str(i) + '.' + t)
+                            pio.write_image(fig_sci, save_path)
+
+                        self.logger.info(
+                            'Figure is saved to {} for the '.format(
+                                save_path) +
+                            'science_spectrum_list for spec_id: {}.'.format(i))
 
                 if display:
 
@@ -3977,15 +4150,21 @@ class OneDSpec():
 
                 for t in fig_type_split:
 
+                    save_path = filename + '.' + t
+
                     if t == 'iframe':
 
                         pio.write_html(fig_standard,
-                                       filename + '.' + t,
+                                       save_path,
                                        auto_open=open_iframe)
 
                     elif t in ['jpg', 'png', 'svg', 'pdf']:
 
-                        pio.write_image(fig_standard, filename + '.' + t)
+                        pio.write_image(fig_standard, save_path)
+
+                    self.logger.info(
+                        'Figure is saved to {} for the '.format(save_path) +
+                        'standard_spectrum_list.')
 
             if display:
 
@@ -4113,6 +4292,9 @@ class OneDSpec():
                     output=output,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu)
+                self.logger.info(
+                    'FITS is created for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
@@ -4120,6 +4302,9 @@ class OneDSpec():
                 output=output,
                 recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu)
+            self.logger.info(
+                'FITS is created for the '
+                'standard_spectrum_list for spec_id: {}.'.format(i))
 
     def modify_trace_header(self,
                             idx,
@@ -4172,11 +4357,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_trace_header(
                     idx, method, *args)
+                self.logger.info(
+                    'trace header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_trace_header(
                 idx, method, *args)
+            self.logger.info('trace header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_count_header(self,
                             idx,
@@ -4229,11 +4419,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_count_header(
                     idx, method, *args)
+                self.logger.info(
+                    'count header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_count_header(
                 idx, method, *args)
+            self.logger.info('count header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_weight_map_header(self,
                                  idx,
@@ -4286,11 +4481,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_weight_map_header(
                     idx, method, *args)
+                self.logger.info(
+                    'weight_map header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_weight_map_header(
                 idx, method, *args)
+            self.logger.info('weight_map header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_count_resampled_header(self,
                                       idx,
@@ -4343,11 +4543,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_count_resampled_header(
                     idx, method, *args)
+                self.logger.info(
+                    'count_resampled header is moldified for '
+                    'the science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_count_resampled_header(
                 idx, method, *args)
+            self.logger.info('count_resampled header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_arc_spec_header(self,
                                idx,
@@ -4400,11 +4605,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_arc_spec_header(
                     idx, method, *args)
+                self.logger.info(
+                    'arc_spec header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_arc_spec_header(
                 idx, method, *args)
+            self.logger.info('arc_spec header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_wavecal_header(self,
                               idx,
@@ -4457,11 +4667,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_wavecal_header(
                     idx, method, *args)
+                self.logger.info(
+                    'wavecal header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_wavecal_header(
                 idx, method, *args)
+            self.logger.info('wavecal header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_wavelength_header(self,
                                  idx,
@@ -4514,11 +4729,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_wavelength_header(
                     idx, method, *args)
+                self.logger.info(
+                    'wavelength header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_wavelength_header(
                 idx, method, *args)
+            self.logger.info('wavelength header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_sensitivity_header(self,
                                   idx,
@@ -4571,11 +4791,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_sensitivity_header(
                     idx, method, *args)
+                self.logger.info(
+                    'sensitivity header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_sensitivity_header(
                 idx, method, *args)
+            self.logger.info('sensitivity header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_flux_header(self,
                            idx,
@@ -4628,11 +4853,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_flux_header(
                     idx, method, *args)
+                self.logger.info(
+                    'flux header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_flux_header(
                 idx, method, *args)
+            self.logger.info('flux header is moldified for the '
+                             'standard_spectrum_list.')
 
     def modify_sensitivity_resampled_header(self,
                                             idx,
@@ -4685,11 +4915,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[
                     i].modify_sensitivity_resampled_header(idx, method, *args)
+                self.logger.info(
+                    'sensitivity_resampled header is moldified '
+                    'for the science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_sensitivity_resampled_header(
                 idx, method, *args)
+            self.logger.info('sensitivity_resampled header is moldified for '
+                             'the standard_spectrum_list.')
 
     def modify_flux_resampled_header(self,
                                      idx,
@@ -4742,11 +4977,16 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].modify_flux_resampled_header(
                     idx, method, *args)
+                self.logger.info(
+                    'flux_resampled header is moldified for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
             self.standard_spectrum_list[0].modify_flux_resampled_header(
                 idx, method, *args)
+            self.logger.info('flux_resampled header is moldified for the '
+                             'standard_spectrum_list.')
 
     def save_fits(self,
                   spec_id=None,
@@ -4863,6 +5103,9 @@ class OneDSpec():
                     overwrite=overwrite,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu)
+                self.logger.info(
+                    'FITS file is saved to {} for the '.format(filename_i) +
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
@@ -4872,6 +5115,9 @@ class OneDSpec():
                 overwrite=overwrite,
                 recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu)
+            self.logger.info(
+                'FITS file is saved to {}_standard '.format(filename) +
+                'for the standard_spectrum_list.')
 
     def save_csv(self,
                  spec_id=None,
@@ -4981,6 +5227,9 @@ class OneDSpec():
                                                        filename=filename_i,
                                                        recreate=recreate,
                                                        overwrite=overwrite)
+                self.logger.info(
+                    'CSV file is saved to {} for the '.format(filename_i) +
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
@@ -4989,3 +5238,6 @@ class OneDSpec():
                                                     '_standard',
                                                     recreate=recreate,
                                                     overwrite=overwrite)
+            self.logger.info(
+                'FITS file is saved to {}_standard '.format(filename) +
+                'for the standard_spectrum_list.')
