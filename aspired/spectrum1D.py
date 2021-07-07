@@ -179,9 +179,30 @@ class Spectrum1D():
 
         # fit output
         self.fit_coeff = None
+        self.matched_peaks = None
+        self.matched_atlas = None
         self.rms = None
         self.residual = None
         self.peak_utilisation = None
+        self.atlas_utilisation = None
+
+        # fit output
+        self.fit_coeff_rascal = None
+        self.matched_peaks_rascal = None
+        self.matched_atlas_rascal = None
+        self.rms_rascal = None
+        self.residual_rascal = None
+        self.peak_utilisation_rascal = None
+        self.atlas_utilisation_rascal = None
+
+        # fit output
+        self.fit_coeff_refine = None
+        self.matched_peaks_refine = None
+        self.matched_atlas_refine = None
+        self.rms_refine = None
+        self.residual_refine = None
+        self.peak_utilisation_refine = None
+        self.atlas_utilisation_refine = None
 
         # fitted solution
         self.wave = None
@@ -966,7 +987,9 @@ class Spectrum1D():
 
     def add_ransac_properties(self, sample_size, top_n_candidate, linear,
                               filter_close, ransac_tolerance,
-                              candidate_weighted, hough_weight):
+                              candidate_weighted, hough_weight,
+                              minimum_matches, minimum_peak_utilisation,
+                              minimum_fit_error):
         """
         Adding the RANSAC properties of the RASCAL Calibrator.
 
@@ -979,6 +1002,9 @@ class Spectrum1D():
         self.ransac_tolerance = ransac_tolerance
         self.candidate_weighted = candidate_weighted
         self.hough_weight = hough_weight
+        self.minimum_matches = minimum_matches
+        self.minimum_peak_utilisation = minimum_peak_utilisation
+        self.minimum_fit_error = minimum_fit_error
 
     def remove_ransac_properties(self):
 
@@ -989,8 +1015,13 @@ class Spectrum1D():
         self.ransac_tolerance = None
         self.candidate_weighted = None
         self.hough_weight = None
+        self.minimum_matches = None
+        self.minimum_peak_utilisation = None
+        self.minimum_fit_error = None
 
-    def add_fit_output_final(self, fit_coeff, rms, residual, peak_utilisation):
+    def add_fit_output_final(self, fit_coeff, matched_peaks, matched_atlas,
+                             rms, residual, peak_utilisation,
+                             atlas_utilisation):
         """
         Adding the final accepted polynomial solution.
 
@@ -998,19 +1029,26 @@ class Spectrum1D():
 
         # add assertion here
         self.fit_coeff = fit_coeff
+        self.matched_peaks = matched_peaks
+        self.matched_atlas = matched_atlas
         self.rms = rms
         self.residual = residual
         self.peak_utilisation = peak_utilisation
+        self.atlas_utilisation = atlas_utilisation
 
     def remove_fit_output_final(self):
 
         self.fit_coeff = None
+        self.matched_peaks = None
+        self.matched_atlas = None
         self.rms = None
         self.residual = None
         self.peak_utilisation = None
+        self.atlas_utilisation = None
 
-    def add_fit_output_rascal(self, fit_coeff, rms, residual,
-                              peak_utilisation):
+    def add_fit_output_rascal(self, fit_coeff, matched_peaks, matched_atlas,
+                              rms, residual, peak_utilisation,
+                              atlas_utilisation):
         """
         Adding the final accepted RASCAL polynomial solution.
 
@@ -1018,20 +1056,29 @@ class Spectrum1D():
 
         # add assertion here
         self.fit_coeff_rascal = fit_coeff
+        self.matched_peaks_rascal = matched_peaks
+        self.matched_atlas_rascal = matched_atlas
         self.rms_rascal = rms
         self.residual_rascal = residual
         self.peak_utilisation_rascal = peak_utilisation
-        self.add_fit_output_final(fit_coeff, rms, residual, peak_utilisation)
+        self.atlas_utilisation_rascal = atlas_utilisation
+        self.add_fit_output_final(fit_coeff, matched_peaks, matched_atlas, rms,
+                                  residual, peak_utilisation,
+                                  atlas_utilisation)
 
     def remove_fit_output_rascal(self):
 
         self.fit_coeff_rascal = None
+        self.matched_peaks_rascal = None
+        self.matched_atlas_rascal = None
         self.rms_rascal = None
         self.residual_rascal = None
         self.peak_utilisation_rascal = None
+        self.atlas_utilisation_rascal = None
 
-    def add_fit_output_refine(self, fit_coeff, rms, residual,
-                              peak_utilisation):
+    def add_fit_output_refine(self, fit_coeff, matched_peaks, matched_atlas,
+                              rms, residual, peak_utilisation,
+                              atlas_utilisation):
         """
         Adding the refined polynomial solution.
 
@@ -1039,17 +1086,25 @@ class Spectrum1D():
 
         # add assertion here
         self.fit_coeff_refine = fit_coeff
+        self.matched_peaks_refine = matched_peaks
+        self.matched_atlas_refine = matched_atlas
         self.rms_refine = rms
         self.residual_refine = residual
         self.peak_utilisation_refine = peak_utilisation
-        self.add_fit_output_final(fit_coeff, rms, residual, peak_utilisation)
+        self.atlas_utilisation_refine = atlas_utilisation
+        self.add_fit_output_final(fit_coeff, matched_peaks, matched_atlas, rms,
+                                  residual, peak_utilisation,
+                                  atlas_utilisation)
 
     def remove_fit_output_refine(self):
 
         self.fit_coeff_refine = None
+        self.matched_peaks_refine = None
+        self.matched_atlas_refine = None
         self.rms_refine = None
         self.residual_refine = None
         self.peak_utilisation_refine = None
+        self.atlas_utilisation_refine = None
 
     def add_wavelength(self, wave):
         """

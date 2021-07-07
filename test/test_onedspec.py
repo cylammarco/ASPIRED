@@ -1094,7 +1094,7 @@ def test_calibrator_science_fail_refine_fit_spec_id():
     onedspec.add_atlas(elements=['Xe'], stype='science')
     onedspec.do_hough_transform(stype='science')
     onedspec.science_wavecal_polynomial_available = True
-    onedspec.refine_fit(spec_id=7, stype='science')
+    onedspec.robust_refit(spec_id=7, stype='science')
 
 
 @pytest.mark.xfail(raises=ValueError)

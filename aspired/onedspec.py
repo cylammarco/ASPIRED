@@ -2778,20 +2778,20 @@ class OneDSpec():
 
                 self.logger.warning('Standard spectrum/a are not imported.')
 
-    def refine_fit(self,
-                   spec_id=None,
-                   fit_coeff=None,
-                   n_delta=None,
-                   refine=True,
-                   tolerance=10.,
-                   method='Nelder-Mead',
-                   convergence=1e-6,
-                   robust_refit=True,
-                   fit_deg=None,
-                   display=False,
-                   save_fig=False,
-                   filename=None,
-                   stype='science+standard'):
+    def robust_refit(self,
+                     spec_id=None,
+                     fit_coeff=None,
+                     n_delta=None,
+                     refine=False,
+                     tolerance=10.,
+                     method='Nelder-Mead',
+                     convergence=1e-6,
+                     robust_refit=True,
+                     fit_deg=None,
+                     display=False,
+                     save_fig=False,
+                     filename=None,
+                     stype='science+standard'):
         '''
         ** EXPERIMENTAL, as of 17 Jan 2021 **
         Refine the fitted solution with a minimisation method as provided by
@@ -2860,7 +2860,7 @@ class OneDSpec():
                         fit_coeff = self.science_wavecal[
                             i].spectrum1D.calibrator.fit_coeff
 
-                    self.science_wavecal[i].refine_fit(
+                    self.science_wavecal[i].robust_refit(
                         fit_coeff=fit_coeff,
                         n_delta=n_delta,
                         refine=refine,
@@ -2889,23 +2889,331 @@ class OneDSpec():
                     fit_coeff = self.standard_wavecal[
                         0].spectrum1D.calibrator.fit_coeff
 
-                self.standard_wavecal.refine_fit(fit_coeff=fit_coeff,
-                                                 n_delta=n_delta,
-                                                 refine=refine,
-                                                 tolerance=tolerance,
-                                                 method=method,
-                                                 convergence=convergence,
-                                                 robust_refit=robust_refit,
-                                                 fit_deg=fit_deg,
-                                                 display=display,
-                                                 save_fig=save_fig,
-                                                 filename=filename)
+                self.standard_wavecal.robust_refit(fit_coeff=fit_coeff,
+                                                   n_delta=n_delta,
+                                                   refine=refine,
+                                                   tolerance=tolerance,
+                                                   method=method,
+                                                   convergence=convergence,
+                                                   robust_refit=robust_refit,
+                                                   fit_deg=fit_deg,
+                                                   display=display,
+                                                   save_fig=save_fig,
+                                                   filename=filename)
                 self.logger.info('Wavelength solution is refined for the '
                                  'standard_spectrum_list.')
 
             else:
 
                 self.logger.warning('Standard spectrum/a are not imported.')
+
+    def get_pix_wave_pairs(self, spec_id=None, stype='science+standard'):
+        '''
+        Return the list of matched_peaks and matched_atlas with their
+        position in the array.
+
+        Return
+        ------
+        pw_pairs: disctoary
+            Dictionary of 'science' and/or 'standard' where the values are 
+            lists of tuples each containing the array position, peak (pixel)
+            and atlas (wavelength) in the order of the given spec_id.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        pw_pairs = {}
+
+        if 'science' in stype_split:
+
+            if self.science_wavecal_polynomial_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        self.logger.critical(error_msg)
+                        raise ValueError(error_msg)
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                pw_pairs_science = []
+
+                for i in spec_id:
+
+                    pw_pairs_science.append(
+                        self.science_wavecal[i].get_pix_wave_pairs())
+
+                pw_pairs['science'] = pw_pairs_science
+
+        if 'standard' in stype_split:
+
+            if self.standard_wavecal_polynomial_available:
+
+                pw_pairs_standard = self.standard_wavecal[
+                    0].get_pix_wave_pairs()
+
+                pw_pairs['standard'] = pw_pairs_standard
+
+        return pw_pairs
+
+    def add_pix_wave_pair(self,
+                          pix,
+                          wave,
+                          spec_id=None,
+                          stype='science+standard'):
+        '''
+        Adding extra pixel-wavelength pair to the Calibrator for refitting.
+        This DOES NOT work before the Calibrator having fit for a solution
+        yet: use set_known_pairs() for that purpose.
+
+        Parameters
+        ----------
+        pix: float
+            pixel position
+        wave: float
+            wavelength
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_wavecal_polynomial_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        self.logger.critical(error_msg)
+                        raise ValueError(error_msg)
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.science_wavecal[i].add_pix_wave_pair(pix, wave)
+
+        if 'standard' in stype_split:
+
+            if self.standard_wavecal_polynomial_available:
+
+                self.standard_wavecal[0].add_pix_wave_pair(pix, wave)
+
+    def remove_pix_wave_pair(self,
+                             arg,
+                             spec_id=None,
+                             stype='science+standard'):
+        '''
+        Remove fitted pixel-wavelength pair from the Calibrator for refitting.
+        The positions can be found from get_pix_wave_pairs(). One at a time.
+
+        Parameter
+        ---------
+        arg: int
+            The position of the pairs in the arrays.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+
+        stype_split = stype.split('+')
+
+        if 'science' in stype_split:
+
+            if self.science_wavecal_polynomial_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        self.logger.critical(error_msg)
+                        raise ValueError(error_msg)
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.science_wavecal[i].remove_pix_wave_pair(arg)
+
+        if 'standard' in stype_split:
+
+            if self.standard_wavecal_polynomial_available:
+
+                self.standard_wavecal[0].remove_pix_wave_pair(arg)
+
+    def manual_refit(self,
+                     matched_peaks=None,
+                     matched_atlas=None,
+                     degree=None,
+                     x0=None,
+                     return_values=True,
+                     spec_id=None,
+                     stype='science+standard'):
+        '''
+        Perform a refinement of the matched peaks and atlas lines.
+
+        This function takes lists of matched peaks and atlases, along with
+        user-specified lists of lines to add/remove from the lists.
+
+        Any given peaks or atlas lines to remove are selected within a
+        user-specified tolerance, by default 1 pixel and 5 atlas Angstrom.
+
+        The final set of matching peaks/lines is then matched using a
+        robust polyfit of the desired degree. Optionally, an initial
+        fit x0 can be provided to condition the optimiser.
+
+        The parameters are identical in the format in the fit() and
+        match_peaks() functions, however, with manual changes to the lists of
+        peaks and atlas, peak_utilisation and atlas_utilisation are
+        meaningless so this function does not return in the same format.
+
+        Parameters
+        ----------
+        matched_peaks: list (Default: None)
+            List of matched peaks
+        matched_atlas: list (Default: None)
+            List of matched atlas lines
+        degree: int (Default: None)
+            Polynomial fit degree (Only used if x0 is None)
+        x0: list (Default: None)
+            Initial fit coefficients
+        return_values: bool (Default: True)
+            Set to True to return the best fit polynomial coefficients.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        '''
+        stype_split = stype.split('+')
+
+        result = {}
+
+        if 'science' in stype_split:
+
+            if self.science_wavecal_polynomial_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                            list(self.science_spectrum_list.keys())):
+
+                        error_msg = 'The given spec_id does not exist.'
+                        self.logger.critical(error_msg)
+                        raise ValueError(error_msg)
+                else:
+
+                    # if spec_id is None, calibrators are initialised to all
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                result_science = []
+
+                for i in spec_id:
+
+                    if return_values:
+
+                        result_science.append(
+                            self.science_wavecal[i].manual_refit(
+                                matched_peaks, matched_atlas, degree, x0,
+                                return_values))
+
+                        result['science'] = result_science
+
+        if 'standard' in stype_split:
+
+            if self.standard_wavecal_polynomial_available:
+
+                if return_values:
+
+                    result['standard'] = self.standard_wavecal.manual_refit(
+                        matched_peaks, matched_atlas, degree, x0,
+                        return_values)
+
+        if return_values:
+
+            return result
+
+    def get_calibrator(self, spec_id=None, stype='science+standard'):
+
+        stype_split = stype.split('+')
+
+        calibrators = {}
+
+        if 'science' in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
+
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            calibrator_science = []
+
+            for i in spec_id:
+
+                calibrator_science.append(
+                    getattr(self.science_wavecal[i].spectrum1D, 'calibrator'))
+
+            calibrators['science'] = calibrator_science
+
+        if 'standard' in stype_split:
+
+            calibrators['standard'] = getattr(
+                self.standard_wavecal[0].spectrum1D, 'calibrator')
+
+        return calibrators
 
     def apply_wavelength_calibration(self,
                                      spec_id=None,
@@ -2982,7 +3290,10 @@ class OneDSpec():
 
                     wave_resampled = np.arange(wave_start, wave_end, wave_bin)
 
-                    # apply the flux calibration and resample
+                    print(np.shape(np.array(wave_resampled).reshape(-1)))
+                    print(np.shape(np.array(wave).reshape(-1)))
+                    print(np.shape(np.array(spec.count).reshape(-1)))
+
                     count_resampled = spectres(
                         np.array(wave_resampled).reshape(-1),
                         np.array(wave).reshape(-1),

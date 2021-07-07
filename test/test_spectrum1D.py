@@ -146,7 +146,10 @@ def test_spectrum1D():
                                filter_close=True,
                                ransac_tolerance=5.,
                                candidate_weighted=True,
-                               hough_weight=1.3)
+                               hough_weight=1.3,
+                               minimum_matches=5,
+                               minimum_peak_utilisation=80.,
+                               minimum_fit_error=0.1)
     assert spec.sample_size == 999
     assert spec.top_n_candidate == 7
     assert spec.linear
@@ -154,6 +157,9 @@ def test_spectrum1D():
     assert spec.ransac_tolerance == 5.
     assert spec.candidate_weighted
     assert spec.hough_weight == 1.3
+    assert spec.minimum_matches == 5
+    assert spec.minimum_peak_utilisation == 80.
+    assert spec.minimum_fit_error == 0.1
     spec.remove_ransac_properties()
     assert spec.sample_size is None
     assert spec.top_n_candidate is None
@@ -162,48 +168,78 @@ def test_spectrum1D():
     assert spec.ransac_tolerance is None
     assert spec.candidate_weighted is None
     assert spec.hough_weight is None
+    assert spec.minimum_matches is None
+    assert spec.minimum_peak_utilisation is None
+    assert spec.minimum_fit_error is None
 
     spec.add_fit_output_final(fit_coeff=[1, 2, 5, 7, 10],
+                              matched_peaks=[0, 1, 2, 3],
+                              matched_atlas=[10, 11, 12, 13],
                               rms=0.123456,
                               residual=0.56789,
-                              peak_utilisation=87.67894)
+                              peak_utilisation=87.67894,
+                              atlas_utilisation=51.7643)
     assert spec.fit_coeff == [1, 2, 5, 7, 10]
+    assert spec.matched_peaks == [0, 1, 2, 3]
+    assert spec.matched_atlas == [10, 11, 12, 13]
     assert spec.rms == 0.123456
     assert spec.residual == 0.56789
     assert spec.peak_utilisation == 87.67894
+    assert spec.atlas_utilisation == 51.7643
     spec.remove_fit_output_final()
     assert spec.fit_coeff is None
+    assert spec.matched_peaks is None
+    assert spec.matched_atlas is None
     assert spec.rms is None
     assert spec.residual is None
     assert spec.peak_utilisation is None
+    assert spec.atlas_utilisation is None
 
     spec.add_fit_output_rascal(fit_coeff=[1, 2, 5, 7, 10],
+                               matched_peaks=[0, 1, 2, 3],
+                               matched_atlas=[10, 11, 12, 13],
                                rms=0.123456,
                                residual=0.56789,
-                               peak_utilisation=87.67894)
+                               peak_utilisation=87.67894,
+                               atlas_utilisation=51.7643)
     assert spec.fit_coeff_rascal == [1, 2, 5, 7, 10]
+    assert spec.matched_peaks == [0, 1, 2, 3]
+    assert spec.matched_atlas == [10, 11, 12, 13]
     assert spec.rms_rascal == 0.123456
     assert spec.residual_rascal == 0.56789
     assert spec.peak_utilisation_rascal == 87.67894
+    assert spec.atlas_utilisation_rascal == 51.7643
     spec.remove_fit_output_rascal()
     assert spec.fit_coeff_rascal is None
+    assert spec.matched_peaks_rascal is None
+    assert spec.matched_atlas_rascal is None
     assert spec.rms_rascal is None
     assert spec.residual_rascal is None
     assert spec.peak_utilisation_rascal is None
+    assert spec.atlas_utilisation_rascal is None
 
     spec.add_fit_output_refine(fit_coeff=[1, 2, 5, 7, 10],
+                               matched_peaks=[0, 1, 2, 3],
+                               matched_atlas=[10, 11, 12, 13],
                                rms=0.123456,
                                residual=0.56789,
-                               peak_utilisation=87.67894)
+                               peak_utilisation=87.67894,
+                               atlas_utilisation=51.7643)
     assert spec.fit_coeff_refine == [1, 2, 5, 7, 10]
+    assert spec.matched_peaks_refine == [0, 1, 2, 3]
+    assert spec.matched_atlas_refine == [10, 11, 12, 13]
     assert spec.rms_refine == 0.123456
     assert spec.residual_refine == 0.56789
     assert spec.peak_utilisation_refine == 87.67894
+    assert spec.atlas_utilisation_refine == 51.7643
     spec.remove_fit_output_refine()
     assert spec.fit_coeff_refine is None
+    assert spec.matched_peaks_refine is None
+    assert spec.matched_atlas_refine is None
     assert spec.rms_refine is None
     assert spec.residual_refine is None
     assert spec.peak_utilisation_refine is None
+    assert spec.atlas_utilisation_refine is None
 
     spec.add_wavelength(np.arange(1000))
     assert (spec.wave == np.arange(1000)).all()

@@ -585,7 +585,10 @@ class WavelengthCalibration():
                               filter_close=False,
                               ransac_tolerance=5,
                               candidate_weighted=True,
-                              hough_weight=1.0):
+                              hough_weight=1.0,
+                              minimum_matches=None,
+                              minimum_peak_utilisation=None,
+                              minimum_fit_error=None):
         '''
         Set the properties of the RANSAC process.
 
@@ -621,7 +624,10 @@ class WavelengthCalibration():
             filter_close=filter_close,
             ransac_tolerance=ransac_tolerance,
             candidate_weighted=candidate_weighted,
-            hough_weight=hough_weight)
+            hough_weight=hough_weight,
+            minimum_matches=minimum_matches,
+            minimum_peak_utilisation=minimum_peak_utilisation,
+            minimum_fit_error=minimum_fit_error)
 
         self.spectrum1D.add_ransac_properties(
             sample_size=sample_size,
@@ -630,7 +636,10 @@ class WavelengthCalibration():
             filter_close=filter_close,
             ransac_tolerance=ransac_tolerance,
             candidate_weighted=candidate_weighted,
-            hough_weight=hough_weight)
+            hough_weight=hough_weight,
+            minimum_matches=minimum_matches,
+            minimum_peak_utilisation=minimum_peak_utilisation,
+            minimum_fit_error=minimum_fit_error)
 
     def set_known_pairs(self, pix=None, wave=None):
         '''
@@ -908,6 +917,7 @@ class WavelengthCalibration():
             fit_coeff=None,
             fit_tolerance=10.,
             fit_type='poly',
+            candidate_tolerance=2.,
             brute_force=False,
             progress=True,
             return_jsonstring=False,
@@ -937,6 +947,8 @@ class WavelengthCalibration():
             acceptable.
         fit_type: string (Default: 'poly')
             One of 'poly', 'legendre' or 'chebyshev'.
+        candidate_tolerance: float (default: 2.0)
+            toleranceold  (Angstroms) for considering a point to be an inlier
         brute_force: bool (Default: False)
             Set to True to try all possible combination in the given parameter
             space.
@@ -959,20 +971,35 @@ class WavelengthCalibration():
 
         '''
 
-        fit_coeff, rms, residual, peak_utilisation =\
-            self.spectrum1D.calibrator.fit(
-                max_tries=max_tries,
-                fit_deg=fit_deg,
-                fit_coeff=None,
-                fit_tolerance=fit_tolerance,
-                fit_type=fit_type,
-                brute_force=brute_force,
-                progress=progress)
+        (fit_coeff, matched_peaks, matched_atlas, rms, residual,
+         peak_utilisation, atlas_utilisation) = self.spectrum1D.calibrator.fit(
+             max_tries=max_tries,
+             fit_deg=fit_deg,
+             fit_coeff=fit_coeff,
+             fit_tolerance=fit_tolerance,
+             fit_type=fit_type,
+             candidate_tolerance=candidate_tolerance,
+             brute_force=brute_force,
+             progress=progress)
 
-        self.spectrum1D.add_fit_type(fit_type)
+        if fit_type == 'poly':
 
-        self.spectrum1D.add_fit_output_rascal(fit_coeff, rms, residual,
-                                              peak_utilisation)
+            fit_type_rascal = 'poly'
+
+        if fit_type == 'legendre':
+
+            fit_type_rascal = 'leg'
+
+        if fit_type == 'chebyshev':
+
+            fit_type_rascal = 'cheb'
+
+        self.spectrum1D.add_fit_type(fit_type_rascal)
+
+        self.spectrum1D.add_fit_output_rascal(fit_coeff, matched_peaks,
+                                              matched_atlas, rms, residual,
+                                              peak_utilisation,
+                                              atlas_utilisation)
 
         self.spectrum1D.calibrator.plot_fit(
             fit_coeff=fit_coeff,
@@ -988,28 +1015,29 @@ class WavelengthCalibration():
 
         if return_values:
 
-            return fit_coeff, rms, residual, peak_utilisation
+            return (fit_coeff, matched_peaks, matched_atlas, rms, residual,
+                    peak_utilisation, atlas_utilisation)
 
-    def refine_fit(self,
-                   fit_coeff,
-                   n_delta=None,
-                   refine=True,
-                   tolerance=10.,
-                   method='Nelder-Mead',
-                   convergence=1e-6,
-                   robust_refit=True,
-                   fit_deg=None,
-                   display=False,
-                   filename=None,
-                   return_jsonstring=False,
-                   renderer='default',
-                   save_fig=False,
-                   fig_type='iframe+png',
-                   return_values=True):
+    def robust_refit(self,
+                     fit_coeff,
+                     n_delta=None,
+                     refine=False,
+                     tolerance=10.,
+                     method='Nelder-Mead',
+                     convergence=1e-6,
+                     robust_refit=True,
+                     fit_deg=None,
+                     display=False,
+                     filename=None,
+                     return_jsonstring=False,
+                     renderer='default',
+                     save_fig=False,
+                     fig_type='iframe+png',
+                     return_values=True):
         '''
-        ** EXPERIMENTAL, as of 17 Jan 2021 **
-        A wrapper function to fine tune wavelength calibration with RASCAL
-        when there is already a set of good coefficienes.
+        ** refine option is EXPERIMENTAL, as of 17 Jan 2021 **
+        A wrapper function to robustly refit the wavelength solution with
+        RASCAL when there is already a set of good coefficienes.
 
         Refine the polynomial fit coefficients. Recommended to use in it
         multiple calls to first refine the lowest order and gradually increase
@@ -1059,7 +1087,7 @@ class WavelengthCalibration():
             Filename for the output, all of them will share the same name but
             will have different extension.
         return_values: bool (Default: True)
-            Set to True to return the best fit polynomail coefficients.
+            Set to True to return the best fit polynomial coefficients.
 
         '''
 
@@ -1071,23 +1099,24 @@ class WavelengthCalibration():
 
             n_delta = len(fit_coeff) - 1
 
-        fit_coeff_new, _, _, residual, peak_utilisation =\
-            self.spectrum1D.calibrator.match_peaks(
-                fit_coeff,
-                n_delta=n_delta,
-                refine=refine,
-                tolerance=tolerance,
-                method=method,
-                convergence=convergence,
-                robust_refit=robust_refit,
-                fit_deg=fit_deg)
+        (fit_coeff, matched_peaks, matched_atlas, rms, residual,
+         peak_utilisation,
+         atlas_utilisation) = self.spectrum1D.calibrator.match_peaks(
+             fit_coeff,
+             n_delta=n_delta,
+             refine=refine,
+             tolerance=tolerance,
+             method=method,
+             convergence=convergence,
+             robust_refit=robust_refit,
+             fit_deg=fit_deg)
 
         rms = np.sqrt(np.nanmean(residual**2.))
 
         if display:
 
             self.spectrum1D.calibrator.plot_fit(
-                fit_coeff=fit_coeff_new,
+                fit_coeff=fit_coeff,
                 plot_atlas=True,
                 log_spectrum=False,
                 tolerance=1.0,
@@ -1098,12 +1127,111 @@ class WavelengthCalibration():
                 fig_type=fig_type,
                 filename=filename)
 
-        self.spectrum1D.add_fit_output_refine(fit_coeff_new, rms, residual,
-                                              peak_utilisation)
+        self.spectrum1D.add_fit_output_refine(fit_coeff, matched_peaks,
+                                              matched_atlas, rms, residual,
+                                              peak_utilisation,
+                                              atlas_utilisation)
 
         if return_values:
 
-            return fit_coeff_new, rms, residual, peak_utilisation
+            return (fit_coeff, matched_peaks, matched_atlas, rms, residual,
+                    peak_utilisation, atlas_utilisation)
+
+    def get_pix_wave_pairs(self):
+        '''
+        Return the list of matched_peaks and matched_atlas with their
+        position in the array.
+
+        Return
+        ------
+        pw_pairs: list
+            List of tuples each containing the array position, peak (pixel)
+            and atlas (wavelength).
+
+        '''
+
+        pw_pairs = self.spectrum1D.calibrator.get_pix_wave_pairs()
+
+        return pw_pairs
+
+    def add_pix_wave_pair(self, pix, wave):
+        '''
+        Adding extra pixel-wavelength pair to the Calibrator for refitting.
+        This DOES NOT work before the Calibrator having fit for a solution
+        yet: use set_known_pairs() for that purpose.
+
+        Parameters
+        ----------
+        pix: float
+            pixel position
+        wave: float
+            wavelength
+
+        '''
+
+        self.spectrum1D.calibrator.add_pix_wave_pair(pix, wave)
+
+    def remove_pix_wave_pair(self, arg):
+        '''
+        Remove fitted pixel-wavelength pair from the Calibrator for refitting.
+        The positions can be found from get_pix_wave_pairs(). One at a time.
+
+        Parameter
+        ---------
+        arg: int
+            The position of the pairs in the arrays.
+
+        '''
+
+        self.spectrum1D.calibrator.remove_pix_wave_pair(arg)
+
+    def manual_refit(self,
+                     matched_peaks=None,
+                     matched_atlas=None,
+                     degree=None,
+                     x0=None,
+                     return_values=True):
+        '''
+        Perform a refinement of the matched peaks and atlas lines.
+
+        This function takes lists of matched peaks and atlases, along with
+        user-specified lists of lines to add/remove from the lists.
+
+        Any given peaks or atlas lines to remove are selected within a
+        user-specified tolerance, by default 1 pixel and 5 atlas Angstrom.
+
+        The final set of matching peaks/lines is then matched using a
+        robust polyfit of the desired degree. Optionally, an initial
+        fit x0 can be provided to condition the optimiser.
+
+        The parameters are identical in the format in the fit() and
+        match_peaks() functions, however, with manual changes to the lists of
+        peaks and atlas, peak_utilisation and atlas_utilisation are
+        meaningless so this function does not return in the same format.
+
+        Parameters
+        ----------
+        matched_peaks: list (Default: None)
+            List of matched peaks
+        matched_atlas: list (Default: None)
+            List of matched atlas lines
+        degree: int (Default: None)
+            Polynomial fit degree (Only used if x0 is None)
+        x0: list (Default: None)
+            Initial fit coefficients
+        return_values: bool (Default: True)
+            Set to True to return the best fit polynomial coefficients.
+
+        '''
+
+        (self.fit_coeff, self.matched_peaks, self.matched_atlas, self.rms,
+         self.residuals) = self.spectrum1D.calibrator.manual_refit(
+             matched_peaks, matched_atlas, degree, x0)
+
+        if return_values:
+
+            return (self.fit_coeff, self.matched_peaks, self.matched_atlas,
+                    self.rms, self.residuals)
 
     def get_calibrator(self):
 
