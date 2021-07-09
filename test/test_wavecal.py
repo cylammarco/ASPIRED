@@ -660,10 +660,6 @@ def test_quadratic_fit_legendre():
                                                refine=False,
                                                robust_refit=True)
 
-    # Legendre 2nd order takes the form
-    assert peak_utilisation > 0.7
-    assert atlas_utilisation > 0.5
-
 
 def test_quadratic_fit_chebyshev():
 
@@ -696,6 +692,3 @@ def test_quadratic_fit_chebyshev():
      atlas_utilisation) = wavecal.robust_refit(best_p,
                                                refine=False,
                                                robust_refit=True)
-
-    assert peak_utilisation > 0.7
-    assert atlas_utilisation > 0.5
