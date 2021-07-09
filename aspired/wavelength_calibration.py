@@ -586,9 +586,9 @@ class WavelengthCalibration():
                               ransac_tolerance=5,
                               candidate_weighted=True,
                               hough_weight=1.0,
-                              minimum_matches=None,
-                              minimum_peak_utilisation=None,
-                              minimum_fit_error=None):
+                              minimum_matches=3,
+                              minimum_peak_utilisation=0.,
+                              minimum_fit_error=1e-4):
         '''
         Set the properties of the RANSAC process.
 
@@ -926,7 +926,7 @@ class WavelengthCalibration():
             save_fig=False,
             fig_type='iframe+png',
             filename=None,
-            return_values=True):
+            return_solution=True):
         '''
         A wrapper function to perform wavelength calibration with RASCAL. As of
         14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
@@ -1013,7 +1013,7 @@ class WavelengthCalibration():
             save_fig=save_fig,
             fig_type=fig_type)
 
-        if return_values:
+        if return_solution:
 
             return (fit_coeff, matched_peaks, matched_atlas, rms, residual,
                     peak_utilisation, atlas_utilisation)
@@ -1033,7 +1033,7 @@ class WavelengthCalibration():
                      renderer='default',
                      save_fig=False,
                      fig_type='iframe+png',
-                     return_values=True):
+                     return_solution=True):
         '''
         ** refine option is EXPERIMENTAL, as of 17 Jan 2021 **
         A wrapper function to robustly refit the wavelength solution with
@@ -1086,7 +1086,7 @@ class WavelengthCalibration():
         filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        return_values: bool (Default: True)
+        return_solution: bool (Default: True)
             Set to True to return the best fit polynomial coefficients.
 
         '''
@@ -1132,7 +1132,7 @@ class WavelengthCalibration():
                                               peak_utilisation,
                                               atlas_utilisation)
 
-        if return_values:
+        if return_solution:
 
             return (fit_coeff, matched_peaks, matched_atlas, rms, residual,
                     peak_utilisation, atlas_utilisation)
@@ -1190,7 +1190,7 @@ class WavelengthCalibration():
                      matched_atlas=None,
                      degree=None,
                      x0=None,
-                     return_values=True):
+                     return_solution=True):
         '''
         Perform a refinement of the matched peaks and atlas lines.
 
@@ -1219,7 +1219,7 @@ class WavelengthCalibration():
             Polynomial fit degree (Only used if x0 is None)
         x0: list (Default: None)
             Initial fit coefficients
-        return_values: bool (Default: True)
+        return_solution: bool (Default: True)
             Set to True to return the best fit polynomial coefficients.
 
         '''
@@ -1228,7 +1228,7 @@ class WavelengthCalibration():
          self.residuals) = self.spectrum1D.calibrator.manual_refit(
              matched_peaks, matched_atlas, degree, x0)
 
-        if return_values:
+        if return_solution:
 
             return (self.fit_coeff, self.matched_peaks, self.matched_atlas,
                     self.rms, self.residuals)

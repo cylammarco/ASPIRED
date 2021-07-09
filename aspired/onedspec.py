@@ -1628,75 +1628,62 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                    for i in spec_id:
 
-                        for i in spec_id:
+                        if i not in list(self.science_spectrum_list.keys()):
 
-                            if i not in list(
-                                    self.science_spectrum_list.keys()):
+                            self.add_science_spectrum1D(i)
 
-                                self.add_science_spectrum1D(i)
+                            self.logger.warning(
+                                'The given spec_id, {}, does not '
+                                'exist. A new spectrum1D is created. '
+                                'Please check you are providing the '
+                                'correct spec_id.'.format(spec_id))
 
-                                self.logger.warning(
-                                    'The given spec_id, {}, does not '
-                                    'exist. A new spectrum1D is created. '
-                                    'Please check you are providing the '
-                                    'correct spec_id.'.format(spec_id))
+                        else:
 
-                            else:
-
-                                pass
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].from_spectrum1D(
-                        self.science_spectrum_list[i])
-                    self.science_wavecal[i].initialise_calibrator(
-                        peaks=peaks, arc_spec=arc_spec)
-                    self.science_wavecal[i].set_calibrator_properties()
-                    self.science_wavecal[i].set_hough_properties()
-                    self.science_wavecal[i].set_ransac_properties()
-
-                    self.logger.info(
-                        'Calibrator is initialised for '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                            pass
 
             else:
 
-                self.logger.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_wavecal[i].from_spectrum1D(
+                    self.science_spectrum_list[i])
+                self.science_wavecal[i].initialise_calibrator(
+                    peaks=peaks, arc_spec=arc_spec)
+                self.science_wavecal[i].set_calibrator_properties()
+                self.science_wavecal[i].set_hough_properties()
+                self.science_wavecal[i].set_ransac_properties()
+
+                self.logger.info(
+                    'Calibrator is initialised for '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
         if 'standard' in stype_split:
 
-            if self.standard_arc_lines_available:
+            self.standard_wavecal.from_spectrum1D(
+                self.standard_spectrum_list[0])
+            self.standard_wavecal.initialise_calibrator(peaks=peaks,
+                                                        arc_spec=arc_spec)
+            self.standard_wavecal.set_calibrator_properties()
+            self.standard_wavecal.set_hough_properties()
+            self.standard_wavecal.set_ransac_properties()
 
-                self.standard_wavecal.from_spectrum1D(
-                    self.standard_spectrum_list[0])
-                self.standard_wavecal.initialise_calibrator(peaks=peaks,
-                                                            arc_spec=arc_spec)
-                self.standard_wavecal.set_calibrator_properties()
-                self.standard_wavecal.set_hough_properties()
-                self.standard_wavecal.set_ransac_properties()
-
-                self.logger.info('Calibrator is initialised for the '
-                                 'standard_spectrum_list.')
-
-            else:
-
-                self.logger.warning('Standard arc lines are not available.')
+            self.logger.info('Calibrator is initialised for the '
+                             'standard_spectrum_list.')
 
     def set_calibrator_properties(self,
                                   spec_id=None,
@@ -1737,58 +1724,46 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].set_calibrator_properties(
-                        num_pix=num_pix,
-                        pixel_list=pixel_list,
-                        plotting_library=plotting_library,
-                        logger_name=logger_name,
-                        log_level=log_level)
-                    self.logger.info(
-                        'Calibrator properties are set for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                self.logger.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-        if 'standard' in stype_split:
+            for i in spec_id:
 
-            if self.standard_arc_lines_available:
-
-                self.standard_wavecal.set_calibrator_properties(
+                self.science_wavecal[i].set_calibrator_properties(
                     num_pix=num_pix,
                     pixel_list=pixel_list,
                     plotting_library=plotting_library,
                     logger_name=logger_name,
                     log_level=log_level)
-                self.logger.info('Calibrator properties are set for the '
-                                 'standard_spectrum_list.')
+                self.logger.info(
+                    'Calibrator properties are set for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
-            else:
+        if 'standard' in stype_split:
 
-                self.logger.warning('Standard arc lines are not available.')
+            self.standard_wavecal.set_calibrator_properties(
+                num_pix=num_pix,
+                pixel_list=pixel_list,
+                plotting_library=plotting_library,
+                logger_name=logger_name,
+                log_level=log_level)
+            self.logger.info('Calibrator properties are set for the '
+                             'standard_spectrum_list.')
 
     def set_hough_properties(self,
                              spec_id=None,
@@ -1832,49 +1807,27 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].set_hough_properties(
-                        num_slopes=num_slopes,
-                        xbins=xbins,
-                        ybins=ybins,
-                        min_wavelength=min_wavelength,
-                        max_wavelength=max_wavelength,
-                        range_tolerance=range_tolerance,
-                        linearity_tolerance=linearity_tolerance)
-                    self.logger.info(
-                        'Hough properties are set for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                self.logger.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-        if 'standard' in stype_split:
+            for i in spec_id:
 
-            if self.standard_arc_lines_available:
-
-                self.standard_wavecal.set_hough_properties(
+                self.science_wavecal[i].set_hough_properties(
                     num_slopes=num_slopes,
                     xbins=xbins,
                     ybins=ybins,
@@ -1882,12 +1835,22 @@ class OneDSpec():
                     max_wavelength=max_wavelength,
                     range_tolerance=range_tolerance,
                     linearity_tolerance=linearity_tolerance)
-                self.logger.info('Hough properties are set for the '
-                                 'standard_spectrum_list.')
+                self.logger.info(
+                    'Hough properties are set for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
-            else:
+        if 'standard' in stype_split:
 
-                self.logger.warning('Standard arc lines are not available.')
+            self.standard_wavecal.set_hough_properties(
+                num_slopes=num_slopes,
+                xbins=xbins,
+                ybins=ybins,
+                min_wavelength=min_wavelength,
+                max_wavelength=max_wavelength,
+                range_tolerance=range_tolerance,
+                linearity_tolerance=linearity_tolerance)
+            self.logger.info('Hough properties are set for the '
+                             'standard_spectrum_list.')
 
     def set_ransac_properties(self,
                               spec_id=None,
@@ -1898,6 +1861,9 @@ class OneDSpec():
                               ransac_tolerance=5,
                               candidate_weighted=True,
                               hough_weight=1.0,
+                              minimum_matches=3,
+                              minimum_peak_utilisation=0.,
+                              minimum_fit_error=1e-4,
                               stype='science+standard'):
         '''
         Configure the Calibrator. This may require some manual twiddling before
@@ -1938,62 +1904,56 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].set_ransac_properties(
-                        sample_size=sample_size,
-                        top_n_candidate=top_n_candidate,
-                        linear=linear,
-                        filter_close=filter_close,
-                        ransac_tolerance=ransac_tolerance,
-                        candidate_weighted=candidate_weighted,
-                        hough_weight=hough_weight)
-                    self.logger.info(
-                        'Ransac properties are set for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                self.logger.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-        if 'standard' in stype_split:
+            for i in spec_id:
 
-            if self.standard_arc_lines_available:
-
-                self.standard_wavecal.set_ransac_properties(
+                self.science_wavecal[i].set_ransac_properties(
                     sample_size=sample_size,
                     top_n_candidate=top_n_candidate,
                     linear=linear,
                     filter_close=filter_close,
                     ransac_tolerance=ransac_tolerance,
                     candidate_weighted=candidate_weighted,
-                    hough_weight=hough_weight)
-                self.logger.info('Ransac properties are set for the '
-                                 'standard_spectrum_list.')
+                    hough_weight=hough_weight,
+                    minimum_matches=minimum_matches,
+                    minimum_peak_utilisation=minimum_peak_utilisation,
+                    minimum_fit_error=minimum_fit_error)
+                self.logger.info(
+                    'Ransac properties are set for the '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
-            else:
+        if 'standard' in stype_split:
 
-                self.logger.warning('Standard arc lines are not available.')
+            self.standard_wavecal.set_ransac_properties(
+                sample_size=sample_size,
+                top_n_candidate=top_n_candidate,
+                linear=linear,
+                filter_close=filter_close,
+                ransac_tolerance=ransac_tolerance,
+                candidate_weighted=candidate_weighted,
+                hough_weight=hough_weight,
+                minimum_matches=minimum_matches,
+                minimum_peak_utilisation=minimum_peak_utilisation,
+                minimum_fit_error=minimum_fit_error)
+            self.logger.info('Ransac properties are set for the '
+                             'standard_spectrum_list.')
 
     def set_known_pairs(self,
                         pix=None,
@@ -2123,53 +2083,27 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_arc_lines_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].add_user_atlas(
-                        elements=elements,
-                        wavelengths=wavelengths,
-                        intensities=intensities,
-                        candidate_tolerance=candidate_tolerance,
-                        constrain_poly=constrain_poly,
-                        vacuum=vacuum,
-                        pressure=pressure,
-                        temperature=temperature,
-                        relative_humidity=relative_humidity)
-                    self.logger.info(
-                        'Added user supplied atlas to '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
-
-                self.science_atlas_available = True
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                self.logger.warning('Science arc lines are not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-        if 'standard' in stype_split:
+            for i in spec_id:
 
-            if self.standard_data_available:
-
-                self.standard_wavecal.add_user_atlas(
+                self.science_wavecal[i].add_user_atlas(
                     elements=elements,
                     wavelengths=wavelengths,
                     intensities=intensities,
@@ -2179,14 +2113,28 @@ class OneDSpec():
                     pressure=pressure,
                     temperature=temperature,
                     relative_humidity=relative_humidity)
-                self.logger.info('Added user supplied atlas to '
-                                 'standard_spectrum_list.')
+                self.logger.info(
+                    'Added user supplied atlas to '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
 
-                self.standard_atlas_available = True
+            self.science_atlas_available = True
 
-            else:
+        if 'standard' in stype_split:
 
-                self.logger.warning('Standard arc lines are not available.')
+            self.standard_wavecal.add_user_atlas(
+                elements=elements,
+                wavelengths=wavelengths,
+                intensities=intensities,
+                candidate_tolerance=candidate_tolerance,
+                constrain_poly=constrain_poly,
+                vacuum=vacuum,
+                pressure=pressure,
+                temperature=temperature,
+                relative_humidity=relative_humidity)
+            self.logger.info('Added user supplied atlas to '
+                             'standard_spectrum_list.')
+
+            self.standard_atlas_available = True
 
     def add_atlas(self,
                   elements,
@@ -2519,54 +2467,41 @@ class OneDSpec():
 
         if 'science' in stype_split:
 
-            if self.science_atlas_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                for i in spec_id:
-
-                    self.science_wavecal[i].do_hough_transform(
-                        brute_force=brute_force)
-                    self.logger.info(
-                        'Hough Transform is performed on '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
-
-                self.science_hough_pairs_available = True
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                self.logger.warning('Science atlas is not available.')
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_wavecal[i].do_hough_transform(
+                    brute_force=brute_force)
+                self.logger.info(
+                    'Hough Transform is performed on '
+                    'science_spectrum_list for spec_id: {}.'.format(i))
+
+            self.science_hough_pairs_available = True
 
         if 'standard' in stype_split:
 
-            if self.standard_atlas_available:
+            self.standard_wavecal.do_hough_transform(brute_force=brute_force)
+            self.logger.info('Hough Transform is performed on '
+                             'standard_spectrum_list.')
 
-                self.standard_wavecal.do_hough_transform(
-                    brute_force=brute_force)
-                self.logger.info('Hough Transform is performed on '
-                                 'standard_spectrum_list.')
-
-                self.standard_hough_pairs_available = True
-
-            else:
-
-                self.logger.warning('Standard atlas is not available.')
+            self.standard_hough_pairs_available = True
 
     def plot_search_space(self,
                           spec_id=None,
@@ -2663,8 +2598,10 @@ class OneDSpec():
             fit_coeff=None,
             fit_tolerance=10.,
             fit_type='poly',
+            candidate_tolerance=2.,
             brute_force=False,
             progress=True,
+            return_solution=False,
             display=False,
             save_fig=False,
             fig_type='iframe+png',
@@ -2692,6 +2629,8 @@ class OneDSpec():
             space
         progress: bool (Default: True)
             Set to show the progress using tdqm (if imported).
+        return_solution: bool (Default: True)
+            Set to True to return the best fit polynomial coefficients.
         display: bool (Default: False)
             Set to show diagnostic plot.
         save_fig: bool (Default: False)
@@ -2708,6 +2647,8 @@ class OneDSpec():
         '''
 
         stype_split = stype.split('+')
+
+        solution = {}
 
         if 'science' in stype_split:
 
@@ -2731,24 +2672,31 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
+                solution_science = []
+
                 for i in spec_id:
 
-                    self.science_wavecal[i].fit(max_tries=max_tries,
-                                                fit_deg=fit_deg,
-                                                fit_coeff=fit_coeff,
-                                                fit_tolerance=fit_tolerance,
-                                                fit_type=fit_type,
-                                                brute_force=brute_force,
-                                                progress=progress,
-                                                display=display,
-                                                save_fig=save_fig,
-                                                fig_type=fig_type,
-                                                filename=filename)
+                    solution_science.append(self.science_wavecal[i].fit(
+                        max_tries=max_tries,
+                        fit_deg=fit_deg,
+                        fit_coeff=fit_coeff,
+                        fit_tolerance=fit_tolerance,
+                        fit_type=fit_type,
+                        candidate_tolerance=candidate_tolerance,
+                        brute_force=brute_force,
+                        progress=progress,
+                        display=display,
+                        save_fig=save_fig,
+                        fig_type=fig_type,
+                        filename=filename,
+                        return_solution=return_solution))
+
                     self.logger.info(
                         'Wavelength solution is fitted for the '
                         'science_spectrum_list for spec_id: {}.'.format(i))
 
                 self.science_wavecal_polynomial_available = True
+                solution['science'] = solution_science
 
             else:
 
@@ -2758,17 +2706,20 @@ class OneDSpec():
 
             if self.standard_hough_pairs_available:
 
-                self.standard_wavecal.fit(max_tries=max_tries,
-                                          fit_deg=fit_deg,
-                                          fit_coeff=fit_coeff,
-                                          fit_tolerance=fit_tolerance,
-                                          fit_type=fit_type,
-                                          brute_force=brute_force,
-                                          progress=progress,
-                                          display=display,
-                                          save_fig=save_fig,
-                                          fig_type=fig_type,
-                                          filename=filename)
+                solution['standard'] = self.standard_wavecal.fit(
+                    max_tries=max_tries,
+                    fit_deg=fit_deg,
+                    fit_coeff=fit_coeff,
+                    fit_tolerance=fit_tolerance,
+                    fit_type=fit_type,
+                    candidate_tolerance=candidate_tolerance,
+                    brute_force=brute_force,
+                    progress=progress,
+                    display=display,
+                    save_fig=save_fig,
+                    fig_type=fig_type,
+                    filename=filename,
+                    return_solution=return_solution)
                 self.logger.info('Wavelength solution is fitted for the '
                                  'standard_spectrum_list.')
 
@@ -2777,6 +2728,10 @@ class OneDSpec():
             else:
 
                 self.logger.warning('Standard spectrum/a are not imported.')
+
+        if return_solution:
+
+            return solution
 
     def robust_refit(self,
                      spec_id=None,
@@ -2788,6 +2743,7 @@ class OneDSpec():
                      convergence=1e-6,
                      robust_refit=True,
                      fit_deg=None,
+                     return_solution=False,
                      display=False,
                      save_fig=False,
                      filename=None,
@@ -2818,6 +2774,8 @@ class OneDSpec():
             solution.
         fit_deg: int (Default: length of the input coefficients - 1)
             Order of polynomial fit with all the detected peaks.
+        return_solution: bool (Default: True)
+            Set to True to return the best fit polynomial coefficients.
         display: bool (Default: False)
             Set to show diagnostic plot.
         save_fig: bool (Default: False)
@@ -2831,6 +2789,8 @@ class OneDSpec():
         '''
 
         stype_split = stype.split('+')
+
+        solution = {}
 
         if 'science' in stype_split:
 
@@ -2853,6 +2813,8 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
+                solution_science = []
+
                 for i in spec_id:
 
                     if fit_coeff is None:
@@ -2860,21 +2822,25 @@ class OneDSpec():
                         fit_coeff = self.science_wavecal[
                             i].spectrum1D.calibrator.fit_coeff
 
-                    self.science_wavecal[i].robust_refit(
-                        fit_coeff=fit_coeff,
-                        n_delta=n_delta,
-                        refine=refine,
-                        tolerance=tolerance,
-                        method=method,
-                        convergence=convergence,
-                        robust_refit=robust_refit,
-                        fit_deg=fit_deg,
-                        display=display,
-                        save_fig=save_fig,
-                        filename=filename)
+                    solution_science.append(
+                        self.science_wavecal[i].robust_refit(
+                            fit_coeff=fit_coeff,
+                            n_delta=n_delta,
+                            refine=refine,
+                            tolerance=tolerance,
+                            method=method,
+                            convergence=convergence,
+                            robust_refit=robust_refit,
+                            fit_deg=fit_deg,
+                            display=display,
+                            save_fig=save_fig,
+                            filename=filename,
+                            return_solution=return_solution))
                     self.logger.info(
                         'Wavelength solution is refined for the '
                         'science_spectrum_list for spec_id: {}.'.format(i))
+
+                solution['science'] = solution_science
 
             else:
 
@@ -2889,23 +2855,29 @@ class OneDSpec():
                     fit_coeff = self.standard_wavecal[
                         0].spectrum1D.calibrator.fit_coeff
 
-                self.standard_wavecal.robust_refit(fit_coeff=fit_coeff,
-                                                   n_delta=n_delta,
-                                                   refine=refine,
-                                                   tolerance=tolerance,
-                                                   method=method,
-                                                   convergence=convergence,
-                                                   robust_refit=robust_refit,
-                                                   fit_deg=fit_deg,
-                                                   display=display,
-                                                   save_fig=save_fig,
-                                                   filename=filename)
+                solution['standard'] = self.standard_wavecal.robust_refit(
+                    fit_coeff=fit_coeff,
+                    n_delta=n_delta,
+                    refine=refine,
+                    tolerance=tolerance,
+                    method=method,
+                    convergence=convergence,
+                    robust_refit=robust_refit,
+                    fit_deg=fit_deg,
+                    display=display,
+                    save_fig=save_fig,
+                    filename=filename,
+                    return_solution=return_solution)
                 self.logger.info('Wavelength solution is refined for the '
                                  'standard_spectrum_list.')
 
             else:
 
                 self.logger.warning('Standard spectrum/a are not imported.')
+
+        if return_solution:
+
+            return solution
 
     def get_pix_wave_pairs(self, spec_id=None, stype='science+standard'):
         '''
@@ -3024,7 +2996,7 @@ class OneDSpec():
 
             if self.standard_wavecal_polynomial_available:
 
-                self.standard_wavecal[0].add_pix_wave_pair(pix, wave)
+                self.standard_wavecal.add_pix_wave_pair(pix, wave)
 
     def remove_pix_wave_pair(self,
                              arg,
@@ -3076,14 +3048,14 @@ class OneDSpec():
 
             if self.standard_wavecal_polynomial_available:
 
-                self.standard_wavecal[0].remove_pix_wave_pair(arg)
+                self.standard_wavecal.remove_pix_wave_pair(arg)
 
     def manual_refit(self,
                      matched_peaks=None,
                      matched_atlas=None,
                      degree=None,
                      x0=None,
-                     return_values=True,
+                     return_solution=False,
                      spec_id=None,
                      stype='science+standard'):
         '''
@@ -3114,7 +3086,7 @@ class OneDSpec():
             Polynomial fit degree (Only used if x0 is None)
         x0: list (Default: None)
             Initial fit coefficients
-        return_values: bool (Default: True)
+        return_solution: bool (Default: False)
             Set to True to return the best fit polynomial coefficients.
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
@@ -3124,7 +3096,7 @@ class OneDSpec():
         '''
         stype_split = stype.split('+')
 
-        result = {}
+        solution = {}
 
         if 'science' in stype_split:
 
@@ -3147,32 +3119,34 @@ class OneDSpec():
                     # if spec_id is None, calibrators are initialised to all
                     spec_id = list(self.science_spectrum_list.keys())
 
-                result_science = []
+                solution_science = []
 
                 for i in spec_id:
 
-                    if return_values:
+                    solution_science.append(
+                        self.science_wavecal[i].manual_refit(
+                            matched_peaks=matched_peaks,
+                            matched_atlas=matched_atlas,
+                            degree=degree,
+                            x0=x0,
+                            return_solution=return_solution))
 
-                        result_science.append(
-                            self.science_wavecal[i].manual_refit(
-                                matched_peaks, matched_atlas, degree, x0,
-                                return_values))
-
-                        result['science'] = result_science
+                solution['science'] = solution_science
 
         if 'standard' in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
-                if return_values:
+                solution['standard'] = self.standard_wavecal.manual_refit(
+                    matched_peaks=matched_peaks,
+                    matched_atlas=matched_atlas,
+                    degree=degree,
+                    x0=x0,
+                    return_solution=return_solution)
 
-                    result['standard'] = self.standard_wavecal.manual_refit(
-                        matched_peaks, matched_atlas, degree, x0,
-                        return_values)
+        if return_solution:
 
-        if return_values:
-
-            return result
+            return solution
 
     def get_calibrator(self, spec_id=None, stype='science+standard'):
 
@@ -3289,10 +3263,6 @@ class OneDSpec():
                         wave_end = wave[-1]
 
                     wave_resampled = np.arange(wave_start, wave_end, wave_bin)
-
-                    print(np.shape(np.array(wave_resampled).reshape(-1)))
-                    print(np.shape(np.array(wave).reshape(-1)))
-                    print(np.shape(np.array(spec.count).reshape(-1)))
 
                     count_resampled = spectres(
                         np.array(wave_resampled).reshape(-1),
