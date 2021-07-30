@@ -37,10 +37,6 @@ class StandardLibrary:
 
         See explanation notes at those links for details.
 
-        The list of targets and libraries can be listed with
-
-        list_all()
-
         Parameters
         ----------
         verbose: bool (Default: True)

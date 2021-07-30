@@ -2887,7 +2887,7 @@ class OneDSpec():
         Return
         ------
         pw_pairs: disctoary
-            Dictionary of 'science' and/or 'standard' where the values are 
+            Dictionary of 'science' and/or 'standard' where the values are
             lists of tuples each containing the array position, peak (pixel)
             and atlas (wavelength) in the order of the given spec_id.
         spec_id: int or None (Default: None)

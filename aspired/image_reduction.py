@@ -18,57 +18,289 @@ __all__ = ['ImageReduction']
 
 
 class ImageReduction:
+    '''
+    This class is not intented for quality data reduction, it exists for
+    completeness such that users can produce a minimal pipeline with
+    a single pacakge. Users should preprocess calibration frames, for
+    example, we cannot properly combine arc frames taken with long and
+    short exposures for wavelength calibration with both bright and faint
+    lines; fringing correction with flat frames; light frames with various
+    exposure times.
+
+    '''
     def __init__(self,
-                 filelist,
-                 ftype='csv',
-                 delimiter=None,
-                 saxis=None,
-                 combinetype_light='median',
-                 sigma_clipping_light=True,
-                 clip_low_light=5,
-                 clip_high_light=5,
-                 exptime_light=None,
-                 exptime_light_keyword=None,
-                 combinetype_dark='median',
-                 sigma_clipping_dark=True,
-                 clip_low_dark=5,
-                 clip_high_dark=5,
-                 exptime_dark=None,
-                 exptime_dark_keyword=None,
-                 combinetype_bias='median',
-                 sigma_clipping_bias=False,
-                 clip_low_bias=5,
-                 clip_high_bias=5,
-                 combinetype_flat='median',
-                 sigma_clipping_flat=True,
-                 clip_low_flat=5,
-                 clip_high_flat=5,
-                 exptime_flat=None,
-                 exptime_flat_keyword=None,
-                 cosmicray=False,
-                 gain=1.0,
-                 readnoise=0.0,
-                 fsmode='convolve',
-                 psfmodel='gaussy',
-                 cutoff=60000.,
-                 grow=False,
-                 iterations=1,
-                 diagonal=False,
                  verbose=True,
                  logger_name='ImageReduction',
                  log_level='WARNING',
                  log_file_folder='default',
-                 log_file_name='default',
-                 **kwargs):
+                 log_file_name='default'):
         '''
-        This class is not intented for quality data reduction, it exists for
-        completeness such that users can produce a minimal pipeline with
-        a single pacakge. Users should preprocess calibration frames, for
-        example, we cannot properly combine arc frames taken with long and
-        short exposures for wavelength calibration with both bright and faint
-        lines; fringing correction with flat frames; light frames with various
-        exposure times.
+        The initialisation only sets up the logger.
 
+        Parameters
+        ----------
+        verbose: boolean (Default: True)
+            Set to False to suppress all verbose warnings, except for
+            critical failure.
+        logger_name: str (Default: ImageReduction)
+            This will set the name of the logger, if the name is used already,
+            it will reference to the existing logger. This will be the
+            first part of the default log file name unless log_file_name is
+            provided.
+        log_level: str (Default: WARNING)
+            Four levels of logging are available, in decreasing order of
+            information and increasing order of severity: (1) DEBUG, (2) INFO,
+            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+            there is suboptimal operations in some parts of that step. ERROR
+            means that the requested operation cannot be performed, but the
+            software can handle it by either using the default setting or
+            skipping the operation. CRITICAL means that the requested
+            operation cannot be resolved without human interaction, this is
+            most usually coming from missing data.
+        log_file_folder: None or str (Default: "default")
+            Folder in which the file is save, set to default to save to the
+            current path.
+        log_file_name: None or str (Default: "default")
+            File name of the log, set to None to print to screen only.
+        **kwargs:
+            Extra keyword arguments for the astroscrappy.detect_cosmics:
+            https://astroscrappy.readthedocs.io/en/latest/api/
+            astroscrappy.detect_cosmics.html
+            The default setting is::
+
+                astroscrappy.detect_cosmics(indat, inmask=None, bkg=None,
+                    var=None, sigclip=4.5, sigfrac=0.3, objlim=5.0, gain=1.0,
+                    readnoise=6.5, satlevel=65536.0, niter=4, sepmed=True,
+                    cleantype='meanmask', fsmode='median', psfmodel='gauss',
+                    psffwhm=2.5, psfsize=7, psfk=None, psfbeta=4.765,
+                    verbose=False)
+
+        '''
+
+        # Set-up logger
+        self.logger = logging.getLogger(logger_name)
+
+        if (log_level == "CRITICAL") or (not verbose):
+
+            self.logger.setLevel(logging.CRITICAL)
+
+        elif log_level == "ERROR":
+
+            self.logger.setLevel(logging.ERROR)
+
+        elif log_level == "WARNING":
+
+            self.logger.setLevel(logging.WARNING)
+
+        elif log_level == "INFO":
+
+            self.logger.setLevel(logging.INFO)
+
+        elif log_level == "DEBUG":
+
+            self.logger.setLevel(logging.DEBUG)
+
+        else:
+
+            raise ValueError('Unknonw logging level.')
+
+        formatter = logging.Formatter(
+            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
+            '%(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S')
+
+        if log_file_name is None:
+
+            # Only print log to screen
+            self.handler = logging.StreamHandler()
+
+        else:
+
+            if log_file_name == 'default':
+
+                log_file_name = '{}_{}.log'.format(
+                    logger_name,
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+
+            # Save log to file
+            if log_file_folder == 'default':
+
+                log_file_folder = ''
+
+            self.handler = logging.FileHandler(
+                os.path.join(log_file_folder, log_file_name), 'a+')
+
+        self.handler.setFormatter(formatter)
+        if (self.logger.hasHandlers()):
+
+            self.logger.handlers.clear()
+
+        self.logger.addHandler(self.handler)
+
+        # FITS keyword standard recommends XPOSURE, but most observatories
+        # use EXPTIME for supporting iraf. Also included a few other keywords
+        # which are the proxy-exposure times at best. ASPIRED will use the
+        # first keyword found on the list, if all failed, an exposure time of
+        # 1 second will be applied. A warning will be promted.
+        self.exptime_keyword = [
+            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+        ]
+
+        self.saxis = 1
+
+        self.combinetype_light = 'median'
+        self.sigma_clipping_light = True
+        self.clip_low_light = 5
+        self.clip_high_light = 5
+        self.exptime_light = None
+        self.exptime_light_keyword = None
+
+        self.combinetype_dark = 'median'
+        self.sigma_clipping_dark = True
+        self.clip_low_dark = 5
+        self.clip_high_dark = 5
+        self.exptime_dark = None
+        self.exptime_dark_keyword = None
+
+        self.combinetype_bias = 'median'
+        self.sigma_clipping_bias = False
+        self.clip_low_bias = 5
+        self.clip_high_bias = 5
+
+        self.combinetype_flat = 'median'
+        self.sigma_clipping_flat = True
+        self.clip_low_flat = 5
+        self.clip_high_flat = 5
+        self.exptime_flat = None
+        self.exptime_flat_keyword = None
+
+        self.combinetype_arc = 'median'
+        self.sigma_clipping_arc = False
+        self.clip_low_arc = 5
+        self.clip_high_arc = 5
+
+        self.cosmicray = False
+        self.gain = 1.0
+        self.readnoise = 0.0
+        self.fsmode = 'convolve'
+        self.psfmodel = 'gaussy'
+        self.cr_kwargs = None
+
+        self.cutoff = 60000.0
+        self.grow = False
+        self.iterations = 1
+        self.diagonal = False
+        self.pixel_healed = False
+
+        self.bias_list = []
+        self.dark_list = []
+        self.flat_list = []
+        self.arc_list = []
+        self.light = []
+
+        self.bias_main = None
+        self.dark_main = None
+        self.flat_main = None
+        self.arc_main = None
+        self.light_main = None
+
+        self.flat_reduced = None
+        self.light_reduced = None
+
+        self.image_fits = None
+        self.bad_pixel_mask = None
+        self.bad_pixels = False
+        self.saturation_mask = None
+        self.saturated = False
+        self.bad_mask = None
+
+        self.light_filename = []
+        self.arc_filename = []
+        self.dark_filename = []
+        self.flat_filename = []
+        self.bias_filename = []
+
+        self.light_CCDData = []
+        self.arc_CCDData = []
+        self.dark_CCDData = []
+        self.flat_CCDData = []
+        self.bias_CCDData = []
+
+        self.light_header = []
+        self.arc_header = []
+        self.dark_header = []
+        self.flat_header = []
+        self.bias_header = []
+
+        self.light_time = []
+        self.arc_time = []
+        self.dark_time = []
+        self.flat_time = []
+
+    def set_saxis(self, saxis=None):
+
+        if saxis is None:
+
+            if 'SAXIS' in self.light_CCDData[0].header:
+
+                self.saxis = int(self.light_CCDData[0].header['SAXIS'])
+
+            else:
+
+                self.saxis = 1
+
+        elif np.in1d(saxis, [0, 1]).any():
+
+            self.saxis = saxis
+
+        else:
+
+            self.saxis = 1
+
+        self.logger.info('Saxis is found/set to be {}.'.format(self.saxis))
+
+    def add_filelist(self,
+                     filelist,
+                     ftype='csv',
+                     delimiter=None,
+                     saxis=None,
+                     combinetype_light='median',
+                     sigma_clipping_light=True,
+                     clip_low_light=5,
+                     clip_high_light=5,
+                     exptime_light=None,
+                     exptime_light_keyword=None,
+                     combinetype_arc='median',
+                     sigma_clipping_arc = False,
+                     clip_low_arc = 5,
+                     clip_high_arc = 5,
+                     combinetype_dark='median',
+                     sigma_clipping_dark=True,
+                     clip_low_dark=5,
+                     clip_high_dark=5,
+                     exptime_dark=None,
+                     exptime_dark_keyword=None,
+                     combinetype_bias='median',
+                     sigma_clipping_bias=False,
+                     clip_low_bias=5,
+                     clip_high_bias=5,
+                     combinetype_flat='median',
+                     sigma_clipping_flat=True,
+                     clip_low_flat=5,
+                     clip_high_flat=5,
+                     exptime_flat=None,
+                     exptime_flat_keyword=None,
+                     cosmicray=False,
+                     gain=1.0,
+                     readnoise=0.0,
+                     fsmode='convolve',
+                     psfmodel='gaussy',
+                     cutoff=60000.,
+                     grow=False,
+                     iterations=1,
+                     diagonal=False,
+                     **kwargs):
+        '''
         If a field-flattened 2D spectrum is already avaialble, it can be
         the only listed item. Set it as a 'light' frame.
 
@@ -176,103 +408,7 @@ class ImageReduction:
             The number of pixel growth along the Cartesian axes directions.
         diagonal: bool (Default: False)
             Set to True to grow in the diagonal directions.
-        verbose: boolean (Default: True)
-            Set to False to suppress all verbose warnings, except for
-            critical failure.
-        logger_name: str (Default: ImageReduction)
-            This will set the name of the logger, if the name is used already,
-            it will reference to the existing logger. This will be the
-            first part of the default log file name unless log_file_name is
-            provided.
-        log_level: str (Default: WARNING)
-            Four levels of logging are available, in decreasing order of
-            information and increasing order of severity: (1) DEBUG, (2) INFO,
-            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
-            there is suboptimal operations in some parts of that step. ERROR
-            means that the requested operation cannot be performed, but the
-            software can handle it by either using the default setting or
-            skipping the operation. CRITICAL means that the requested
-            operation cannot be resolved without human interaction, this is
-            most usually coming from missing data.
-        log_file_folder: None or str (Default: "default")
-            Folder in which the file is save, set to default to save to the
-            current path.
-        log_file_name: None or str (Default: "default")
-            File name of the log, set to None to print to screen only.
-        **kwargs:
-            Extra keyword arguments for the astroscrappy.detect_cosmics:
-            https://astroscrappy.readthedocs.io/en/latest/api/
-            astroscrappy.detect_cosmics.html
-            The default setting is::
-
-                astroscrappy.detect_cosmics(indat, inmask=None, bkg=None,
-                    var=None, sigclip=4.5, sigfrac=0.3, objlim=5.0, gain=1.0,
-                    readnoise=6.5, satlevel=65536.0, niter=4, sepmed=True,
-                    cleantype='meanmask', fsmode='median', psfmodel='gauss',
-                    psffwhm=2.5, psfsize=7, psfk=None, psfbeta=4.765,
-                    verbose=False)
-
         '''
-
-        # Set-up logger
-        self.logger = logging.getLogger(logger_name)
-
-        if (log_level == "CRITICAL") or (not verbose):
-
-            self.logger.setLevel(logging.CRITICAL)
-
-        elif log_level == "ERROR":
-
-            self.logger.setLevel(logging.ERROR)
-
-        elif log_level == "WARNING":
-
-            self.logger.setLevel(logging.WARNING)
-
-        elif log_level == "INFO":
-
-            self.logger.setLevel(logging.INFO)
-
-        elif log_level == "DEBUG":
-
-            self.logger.setLevel(logging.DEBUG)
-
-        else:
-
-            raise ValueError('Unknonw logging level.')
-
-        formatter = logging.Formatter(
-            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
-            '%(message)s',
-            datefmt='%a, %d %b %Y %H:%M:%S')
-
-        if log_file_name is None:
-
-            # Only print log to screen
-            self.handler = logging.StreamHandler()
-
-        else:
-
-            if log_file_name == 'default':
-
-                log_file_name = '{}_{}.log'.format(
-                    logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
-
-            # Save log to file
-            if log_file_folder == 'default':
-
-                log_file_folder = ''
-
-            self.handler = logging.FileHandler(
-                os.path.join(log_file_folder, log_file_name), 'a+')
-
-        self.handler.setFormatter(formatter)
-        if (self.logger.hasHandlers()):
-
-            self.logger.handlers.clear()
-
-        self.logger.addHandler(self.handler)
 
         if delimiter is not None:
 
@@ -330,6 +466,11 @@ class ImageReduction:
         self.exptime_flat = exptime_flat
         self.exptime_flat_keyword = exptime_flat_keyword
 
+        self.combinetype_arc = combinetype_arc
+        self.sigma_clipping_arc = sigma_clipping_arc
+        self.clip_low_arc = clip_low_arc
+        self.clip_high_arc = clip_high_arc
+
         self.cosmicray = cosmicray
         self.gain = gain
         self.readnoise = readnoise
@@ -341,40 +482,6 @@ class ImageReduction:
         self.grow = grow
         self.iterations = iterations
         self.diagonal = diagonal
-        self.pixel_healed = False
-
-        self.bias_list = None
-        self.dark_list = None
-        self.flat_list = None
-        self.arc_list = None
-        self.light = None
-
-        self.bias_main = None
-        self.dark_main = None
-        self.flat_main = None
-        self.arc_main = None
-        self.light_main = None
-
-        self.flat_reduced = None
-        self.light_reduced = None
-
-        self.image_fits = None
-        self.bad_pixel_mask = None
-        self.bad_pixels = False
-        self.saturation_mask = None
-        self.saturated = False
-        self.bad_mask = None
-
-        self.bias_filename = []
-        self.dark_filename = []
-        self.flat_filename = []
-        self.arc_filename = []
-        self.light_filename = []
-
-        self.light_header = []
-        self.arc_header = []
-        self.dark_header = []
-        self.flat_header = []
 
         # import file with first column as image type and second column as
         # file path
@@ -494,9 +601,6 @@ class ImageReduction:
 
         # Only load the science data, other types of image data are loaded by
         # separate methods.
-        light_CCDData = []
-        light_time = []
-
         for i in range(self.light_list.size):
 
             # Open all the light frames
@@ -504,62 +608,8 @@ class ImageReduction:
                 self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
 
-            if type(light) == 'astropy.io.fits.hdu.hdulist.HDUList':
-
-                light = light[0]
-                self.logger.warning('An HDU list is provided, only the first '
-                                    'HDU will be read.')
-            light_shape = np.shape(light.data)
-            self.logger.debug('light.data has shape {}.'.format(light_shape))
-
-            # Normal case
-            if len(light_shape) == 2:
-
-                self.logger.debug('light.data is 2 dimensional.')
-                light_CCDData.append(
-                    CCDData(light.data.astype('float'), unit=u.ct))
-                self.light_header.append(light.header)
-
-            # Try to trap common error when saving FITS file
-            # Case with multiple image extensions, we only take the first one
-            elif len(light_shape) == 3:
-
-                self.logger.debug('light.data is 3 dimensional.')
-                light_CCDData.append(
-                    CCDData(light.data[0].astype('float'), unit=u.ct))
-                self.light_header.append(light.header)
-
-            # Case with an extra bracket when saving
-            elif len(light_shape) == 4:
-
-                self.logger.debug(
-                    'light.data is 4 dimensional, there is most '
-                    'likely an extra bracket, attempting to go in '
-                    'one level.')
-
-                # In case it in a multiple extension format, we take the
-                # first one only
-                if len(np.shape(light.data[0])) == 3:
-
-                    light_CCDData.append(
-                        CCDData(light.data[0][0].astype('float'), unit=u.ct))
-                    self.light_header.append(light.header)
-
-                else:
-
-                    light_CCDData.append(
-                        CCDData(light.data[0].astype('float'), unit=u.ct))
-                    self.light_header.append(light.header)
-
-            else:
-
-                error_msg = 'Please check the shape/dimension of the ' +\
-                            'input light frame, it is probably empty ' +\
-                            'or has an atypical format. The shape of the ' +\
-                            'data is: {}.'.format(light_shape) + '. The ' +\
-                            'data type is: {}'.format(type(light)) + '.'
-                self.logger.critical(error_msg)
-                raise RuntimeError(error_msg)
+            data, header, exposure_time = self._get_data_and_header(light)
+            self.add_light(data, header, exposure_time)
 
             # Cosmic ray cleaning
             if self.cosmicray:
@@ -571,16 +621,16 @@ class ImageReduction:
 
                     if psfmodel == 'gaussyx':
 
-                        light_CCDData[i].data = detect_cosmics(
-                            light_CCDData[i].data,
+                        self.light_CCDData[i].data = detect_cosmics(
+                            self.light_CCDData[i].data,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
                             psfmodel='gaussy',
                             **kwargs)[1]
 
-                        light_CCDData[i].data = detect_cosmics(
-                            light_CCDData[i].data,
+                        self.light_CCDData[i].data = detect_cosmics(
+                            self.light_CCDData[i].data,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -589,16 +639,16 @@ class ImageReduction:
 
                     elif psfmodel == 'gaussxy':
 
-                        light_CCDData[i].data = detect_cosmics(
-                            light_CCDData[i].data,
+                        self.light_CCDData[i].data = detect_cosmics(
+                            self.light_CCDData[i].data,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
                             psfmodel='gaussx',
                             **kwargs)[1]
 
-                        light_CCDData[i].data = detect_cosmics(
-                            light_CCDData[i].data,
+                        self.light_CCDData[i].data = detect_cosmics(
+                            self.light_CCDData[i].data,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -607,8 +657,8 @@ class ImageReduction:
 
                     else:
 
-                        light_CCDData[i].data = detect_cosmics(
-                            light_CCDData[i].data,
+                        self.light_CCDData[i].data = detect_cosmics(
+                            self.light_CCDData[i].data,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -617,8 +667,8 @@ class ImageReduction:
 
                 else:
 
-                    light_CCDData[i].data = detect_cosmics(
-                        light_CCDData[i].data,
+                    self.light_CCDData[i].data = detect_cosmics(
+                        self.light_CCDData[i].data,
                         gain=self.gain,
                         readnoise=self.readnoise,
                         fsmode=self.fsmode,
@@ -632,41 +682,8 @@ class ImageReduction:
                 self.light_list[i].split('/')[-1]))
             self.light_filename.append(self.light_list[i].split('/')[-1])
 
-            # Get the exposure time for the light frames
-            if exptime_light is None:
-
-                if np.in1d(self.exptime_keyword, self.light_header[i]).any():
-                    # Get the exposure time for the light frames
-                    exptime_keyword_idx = int(
-                        np.where(
-                            np.in1d(self.exptime_keyword,
-                                    self.light_header[i]))[0][0])
-
-                    if np.isfinite(exptime_keyword_idx):
-
-                        exptime_keyword = self.exptime_keyword[
-                            exptime_keyword_idx]
-                        light_time.append(
-                            self.light_header[i][exptime_keyword])
-
-                else:
-
-                    # If exposure time cannot be found from the header and
-                    # user failed to supply the exposure time, use 1 second
-                    logging.warning(
-                        'Light frame exposure time cannot be found. '
-                        '1 second is used as the exposure time.')
-                    light_time.append(1.0)
-
-            else:
-
-                light_time.append(exptime_light)
-
-            self.logger.debug('The light frame exposure time is {}.'.format(
-                light_time[i]))
-
             saturation_mask, saturated = create_cutoff_mask(
-                light_CCDData[i].data, cutoff, grow, iterations, diagonal)
+                self.light_CCDData[i].data, cutoff, grow, iterations, diagonal)
 
             if self.saturation_mask is None:
 
@@ -678,125 +695,389 @@ class ImageReduction:
                 self.saturation_mask *= saturation_mask
                 self.saturated *= saturated
 
-            light_CCDData[i].data /= light_time[i]
+            self.light_CCDData[i].data /= self.light_time[i]
 
-        # Put data into a Combiner
-        light_combiner = Combiner(light_CCDData)
-        self.logger.debug('Combiner for the light frames is created.')
-
-        # Free memory
-        light_CCDData = None
-        self.logger.debug('light_CCDData is deleted.')
-
-        # Apply sigma clipping
-        if self.sigma_clipping_light:
-            light_combiner.sigma_clipping(low_thresh=self.clip_low_light,
-                                          high_thresh=self.clip_high_light,
-                                          func=np.ma.median)
-            self.logger.info('Sigma clipping with a lower and upper threshold '
-                             'of {} and {} sigma.'.format(
-                                 self.clip_low_light, self.clip_high_light))
-        # Image combine by median or average
-        if self.combinetype_light == 'median':
-            self.light_main = light_combiner.median_combine()
-            self.exptime_light = np.nanmedian(light_time)
-            self.logger.info('light frames are median_combined.')
-        elif self.combinetype_light == 'average':
-            self.light_main = light_combiner.average_combine()
-            self.exptime_light = np.nanmean(light_time)
-            self.logger.info('light frames are mean_combined.')
-        else:
-            error_msg = 'Unknown combinetype for light frames.'
-            self.logger.critical(error_msg)
-            raise ValueError(error_msg)
-
-        # Free memory
-        light_combiner = None
+        self.light_main = self.combine_light()
 
         # FITS keyword standard for the spectral direction, if FITS header
         # does not contain SAXIS, the image in assumed to have the spectra
         # going across (left to right corresponds to blue to red). All frames
         # get rotated in the anti-clockwise direction if the first light frame
         # has a verticle spectrum (top to bottom corresponds to blue to red).
-        if saxis is None:
+        self.set_saxis(saxis)
 
-            if 'SAXIS' in light.header:
-
-                self.saxis = int(light.header['SAXIS'])
-
-            else:
-
-                self.saxis = 1
-
-        else:
-
-            self.saxis = saxis
-
-        self.logger.info('Saxis is found/set to be {}.'.format(self.saxis))
-
-        # Collect and stack the arcs
+        # Get the arcs if available
         if len(self.arc_list) > 0:
+
             # Combine the arcs
-            arc_CCDData = []
             for i in range(self.arc_list.size):
+
                 # Open all the light frames
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
-                if type(arc) == 'astropy.io.fits.hdu.hdulist.HDUList':
-                    arc = arc[0]
-                    self.logger.warning(
-                        'A HDU list is provided, only the first '
-                        'HDU will be read.')
 
-                arc_shape = np.shape(arc)
-
-                # Normal case
-                if len(arc_shape) == 2:
-                    self.logger.debug('arc.data is 2 dimensional.')
-                    arc_CCDData.append(
-                        CCDData(arc.data.astype('float'), unit=u.ct))
-                    self.arc_header.append(arc.header)
-                # Try to trap common error when saving FITS file
-                # Case with multiple extensions, we only take the first one
-                elif len(arc_shape) == 3:
-                    self.logger.debug('arc.data is 3 dimensional.')
-                    arc_CCDData.append(
-                        CCDData(arc.data[0].astype('float'), unit=u.ct))
-                    self.arc_header.append(arc.header)
-                # Case with an extra bracket when saving
-                elif len(arc_shape) == 4:
-                    self.logger.debug(
-                        'arc.data is 4 dimensional, there is most '
-                        'likely an extra bracket, attempting to go in '
-                        'one level.')
-                    # In case it in a multiple extension format, we take the
-                    # first one only
-                    if len(np.shape(arc.data[0])) == 3:
-                        arc_CCDData.append(
-                            CCDData(arc.data[0][0].astype('float'), unit=u.ct))
-                        self.arc_header.append(arc.header)
-                    else:
-                        arc_CCDData.append(
-                            CCDData(arc.data[0].astype('float'), unit=u.ct))
-                        self.arc_header.append(arc.header)
-                else:
-                    error_msg = 'Please check the shape/dimension of the ' +\
-                                'input arc frame, it is probably empty ' +\
-                                'or has an atypical output format.'
-                    self.logger.critical(error_msg)
-                    raise RuntimeError(error_msg)
-
-                self.arc_filename.append(self.arc_list[i].split('/')[-1])
+                data, header, _ = self._get_data_and_header(arc)
+                self.add_arc(data, header)
 
                 self.logger.debug('Arc frame header: {}.'.format(
                     self.arc_header[i]))
 
-            # combine the arc frames
-            arc_combiner = Combiner(arc_CCDData)
-            self.arc_main = arc_combiner.median_combine()
+                self.logger.debug('Appending arc filename: {}.'.format(
+                    self.arc_list[i].split('/')[-1]))
+                self.arc_filename.append(self.arc_list[i].split('/')[-1])
 
-            # Free memory
-            arc_CCDData = None
-            arc_combiner = None
+            # combine the arc frames
+            self.arc_main = self.combine_arc()
+
+        # Get the darks if available
+        if len(self.dark_list) > 0:
+
+            for i in range(self.dark_list.size):
+
+                # Open all the dark frames
+                dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
+
+                data, header, exposure_time = self._get_data_and_header(dark)
+                self.add_dark(data, header, exposure_time)
+
+                self.logger.debug('Dark frame header: {}.'.format(
+                    self.dark_header[i]))
+
+                self.logger.debug('Appending dark filename: {}.'.format(
+                    self.dark_list[i].split('/')[-1]))
+                self.dark_filename.append(self.dark_list[i].split('/')[-1])
+
+                self.dark_CCDData[i].data /= self.dark_time[i]
+
+            # combine the arc frames
+            self.dark_main = self.combine_dark()
+
+        # Get the flats if available
+        if len(self.flat_list) > 0:
+
+            for i in range(self.flat_list.size):
+
+                # Open all the flatfield frames
+                flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
+
+                data, header, exposure_time = self._get_data_and_header(flat)
+                self.add_flat(data, header, exposure_time)
+
+                self.logger.debug('Flat frame header: {}.'.format(
+                    self.flat_header[i]))
+
+                self.logger.debug('Appending flat filename: {}.'.format(
+                    self.flat_list[i].split('/')[-1]))
+                self.flat_filename.append(self.flat_list[i].split('/')[-1])
+
+                self.flat_CCDData[i].data /= self.flat_time[i]
+
+            # combine the arc frames
+            self.flat_main = self.combine_flat()
+
+        # Get the biases if available
+        if len(self.bias_list) > 0:
+
+            for i in range(self.bias_list.size):
+
+                # Open all the flatfield frames
+                bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
+
+                data, header, _ = self._get_data_and_header(bias)
+                self.add_bias(data, header)
+
+                self.logger.debug('Flat frame header: {}.'.format(
+                    self.bias_header[i]))
+
+                self.logger.debug('Appending flat filename: {}.'.format(
+                    self.bias_list[i].split('/')[-1]))
+                self.bias_filename.append(self.bias_list[i].split('/')[-1])
+
+            # combine the arc frames
+            self.bias_main = self.combine_bias()
+
+    def add_light(self, light, header, exposure_time):
+
+        if type(light) == np.ndarray:
+
+            light = CCDData(light, unit=u.ct)
+
+        self.light_CCDData.append(light)
+        self.light_header.append(header)
+        self.light_time.append(exposure_time)
+
+    def add_arc(self, arc, header):
+
+        if type(arc) == np.ndarray:
+
+            arc = CCDData(arc, unit=u.ct)
+
+        self.arc_CCDData.append(arc)
+        self.arc_header.append(header)
+
+    def add_flat(self, flat, header, exposure_time):
+
+        if type(flat) == np.ndarray:
+
+            flat = CCDData(flat, unit=u.ct)
+
+        self.flat_CCDData.append(flat)
+        self.flat_header.append(header)
+        self.flat_time.append(exposure_time)
+
+    def add_dark(self, dark, header, exposure_time):
+
+        if type(dark) == np.ndarray:
+
+            dark = CCDData(dark, unit=u.ct)
+
+        self.dark_CCDData.append(dark)
+        self.dark_header.append(header)
+        self.dark_time.append(exposure_time)
+
+    def add_bias(self, bias, header):
+
+        if type(bias) == np.ndarray:
+
+            bias = CCDData(bias, unit=u.ct)
+
+        self.bias_CCDData.append(bias)
+        self.bias_header.append(header)
+
+    def _get_data_and_header(self, input):
+
+        if type(input) == 'astropy.io.fits.hdu.hdulist.HDUList':
+
+            input = input[0]
+            self.logger.warning('An HDU list is provided, only the first '
+                                'HDU will be read.')
+        input_shape = np.shape(input.data)
+        self.logger.debug('data.data has shape {}.'.format(input_shape))
+
+        # Normal case
+        if len(input_shape) == 2:
+
+            self.logger.debug('input.data is 2 dimensional.')
+            input_CCDData = CCDData(input.data.astype('float'), unit=u.ct)
+            input_header = input.header
+
+        # Try to trap common error when saving FITS file
+        # Case with multiple image extensions, we only take the first one
+        elif len(input_shape) == 3:
+
+            self.logger.debug('input.data is 3 dimensional.')
+            input_CCDData = CCDData(input.data[0].astype('float'), unit=u.ct)
+            input_header = input.header
+
+        # Case with an extra bracket when saving
+        elif len(input_shape) == 4:
+
+            self.logger.debug('input.data is 4 dimensional, there is most '
+                              'likely an extra bracket, attempting to go in '
+                              'one level.')
+
+            # In case it in a multiple extension format, we take the
+            # first one only
+            if len(np.shape(input.data[0])) == 3:
+
+                input_CCDData = CCDData(input.data[0][0].astype('float'),
+                                        unit=u.ct)
+                input_header = input.header
+
+            else:
+
+                input_CCDData = CCDData(input.data[0].astype('float'),
+                                        unit=u.ct)
+                input_header = input.header
+
+        else:
+
+            error_msg = 'Please check the shape/dimension of the ' +\
+                        'input input frame, it is probably empty ' +\
+                        'or has an atypical format. The shape of the ' +\
+                        'data is: {}.'.format(input_shape) + '. The ' +\
+                        'data type is: {}'.format(type(input)) + '.'
+            self.logger.critical(error_msg)
+            raise RuntimeError(error_msg)
+
+        # Get the exposure time for the dark frames
+        if np.in1d(self.exptime_keyword, input_header).any():
+            # Get the exposure time for the light frames
+            exptime_keyword_idx = int(
+                np.where(np.in1d(self.exptime_keyword, input_header))[0][0])
+            exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
+            exposure_time = input_header[exptime_keyword]
+
+        else:
+
+            # If exposure time cannot be found from the header and
+            # user failed to supply the exposure time, use 1 second
+            self.logger.warning('Exposure time cannot be found. '
+                                '1 second is used as the exposure time.')
+            exposure_time = 1.0
+
+        return input_CCDData, input_header, exposure_time
+
+    def combine_light(self,
+                       combinetype_light=None,
+                       sigma_clipping_light=None,
+                       clip_low_light=None,
+                       clip_high_light=None):
+
+        if combinetype_light is not None:
+
+            self.combinetype_light = combinetype_light
+
+        if sigma_clipping_light is not None:
+
+            self.sigma_clipping_light = sigma_clipping_light
+
+        if clip_low_light is not None:
+
+            self.clip_low_light = clip_low_light
+
+        if clip_high_light is not None:
+
+            self.clip_high_light = clip_high_light
+
+        return self._combine(self.light_CCDData, self.combinetype_light,
+                             self.sigma_clipping_light, self.clip_low_light,
+                             self.clip_high_light)
+
+    def combine_arc(self,
+                     combinetype_arc=None,
+                     sigma_clipping_arc=None,
+                     clip_low_arc=None,
+                     clip_high_arc=None):
+
+        if combinetype_arc is not None:
+
+            self.combinetype_arc = combinetype_arc
+
+        if sigma_clipping_arc is not None:
+
+            self.sigma_clipping_arc = sigma_clipping_arc
+
+        if clip_low_arc is not None:
+
+            self.clip_low_arc = clip_low_arc
+
+        if clip_high_arc is not None:
+
+            self.clip_high_arc = clip_high_arc
+
+        return self._combine(self.arc_CCDData, self.combinetype_arc,
+                             self.sigma_clipping_arc, self.clip_low_arc,
+                             self.clip_high_arc)
+
+    def combine_flat(self,
+                      combinetype_flat=None,
+                      sigma_clipping_flat=None,
+                      clip_low_flat=None,
+                      clip_high_flat=None):
+
+        if combinetype_flat is not None:
+
+            self.combinetype_flat = combinetype_flat
+
+        if sigma_clipping_flat is not None:
+
+            self.sigma_clipping_flat = sigma_clipping_flat
+
+        if clip_low_flat is not None:
+
+            self.clip_low_flat = clip_low_flat
+
+        if clip_high_flat is not None:
+
+            self.clip_high_flat = clip_high_flat
+
+        return self._combine(self.flat_CCDData, self.combinetype_flat,
+                             self.sigma_clipping_flat, self.clip_low_flat,
+                             self.clip_high_flat)
+
+    def combine_dark(self,
+                      combinetype_dark=None,
+                      sigma_clipping_dark=None,
+                      clip_low_dark=None,
+                      clip_high_dark=None):
+
+        if combinetype_dark is not None:
+
+            self.combinetype_dark = combinetype_dark
+
+        if sigma_clipping_dark is not None:
+
+            self.sigma_clipping_dark = sigma_clipping_dark
+
+        if clip_low_dark is not None:
+
+            self.clip_low_dark = clip_low_dark
+
+        if clip_high_dark is not None:
+
+            self.clip_high_dark = clip_high_dark
+
+        return self._combine(self.dark_CCDData, self.combinetype_dark,
+                             self.sigma_clipping_dark, self.clip_low_dark,
+                             self.clip_high_dark)
+
+    def combine_bias(self,
+                      combinetype_bias=None,
+                      sigma_clipping_bias=None,
+                      clip_low_bias=None,
+                      clip_high_bias=None):
+
+        if combinetype_bias is not None:
+
+            self.combinetype_bias = combinetype_bias
+
+        if sigma_clipping_bias is not None:
+
+            self.sigma_clipping_bias = sigma_clipping_bias
+
+        if clip_low_bias is not None:
+
+            self.clip_low_bias = clip_low_bias
+
+        if clip_high_bias is not None:
+
+            self.clip_high_bias = clip_high_bias
+
+        return self._combine(self.bias_CCDData, self.combinetype_bias,
+                             self.sigma_clipping_bias, self.clip_low_bias,
+                             self.clip_high_bias)
+
+    def _combine(self, CCDData, combine_type, sigma_clipping, clip_low,
+                 clip_high):
+
+        # Put data into a Combiner
+        combiner = Combiner(CCDData)
+
+        # Apply sigma clipping
+        if sigma_clipping:
+
+            combiner.sigma_clipping(low_thresh=clip_low,
+                                    high_thresh=clip_high,
+                                    func=np.ma.median)
+
+        # Image combine by median or average
+        if combine_type == 'median':
+
+            combined_CCDdata = combiner.median_combine()
+
+        elif combine_type == 'average':
+
+            combined_CCDdata = combiner.average_combine()
+
+        else:
+
+            self.logger.error('Unknown combinetype.')
+            raise RuntimeError('Unknown combinetype: {}.'.format(combine_type))
+
+        # Free memory
+        combiner = None
+
+        return combined_CCDdata
 
     def _bias_subtract(self):
         '''
@@ -804,70 +1085,8 @@ class ImageReduction:
 
         '''
 
-        bias_CCDData = []
-
-        for i in range(self.bias_list.size):
-            # Open all the bias frames
-            bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
-            if type(bias) == 'astropy.io.fits.hdu.hdulist.HDUList':
-                bias = bias[0]
-                self.logger.warning('An HDU list is provided, only the first '
-                                    'HDU will be read.')
-            bias_shape = np.shape(bias)
-
-            # Normal case
-            if len(bias_shape) == 2:
-                self.logger.debug('bias.data is 2 dimensional.')
-                bias_CCDData.append(
-                    CCDData(bias.data.astype('float'), unit=u.ct))
-            # Try to trap common error when saving FITS file
-            # Case with multiple image extensions, we only take the first one
-            elif len(bias_shape) == 3:
-                self.logger.debug('bias.data is 3 dimensional.')
-                bias_CCDData.append(
-                    CCDData(bias.data[0].astype('float'), unit=u.ct))
-            # Case with an extra bracket when saving
-            elif len(bias_shape) == 4:
-                self.logger.debug(
-                    'bias.data is 4 dimensional, there is most '
-                    'likely an extra bracket, attempting to go in '
-                    'one level.')
-                # In case it in a multiple extension format, we take the
-                # first one only
-                if len(np.shape(bias.data[0])) == 3:
-                    bias_CCDData.append(
-                        CCDData(bias.data[0][0].astype('float'), unit=u.ct))
-                else:
-                    bias_CCDData.append(
-                        CCDData(bias.data[0].astype('float'), unit=u.ct))
-            else:
-                error_msg = 'Please check the shape/dimension of the ' +\
-                            'input bias frame, it is probably empty ' +\
-                            'or has an atypical output format.'
-                self.logger.critical(error_msg)
-                raise RuntimeError(error_msg)
-
-            self.bias_filename.append(self.bias_list[i].split('/')[-1])
-
         # Put data into a Combiner
-        bias_combiner = Combiner(bias_CCDData)
-
-        # Apply sigma clipping
-        if self.sigma_clipping_bias:
-            bias_combiner.sigma_clipping(low_thresh=self.clip_low_bias,
-                                         high_thresh=self.clip_high_bias,
-                                         func=np.ma.median)
-
-        # Image combine by median or average
-        if self.combinetype_bias == 'median':
-            self.bias_main = bias_combiner.median_combine()
-        elif self.combinetype_bias == 'average':
-            self.bias_main = bias_combiner.average_combine()
-        else:
-            self.bias_filename = []
-            self.logger.error('Unknown combinetype for bias frames, main '
-                              'bias cannot be created. Process continues '
-                              'without bias subtraction.')
+        self.bias_main = self.combine_bias()
 
         # Bias subtract
         if self.bias_main is None:
@@ -879,130 +1098,20 @@ class ImageReduction:
 
             self.light_redcued = self.light_reduced.subtract(self.bias_main)
 
-        # Free memory
-        bias_CCDData = None
-        bias_combiner = None
-
     def _dark_subtract(self):
         '''
         Perform dark subtraction if dark frames are available
 
         '''
 
-        dark_CCDData = []
-        dark_time = []
-
-        for i in range(self.dark_list.size):
-            # Open all the dark frames
-            dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
-            if type(dark) == 'astropy.io.fits.hdu.hdulist.HDUList':
-                dark = dark[0]
-                self.logger.warning('An HDU list is provided, only the first '
-                                    'HDU will be read.')
-            dark_shape = np.shape(dark)
-
-            # Normal case
-            if len(dark_shape) == 2:
-                self.logger.debug('dark.data is 2 dimensional.')
-                dark_CCDData.append(
-                    CCDData(dark.data.astype('float'), unit=u.ct))
-                self.dark_header.append(dark.header)
-            # Try to trap common error when saving FITS file
-            # Case with multiple image extensions, we only take the first one
-            elif len(dark_shape) == 3:
-                self.logger.debug('dark.data is 3 dimensional.')
-                dark_CCDData.append(
-                    CCDData(dark.data[0].astype('float'), unit=u.ct))
-                self.dark_header.append(dark.header)
-            # Case with an extra bracket when saving
-            elif len(dark_shape) == 4:
-                self.logger.debug(
-                    'dark.data is 4 dimensional, there is most '
-                    'likely an extra bracket, attempting to go in '
-                    'one level.')
-                # In case it in a multiple extension format, we take the
-                # first one only
-                if len(np.shape(dark.data[0])) == 3:
-                    dark_CCDData.append(
-                        CCDData(dark.data[0][0].astype('float'), unit=u.ct))
-                    self.dark_header.append(dark.header)
-                else:
-                    dark_CCDData.append(
-                        CCDData(dark.data[0].astype('float'), unit=u.ct))
-                    self.dark_header.append(dark.header)
-            else:
-                error_msg = 'Please check the shape/dimension of the ' +\
-                            'input dark frame, it is probably empty ' +\
-                            'or has an atypical output format.'
-                self.logger.critical(error_msg)
-                raise RuntimeError(error_msg)
-
-            self.logger.debug('Dark frame header: {}.'.format(
-                self.dark_header[i]))
-
-            self.dark_filename.append(self.dark_list[i].split('/')[-1])
-
-            # Get the exposure time for the light frames
-            if self.exptime_dark is None:
-
-                if np.in1d(self.exptime_keyword, self.dark_header[i]).any():
-                    # Get the exposure time for the light frames
-                    exptime_keyword_idx = int(
-                        np.where(
-                            np.in1d(self.exptime_keyword,
-                                    self.dark_header[i]))[0][0])
-
-                    if np.isfinite(exptime_keyword_idx):
-
-                        exptime_keyword = self.exptime_keyword[
-                            exptime_keyword_idx]
-                        dark_time.append(self.dark_header[i][exptime_keyword])
-
-                else:
-
-                    # If exposure time cannot be found from the header and
-                    # user failed to supply the exposure time, use 1 second
-                    self.logger.warning(
-                        'Dark frame exposure time cannot be found. '
-                        '1 second is used as the exposure time.')
-                    dark_time.append(1.0)
-
-            else:
-
-                dark_time.append(self.exptime_dark)
-
-            dark_CCDData[i].data /= dark_time[i]
-
-        # Put data into a Combiner
-        dark_combiner = Combiner(dark_CCDData)
-
-        # Apply sigma clipping
-        if self.sigma_clipping_dark:
-            dark_combiner.sigma_clipping(low_thresh=self.clip_low_dark,
-                                         high_thresh=self.clip_high_dark,
-                                         func=np.ma.median)
-        # Image combine by median or average
-        if self.combinetype_dark == 'median':
-            self.dark_main = dark_combiner.median_combine()
-            self.exptime_dark = np.nanmedian(dark_time)
-        elif self.combinetype_dark == 'average':
-            self.dark_main = dark_combiner.average_combine()
-            self.exptime_dark = np.nanmean(dark_time)
-        else:
-            self.dark_filename = []
-            self.logger.error('Unknown combinetype for dark frames, main '
-                              'dark cannot be created. Process continues '
-                              'without dark subtraction.')
+        self.dark_main = self.combine_dark()
 
         if self.dark_filename != []:
+
             # Dark subtraction adjusted for exposure time
             self.light_reduced =\
                 self.light_reduced.subtract(self.dark_main)
             self.logger.info('Light frame is dark subtracted.')
-
-        # Free memory
-        dark_CCDData = None
-        dark_combiner = None
 
     def _flatfield(self):
         '''
@@ -1010,107 +1119,7 @@ class ImageReduction:
 
         '''
 
-        flat_CCDData = []
-        flat_time = []
-
-        for i in range(self.flat_list.size):
-            # Open all the flatfield frames
-            flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
-            if type(flat) == 'astropy.io.fits.hdu.hdulist.HDUList':
-                flat = flat[0]
-                self.logger.warning('An HDU list is provided, only the first '
-                                    'HDU will be read.')
-
-            flat_shape = np.shape(flat)
-
-            # Normal case
-            if len(flat_shape) == 2:
-                self.logger.debug('flat.data is 2 dimensional.')
-                flat_CCDData.append(
-                    CCDData(flat.data.astype('float'), unit=u.ct))
-                self.flat_header.append(flat.header)
-            # Try to trap common error when saving FITS file
-            # Case with multiple image extensions, we only take the first one
-            elif len(flat_shape) == 3:
-                self.logger.debug('flat.data is 3 dimensional.')
-                flat_CCDData.append(
-                    CCDData(flat.data[0].astype('float'), unit=u.ct))
-                self.flat_header.append(flat.header)
-            # Case with an extra bracket when saving
-            elif len(flat_shape) == 4:
-                self.logger.debug(
-                    'flat.data is 4 dimensional, there is most '
-                    'likely an extra bracket, attempting to go in '
-                    'one level.')
-                # In case it in a multiple extension format, we take the
-                # first one only
-                if len(np.shape(flat.data[0])) == 3:
-                    flat_CCDData.append(
-                        CCDData(flat.data[0][0].astype('float'), unit=u.ct))
-                    self.flat_header.append(flat.header)
-                else:
-                    flat_CCDData.append(
-                        CCDData(flat.data[0].astype('float'), unit=u.ct))
-                    self.flat_header.append(flat.header)
-            else:
-                error_msg = 'Please check the shape/dimension of the ' +\
-                            'input flat frame, it is probably empty ' +\
-                            'or has an atypical output format.'
-                self.logger.critical(error_msg)
-                raise RuntimeError(error_msg)
-
-            self.flat_filename.append(self.flat_list[i].split('/')[-1])
-
-            # Get the exposure time for the flat frames
-            if self.exptime_flat is None:
-
-                if np.in1d(self.exptime_keyword, self.flat_header[i]).any():
-                    # Get the exposure time for the light frames
-                    exptime_keyword_idx = int(
-                        np.where(
-                            np.in1d(self.exptime_keyword,
-                                    self.flat_header[i]))[0][0])
-
-                    if np.isfinite(exptime_keyword_idx):
-
-                        exptime_keyword = self.exptime_keyword[
-                            exptime_keyword_idx]
-                        flat_time.append(self.flat_header[i][exptime_keyword])
-
-                else:
-
-                    # If exposure time cannot be found from the header and
-                    # user failed to supply the exposure time, use 1 second
-                    self.logger.warning(
-                        'Dark frame exposure time cannot be found. '
-                        '1 second is used as the exposure time.')
-                    flat_time.append(1.0)
-
-            else:
-
-                flat_time.append(self.exptime_flat)
-
-            flat_CCDData[i].data /= flat_time[i]
-
-        # Put data into a Combiner
-        flat_combiner = Combiner(flat_CCDData)
-
-        # Apply sigma clipping
-        if self.sigma_clipping_flat:
-            flat_combiner.sigma_clipping(low_thresh=self.clip_low_flat,
-                                         high_thresh=self.clip_high_flat,
-                                         func=np.ma.median)
-
-        # Image combine by median or average
-        if self.combinetype_flat == 'median':
-            self.flat_main = flat_combiner.median_combine()
-        elif self.combinetype_flat == 'average':
-            self.flat_main = flat_combiner.average_combine()
-        else:
-            self.flat_filename = []
-            self.logger.error('Unknown combinetype for flat frames, main '
-                              'flat cannot be created. Process continues '
-                              'without flatfielding.')
+        self.flat_main = self.combine_flat()
 
         # Field-flattening
         if self.flat_main is None:
@@ -1152,12 +1161,7 @@ class ImageReduction:
             self.light_reduced = self.light_reduced / self.flat_reduced
             self.logger.info('Light frame is flattened.')
 
-        # Free memory
-        flat_CCDData = None
-        flat_combiner = None
-
     def create_bad_pixel_mask(self,
-                              cutoff=65535.,
                               grow=False,
                               iterations=1,
                               diagonal=False,
@@ -1171,8 +1175,6 @@ class ImageReduction:
 
         Parameters
         ----------
-        cutoff: float (Default: 60000)
-            This sets the (lower and) upper limit of electron count.
         grow: bool (Default: False)
             Set to True to grow the mask, see `grow_mask()`
         iterations: int (Default: 1)
@@ -1185,7 +1187,7 @@ class ImageReduction:
         """
 
         self.bad_pixel_mask, self.bad_pixels = create_bad_pixel_mask(
-            self.light_reduced.data, grow, iterations, diagonal)
+            self.light_reduced, grow, iterations, diagonal)
 
         if create_bad_mask:
 
@@ -1197,6 +1199,21 @@ class ImageReduction:
 
             self.create_bad_pixel_mask(create_bad_mask=False)
 
+        if self.saturation_mask is None:
+
+            saturation_mask, saturated = create_cutoff_mask(
+                self.light_reduced, self.cutoff, self.grow, self.iterations, self.diagonal)
+
+            if self.saturation_mask is None:
+
+                self.saturation_mask = saturation_mask
+                self.saturated = saturated
+
+            else:
+
+                self.saturation_mask *= saturation_mask
+                self.saturated *= saturated
+
         self.bad_mask = self.saturation_mask | self.bad_pixel_mask
 
     def reduce(self):
@@ -1205,26 +1222,58 @@ class ImageReduction:
 
         '''
 
+        if self.light_main is None:
+
+            self.light_main = self.combine_light()
+
         self.light_reduced = self.light_main
 
+        # Process the arc
+        if len(self.arc_list) > 0:
+
+            if self.arc_main is None:
+
+                self.arc_main = self.combine_arc()
+
         # Bias subtraction
-        if self.bias_list.size > 0:
+        if len(self.bias_list) > 0:
+
+            if self.bias_main is None:
+
+                self.bias_main = self.combine_bias()
+
             self._bias_subtract()
+
         else:
+
             self.logger.warning('No bias frames. Bias subtraction is not '
                                 'performed.')
 
         # Dark subtraction
-        if self.dark_list.size > 0:
+        if len(self.dark_list) > 0:
+
+            if self.dark_main is None:
+
+                self.dark_main = self.combine_dark()
+
             self._dark_subtract()
+
         else:
+
             self.logger.warning('No dark frames. Dark subtraction is not '
                                 'performed.')
 
         # Field flattening
-        if self.flat_list.size > 0:
+        if len(self.flat_list) > 0:
+
+            if self.flat_main is None:
+
+                self.combine_flat = self.combine_flat()
+
             self._flatfield()
+
         else:
+
             self.logger.warning('No flat frames. Field-flattening is not '
                                 'performed.')
 
@@ -1295,7 +1344,9 @@ class ImageReduction:
 
         # Add the names of all the light frames to header
         if len(self.light_filename) > 0:
+
             for i in range(len(self.light_filename)):
+
                 self.logger.debug('Light frame: {} is added to the header.'
                                   ''.format(self.light_filename[i]))
                 self.image_fits.header.set(keyword='light' + str(i + 1),
@@ -1304,7 +1355,9 @@ class ImageReduction:
 
         # Add the names of all the biad frames to header
         if len(self.bias_filename) > 0:
+
             for i in range(len(self.bias_filename)):
+
                 self.logger.debug('Bias frame: {} is added to the header.'
                                   ''.format(self.bias_filename[i]))
                 self.image_fits.header.set(keyword='bias' + str(i + 1),
@@ -1313,7 +1366,9 @@ class ImageReduction:
 
         # Add the names of all the dark frames to header
         if len(self.dark_filename) > 0:
+
             for i in range(len(self.dark_filename)):
+
                 self.logger.debug('Dark frame: {} is added to the header.'
                                   ''.format(self.dark_filename[i]))
                 self.image_fits.header.set(keyword='dark' + str(i + 1),
@@ -1322,7 +1377,9 @@ class ImageReduction:
 
         # Add the names of all the flat frames to header
         if len(self.flat_filename) > 0:
+
             for i in range(len(self.flat_filename)):
+
                 self.logger.debug('Flat frame: {} is added to the header.'
                                   ''.format(self.flat_filename[i]))
                 self.image_fits.header.set(keyword='flat' + str(i + 1),
@@ -1348,8 +1405,8 @@ class ImageReduction:
             comment='Higher threshold of sigma clipping of the light frames.')
         self.image_fits.header.set(
             keyword='XPOSURE',
-            value=self.exptime_light,
-            comment='Average exposure time of the light frames.')
+            value=sum(self.light_time),
+            comment='Total exposure time of the light frames.')
         self.image_fits.header.set(
             keyword='KEYWORD',
             value=self.exptime_light_keyword,
@@ -1373,8 +1430,8 @@ class ImageReduction:
             comment='Higher threshold of sigma clipping of the dark frames.')
         self.image_fits.header.set(
             keyword='DXPOSURE',
-            value=self.exptime_dark,
-            comment='Average exposure time of the dark frames.')
+            value=sum(self.dark_time),
+            comment='Total exposure time of the dark frames.')
         self.image_fits.header.set(
             keyword='DKEYWORD',
             value=self.exptime_dark_keyword,

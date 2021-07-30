@@ -1105,8 +1105,8 @@ def test_calibrator_science_fail_ap_extract_spec_id():
     onedspec.apply_wavelength_calibration(spec_id=7)
 
 
-img = image_reduction.ImageReduction(
-    filelist='test/test_data/sprat_LHS6328.list', log_file_name=None)
+img = image_reduction.ImageReduction(log_file_name=None)
+img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
 img.reduce()
 twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
 twodspec.add_data(img)
@@ -1684,9 +1684,9 @@ def test_quadratic_fit():
      residual_robust, peak_utilisation_robust,
      atlas_utilisation_robust) = result_robust['science'][0]
 
-    assert np.abs(best_p_robust[2] - 1e-3) / 1e-3 < 0.001
-    assert np.abs(best_p_robust[1] - 4.) / 4. < 0.001
-    assert np.abs(best_p_robust[0] - 3000.) / 3000. < 0.001
+    assert np.abs(best_p_robust[2] - 1e-3) / 1e-3 < 0.01
+    assert np.abs(best_p_robust[1] - 4.) / 4. < 0.01
+    assert np.abs(best_p_robust[0] - 3000.) / 3000. < 0.01
     assert peak_utilisation_robust > 0.7
     assert atlas_utilisation_robust > 0.5
 
@@ -1698,11 +1698,11 @@ def test_quadratic_fit_legendre():
     onedspec.initialise_calibrator(peaks=peaks)
     onedspec.set_calibrator_properties(num_pix=1000)
     onedspec.set_hough_properties(num_slopes=500,
-                                 range_tolerance=200.,
-                                 xbins=100,
-                                 ybins=100,
-                                 min_wavelength=3000.,
-                                 max_wavelength=8000.)
+                                  range_tolerance=200.,
+                                  xbins=100,
+                                  ybins=100,
+                                  min_wavelength=3000.,
+                                  max_wavelength=8000.)
     onedspec.add_user_atlas(elements=elements_quadratic,
                             wavelengths=wavelengths_quadratic)
     onedspec.set_ransac_properties(sample_size=10, minimum_matches=20)
@@ -1726,6 +1726,7 @@ def test_quadratic_fit_legendre():
      residual_robust, peak_utilisation_robust,
      atlas_utilisation_robust) = result_robust['science'][0]
 
+
 def test_quadratic_fit_chebyshev():
 
     # Initialise the calibrator
@@ -1733,11 +1734,11 @@ def test_quadratic_fit_chebyshev():
     onedspec.initialise_calibrator(peaks=peaks)
     onedspec.set_calibrator_properties(num_pix=1000)
     onedspec.set_hough_properties(num_slopes=500,
-                                 range_tolerance=200.,
-                                 xbins=100,
-                                 ybins=100,
-                                 min_wavelength=3000.,
-                                 max_wavelength=8000.)
+                                  range_tolerance=200.,
+                                  xbins=100,
+                                  ybins=100,
+                                  min_wavelength=3000.,
+                                  max_wavelength=8000.)
     onedspec.add_user_atlas(elements=elements_quadratic,
                             wavelengths=wavelengths_quadratic)
     onedspec.set_ransac_properties(sample_size=10, minimum_matches=20)

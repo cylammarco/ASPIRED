@@ -31,10 +31,9 @@ spec_mask = np.arange(50, 1024)
 def test_saturated_data():
     # Science frame
     lhs6328_frame = image_reduction.ImageReduction(
-        'test/test_data/sprat_LHS6328_fake_saturated_data.list',
-        log_level='DEBUG',
-        log_file_folder='test/test_output/')
-
+        log_level='DEBUG', log_file_folder='test/test_output/')
+    lhs6328_frame.add_filelist(
+        'test/test_data/sprat_LHS6328_fake_saturated_data.list')
     lhs6328_frame.reduce()
 
     lhs6328_frame.save_masks(
