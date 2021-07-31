@@ -1516,7 +1516,7 @@ def test_linear_fit():
     onedspec.do_hough_transform(brute_force=False)
 
     # Run the wavelength calibration
-    result = onedspec.fit(max_tries=500, fit_deg=1, return_solution=True)
+    result = onedspec.fit(max_tries=2000, fit_deg=1, return_solution=True)
     (best_p, matched_peaks, matched_atlas, rms, residual, peak_utilisation,
      atlas_utilisation) = result['science'][0]
     # Refine solution
@@ -1528,10 +1528,10 @@ def test_linear_fit():
      residual_robust, peak_utilisation_robust,
      atlas_utilisation_robust) = result_robust['science'][0]
 
-    assert np.abs(best_p_robust[1] - 5.) / 5. < 0.001
-    assert np.abs(best_p_robust[0] - 3000.) / 3000. < 0.001
+    assert np.abs(best_p_robust[1] - 5.) / 5. < 0.01
+    assert np.abs(best_p_robust[0] - 3000.) / 3000. < 0.01
     assert peak_utilisation_robust > 0.8
-    assert atlas_utilisation_robust > 0.0
+    assert atlas_utilisation_robust > 0.5
 
 
 def test_manual_refit():
@@ -1552,7 +1552,7 @@ def test_manual_refit():
     onedspec.do_hough_transform(brute_force=False)
 
     # Run the wavelength calibration
-    result = onedspec.fit(max_tries=500, fit_deg=1, return_solution=True)
+    result = onedspec.fit(max_tries=2000, fit_deg=1, return_solution=True)
     (best_p, matched_peaks, matched_atlas, rms, residual, peak_utilisation,
      atlas_utilisation) = result['science'][0]
     # Refine solution
@@ -1591,7 +1591,7 @@ def test_manual_refit_remove_points():
     onedspec.do_hough_transform(brute_force=False)
 
     # Run the wavelength calibration
-    result = onedspec.fit(max_tries=500, fit_deg=1, return_solution=True)
+    result = onedspec.fit(max_tries=2000, fit_deg=1, return_solution=True)
     (best_p, matched_peaks, matched_atlas, rms, residual, peak_utilisation,
      atlas_utilisation) = result['science'][0]
     # Refine solution
@@ -1632,7 +1632,7 @@ def test_manual_refit_add_points():
     onedspec.do_hough_transform(brute_force=False)
 
     # Run the wavelength calibration
-    result = onedspec.fit(max_tries=500, fit_deg=1, return_solution=True)
+    result = onedspec.fit(max_tries=2000, fit_deg=1, return_solution=True)
     (best_p, matched_peaks, matched_atlas, rms, residual, peak_utilisation,
      atlas_utilisation) = result['science'][0]
     # Refine solution
@@ -1672,7 +1672,7 @@ def test_quadratic_fit():
     onedspec.do_hough_transform(brute_force=False)
 
     # Run the wavelength calibration
-    result = onedspec.fit(max_tries=500, fit_deg=2, return_solution=True)
+    result = onedspec.fit(max_tries=2000, fit_deg=2, return_solution=True)
     (best_p, matched_peaks, matched_atlas, rms, residual, peak_utilisation,
      atlas_utilisation) = result['science'][0]
     # Refine solution
