@@ -1061,7 +1061,7 @@ class WavelengthCalibration():
             List of polynomial fit coefficients.
         n_delta : int (Default: None)
             The number of the highest polynomial order to be adjusted
-        refine : bool (Default: True)
+        refine : bool (Default: False)
             Set to True to refine solution.
         tolerance : float (Default: 10.)
             Absolute difference between fit and model in the unit of nm.

@@ -653,12 +653,6 @@ def test_quadratic_fit_legendre():
                                       candidate_tolerance=2.,
                                       fit_deg=2,
                                       fit_type='legendre')
-    # Refine solution
-    (best_p_robust, matched_peaks, matched_atlas, rms, residual,
-     peak_utilisation,
-     atlas_utilisation) = wavecal.robust_refit(best_p,
-                                               refine=False,
-                                               robust_refit=True)
 
 
 def test_quadratic_fit_chebyshev():
@@ -686,9 +680,3 @@ def test_quadratic_fit_chebyshev():
                                       candidate_tolerance=2.,
                                       fit_deg=2,
                                       fit_type='chebyshev')
-    # Refine solution
-    (best_p_robust, matched_peaks, matched_atlas, rms, residual,
-     peak_utilisation,
-     atlas_utilisation) = wavecal.robust_refit(best_p,
-                                               refine=False,
-                                               robust_refit=True)
