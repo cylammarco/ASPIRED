@@ -1611,7 +1611,7 @@ def test_manual_refit_remove_points():
     (best_p_manual, rms_manual, residual_manual, peak_utilisation_manual,
      atlas_utilisation_manual) = result_manual['science'][0]
 
-    assert np.allclose(best_p_manual, best_p)
+    assert np.allclose(best_p_manual, best_p, rtol=1e-03)
 
 
 def test_manual_refit_add_points():
@@ -1651,7 +1651,7 @@ def test_manual_refit_add_points():
     (best_p_manual, rms_manual, residual_manual, peak_utilisation_manual,
      atlas_utilisation_manual) = result_manual['science'][0]
 
-    assert np.allclose(best_p_manual, best_p)
+    assert np.allclose(best_p_manual, best_p, rtol=1e-03)
 
 
 def test_quadratic_fit():
