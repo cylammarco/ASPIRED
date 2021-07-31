@@ -621,8 +621,6 @@ def test_quadratic_fit():
                                                refine=False,
                                                robust_refit=True)
 
-    assert np.abs(best_p_robust[1] - 4.) / 4. < 0.01
-    assert np.abs(best_p_robust[0] - 3000.) / 3000. < 0.01
     assert peak_utilisation > 0.8
     assert atlas_utilisation > 0.5
 
