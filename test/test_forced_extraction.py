@@ -35,6 +35,7 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             optimal=False,
                             display=False,
                             save_fig=True,
+                            filename='test/test_output/test_force_extraxtion',
                             fig_type='iframe+png')
 
 trace = copy.copy(lhs6328_twodspec.spectrum_list[0].trace)
@@ -50,6 +51,7 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             optimal=True,
                             display=False,
                             save_fig=True,
+                            filename='test/test_output/test_force_extraxtion2',
                             fig_type='iframe+png')
 
 # Store the extracted count
@@ -64,6 +66,7 @@ lhs6328_twodspec.ap_extract(apwidth=15,
                             algorithm='marsh89',
                             display=False,
                             save_fig=True,
+                            filename='test/test_output/test_force_extraxtion3',
                             fig_type='iframe+png')
 
 # Store the extracted count
@@ -92,6 +95,7 @@ def test_forced_extraction_tophat():
                                 forced=True,
                                 display=False,
                                 save_fig=True,
+                                filename='test/test_output/test_force_extraxtion4',
                                 fig_type='iframe+png')
 
     # Store the forced extracted count
@@ -183,6 +187,7 @@ def test_forced_extraction_marsh89():
                                 variances=np.transpose(marsh89_var),
                                 display=False,
                                 save_fig=True,
+                                filename='test/test_output/test_force_extraxtion5',
                                 fig_type='iframe+png')
 
     # Store the forced extracted count
@@ -215,6 +220,7 @@ def test_forced_extraction_horne86_lowess_int_var():
                                 variances=np.nanmedian(horne86_var),
                                 display=False,
                                 save_fig=True,
+                                filename='test/test_output/test_force_extraxtion6',
                                 fig_type='iframe+png')
 
     # Store the forced extracted count
@@ -247,6 +253,7 @@ def test_forced_extraction_horne86_lowess_str_var():
                                 variances='blabla',
                                 display=False,
                                 save_fig=True,
+                                filename='test/test_output/test_force_extraxtion7',
                                 fig_type='iframe+png')
 
     # Store the forced extracted count

@@ -1001,17 +1001,19 @@ class WavelengthCalibration():
                                               peak_utilisation,
                                               atlas_utilisation)
 
-        self.spectrum1D.calibrator.plot_fit(
-            fit_coeff=fit_coeff,
-            plot_atlas=True,
-            log_spectrum=False,
-            tolerance=fit_tolerance,
-            display=display,
-            filename=filename,
-            return_jsonstring=return_jsonstring,
-            renderer=renderer,
-            save_fig=save_fig,
-            fig_type=fig_type)
+        if display or return_jsonstring or save_fig:
+
+            self.spectrum1D.calibrator.plot_fit(
+                fit_coeff=fit_coeff,
+                plot_atlas=True,
+                log_spectrum=False,
+                tolerance=fit_tolerance,
+                display=display,
+                filename=filename,
+                return_jsonstring=return_jsonstring,
+                renderer=renderer,
+                save_fig=save_fig,
+                fig_type=fig_type)
 
         if return_solution:
 
