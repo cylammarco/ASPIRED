@@ -9,6 +9,7 @@ from aspired.flux_calibration import FluxCalibration
 base_dir = os.path.dirname(__file__)
 abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
+np.random.seed(0)
 
 def file_len(fname):
     with open(fname) as f:

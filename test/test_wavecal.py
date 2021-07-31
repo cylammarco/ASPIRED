@@ -28,6 +28,7 @@ wavecal.find_arc_lines()
 
 arc_lines = wavecal.spectrum1D.peaks
 
+np.random.seed(0)
 
 def test_wavecal():
 
