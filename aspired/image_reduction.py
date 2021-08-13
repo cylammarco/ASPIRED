@@ -125,10 +125,6 @@ class ImageReduction:
 
         self.logger.addHandler(self.handler)
 
-        self.exptime_keyword = [
-            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
-        ]
-
         self.saxis_default = 1
 
         self.combinetype_light_default = 'median'
@@ -136,21 +132,21 @@ class ImageReduction:
         self.clip_low_light_default = 5.0
         self.clip_high_light_default = 5.0
         self.exptime_light_default = 1.0
-        self.exptime_light_keyword_default = self.exptime_keyword
+        self.exptime_light_keyword_default = None
 
         self.combinetype_dark_default = 'median'
         self.sigma_clipping_dark_default = True
         self.clip_low_dark_default = 5.0
         self.clip_high_dark_default = 5.0
         self.exptime_dark_default = 1.0
-        self.exptime_dark_keyword_default = self.exptime_keyword
+        self.exptime_dark_keyword_default = None
 
         self.combinetype_flat_default = 'median'
         self.sigma_clipping_flat_default = True
         self.clip_low_flat_default = 5.0
         self.clip_high_flat_default = 5.0
         self.exptime_flat_default = 1.0
-        self.exptime_flat_keyword_default = self.exptime_keyword
+        self.exptime_flat_keyword_default = None
 
         self.combinetype_bias_default = 'median'
         self.sigma_clipping_bias_default = False
@@ -180,55 +176,55 @@ class ImageReduction:
         # which are the proxy-exposure times at best. ASPIRED will use the
         # first keyword found on the list, if all failed, an exposure time of
         # 1 second will be applied. A warning will be promted.
-        self.exptime_keyword = [
+        self.exptime_keyword_list = [
             'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
         ]
 
-        self.saxis = 1
+        self.saxis = self.saxis_default
 
-        self.combinetype_light = 'median'
-        self.sigma_clipping_light = True
-        self.clip_low_light = 5
-        self.clip_high_light = 5
-        self.exptime_light = None
-        self.exptime_light_keyword = None
+        self.combinetype_light = self.combinetype_light_default
+        self.sigma_clipping_light = self.sigma_clipping_light_default
+        self.clip_low_light = self.clip_low_light_default
+        self.clip_high_light = self.clip_high_light_default
+        self.exptime_light = self.exptime_light_default
+        self.exptime_light_keyword = self.exptime_light_keyword_default
 
-        self.combinetype_dark = 'median'
-        self.sigma_clipping_dark = True
-        self.clip_low_dark = 5
-        self.clip_high_dark = 5
-        self.exptime_dark = None
-        self.exptime_dark_keyword = None
+        self.combinetype_dark = self.combinetype_dark_default
+        self.sigma_clipping_dark = self.sigma_clipping_dark_default
+        self.clip_low_dark = self.clip_low_dark_default
+        self.clip_high_dark = self.clip_high_dark_default
+        self.exptime_dark = self.exptime_dark_default
+        self.exptime_dark_keyword = self.exptime_dark_keyword_default
 
-        self.combinetype_flat = 'median'
-        self.sigma_clipping_flat = True
-        self.clip_low_flat = 5
-        self.clip_high_flat = 5
-        self.exptime_flat = None
-        self.exptime_flat_keyword = None
+        self.combinetype_flat = self.combinetype_flat_default
+        self.sigma_clipping_flat = self.sigma_clipping_flat_default
+        self.clip_low_flat = self.clip_low_flat_default
+        self.clip_high_flat = self.clip_high_flat_default
+        self.exptime_flat = self.exptime_flat_default
+        self.exptime_flat_keyword = self.exptime_flat_keyword_default
 
-        self.combinetype_bias = 'median'
-        self.sigma_clipping_bias = False
-        self.clip_low_bias = 5
-        self.clip_high_bias = 5
+        self.combinetype_bias = self.combinetype_bias_default
+        self.sigma_clipping_bias = self.sigma_clipping_bias_default
+        self.clip_low_bias = self.clip_low_bias_default
+        self.clip_high_bias = self.clip_high_bias_default
 
-        self.combinetype_arc = 'median'
-        self.sigma_clipping_arc = False
-        self.clip_low_arc = 5
-        self.clip_high_arc = 5
+        self.combinetype_arc = self.combinetype_arc_default
+        self.sigma_clipping_arc = self.sigma_clipping_arc_default
+        self.clip_low_arc = self.clip_low_arc_default
+        self.clip_high_arc = self.clip_high_arc_default
 
-        self.cosmicray = False
-        self.gain = 1.0
-        self.readnoise = 0.0
-        self.fsmode = 'convolve'
-        self.psfmodel = 'gaussy'
-        self.cr_kwargs = None
+        self.cosmicray = self.cosmicray_default
+        self.gain = self.gain_default
+        self.readnoise = self.readnoise_default
+        self.fsmode = self.fsmode_default
+        self.psfmodel = self.psfmodel_default
+        self.cr_kwargs = self.cr_kwargs_default
 
-        self.heal_pixels = False
-        self.cutoff = 60000.0
-        self.grow = False
-        self.iterations = 1
-        self.diagonal = False
+        self.heal_pixels = self.heal_pixels_default
+        self.cutoff = self.cutoff_default
+        self.grow = self.grow_default
+        self.iterations = self.iterations_default
+        self.diagonal = self.diagonal_default
 
         self.bias_list = []
         self.dark_list = []
@@ -604,15 +600,6 @@ class ImageReduction:
 
         '''
 
-        # FITS keyword standard recommends XPOSURE, but most observatories
-        # use EXPTIME for supporting iraf. Also included a few other keywords
-        # which are the proxy-exposure times at best. ASPIRED will use the
-        # first keyword found on the list, if all failed, an exposure time of
-        # 1 second will be applied. A warning will be promted.
-        self.exptime_keyword = [
-            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
-        ]
-
         self.saxis = saxis
 
         self.set_light_properties(combinetype_light=combinetype_light,
@@ -794,16 +781,18 @@ class ImageReduction:
 
         else:
 
-            self.exptime_light = exptime_light
-            self.logger.warning('Unknown exptime_light, it is set to 1.')
+            self.exptime_light = self.exptime_light_default
+            self.logger.warning(
+                'Unknown exptime_light, it is set to {}.'.format(
+                    self.exptime_light))
 
         # exptime_light_keyword
         if exptime_light_keyword is None:
 
-            self.exptime_light_keyword = self.exptime_keyword
+            self.exptime_light_keyword = self.exptime_light_keyword_default
             self.logger.warning(
                 'Unknown exptime_light_keyword, it is set to {}.'.format(
-                    self.exptime_keyword))
+                    self.exptime_light_keyword))
 
         elif isinstance(exptime_light_keyword, (float, int)):
 
@@ -811,11 +800,11 @@ class ImageReduction:
 
         elif isinstance(exptime_light_keyword, str):
 
-            self.exptime_light_keyword.insert(0, exptime_light_keyword)
+            self.exptime_light_keyword = exptime_light_keyword
 
         else:
 
-            self.exptime_light_keyword = self.exptime_keyword
+            self.exptime_light_keyword = self.exptime_light_keyword_default
             self.logger.warning(
                 'Unknown exptime_light_keyword, it is set to {}.'.format(
                     self.exptime_light_keyword))
@@ -966,10 +955,10 @@ class ImageReduction:
         # exptime_dark_keyword
         if exptime_dark_keyword is None:
 
-            self.exptime_dark_keyword = self.exptime_keyword
+            self.exptime_dark_keyword = self.exptime_dark_default
             self.logger.warning(
                 'Unknown exptime_dark_keyword, it is set to {}.'.format(
-                    self.exptime_keyword))
+                    self.exptime_dark_keyword))
 
         else:
 
@@ -979,14 +968,14 @@ class ImageReduction:
 
             elif isinstance(exptime_dark_keyword, str):
 
-                self.exptime_dark_keyword.insert(0, exptime_dark_keyword)
+                self.exptime_dark_keyword = exptime_dark_keyword
 
             else:
 
-                self.exptime_dark_keyword = self.exptime_keyword
+                self.exptime_dark_keyword = self.exptime_dark_keyword_default
                 self.logger.warning(
                     'Unknown exptime_dark_keyword, it is set to {}.'.format(
-                        self.exptime_keyword))
+                        self.exptime_dark_keyword))
 
     def set_flat_properties(self,
                             combinetype_flat=-1,
@@ -1132,10 +1121,10 @@ class ImageReduction:
         # exptime_flat_keyword
         if exptime_flat_keyword is None:
 
-            self.exptime_flat_keyword = self.exptime_keyword
+            self.exptime_flat_keyword = self.exptime_flat_keyword_default
             self.logger.warning(
                 'Unknown exptime_flat_keyword, it is set to {}.'.format(
-                    self.exptime_keyword))
+                    self.exptime_flat_keyword))
 
         elif isinstance(exptime_flat_keyword, (float, int)):
 
@@ -1143,11 +1132,11 @@ class ImageReduction:
 
         elif isinstance(exptime_flat_keyword, str):
 
-            self.exptime_flat_keyword.insert(0, exptime_flat_keyword)
+            self.exptime_flat_keyword = exptime_flat_keyword
 
         else:
 
-            self.exptime_flat_keyword = self.exptime_keyword
+            self.exptime_flat_keyword = self.exptime_flat_keyword_default
             self.logger.warning(
                 'Unknown exptime_flat_keyword, it is set to {}.'.format(
                     self.exptime_flat_keyword))
@@ -1648,7 +1637,8 @@ class ImageReduction:
                 self.light_list[i]))
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
 
-            data, header, exposure_time = self._get_data_and_header(light)
+            data, header, exposure_time = self._get_data_and_header(
+                light, self.exptime_light_keyword)
             self.add_light(data, header, exposure_time)
 
             # Cosmic ray cleaning
@@ -1781,7 +1771,8 @@ class ImageReduction:
                 # Open all the dark frames
                 dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
 
-                data, header, exposure_time = self._get_data_and_header(dark)
+                data, header, exposure_time = self._get_data_and_header(
+                    dark, self.exptime_dark_keyword)
                 self.add_dark(data, header, exposure_time)
 
                 self.logger.debug('Dark frame header: {}.'.format(
@@ -1804,7 +1795,8 @@ class ImageReduction:
                 # Open all the flatfield frames
                 flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
 
-                data, header, exposure_time = self._get_data_and_header(flat)
+                data, header, exposure_time = self._get_data_and_header(
+                    flat, self.exptime_flat_keyword)
                 self.add_flat(data, header, exposure_time)
 
                 self.logger.debug('Flat frame header: {}.'.format(
@@ -1888,7 +1880,7 @@ class ImageReduction:
         self.bias_CCDData.append(bias)
         self.bias_header.append(header)
 
-    def _get_data_and_header(self, input):
+    def _get_data_and_header(self, input, exptime_keyword=None):
 
         if type(input) == 'astropy.io.fits.hdu.hdulist.HDUList':
 
@@ -1944,21 +1936,46 @@ class ImageReduction:
             self.logger.critical(error_msg)
             raise RuntimeError(error_msg)
 
-        # Get the exposure time for the dark frames
-        if np.in1d(self.exptime_keyword, input_header).any():
-            # Get the exposure time for the light frames
-            exptime_keyword_idx = int(
-                np.where(np.in1d(self.exptime_keyword, input_header))[0][0])
-            exptime_keyword = self.exptime_keyword[exptime_keyword_idx]
-            exposure_time = input_header[exptime_keyword]
+        exposure_time = None
+
+        # Get the exposure time for the frame
+        if isinstance(exptime_keyword, str):
+
+            if exptime_keyword in input_header:
+
+                exposure_time = input_header[exptime_keyword]
+                self.logger.info(
+                    'Exposure time found with the supplied keyword.')
+
+            else:
+
+                pass
 
         else:
 
-            # If exposure time cannot be found from the header and
-            # user failed to supply the exposure time, use 1 second
-            self.logger.warning('Exposure time cannot be found. '
-                                '1 second is used as the exposure time.')
-            exposure_time = 1.0
+            pass
+
+        # If the exposure_time is still None, loop through the default list
+        if exposure_time is None:
+
+            if np.in1d(self.exptime_keyword_list, input_header).any():
+                # Get the exposure time for the light frames
+                exptime_keyword_idx = int(
+                    np.where(np.in1d(self.exptime_keyword_list,
+                                     input_header))[0][0])
+                exptime_keyword = self.exptime_keyword_list[
+                    exptime_keyword_idx]
+                exposure_time = input_header[exptime_keyword]
+                self.logger.info(
+                    'Exposure time found from the backup keyword list.')
+
+            else:
+
+                # If exposure time cannot be found from the header and
+                # user failed to supply the exposure time, use 1 second
+                self.logger.warning('Exposure time cannot be found. '
+                                    '1 second is used as the exposure time.')
+                exposure_time = 1.0
 
         return input_CCDData, input_header, exposure_time
 
