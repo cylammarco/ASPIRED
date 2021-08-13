@@ -1108,6 +1108,7 @@ def test_calibrator_science_fail_ap_extract_spec_id():
 
 img = image_reduction.ImageReduction(log_file_name=None)
 img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+img.load_data()
 img.reduce()
 twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
 twodspec.add_data(img)

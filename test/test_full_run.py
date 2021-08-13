@@ -27,6 +27,7 @@ def test_full_run():
     lhs6328_frame = image_reduction.ImageReduction(
         log_level='INFO', log_file_folder='test/test_output/')
     lhs6328_frame.add_filelist('test/test_data/sprat_LHS6328.list')
+    lhs6328_frame.load_data()
     lhs6328_frame.reduce()
     lhs6328_frame.save_fits('test/test_output/test_full_run_standard_image',
                             overwrite=True)
@@ -88,6 +89,7 @@ def test_full_run():
     standard_frame = image_reduction.ImageReduction(
         log_level='INFO', log_file_folder='test/test_output/')
     standard_frame.add_filelist('test/test_data/sprat_Hiltner102.list')
+    standard_frame.load_data()
     standard_frame.reduce()
     standard_frame.save_fits('test/test_output/test_full_run_standard_image',
                              overwrite=True)

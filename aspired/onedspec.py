@@ -1446,7 +1446,7 @@ class OneDSpec():
                        prominence=5.,
                        top_n_peaks=None,
                        distance=5.,
-                       refine=True,
+                       refine=False,
                        refine_window_width=5,
                        display=False,
                        width=1280,

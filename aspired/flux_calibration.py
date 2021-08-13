@@ -840,12 +840,8 @@ class FluxCalibration(StandardLibrary):
                     (sensitivity[left_start:left_end],
                      sensitivity[right_start:right_end]))
 
-                finite_mask = ~np.isnan(sensitivity_temp) & (sensitivity_temp >
-                                                             0)
-
-                if np.sum(finite_mask) == 0:
-
-                    continue
+                finite_mask = ~np.isnan(sensitivity_temp) & (
+                    sensitivity_temp > 0.) & (sensitivity_temp != np.inf)
 
                 # Fit the polynomial across the masked region
                 coeff = np.polynomial.polynomial.polyfit(
@@ -895,7 +891,8 @@ class FluxCalibration(StandardLibrary):
                                                 telluric_filler,
                                                 fill_value='extrapolate')
 
-        mask = np.isfinite(sensitivity_masked) & ~np.isnan(sensitivity_masked)
+        mask = np.isfinite(np.log10(sensitivity_masked)) & ~np.isnan(
+            np.log10(sensitivity_masked))
         sensitivity_masked = sensitivity_masked[mask]
         standard_wave_masked = standard_wave_true[mask]
         standard_flux_masked = standard_flux_true[mask]

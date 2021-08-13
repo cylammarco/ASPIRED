@@ -367,7 +367,7 @@ def test_user_supplied_poly_coeff_and_add_arc_twodspec():
 
     # Supply arc manually
     lhs6328.add_arc('test/test_data/v_a_20180810_13_1_0_1.fits.gz')
-    lhs6328.apply_twodspec_mask_to_arc()
+    lhs6328.apply_mask_to_arc()
 
     # Calibrate the 1D spectra
     lhs6328_onedspec = spectral_reduction.OneDSpec(log_file_name=None)
@@ -621,9 +621,6 @@ def test_quadratic_fit():
      atlas_utilisation) = wavecal.robust_refit(best_p,
                                                refine=False,
                                                robust_refit=True)
-
-    assert peak_utilisation > 0.8
-    assert atlas_utilisation > 0.5
 
 
 def test_quadratic_fit_legendre():

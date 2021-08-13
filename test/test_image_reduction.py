@@ -121,6 +121,7 @@ def test_absolute_path():
         'test/test_data/sprat_LHS6328.list')
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist=current_absolute_path)
+    img.load_data()
     img.reduce()
 
 
@@ -128,6 +129,7 @@ def test_space_separated_input():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist='test/test_data/sprat_LHS6328.txt',
                      ftype='ascii')
+    img.load_data()
     img.reduce()
 
 
@@ -137,6 +139,7 @@ def test_space_separated_input_2():
         filelist='test/test_data/sprat_LHS6328.txt',
         delimiter=' ',
     )
+    img.load_data()
     img.reduce()
 
 
@@ -147,12 +150,14 @@ def test_tsv_input_2():
         ftype='tsv',
         delimiter='\t',
     )
+    img.load_data()
     img.reduce()
 
 
 def test_input_with_hdu():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist='test/test_data/sprat_LHS6328_with_hdu.list', )
+    img.load_data()
     img.reduce()
 
 
@@ -160,6 +165,7 @@ def test_input_with_extra_bracket():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(
         filelist='test/test_data/sprat_LHS6328_fake_extra_bracket.list')
+    img.load_data()
     img.reduce()
 
 
@@ -167,6 +173,7 @@ def test_input_with_data_cube():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(
         filelist='test/test_data/sprat_LHS6328_fake_data_cube.list')
+    img.load_data()
     img.reduce()
 
 
@@ -175,6 +182,7 @@ def test_input_with_data_cube_extra_bracket():
     img.add_filelist(
         filelist=
         'test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list')
+    img.load_data()
     img.reduce()
 
 
@@ -188,17 +196,16 @@ def test_input_with_one_dimensional_data():
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_wrong_light_combine_type():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list',
-                     combinetype_light='FAIL')
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(combinetype_light='FAIL')
 
 
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_wrong_dark_combine_type():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(
-        filelist='test/test_data/sprat_LHS6328.list',
-        combinetype_dark='FAIL',
-    )
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list', )
+    img.set_properties(combinetype_dark='FAIL')
+    img.load_data()
     img.reduce()
 
 
@@ -206,67 +213,70 @@ def test_input_with_wrong_dark_combine_type():
 # there is not any flat frame
 def test_input_with_wrong_flat_combine_type():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(
-        filelist='test/test_data/sprat_LHS6328.list',
-        combinetype_flat='FAIL',
-    )
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(combinetype_flat='FAIL')
+    img.load_data()
     img.reduce()
 
 
 def test_input_with_wrong_bias_combine_type():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(
-        filelist='test/test_data/sprat_LHS6328.list',
-        combinetype_bias='FAIL',
-    )
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(combinetype_bias='FAIL')
+    img.load_data()
     img.reduce()
 
 
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_only_one_column():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(
-        filelist='test/test_data/sprat_LHS6328_expect_fail.list', )
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328_expect_fail.list')
+    img.load_data()
 
 
 def test_cosmicray_cleaning_x_then_y():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list',
-                     cosmicray=True,
-                     psfmodel='gaussxy',
-                     combinetype_light='average')
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(cosmicray=True,
+                       psfmodel='gaussxy',
+                       combinetype_light='average')
+    img.load_data()
     img.reduce()
 
 
 def test_cosmicray_cleaning_y_then_x():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list',
-                     cosmicray=True,
-                     psfmodel='gaussyx',
-                     combinetype_dark='average')
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(cosmicray=True,
+                       psfmodel='gaussyx',
+                       combinetype_dark='average')
+    img.load_data()
     img.reduce()
 
 
 def test_cosmicray_cleaning():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list',
-                     cosmicray=True,
-                     psfmodel='gaussx',
-                     combinetype_bias='average')
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(cosmicray=True,
+                       psfmodel='gaussx',
+                       combinetype_bias='average')
+    img.load_data()
     img.reduce()
 
 
 def test_input_with_multiple_frames_to_combine_and_reduction():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(
-        filelist='test/test_data/sprat_LHS6328_repeated_data.list',
-        combinetype_flat='average')
+        filelist='test/test_data/sprat_LHS6328_repeated_data.list')
+    img.set_properties(combinetype_flat='average')
+    img.load_data()
     img.reduce()
 
 
 def test_input_with_one_line_and_reduction():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist='test/test_data/sprat_LHS6328_one_line.list')
+    img.load_data()
     img.reduce()
 
 
@@ -278,12 +288,14 @@ def test_input_with_numpy_array_and_reduction():
         filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist=filelist)
+    img.load_data()
     img.reduce()
 
 
 def test_reduction_and_save():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.load_data()
     img.reduce()
     img.save_fits('test/test_output/reduced_image', overwrite=True)
     img.inspect(display=False,
@@ -301,6 +313,7 @@ def test_input_with_numpy_array_and_clean_bad_pixels():
         filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist=filelist)
+    img.load_data()
     img.reduce()
     img.heal_bad_pixels()
 
@@ -313,6 +326,7 @@ def test_input_with_numpy_array_and_set_every_pixel_bad():
         filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist=filelist)
+    img.load_data()
     img.reduce()
     img.heal_bad_pixels(np.zeros_like(img.light_reduced))
 
@@ -326,6 +340,7 @@ def test_input_with_numpy_array_and_clean_bad_pixels_expect_fail():
         filelist[:, 1][i] = os.path.join('test/test_data/', filepath.strip())
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist=filelist)
+    img.load_data()
     img.reduce()
     img.create_bad_mask()
     img.heal_bad_pixels(bad_mask=np.ones(100))

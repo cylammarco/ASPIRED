@@ -249,8 +249,7 @@ class WavelengthCalibration():
                        save_fig=False,
                        fig_type='iframe+png',
                        filename=None,
-                       open_iframe=False,
-                       browser='default'):
+                       open_iframe=False):
         '''
         This function identifies the arc lines (peaks) with
         scipy.signal.find_peaks(), where only the distance and the prominence

@@ -112,6 +112,7 @@ spec_mask = np.arange(50, 1024)
 lhs6328_frame = image_reduction.ImageReduction(log_level='INFO',
                                                log_file_name=None)
 lhs6328_frame.add_filelist('test/test_data/sprat_LHS6328.list')
+lhs6328_frame.load_data()
 lhs6328_frame.reduce()
 
 lhs6328_twodspec = spectral_reduction.TwoDSpec(lhs6328_frame,

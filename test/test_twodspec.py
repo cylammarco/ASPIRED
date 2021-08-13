@@ -12,6 +12,7 @@ abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
 img = image_reduction.ImageReduction(log_file_name=None)
 img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+img.load_data()
 img.reduce()
 
 img_with_fits = copy.copy(img)
@@ -347,7 +348,7 @@ def test_set_all_properties():
     assert twodspec.exptime == 1
     assert twodspec.airmass == 1
 
-'''
+
 image_fits = fits.open('test/test_data/v_e_20180810_12_1_0_0.fits.gz')[0]
 arc_fits = fits.open('test/test_data/v_a_20180810_13_1_0_1.fits.gz')[0]
 
@@ -515,4 +516,3 @@ def test_lowess_ap_extract_upper_detector_edge():
     twodspec.add_data(missing_upper_half_spectrum_image_fits)
     twodspec.ap_trace()
     twodspec.ap_extract(model='lowess')
-'''
