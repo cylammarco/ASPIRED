@@ -125,6 +125,56 @@ class ImageReduction:
 
         self.logger.addHandler(self.handler)
 
+        self.exptime_keyword = [
+            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+        ]
+
+        self.saxis_default = 1
+
+        self.combinetype_light_default = 'median'
+        self.sigma_clipping_light_default = True
+        self.clip_low_light_default = 5.0
+        self.clip_high_light_default = 5.0
+        self.exptime_light_default = 1.0
+        self.exptime_light_keyword_default = self.exptime_keyword
+
+        self.combinetype_dark_default = 'median'
+        self.sigma_clipping_dark_default = True
+        self.clip_low_dark_default = 5.0
+        self.clip_high_dark_default = 5.0
+        self.exptime_dark_default = 1.0
+        self.exptime_dark_keyword_default = self.exptime_keyword
+
+        self.combinetype_flat_default = 'median'
+        self.sigma_clipping_flat_default = True
+        self.clip_low_flat_default = 5.0
+        self.clip_high_flat_default = 5.0
+        self.exptime_flat_default = 1.0
+        self.exptime_flat_keyword_default = self.exptime_keyword
+
+        self.combinetype_bias_default = 'median'
+        self.sigma_clipping_bias_default = False
+        self.clip_low_bias_default = 5.0
+        self.clip_high_bias_default = 5.0
+
+        self.combinetype_arc_default = 'median'
+        self.sigma_clipping_arc_default = False
+        self.clip_low_arc_default = 5.0
+        self.clip_high_arc_default = 5.0
+
+        self.cosmicray_default = False
+        self.gain_default = 1.0
+        self.readnoise_default = 0.0
+        self.fsmode_default = 'convolve'
+        self.psfmodel_default = 'gaussy'
+        self.cr_kwargs_default = None
+
+        self.heal_pixels_default = False
+        self.cutoff_default = 60000.0
+        self.grow_default = False
+        self.iterations_default = 1
+        self.diagonal_default = False
+
         # FITS keyword standard recommends XPOSURE, but most observatories
         # use EXPTIME for supporting iraf. Also included a few other keywords
         # which are the proxy-exposure times at best. ASPIRED will use the
@@ -174,11 +224,11 @@ class ImageReduction:
         self.psfmodel = 'gaussy'
         self.cr_kwargs = None
 
+        self.heal_pixels = False
         self.cutoff = 60000.0
         self.grow = False
         self.iterations = 1
         self.diagonal = False
-        self.pixel_healed = False
 
         self.bias_list = []
         self.dark_list = []
@@ -201,6 +251,7 @@ class ImageReduction:
         self.saturation_mask = None
         self.saturated = False
         self.bad_mask = None
+        self.pixel_healed = False
 
         self.light_filename = []
         self.arc_filename = []
@@ -398,42 +449,43 @@ class ImageReduction:
         self.logger.info('Saxis is found/set to be {}.'.format(self.saxis))
 
     def set_properties(self,
-                       saxis=None,
-                       combinetype_light='median',
-                       sigma_clipping_light=True,
-                       clip_low_light=5,
-                       clip_high_light=5,
-                       exptime_light=None,
-                       exptime_light_keyword=None,
-                       combinetype_arc='median',
-                       sigma_clipping_arc=False,
-                       clip_low_arc=5,
-                       clip_high_arc=5,
-                       combinetype_dark='median',
-                       sigma_clipping_dark=True,
-                       clip_low_dark=5,
-                       clip_high_dark=5,
-                       exptime_dark=None,
-                       exptime_dark_keyword=None,
-                       combinetype_bias='median',
-                       sigma_clipping_bias=False,
-                       clip_low_bias=5,
-                       clip_high_bias=5,
-                       combinetype_flat='median',
-                       sigma_clipping_flat=True,
-                       clip_low_flat=5,
-                       clip_high_flat=5,
-                       exptime_flat=None,
-                       exptime_flat_keyword=None,
-                       cosmicray=False,
-                       gain=1.0,
-                       readnoise=0.0,
-                       fsmode='convolve',
-                       psfmodel='gaussy',
-                       cutoff=60000.,
-                       grow=False,
-                       iterations=1,
-                       diagonal=False,
+                       saxis=-1,
+                       combinetype_light=-1,
+                       sigma_clipping_light=-1,
+                       clip_low_light=-1,
+                       clip_high_light=-1,
+                       exptime_light=-1,
+                       exptime_light_keyword=-1,
+                       combinetype_arc=-1,
+                       sigma_clipping_arc=-1,
+                       clip_low_arc=-1,
+                       clip_high_arc=-1,
+                       combinetype_dark=-1,
+                       sigma_clipping_dark=-1,
+                       clip_low_dark=-1,
+                       clip_high_dark=-1,
+                       exptime_dark=-1,
+                       exptime_dark_keyword=-1,
+                       combinetype_bias=-1,
+                       sigma_clipping_bias=-1,
+                       clip_low_bias=-1,
+                       clip_high_bias=-1,
+                       combinetype_flat=-1,
+                       sigma_clipping_flat=-1,
+                       clip_low_flat=-1,
+                       clip_high_flat=-1,
+                       exptime_flat=-1,
+                       exptime_flat_keyword=-1,
+                       cosmicray=-1,
+                       gain=-1,
+                       readnoise=-1,
+                       fsmode=-1,
+                       psfmodel=-1,
+                       heal_pixels=-1,
+                       cutoff=-1,
+                       grow=-1,
+                       iterations=-1,
+                       diagonal=-1,
                        **kwargs):
         '''
         Parameters
@@ -526,6 +578,9 @@ class ImageReduction:
             directions respectively. `gaussxy` and `gaussyx` apply the
             Gaussian kernels in the x then the y direction, and first y then
             x direction, respectively.
+        heal_pixels: bool (Deafult: False)
+            Set to True to attempt to heal bad pixels by taking the median
+            value of neighbouring pixels.
         cutoff: float (Default: 60000.)
             This sets the (lower and) upper limit of electron count.
         grow: bool (Default: False)
@@ -591,17 +646,18 @@ class ImageReduction:
                                 clip_low_arc=clip_low_arc,
                                 clip_high_arc=clip_high_arc)
 
-        self.cosmicray = cosmicray
-        self.gain = gain
-        self.readnoise = readnoise
-        self.fsmode = fsmode
-        self.psfmodel = psfmodel
-        self.cr_kwargs = kwargs
+        self.set_cosmic_properties(cosmicray=cosmicray,
+                                   fsmode=fsmode,
+                                   psfmodel=psfmodel,
+                                   kwargs=kwargs)
 
-        self.cutoff = cutoff
-        self.grow = grow
-        self.iterations = iterations
-        self.diagonal = diagonal
+        self.set_detector_properties(gain=gain,
+                                     readnoise=readnoise,
+                                     heal_pixels=heal_pixels,
+                                     cutoff=cutoff,
+                                     grow=grow,
+                                     iterations=iterations,
+                                     diagonal=diagonal)
 
     def set_light_properties(self,
                              combinetype_light=-1,
@@ -611,130 +667,137 @@ class ImageReduction:
                              exptime_light=-1,
                              exptime_light_keyword=-1):
 
+        # combinetype_light
         if combinetype_light is None:
 
-            self.combinetype_light = 'median'
+            self.combinetype_light = self.combinetype_light_default
             self.logger.warning(
-                'Unknown combinetype_light, it is set as median.')
+                'Unknown combinetype_light, it is set as {}.'.format(
+                    self.combinetype_light))
 
-        else:
+        elif isinstance(combinetype_light, (float, int)):
 
-            if isinstance(combinetype_light, (float, int)):
+            pass
 
-                pass
+        elif isinstance(combinetype_light, str):
 
-            elif isinstance(combinetype_light, str):
+            if combinetype_light in ['average', 'median']:
 
-                if combinetype_light in ['average', 'median']:
+                # use the given readnoise value
+                self.combinetype_light = combinetype_light
+                self.logger.info('combinetype_light is set to {}.'.format(
+                    self.combinetype_light))
 
-                    # use the given readnoise value
-                    self.combinetype_light = combinetype_light
-                    self.logger.info('combinetype_light is set to {}.'.format(
+            else:
+
+                self.combinetype_light = self.combinetype_light_default
+                self.logger.warning(
+                    'Unknown combinetype_light, it is set as {}.'.format(
                         self.combinetype_light))
 
-                else:
+        else:
 
-                    self.combinetype_light = 'median'
-                    self.logger.warning(
-                        'Unknown combinetype_light, it is set as median.')
+            self.combinetype_light = self.combinetype_light_default
+            self.logger.warning(
+                'Unknown combinetype_light, it is set as {}.'.format(
+                    self.combinetype_light))
 
-            else:
-
-                self.combinetype_light = 'median'
-                self.logger.warning(
-                    'Unknown combinetype_light, it is set as median.')
-
+        # sigma_clipping_light
         if sigma_clipping_light is None:
 
-            self.sigma_clipping_light = True
+            self.sigma_clipping_light = self.sigma_clipping_light_default
             self.logger.warning(
-                'Unknown sigma_clipping_light, it is set to True.')
+                'Unknown sigma_clipping_light, it is set to {}.'.format(
+                    self.sigma_clipping_light))
+
+        elif isinstance(sigma_clipping_light, (float, int)):
+
+            pass
+
+        elif isinstance(sigma_clipping_light, bool):
+
+            self.sigma_clipping_light = sigma_clipping_light
 
         else:
 
-            if isinstance(sigma_clipping_light, (float, int)):
+            self.sigma_clipping_light = self.sigma_clipping_light_default
+            self.logger.warning(
+                'Unknown sigma_clipping_light, it is set to {}.'.format(
+                    self.sigma_clipping_light))
+
+        # clip_low_light
+        if clip_low_light is None:
+
+            self.clip_low_light = self.clip_low_light_default
+            self.logger.warning(
+                'Unknown sigma_clipping_light, it is set to {}.'.format(
+                    self.clip_low_light))
+
+        elif isinstance(clip_low_light, (float, int)):
+
+            if clip_low_light > 0:
+
+                self.clip_low_light = clip_low_light
+
+            else:
 
                 pass
 
-            elif isinstance(sigma_clipping_light, bool):
-
-                self.sigma_clipping_light = sigma_clipping_light
-
-            else:
-
-                self.sigma_clipping_light = True
-                self.logger.warning(
-                    'Unknown sigma_clipping_light, it is set to True.')
-
-        if clip_low_light is None:
-
-            self.clip_low_light = 5
-            self.logger.warning(
-                'Unknown sigma_clipping_light, it is set to 5.')
-
         else:
 
-            if isinstance(clip_low_light, (float, int)):
+            self.clip_low_light = self.clip_low_light_default
+            self.logger.warning(
+                'Unknown clip_low_light, it is set to {}.'.format(
+                    self.clip_low_light))
 
-                if clip_low_light > 0:
-
-                    self.clip_low_light = clip_low_light
-
-                else:
-
-                    pass
-
-            else:
-
-                self.clip_low_light = 5
-                self.logger.warning('Unknown clip_low_light, it is set to 5.')
-
+        # clip_high_light
         if clip_high_light is None:
 
-            self.clip_high_light = 5
+            self.clip_high_light = self.clip_high_light_default
             self.logger.warning(
-                'Unknown sigma_clipping_light, it is set to 5.')
+                'Unknown sigma_clipping_light, it is set to {}.'.format(
+                    self.clip_high_light))
 
-        else:
+        elif isinstance(clip_high_light, (float, int)):
 
-            if isinstance(clip_high_light, (float, int)):
+            if clip_high_light > 0:
 
-                if clip_high_light > 0:
-
-                    self.clip_high_light = clip_high_light
-
-                else:
-
-                    pass
+                self.clip_high_light = clip_high_light
 
             else:
 
-                self.clip_high_light = 5
-                self.logger.warning('Unknown clip_high_light, it is set to 5.')
+                pass
 
+        else:
+
+            self.clip_high_light = self.clip_high_light_default
+            self.logger.warning(
+                'Unknown clip_high_light, it is set to {}.'.format(
+                    self.clip_high_light))
+
+        # exptime_light
         if exptime_light is None:
 
             self.exptime_light = 5
             self.logger.warning(
                 'Unknown sigma_clipping_light, it is set to 5.')
 
-        else:
+        elif isinstance(exptime_light, (float, int)):
 
-            if isinstance(exptime_light, (float, int)):
+            if exptime_light > 0:
 
-                if exptime_light > 0:
-
-                    self.exptime_light = exptime_light
-
-                else:
-
-                    pass
+                self.exptime_light = exptime_light
 
             else:
 
-                self.exptime_light = exptime_light
-                self.logger.warning('Unknown exptime_light, it is set to 1.')
+                pass
 
+        else:
+
+            self.exptime_light = exptime_light
+            self.logger.warning('Unknown exptime_light, it is set to 1.')
+
+        # exptime_light_keyword
         if exptime_light_keyword is None:
 
             self.exptime_light_keyword = self.exptime_keyword
@@ -742,22 +805,20 @@ class ImageReduction:
                 'Unknown exptime_light_keyword, it is set to {}.'.format(
                     self.exptime_keyword))
 
+        elif isinstance(exptime_light_keyword, (float, int)):
+
+            pass
+
+        elif isinstance(exptime_light_keyword, str):
+
+            self.exptime_light_keyword.insert(0, exptime_light_keyword)
+
         else:
 
-            if isinstance(exptime_light_keyword, (float, int)):
-
-                pass
-
-            elif isinstance(exptime_light_keyword, str):
-
-                self.exptime_light_keyword
-
-            else:
-
-                self.exptime_light_keyword = self.exptime_keyword
-                self.logger.warning(
-                    'Unknown exptime_light_keyword, it is set to {}.'.format(
-                        self.exptime_keyword))
+            self.exptime_light_keyword = self.exptime_keyword
+            self.logger.warning(
+                'Unknown exptime_light_keyword, it is set to {}.'.format(
+                    self.exptime_light_keyword))
 
     def set_dark_properties(self,
                             combinetype_dark=-1,
@@ -769,9 +830,10 @@ class ImageReduction:
 
         if combinetype_dark is None:
 
-            self.combinetype_dark = 'median'
+            self.combinetype_dark = self.combinetype_dark_default
             self.logger.warning(
-                'Unknown combinetype_dark, it is set as median.')
+                'Unknown combinetype_dark, it is set as {}.'.format(
+                    self.combinetype_dark))
 
         else:
 
@@ -790,86 +852,97 @@ class ImageReduction:
 
                 else:
 
-                    self.combinetype_dark = 'median'
+                    self.combinetype_dark = self.combinetype_dark_default
                     self.logger.warning(
-                        'Unknown combinetype_dark, it is set as median.')
+                        'Unknown combinetype_dark, it is set as {}.'.format(
+                            self.combinetype_dark))
 
             else:
 
-                self.combinetype_dark = 'median'
+                self.combinetype_dark = self.combinetype_dark_default
                 self.logger.warning(
-                    'Unknown combinetype_dark, it is set as median.')
+                    'Unknown combinetype_dark, it is set as {}.'.format(
+                        self.combinetype_dark))
 
         if sigma_clipping_dark is None:
 
-            self.sigma_clipping_dark = True
+            self.sigma_clipping_dark = self.sigma_clipping_dark_default
             self.logger.warning(
-                'Unknown sigma_clipping_dark, it is set to True.')
+                'Unknown sigma_clipping_dark, it is set to {}.'.format(
+                    self.sigma_clipping_dark))
+
+        elif isinstance(sigma_clipping_dark, (float, int)):
+
+            pass
+
+        elif isinstance(sigma_clipping_dark, bool):
+
+            self.sigma_clipping_dark = sigma_clipping_dark
 
         else:
 
-            if isinstance(sigma_clipping_dark, (float, int)):
+            self.sigma_clipping_dark = self.sigma_clipping_dark_default
+            self.logger.warning(
+                'Unknown sigma_clipping_dark, it is set to {}.'.format(
+                    self.sigma_clipping_dark))
+
+        # clip_low_dark
+        if clip_low_dark is None:
+
+            self.clip_low_dark = self.clip_low_dark_default
+            self.logger.warning(
+                'Unknown sigma_clipping_dark, it is set to {}.'.format(
+                    self.clip_low_dark))
+
+        elif isinstance(clip_low_dark, (float, int)):
+
+            if clip_low_dark > 0:
+
+                self.clip_low_dark = clip_low_dark
+
+            else:
 
                 pass
 
-            elif isinstance(sigma_clipping_dark, bool):
-
-                self.sigma_clipping_dark = sigma_clipping_dark
-
-            else:
-
-                self.sigma_clipping_dark = True
-                self.logger.warning(
-                    'Unknown sigma_clipping_dark, it is set to True.')
-
-        if clip_low_dark is None:
-
-            self.clip_low_dark = 5
-            self.logger.warning('Unknown sigma_clipping_dark, it is set to 5.')
-
         else:
 
-            if isinstance(clip_low_dark, (float, int)):
+            self.clip_low_dark = self.clip_low_dark_default
+            self.logger.warning(
+                'Unknown clip_low_dark, it is set to {}.'.format(
+                    self.clip_low_dark))
 
-                if clip_low_dark > 0:
-
-                    self.clip_low_dark = clip_low_dark
-
-                else:
-
-                    pass
-
-            else:
-
-                self.clip_low_dark = 5
-                self.logger.warning('Unknown clip_low_dark, it is set to 5.')
-
+        # clip_high_dark
         if clip_high_dark is None:
 
-            self.clip_high_dark = 5
-            self.logger.warning('Unknown sigma_clipping_dark, it is set to 5.')
+            self.clip_high_dark = self.clip_high_dark_default
+            self.logger.warning(
+                'Unknown sigma_clipping_dark, it is set to {}.'.format(
+                    self.clip_high_dark))
 
-        else:
+        elif isinstance(clip_high_dark, (float, int)):
 
-            if isinstance(clip_high_dark, (float, int)):
+            if clip_high_dark > 0:
 
-                if clip_high_dark > 0:
-
-                    self.clip_high_dark = clip_high_dark
-
-                else:
-
-                    pass
+                self.clip_high_dark = clip_high_dark
 
             else:
 
-                self.clip_high_dark = 5
-                self.logger.warning('Unknown clip_high_dark, it is set to 5.')
+                pass
 
+        else:
+
+            self.clip_high_dark = self.clip_high_dark_default
+            self.logger.warning(
+                'Unknown clip_high_dark, it is set to {}.'.format(
+                    self.clip_high_dark))
+
+        # exptime_dark
         if exptime_dark is None:
 
-            self.exptime_dark = 5
-            self.logger.warning('Unknown sigma_clipping_dark, it is set to 5.')
+            self.exptime_dark = self.exptime_dark_default
+            self.logger.warning(
+                'Unknown sigma_clipping_dark, it is set to {}.'.format(
+                    self.exptime_dark))
 
         else:
 
@@ -885,9 +958,12 @@ class ImageReduction:
 
             else:
 
-                self.exptime_dark = exptime_dark
-                self.logger.warning('Unknown exptime_dark, it is set to 1.')
+                self.exptime_dark = self.exptime_dark_default
+                self.logger.warning(
+                    'Unknown exptime_dark, it is set to {}.'.format(
+                        self.exptime_dark))
 
+        # exptime_dark_keyword
         if exptime_dark_keyword is None:
 
             self.exptime_dark_keyword = self.exptime_keyword
@@ -903,7 +979,7 @@ class ImageReduction:
 
             elif isinstance(exptime_dark_keyword, str):
 
-                self.exptime_dark_keyword
+                self.exptime_dark_keyword.insert(0, exptime_dark_keyword)
 
             else:
 
@@ -920,127 +996,140 @@ class ImageReduction:
                             exptime_flat=-1,
                             exptime_flat_keyword=-1):
 
+        # combinetype_flat
         if combinetype_flat is None:
 
-            self.combinetype_flat = 'median'
+            self.combinetype_flat = self.combinetype_flat_default
             self.logger.warning(
-                'Unknown combinetype_flat, it is set as median.')
+                'Unknown combinetype_flat, it is set as {}.'.format(
+                    self.combinetype_flat))
 
-        else:
+        elif isinstance(combinetype_flat, (float, int)):
 
-            if isinstance(combinetype_flat, (float, int)):
+            pass
 
-                pass
+        elif isinstance(combinetype_flat, str):
 
-            elif isinstance(combinetype_flat, str):
+            if combinetype_flat in ['average', 'median']:
 
-                if combinetype_flat in ['average', 'median']:
+                # use the given readnoise value
+                self.combinetype_flat = combinetype_flat
+                self.logger.info('combinetype_flat is set to {}.'.format(
+                    self.combinetype_flat))
 
-                    # use the given readnoise value
-                    self.combinetype_flat = combinetype_flat
-                    self.logger.info('combinetype_flat is set to {}.'.format(
+            else:
+
+                self.combinetype_flat = self.combinetype_flat_default
+                self.logger.warning(
+                    'Unknown combinetype_flat, it is set as {}.'.format(
                         self.combinetype_flat))
 
-                else:
+        else:
 
-                    self.combinetype_flat = 'median'
-                    self.logger.warning(
-                        'Unknown combinetype_flat, it is set as median.')
+            self.combinetype_flat = self.combinetype_flat_default
+            self.logger.warning(
+                'Unknown combinetype_flat, it is set as {}.'.format(
+                    self.combinetype_flat))
 
-            else:
-
-                self.combinetype_flat = 'median'
-                self.logger.warning(
-                    'Unknown combinetype_flat, it is set as median.')
-
+        # sigma_clipping_flat
         if sigma_clipping_flat is None:
 
-            self.sigma_clipping_flat = True
+            self.sigma_clipping_flat = self.sigma_clipping_flat_default
             self.logger.warning(
-                'Unknown sigma_clipping_flat, it is set to True.')
+                'Unknown sigma_clipping_flat, it is set to {}.'.format(
+                    self.sigma_clipping_flat))
+
+        elif isinstance(sigma_clipping_flat, (float, int)):
+
+            pass
+
+        elif isinstance(sigma_clipping_flat, bool):
+
+            self.sigma_clipping_flat = sigma_clipping_flat
 
         else:
 
-            if isinstance(sigma_clipping_flat, (float, int)):
+            self.sigma_clipping_flat = self.sigma_clipping_flat_default
+            self.logger.warning(
+                'Unknown sigma_clipping_flat, it is set to {}.'.format(
+                    self.sigma_clipping_flat))
+
+        # clip_low_flat
+        if clip_low_flat is None:
+
+            self.clip_low_flat = self.clip_low_flat_default
+            self.logger.warning(
+                'Unknown sigma_clipping_flat, it is set to {}.'.format(
+                    self.clip_low_flat))
+
+        elif isinstance(clip_low_flat, (float, int)):
+
+            if clip_low_flat > 0:
+
+                self.clip_low_flat = clip_low_flat
+
+            else:
 
                 pass
 
-            elif isinstance(sigma_clipping_flat, bool):
-
-                self.sigma_clipping_flat = sigma_clipping_flat
-
-            else:
-
-                self.sigma_clipping_flat = True
-                self.logger.warning(
-                    'Unknown sigma_clipping_flat, it is set to True.')
-
-        if clip_low_flat is None:
-
-            self.clip_low_flat = 5
-            self.logger.warning('Unknown sigma_clipping_flat, it is set to 5.')
-
         else:
 
-            if isinstance(clip_low_flat, (float, int)):
+            self.clip_low_flat = self.clip_low_flat_default
+            self.logger.warning(
+                'Unknown clip_low_flat, it is set to {}.'.format(
+                    self.clip_low_flat))
 
-                if clip_low_flat > 0:
-
-                    self.clip_low_flat = clip_low_flat
-
-                else:
-
-                    pass
-
-            else:
-
-                self.clip_low_flat = 5
-                self.logger.warning('Unknown clip_low_flat, it is set to 5.')
-
+        # clip_high_flat
         if clip_high_flat is None:
 
-            self.clip_high_flat = 5
-            self.logger.warning('Unknown sigma_clipping_flat, it is set to 5.')
+            self.clip_high_flat = self.clip_high_flat_default
+            self.logger.warning(
+                'Unknown sigma_clipping_flat, it is set to {}.'.format(
+                    self.clip_high_flat))
 
-        else:
+        elif isinstance(clip_high_flat, (float, int)):
 
-            if isinstance(clip_high_flat, (float, int)):
+            if clip_high_flat > 0:
 
-                if clip_high_flat > 0:
-
-                    self.clip_high_flat = clip_high_flat
-
-                else:
-
-                    pass
+                self.clip_high_flat = clip_high_flat
 
             else:
 
-                self.clip_high_flat = 5
-                self.logger.warning('Unknown clip_high_flat, it is set to 5.')
+                pass
 
+        else:
+
+            self.clip_high_flat = self.clip_high_flat_default
+            self.logger.warning(
+                'Unknown clip_high_flat, it is set to {}.'.format(
+                    self.clip_high_flat))
+
+        # exptime_flat
         if exptime_flat is None:
 
-            self.exptime_flat = 5
-            self.logger.warning('Unknown sigma_clipping_flat, it is set to 5.')
+            self.exptime_flat = self.exptime_flat_default
+            self.logger.warning(
+                'Unknown sigma_clipping_flat, it is set to {}.'.format(
+                    self.exptime_flat))
 
-        else:
+        elif isinstance(exptime_flat, (float, int)):
 
-            if isinstance(exptime_flat, (float, int)):
+            if exptime_flat > 0:
 
-                if exptime_flat > 0:
-
-                    self.exptime_flat = exptime_flat
-
-                else:
-
-                    pass
+                self.exptime_flat = exptime_flat
 
             else:
 
-                self.exptime_flat = exptime_flat
-                self.logger.warning('Unknown exptime_flat, it is set to 1.')
+                pass
 
+        else:
+
+            self.exptime_flat = self.exptime_flat_default
+            self.logger.warning(
+                'Unknown exptime_flat, it is set to {}.'.format(
+                    self.exptime_flat))
+
+        # exptime_flat_keyword
         if exptime_flat_keyword is None:
 
             self.exptime_flat_keyword = self.exptime_keyword
@@ -1048,22 +1137,20 @@ class ImageReduction:
                 'Unknown exptime_flat_keyword, it is set to {}.'.format(
                     self.exptime_keyword))
 
+        elif isinstance(exptime_flat_keyword, (float, int)):
+
+            pass
+
+        elif isinstance(exptime_flat_keyword, str):
+
+            self.exptime_flat_keyword.insert(0, exptime_flat_keyword)
+
         else:
 
-            if isinstance(exptime_flat_keyword, (float, int)):
-
-                pass
-
-            elif isinstance(exptime_flat_keyword, str):
-
-                self.exptime_flat_keyword
-
-            else:
-
-                self.exptime_flat_keyword = self.exptime_keyword
-                self.logger.warning(
-                    'Unknown exptime_flat_keyword, it is set to {}.'.format(
-                        self.exptime_keyword))
+            self.exptime_flat_keyword = self.exptime_keyword
+            self.logger.warning(
+                'Unknown exptime_flat_keyword, it is set to {}.'.format(
+                    self.exptime_flat_keyword))
 
     def set_bias_properties(self,
                             combinetype_bias=-1,
@@ -1073,102 +1160,105 @@ class ImageReduction:
 
         if combinetype_bias is None:
 
-            self.combinetype_bias = 'median'
+            self.combinetype_bias = self.combinetype_bias_default
             self.logger.warning(
-                'Unknown combinetype_bias, it is set as median.')
+                'Unknown combinetype_bias, it is set as {}.'.format(
+                    self.combinetype_bias))
 
-        else:
+        elif isinstance(combinetype_bias, (float, int)):
 
-            if isinstance(combinetype_bias, (float, int)):
+            pass
 
-                pass
+        elif isinstance(combinetype_bias, str):
 
-            elif isinstance(combinetype_bias, str):
+            if combinetype_bias in ['average', 'median']:
 
-                if combinetype_bias in ['average', 'median']:
-
-                    # use the given readnoise value
-                    self.combinetype_bias = combinetype_bias
-                    self.logger.info('combinetype_dark is set to {}.'.format(
-                        self.combinetype_bias))
-
-                else:
-
-                    self.combinetype_bias = 'median'
-                    self.logger.warning(
-                        'Unknown combinetype_bias, it is set as median.')
+                # use the given readnoise value
+                self.combinetype_bias = combinetype_bias
+                self.logger.info('combinetype_dark is set to {}.'.format(
+                    self.combinetype_bias))
 
             else:
 
-                self.combinetype_bias = 'median'
+                self.combinetype_bias = self.combinetype_bias_default
                 self.logger.warning(
                     'Unknown combinetype_bias, it is set as median.')
 
+        else:
+
+            self.combinetype_bias = self.combinetype_bias_default
+            self.logger.warning(
+                'Unknown combinetype_bias, it is set as median.')
+
         if sigma_clipping_bias is None:
 
-            self.sigma_clipping_bias = True
+            self.sigma_clipping_bias = self.sigma_clipping_bias_default
             self.logger.warning(
-                'Unknown sigma_clipping_bias, it is set to True.')
+                'Unknown sigma_clipping_bias, it is set to {}.'.format(
+                    self.combinetype_bias))
+
+        elif isinstance(sigma_clipping_bias, (float, int)):
+
+            pass
+
+        elif isinstance(sigma_clipping_bias, bool):
+
+            self.sigma_clipping_bias = sigma_clipping_bias
 
         else:
 
-            if isinstance(sigma_clipping_bias, (float, int)):
-
-                pass
-
-            elif isinstance(sigma_clipping_bias, bool):
-
-                self.sigma_clipping_bias = sigma_clipping_bias
-
-            else:
-
-                self.sigma_clipping_bias = True
-                self.logger.warning(
-                    'Unknown sigma_clipping_bias, it is set to True.')
+            self.sigma_clipping_bias = self.sigma_clipping_bias_default
+            self.logger.warning(
+                'Unknown sigma_clipping_bias, it is set to {}.'.format(
+                    self.sigma_clipping_bias_default))
 
         if clip_low_bias is None:
 
-            self.clip_low_bias = 5
-            self.logger.warning('Unknown sigma_clipping_bias, it is set to 5.')
+            self.clip_low_bias = self.clip_high_bias_default
+            self.logger.warning(
+                'Unknown sigma_clipping_bias, it is set to {}.'.format(
+                    self.clip_high_bias))
 
-        else:
+        elif isinstance(clip_low_bias, (float, int)):
 
-            if isinstance(clip_low_bias, (float, int)):
+            if clip_low_bias > 0:
 
-                if clip_low_bias > 0:
-
-                    self.clip_low_bias = clip_low_bias
-
-                else:
-
-                    pass
+                self.clip_low_bias = clip_low_bias
 
             else:
 
-                self.clip_low_bias = 5
-                self.logger.warning('Unknown clip_low_bias, it is set to 5.')
+                pass
+
+        else:
+
+            self.clip_low_bias = self.clip_high_bias_default
+            self.logger.warning(
+                'Unknown clip_low_bias, it is set to {}.'.format(
+                    self.clip_high_bias))
 
         if clip_high_bias is None:
 
-            self.clip_high_bias = 5
-            self.logger.warning('Unknown sigma_clipping_bias, it is set to 5.')
+            self.clip_high_bias = self.clip_high_bias_default
+            self.logger.warning(
+                'Unknown sigma_clipping_bias, it is set to {}.'.format(
+                    self.clip_high_bias))
 
-        else:
+        elif isinstance(clip_high_bias, (float, int)):
 
-            if isinstance(clip_high_bias, (float, int)):
+            if clip_high_bias > 0:
 
-                if clip_high_bias > 0:
-
-                    self.clip_high_bias = clip_high_bias
-
-                else:
-
-                    pass
+                self.clip_high_bias = clip_high_bias
 
             else:
 
-                self.clip_high_bias = 5
-                self.logger.warning('Unknown clip_high_bias, it is set to 5.')
+                pass
+
+        else:
+
+            self.clip_high_bias = self.clip_high_bias_default
+            self.logger.warning(
+                'Unknown clip_high_bias, it is set to {}.'.format(
+                    self.clip_high_bias))
 
     def set_arc_properties(self,
                            combinetype_arc=-1,
@@ -1176,44 +1266,48 @@ class ImageReduction:
                            clip_low_arc=-1,
                            clip_high_arc=-1):
 
+        # combinetype_arc
         if combinetype_arc is None:
 
-            self.combinetype_arc = 'median'
+            self.combinetype_arc = self.combinetype_arc_default
             self.logger.warning(
-                'Unknown combinetype_arc, it is set as median.')
+                'Unknown combinetype_arc, it is set as {}.'.format(
+                    self.combinetype_arc_default))
 
-        else:
+        elif isinstance(combinetype_arc, (float, int)):
 
-            if isinstance(combinetype_arc, (float, int)):
+            pass
 
-                pass
+        elif isinstance(combinetype_arc, str):
 
-            elif isinstance(combinetype_arc, str):
+            if combinetype_arc in ['average', 'median']:
 
-                if combinetype_arc in ['average', 'median']:
-
-                    # use the given readnoise value
-                    self.combinetype_arc = combinetype_arc
-                    self.logger.info('combinetype_dark is set to {}.'.format(
-                        self.combinetype_arc))
-
-                else:
-
-                    self.combinetype_arc = 'median'
-                    self.logger.warning(
-                        'Unknown combinetype_arc, it is set as median.')
+                # use the given readnoise value
+                self.combinetype_arc = combinetype_arc
+                self.logger.info('combinetype_dark is set to {}.'.format(
+                    self.combinetype_arc))
 
             else:
 
-                self.combinetype_arc = 'median'
+                self.combinetype_arc = self.combinetype_arc_default
                 self.logger.warning(
-                    'Unknown combinetype_arc, it is set as median.')
+                    'Unknown combinetype_arc, it is set as {}.'.format(
+                        self.combinetype_arc))
 
+        else:
+
+            self.combinetype_arc = self.combinetype_arc_default
+            self.logger.warning(
+                'Unknown combinetype_arc, it is set as {}.'.format(
+                    self.combinetype_arc))
+
+        # sigma_clipping_arc
         if sigma_clipping_arc is None:
 
-            self.sigma_clipping_arc = True
+            self.sigma_clipping_arc = self.sigma_clipping_arc_default
             self.logger.warning(
-                'Unknown sigma_clipping_arc, it is set to True.')
+                'Unknown sigma_clipping_arc, it is set to {}.'.format(
+                    self.sigma_clipping_arc))
 
         else:
 
@@ -1227,53 +1321,318 @@ class ImageReduction:
 
             else:
 
-                self.sigma_clipping_arc = True
+                self.sigma_clipping_arc = self.sigma_clipping_arc_default
                 self.logger.warning(
-                    'Unknown sigma_clipping_arc, it is set to True.')
+                    'Unknown sigma_clipping_arc, it is set to {}.'.format(
+                        self.sigma_clipping_arc))
 
+        # clip_low_arc
         if clip_low_arc is None:
 
-            self.clip_low_arc = 5
-            self.logger.warning('Unknown sigma_clipping_arc, it is set to 5.')
+            self.clip_low_arc = self.clip_low_arc_default
+            self.logger.warning(
+                'Unknown sigma_clipping_arc, it is set to {}.'.format(
+                    self.clip_low_arc))
 
-        else:
+        elif isinstance(clip_low_arc, (float, int)):
 
-            if isinstance(clip_low_arc, (float, int)):
+            if clip_low_arc > 0:
 
-                if clip_low_arc > 0:
-
-                    self.clip_low_arc = clip_low_arc
-
-                else:
-
-                    pass
+                self.clip_low_arc = clip_low_arc
 
             else:
 
-                self.clip_low_arc = 5
-                self.logger.warning('Unknown clip_low_arc, it is set to 5.')
+                pass
 
+        else:
+
+            self.clip_low_arc = self.clip_low_arc_default
+            self.logger.warning('Unknown clip_low_arc, it is set to 5.')
+
+        # clip_high_arc
         if clip_high_arc is None:
 
-            self.clip_high_arc = 5
-            self.logger.warning('Unknown sigma_clipping_arc, it is set to 5.')
+            self.clip_high_arc = self.clip_high_arc_default
+            self.logger.warning(
+                'Unknown sigma_clipping_arc, it is set to {}.'.format(
+                    self.clip_high_arc))
 
-        else:
+        elif isinstance(clip_high_arc, (float, int)):
 
-            if isinstance(clip_high_arc, (float, int)):
+            if clip_high_arc > 0:
 
-                if clip_high_arc > 0:
-
-                    self.clip_high_arc = clip_high_arc
-
-                else:
-
-                    pass
+                self.clip_high_arc = clip_high_arc
 
             else:
 
-                self.clip_high_arc = 5
-                self.logger.warning('Unknown clip_high_arc, it is set to 5.')
+                pass
+
+        else:
+
+            self.clip_high_arc = self.clip_high_arc_default
+            self.logger.warning(
+                'Unknown clip_high_arc, it is set to {}.'.format(
+                    self.clip_high_arc))
+
+    def set_cosmic_properties(self,
+                              cosmicray=-1,
+                              fsmode=-1,
+                              psfmodel=-1,
+                              kwargs=-1):
+
+        # cosmicray
+        if isinstance(cosmicray, (float, int)):
+
+            if cosmicray == 1:
+
+                self.cosmicray = True
+
+            elif cosmicray == 0:
+
+                self.cosmicray = False
+
+            else:
+
+                pass
+
+        elif isinstance(cosmicray, bool):
+
+            self.cosmicray = cosmicray
+
+        else:
+
+            self.cosmicray = self.cosmicray_default
+            self.logger.warning('Unknown cosmicray, it is set to {}.'.format(
+                self.cosmicray))
+
+        # fsmode in detect_cosmics()
+        if fsmode is None:
+
+            self.fsmode = self.fsmode_default
+            self.logger.warning('Unknown fsmode, it is set as {}.'.format(
+                self.fsmode_default))
+
+        elif isinstance(fsmode, (float, int)):
+
+            pass
+
+        elif isinstance(fsmode, str):
+
+            if fsmode in ['convolve', 'median']:
+
+                # use the given fsmode value
+                self.fsmode = fsmode
+                self.logger.info('fsmode is set to {}.'.format(self.fsmode))
+
+            else:
+
+                self.fsmode = self.fsmode_default
+                self.logger.warning('Unknown fsmode, it is set as {}.'.format(
+                    self.fsmode))
+
+        else:
+
+            self.fsmode = self.fsmode_default
+            self.logger.warning('Unknown fsmode, it is set as {}.'.format(
+                self.fsmode))
+
+        # psfmodel in detect_cosmics() (and the two added modes)
+        if psfmodel is None:
+
+            self.psfmodel = self.psfmodel_default
+            self.logger.warning(
+                'psfmodel is given as None, it is set as {}.'.format(
+                    self.psfmodel_default))
+
+        elif isinstance(psfmodel, (float, int)):
+
+            pass
+
+        elif isinstance(psfmodel, str):
+
+            if psfmodel in [
+                    'gauss', 'gaussx', 'gaussy', 'gaussxy', 'gaussyx', 'moffat'
+            ]:
+
+                # use the given psfmodel value
+                self.psfmodel = psfmodel
+                self.logger.info('psfmodel is set to {}.'.format(
+                    self.psfmodel))
+
+            else:
+
+                self.psfmodel = self.psfmodel_default
+                self.logger.warning(
+                    'Unknown psfmodel, it is set as {}.'.format(self.psfmodel))
+
+        else:
+
+            self.psfmodel = self.psfmodel_default
+            self.logger.warning('Unknown psfmodel, it is set as {}.'.format(
+                self.psfmodel))
+
+        # extra keyword arguments for detect_cosmics()
+        if kwargs is None:
+
+            self.cr_kwargs = self.cr_kwargs_default
+
+        if isinstance(kwargs, (float, int)):
+
+            pass
+
+        elif isinstance(kwargs, dict):
+
+            self.cr_kwargs = kwargs
+
+        else:
+
+            self.cr_kwargs = self.cr_kwargs_default
+            self.logger.warning('Unknown cr_kwargs, it is set as {}.'.format(
+                self.cr_kwargs))
+
+    def set_detector_properties(self,
+                                gain=-1,
+                                readnoise=-1,
+                                heal_pixels=-1,
+                                cutoff=-1,
+                                grow=-1,
+                                iterations=-1,
+                                diagonal=-1):
+
+        # gain
+        if isinstance(gain, (float, int)):
+
+            if gain > 0:
+
+                self.gain = gain
+
+            else:
+
+                pass
+
+        else:
+
+            self.gain = self.gain_default
+
+        # readnoise
+        if isinstance(readnoise, (float, int)):
+
+            if readnoise >= 0:
+
+                self.readnoise = readnoise
+
+            else:
+
+                pass
+
+        else:
+
+            self.readnoise = self.readnoise_default
+
+        # heal_pixels
+        if isinstance(heal_pixels, (float, int)):
+
+            if heal_pixels == 1:
+
+                self.heal_pixels = True
+
+            elif heal_pixels == 0:
+
+                self.heal_pixels = False
+
+            else:
+
+                pass
+
+        elif isinstance(heal_pixels, bool):
+
+            self.heal_pixels = heal_pixels
+
+        else:
+
+            self.heal_pixels = self.heal_pixels_default
+            self.logger.warning('Unknown heal_pixels, it is set to {}.'.format(
+                self.heal_pixels_default))
+
+        # cutoff
+        if isinstance(cutoff, (float, int)):
+
+            if cutoff > 0:
+
+                self.cutoff = cutoff
+
+            else:
+
+                pass
+
+        else:
+
+            self.cutoff = self.cutoff_default
+
+        # grow
+        if isinstance(grow, (float, int)):
+
+            if grow == 1:
+
+                self.grow = True
+
+            elif grow == 0:
+
+                self.grow = False
+
+            else:
+
+                pass
+
+        elif isinstance(grow, bool):
+
+            self.grow = grow
+
+        else:
+
+            self.grow = self.grow_default
+            self.logger.warning('Unknown grow, it is set to {}.'.format(
+                self.grow_default))
+
+        # iterations
+        if isinstance(iterations, (float, int)):
+
+            if iterations >= 0:
+
+                self.iterations = iterations
+
+            else:
+
+                pass
+
+        else:
+
+            self.iterations = self.iterations_default
+
+        # diagonal
+        if isinstance(diagonal, (float, int)):
+
+            if diagonal == 1:
+
+                self.diagonal = True
+
+            elif diagonal == 0:
+
+                self.diagonal = False
+
+            else:
+
+                pass
+
+        elif isinstance(diagonal, bool):
+
+            self.diagonal = diagonal
+
+        else:
+
+            self.diagonal = self.diagonal_default
+            self.logger.warning('Unknown diagonal, it is set to {}.'.format(
+                self.diagonal_default))
 
     def load_data(self):
 
@@ -1346,7 +1705,7 @@ class ImageReduction:
                             psfmodel=self.psfmodel,
                             **self.cr_kwargs)[1]
 
-                else:
+                elif self.fsmode == 'median':
 
                     self.light_CCDData[i].data = detect_cosmics(
                         self.light_CCDData[i].data,
@@ -1355,6 +1714,10 @@ class ImageReduction:
                         fsmode=self.fsmode,
                         psfmodel=self.psfmodel,
                         **self.cr_kwargs)[1]
+
+                else:
+
+                    self.logger.error('Unknown fsmode: {}'.format(self.fsmode))
 
             self.logger.debug('Light frame header: {}.'.format(
                 self.light_header[i]))
@@ -1964,7 +2327,12 @@ class ImageReduction:
         self.light_reduced = np.array((self.light_reduced))
 
         # Create bad pixel mask
-        self.heal_bad_pixels()
+        self.create_bad_pixel_mask()
+
+        # Heal pixel immediately
+        if self.heal_pixels:
+
+            self.heal_bad_pixels()
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:

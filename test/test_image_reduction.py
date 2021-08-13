@@ -179,28 +179,27 @@ def test_input_with_data_cube():
 
 def test_input_with_data_cube_extra_bracket():
     img = image_reduction.ImageReduction(log_file_name=None)
-    img.add_filelist(
-        filelist=
-        'test/test_data/sprat_LHS6328_fake_data_cube_extra_bracket.list')
+    img.add_filelist(filelist='test/test_data/'
+                     'sprat_LHS6328_fake_data_cube_extra_bracket.list')
     img.load_data()
     img.reduce()
 
 
-@pytest.mark.xfail(raises=RuntimeError)
+@pytest.mark.xfail()
 def test_input_with_one_dimensional_data():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(
         filelist='test/test_data/sprat_LHS6328_one_dimensional_data.list')
+    img.load_data()
 
 
-@pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_wrong_light_combine_type():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.load_data()
     img.set_properties(combinetype_light='FAIL')
 
 
-@pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_wrong_dark_combine_type():
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(filelist='test/test_data/sprat_LHS6328.list', )
@@ -208,6 +207,180 @@ def test_input_with_wrong_dark_combine_type():
     img.load_data()
     img.reduce()
 
+
+def test_set_everything_to_None():
+    img = image_reduction.ImageReduction(log_file_name=None)
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(saxis=None,
+                       combinetype_light=None,
+                       sigma_clipping_light=None,
+                       clip_low_light=None,
+                       clip_high_light=None,
+                       exptime_light=None,
+                       exptime_light_keyword=None,
+                       combinetype_arc=None,
+                       sigma_clipping_arc=None,
+                       clip_low_arc=None,
+                       clip_high_arc=None,
+                       combinetype_dark=None,
+                       sigma_clipping_dark=None,
+                       clip_low_dark=None,
+                       clip_high_dark=None,
+                       exptime_dark=None,
+                       exptime_dark_keyword=None,
+                       combinetype_bias=None,
+                       sigma_clipping_bias=None,
+                       clip_low_bias=None,
+                       clip_high_bias=None,
+                       combinetype_flat=None,
+                       sigma_clipping_flat=None,
+                       clip_low_flat=None,
+                       clip_high_flat=None,
+                       exptime_flat=None,
+                       exptime_flat_keyword=None,
+                       cosmicray=None,
+                       gain=None,
+                       readnoise=None,
+                       fsmode=None,
+                       psfmodel=None,
+                       cutoff=None,
+                       grow=None,
+                       iterations=None,
+                       diagonal=None)
+    img.load_data()
+    img.reduce()
+
+
+def test_set_everything_to_minus1():
+    img = image_reduction.ImageReduction(log_file_name=None)
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(saxis=-1,
+                       combinetype_light=-1,
+                       sigma_clipping_light=-1,
+                       clip_low_light=-1,
+                       clip_high_light=-1,
+                       exptime_light=-1,
+                       exptime_light_keyword=-1,
+                       combinetype_arc=-1,
+                       sigma_clipping_arc=-1,
+                       clip_low_arc=-1,
+                       clip_high_arc=-1,
+                       combinetype_dark=-1,
+                       sigma_clipping_dark=-1,
+                       clip_low_dark=-1,
+                       clip_high_dark=-1,
+                       exptime_dark=-1,
+                       exptime_dark_keyword=-1,
+                       combinetype_bias=-1,
+                       sigma_clipping_bias=-1,
+                       clip_low_bias=-1,
+                       clip_high_bias=-1,
+                       combinetype_flat=-1,
+                       sigma_clipping_flat=-1,
+                       clip_low_flat=-1,
+                       clip_high_flat=-1,
+                       exptime_flat=-1,
+                       exptime_flat_keyword=-1,
+                       cosmicray=-1,
+                       gain=-1,
+                       readnoise=-1,
+                       fsmode=-1,
+                       psfmodel=-1,
+                       cutoff=-1,
+                       grow=-1,
+                       iterations=-1,
+                       diagonal=-1)
+    img.load_data()
+    img.reduce()
+
+
+# apart from heal_pixels
+def test_set_everything_to_True():
+    img = image_reduction.ImageReduction(log_file_name=None)
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(saxis=True,
+                       combinetype_light=True,
+                       sigma_clipping_light=True,
+                       clip_low_light=True,
+                       clip_high_light=True,
+                       exptime_light=True,
+                       exptime_light_keyword=True,
+                       combinetype_arc=True,
+                       sigma_clipping_arc=True,
+                       clip_low_arc=True,
+                       clip_high_arc=True,
+                       combinetype_dark=True,
+                       sigma_clipping_dark=True,
+                       clip_low_dark=True,
+                       clip_high_dark=True,
+                       exptime_dark=True,
+                       exptime_dark_keyword=True,
+                       combinetype_bias=True,
+                       sigma_clipping_bias=True,
+                       clip_low_bias=True,
+                       clip_high_bias=True,
+                       combinetype_flat=True,
+                       sigma_clipping_flat=True,
+                       clip_low_flat=True,
+                       clip_high_flat=True,
+                       exptime_flat=True,
+                       exptime_flat_keyword=True,
+                       cosmicray=True,
+                       gain=True,
+                       readnoise=True,
+                       fsmode=True,
+                       psfmodel=True,
+                       heal_pixels=False,
+                       cutoff=True,
+                       grow=True,
+                       iterations=True,
+                       diagonal=True)
+    img.load_data()
+    img.reduce()
+
+
+def test_set_everything_to_bla():
+    img = image_reduction.ImageReduction(log_file_name=None)
+    img.add_filelist(filelist='test/test_data/sprat_LHS6328.list')
+    img.set_properties(saxis='bla',
+                       combinetype_light='bla',
+                       sigma_clipping_light='bla',
+                       clip_low_light='bla',
+                       clip_high_light='bla',
+                       exptime_light='bla',
+                       exptime_light_keyword='bla',
+                       combinetype_arc='bla',
+                       sigma_clipping_arc='bla',
+                       clip_low_arc='bla',
+                       clip_high_arc='bla',
+                       combinetype_dark='bla',
+                       sigma_clipping_dark='bla',
+                       clip_low_dark='bla',
+                       clip_high_dark='bla',
+                       exptime_dark='bla',
+                       exptime_dark_keyword='bla',
+                       combinetype_bias='bla',
+                       sigma_clipping_bias='bla',
+                       clip_low_bias='bla',
+                       clip_high_bias='bla',
+                       combinetype_flat='bla',
+                       sigma_clipping_flat='bla',
+                       clip_low_flat='bla',
+                       clip_high_flat='bla',
+                       exptime_flat='bla',
+                       exptime_flat_keyword='bla',
+                       cosmicray='bla',
+                       gain='bla',
+                       readnoise='bla',
+                       fsmode='bla',
+                       psfmodel='bla',
+                       heal_pixels='bla',
+                       cutoff='bla',
+                       grow='bla',
+                       iterations='bla',
+                       diagonal='bla')
+    img.load_data()
+    img.reduce()
 
 # The bad combinetype does not affect the reduction because
 # there is not any flat frame

@@ -36,6 +36,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
     nbad = len(badx)
 
     if retdat:
+
         data = np.array(data, copy=True)
 
     for i in range(nbad):
@@ -43,6 +44,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
         numNearbyGoodPixels = 0
 
         while numNearbyGoodPixels < n:
+
             rad += 1
             xmin = max(0, badx[i] - rad)
             xmax = min(nx, badx[i] + rad)
@@ -60,6 +62,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
         numDistances = len(closestDistances)
         localSum = 0.
         localDenominator = 0.
+
         for j in range(numDistances):
             localSum += data[xmin:xmax + 1,
                              ymin:ymax + 1][rr == closestDistances[j]].sum()
@@ -68,8 +71,11 @@ def bfixpix(data, badmask, n=4, retdat=False):
         data[badx[i], bady[i]] = 1.0 * localSum / localDenominator
 
     if retdat:
+
         ret = data
+
     else:
+
         ret = None
 
     return ret

@@ -89,15 +89,16 @@ def test_forced_extraction_tophat():
     lhs6328_twodspec.add_trace(trace, trace_sigma)
 
     # Force extraction
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=10,
-                                skydeg=1,
-                                optimal=False,
-                                forced=True,
-                                display=False,
-                                save_fig=True,
-                                filename='test/test_output/test_force_extraxtion4',
-                                fig_type='iframe+png')
+    lhs6328_twodspec.ap_extract(
+        apwidth=15,
+        skywidth=10,
+        skydeg=1,
+        optimal=False,
+        forced=True,
+        display=False,
+        save_fig=True,
+        filename='test/test_output/test_force_extraxtion4',
+        fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -179,17 +180,18 @@ def test_forced_extraction_marsh89():
     lhs6328_twodspec.add_trace(trace, trace_sigma)
 
     # Force extraction
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=10,
-                                skydeg=1,
-                                optimal=True,
-                                algorithm='marsh89',
-                                forced=True,
-                                variances=np.transpose(marsh89_var),
-                                display=False,
-                                save_fig=True,
-                                filename='test/test_output/test_force_extraxtion5',
-                                fig_type='iframe+png')
+    lhs6328_twodspec.ap_extract(
+        apwidth=15,
+        skywidth=10,
+        skydeg=1,
+        optimal=True,
+        algorithm='marsh89',
+        forced=True,
+        variances=np.transpose(marsh89_var),
+        display=False,
+        save_fig=True,
+        filename='test/test_output/test_force_extraxtion5',
+        fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -212,17 +214,18 @@ def test_forced_extraction_horne86_lowess_int_var():
     lhs6328_twodspec.add_trace(trace, trace_sigma)
 
     # Force extraction
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=10,
-                                skydeg=1,
-                                optimal=True,
-                                model='lowess',
-                                forced=True,
-                                variances=np.nanmedian(horne86_var),
-                                display=False,
-                                save_fig=True,
-                                filename='test/test_output/test_force_extraxtion6',
-                                fig_type='iframe+png')
+    lhs6328_twodspec.ap_extract(
+        apwidth=15,
+        skywidth=10,
+        skydeg=1,
+        optimal=True,
+        model='lowess',
+        forced=True,
+        variances=np.nanmedian(horne86_var),
+        display=False,
+        save_fig=True,
+        filename='test/test_output/test_force_extraxtion6',
+        fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
@@ -245,17 +248,18 @@ def test_forced_extraction_horne86_lowess_str_var():
     lhs6328_twodspec.add_trace(trace, trace_sigma)
 
     # Force extraction
-    lhs6328_twodspec.ap_extract(apwidth=15,
-                                skywidth=10,
-                                skydeg=1,
-                                optimal=True,
-                                model='lowess',
-                                forced=True,
-                                variances='blabla',
-                                display=False,
-                                save_fig=True,
-                                filename='test/test_output/test_force_extraxtion7',
-                                fig_type='iframe+png')
+    lhs6328_twodspec.ap_extract(
+        apwidth=15,
+        skywidth=10,
+        skydeg=1,
+        optimal=True,
+        model='lowess',
+        forced=True,
+        variances='blabla',
+        display=False,
+        save_fig=True,
+        filename='test/test_output/test_force_extraxtion7',
+        fig_type='iframe+png')
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)

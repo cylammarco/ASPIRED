@@ -11,13 +11,13 @@ install_requires = [
     'scipy>=1.5.2', 'astropy>=4.0,<4.3', 'ccdproc>=2.1',
     'plotly>=4.0', 'spectres>=2.1.1', 'statsmodels>=0.12',
     'astroscrappy @ git+https://github.com/astropy/astroscrappy@master#egg=astroscrappy',
-    'rascal @ git+https://github.com/jveitchmichaelis/rascal@dev'
+    'rascal>=0.3'
 ]
 
 __packagename__ = "aspired"
 
 setup(name=__packagename__,
-      version='0.3.1',
+      version='0.4.0',
       packages=find_packages(),
       author='Marco Lam',
       author_email='cylammarco@gmail.com',

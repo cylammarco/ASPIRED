@@ -11,6 +11,7 @@ abs_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
 np.random.seed(0)
 
+
 def file_len(fname):
     with open(fname) as f:
         for i, l in enumerate(f):

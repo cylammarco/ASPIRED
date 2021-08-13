@@ -30,6 +30,7 @@ arc_lines = wavecal.spectrum1D.peaks
 
 np.random.seed(0)
 
+
 def test_wavecal():
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
