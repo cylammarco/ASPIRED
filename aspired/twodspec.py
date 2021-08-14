@@ -272,7 +272,7 @@ class TwoDSpec:
             if data[-1] == ']':
 
                 filepath, hdunum = data.split('[')
-                hdunum = hdunum[:-1]
+                hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
             else:
@@ -280,10 +280,14 @@ class TwoDSpec:
                 filepath = data
                 hdunum = 0
 
+            print(filepath)
+            print(hdunum)
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
             self.img = copy.deepcopy(fitsfile_tmp.data)
             self.header = copy.deepcopy(fitsfile_tmp.header)
+            logging.info('Loaded data from: {}, with hdunum: {}'.format(
+                filepath, hdunum))
 
             fitsfile_tmp = None
 
@@ -1665,7 +1669,7 @@ class TwoDSpec:
         options are not provided.
 
         A rough estimation on the background level is done by taking the
-        n-th percentile percentile of the slice, a rough guess can improve the
+        n-th percentile of the slice, a rough guess can improve the
         cross-correlation process significantly due to low dynamic range in a
         typical spectral image. The removing of the "background" can massively
         improve the contrast between the peaks and the relative background,
@@ -1748,12 +1752,13 @@ class TwoDSpec:
         '''
 
         # Get the shape of the 2D spectrum and define upsampling ratio
-        nresample = self.spatial_size * resample_factor
-        img_upsampled = ndimage.zoom(self.img, zoom=resample_factor)
 
-        img_tmp = img_upsampled.astype(float)
+        img_tmp = self.img.astype(float)
         img_tmp[np.isnan(img_tmp)] = 0.
         img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
+
+        nresample = self.spatial_size * resample_factor
+        img_tmp = ndimage.zoom(img_tmp, zoom=resample_factor)
 
         # split the spectrum into subspectra
         img_split = np.array_split(img_tmp, nwindow, axis=1)
@@ -3662,7 +3667,6 @@ class TwoDSpec:
                     bad_residual_frame_mask.nonzero()))
 
         skysubFrame = frame - residual_frame
-
         '''
         # Interpolate and fix bad pixels for extraction of standard
         # spectrum -- otherwise there can be 'holes' in the spectrum from

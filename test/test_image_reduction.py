@@ -382,6 +382,7 @@ def test_set_everything_to_bla():
     img.load_data()
     img.reduce()
 
+
 # The bad combinetype does not affect the reduction because
 # there is not any flat frame
 def test_input_with_wrong_flat_combine_type():
