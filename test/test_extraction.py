@@ -46,8 +46,8 @@ def test_spectral_extraction():
                             filename='test/test_output/test_full_run_aptrace',
                             return_jsonstring=True)
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert trace == 36, 'Trace is at row ' + str(
-        trace) + ', but it is expected to be at row 36.'
+    assert trace == 35, 'Trace is at row ' + str(
+        trace) + ', but it is expected to be at row 35.'
 
     # Optimal extracting spectrum by summing over the aperture along the trace
     dummy_twodspec.ap_extract(
