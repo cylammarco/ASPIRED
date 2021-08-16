@@ -16,6 +16,8 @@ We aim to track and report as many changes as possible, but this is not an exhau
     * Residual image is generated along with the spectral extraction.
     * Use `lowess()` fit for ap_extract profile allowing optimal extraction of extended source.
     * All image output supoprts iframe, jpg, png, svg and pdf.
+    * ImageReduction is initialised to configure the logger only.
+    * ImageReduction frame location can be added with add_filelist(), and then added by executing load_data().
     * ImageReduction frames (in type of CCDData or ndarray) can be added with add_light(), add_arc(), add_flat(), add_dark(), add_bias()
     * ImageReduction properties seeting can now be set with set_properties(), set_light_properties(), set_dark_properties(), set_flat_properties(), set_bias_properties(), set_arc_properties(), set_cosmic_properties(), set_detector_properties()
 
@@ -45,7 +47,8 @@ We aim to track and report as many changes as possible, but this is not an exhau
     * `OneDSpec.refine_fit()` and `wavelength_calibration.refine_fit()` are changed to `robust_refit()`.
     * Arc frame has to be MANUALLY flipped or transposed if it is being added AFTER `TwoDSpec.set_properties()`. If arc frame will be flipped and transposed AUTOMATICALLY if it is added BEFORE `TwoDSpec.set_properties()`.
     * ImageReduction.add_filelist() no longer accepts properties.
-    * ImageReduction properties has to be added with set_properties()
+    * ImageReduction properties has to be added with set_properties().
     * Individual properties can be added one by one without affecting other existing properties.
+    * twodspec.apply_twodspec_mask_to_arc() is changed to twodspec.apply_mask_to_arc().
 
 * See also the changelogs in `RASCAL v0.3.0 <https://github.com/jveitchmichaelis/rascal/blob/main/CHANGELOG.rst>`__.

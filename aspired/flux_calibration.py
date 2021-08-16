@@ -819,8 +819,8 @@ class FluxCalibration(StandardLibrary):
             for m in mask_range:
 
                 # If the mask is partially outside the spectrum, ignore
-                if (m[0] < min(standard_wave_true)) or (
-                        m[1] > max(standard_wave_true)):
+                if (m[0] < min(standard_wave_true)) or (m[0] < min(wave)) or (
+                        m[1] > max(standard_wave_true)) or (m[1] > max(wave)):
 
                     continue
 

@@ -18,20 +18,6 @@ from .spectrum1D import Spectrum1D
 __all__ = ['OneDSpec']
 
 
-def _min_std(factor, flux, telluric_profile, norm_level):
-
-    if factor < 0:
-
-        return np.inf
-
-    # multiplied by 1e15 because the fluxes are usally at the order of
-    # magnitude of 1e-13
-    mad = np.median(
-        np.abs((flux + factor * telluric_profile) - norm_level)) * 1e15
-
-    return mad
-
-
 class OneDSpec():
     def __init__(self,
                  verbose=True,
@@ -3717,6 +3703,19 @@ class OneDSpec():
             self.logger.warning('Sensitivity function is not available, '
                                 'flux calibration is not possible.')
 
+    def _min_std(self, factor, flux, telluric_profile, norm_level):
+
+        if factor < 0:
+
+            return np.inf
+
+        # multiplied by 1e15 because the fluxes are usally at the order of
+        # magnitude of 1e-13
+        mad = np.median(
+            np.abs((flux + factor * telluric_profile) - norm_level)) * 1e15
+
+        return mad
+
     def apply_telluric_correction(self, spec_id=None, ignore_standard=False):
         '''
         Parameters
@@ -3788,7 +3787,7 @@ class OneDSpec():
             mask_resampled = np.where(telluric_absorption_resampled != 0.0)
 
             telluric_factor = optimize.minimize(
-                _min_std,
+                self._min_std,
                 1.0,
                 args=(flux[mask], telluric_absorption[mask],
                       telluric_filler[mask]),
@@ -3796,7 +3795,7 @@ class OneDSpec():
                     'maxiter': 10000
                 }).x
             telluric_factor_resampled = optimize.minimize(
-                _min_std,
+                self._min_std,
                 1.0,
                 args=(flux_resampled[mask_resampled],
                       telluric_absorption_resampled[mask_resampled],

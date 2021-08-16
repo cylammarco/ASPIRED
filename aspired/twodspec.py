@@ -280,8 +280,6 @@ class TwoDSpec:
                 filepath = data
                 hdunum = 0
 
-            print(filepath)
-            print(hdunum)
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
             self.img = copy.deepcopy(fitsfile_tmp.data)
@@ -1237,6 +1235,14 @@ class TwoDSpec:
 
         '''
 
+        if self.transpose_applied is True:
+
+            self.apply_transpose_to_arc()
+
+        if self.flip_applied is True:
+
+            self.apply_flip_to_arc()
+
         if np.shape(self.arc) == np.shape(self.img):
 
             pass
@@ -1245,14 +1251,6 @@ class TwoDSpec:
 
             self.apply_spec_mask_to_arc(self.spec_mask)
             self.apply_spatial_mask_to_arc(self.spatial_mask)
-
-            if self.transpose_applied is True:
-
-                self.apply_transpose_to_arc()
-
-            if self.flip_applied is True:
-
-                self.apply_flip_to_arc()
 
     def apply_spec_mask_to_arc(self, spec_mask):
         '''
@@ -1633,6 +1631,7 @@ class TwoDSpec:
 
     def ap_trace(self,
                  nspec=1,
+                 smooth=False,
                  nwindow=20,
                  spec_sep=5,
                  trace_width=15,
@@ -1688,6 +1687,8 @@ class TwoDSpec:
         ----------
         nspec: int
             Number of spectra to be extracted.
+        smooth: bool (Default: False)
+            Set to true to apply a 3x3 median filter before tracing.
         nwindow: int
             Number of spectral slices (subspectra) to be produced for
             cross-correlation.
@@ -1755,7 +1756,10 @@ class TwoDSpec:
 
         img_tmp = self.img.astype(float)
         img_tmp[np.isnan(img_tmp)] = 0.
-        img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
+
+        if smooth:
+
+            img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
 
         nresample = self.spatial_size * resample_factor
         img_tmp = ndimage.zoom(img_tmp, zoom=resample_factor)
@@ -1923,7 +1927,7 @@ class TwoDSpec:
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
             ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
-            self.logger.info('The trace is found at {}.'.format(zip(ap_p, ap)))
+            self.logger.info('The trace is found at {}.'.format([(x, y) for (x, y) in zip(ap_p, ap)]))
 
             # Get the centre of the upsampled spectrum
             ap_centre_idx = ap[start_window_idx] * resample_factor
@@ -1955,7 +1959,7 @@ class TwoDSpec:
                                 p0=pguess)
             ap_sigma = abs(popt[3]) / resample_factor
             ap = ap
-            self.logger.info('Aperture is fitte with a Gaussian sigma of '
+            self.logger.info('Aperture is fitted with a Gaussian sigma of '
                              '{} pix.'.format(ap_sigma))
 
             self.spectrum_list[i] = Spectrum1D(
@@ -2347,8 +2351,7 @@ class TwoDSpec:
                                     one_tenth])])[0] - spec_size_tmp - 1)
 
             shift_upsampled -= (shift_upsampled[n_down])
-            print(shift_upsampled)
-            print(y_trace_upsampled)
+
             # fit the distortion in the spectral direction as a function
             # of distance from trace. The coeff is in the upsampled
             # resolution
