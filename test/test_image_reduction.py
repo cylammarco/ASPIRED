@@ -537,7 +537,7 @@ def test_input_with_fits_data_object():
     for i in range(light_list.size):
 
         light = fits.open(light_list[i])[0]
-        img.add_light(light.data, light.header, light.header['EXPTIME'])
+        img.add_light(light.data, light.header, float(light.header['EXPTIME']))
 
     for i in range(arc_list.size):
 
@@ -547,6 +547,6 @@ def test_input_with_fits_data_object():
     for i in range(dark_list.size):
 
         dark = fits.open(dark_list[i])[0]
-        img.add_dark(dark.data, dark.header, dark.header['EXPTIME'])
+        img.add_dark(dark.data, dark.header, float(dark.header['EXPTIME']))
 
     img.reduce()

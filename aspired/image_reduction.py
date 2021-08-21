@@ -1164,7 +1164,7 @@ class ImageReduction:
 
                 # use the given readnoise value
                 self.combinetype_bias = combinetype_bias
-                self.logger.info('combinetype_dark is set to {}.'.format(
+                self.logger.info('combinetype_bias is set to {}.'.format(
                     self.combinetype_bias))
 
             else:
@@ -1273,7 +1273,7 @@ class ImageReduction:
 
                 # use the given readnoise value
                 self.combinetype_arc = combinetype_arc
-                self.logger.info('combinetype_dark is set to {}.'.format(
+                self.logger.info('combinetype_arc is set to {}.'.format(
                     self.combinetype_arc))
 
             else:
@@ -1730,8 +1730,6 @@ class ImageReduction:
                 self.saturation_mask *= saturation_mask
                 self.saturated *= saturated
 
-            self.light_CCDData[i].data /= self.light_time[i]
-
         self.light_main = self.combine_light()
 
         # FITS keyword standard for the spectral direction, if FITS header
@@ -1782,8 +1780,6 @@ class ImageReduction:
                     self.dark_list[i].split('/')[-1]))
                 self.dark_filename.append(self.dark_list[i].split('/')[-1])
 
-                self.dark_CCDData[i].data /= self.dark_time[i]
-
             # combine the arc frames
             self.dark_main = self.combine_dark()
 
@@ -1805,8 +1801,6 @@ class ImageReduction:
                 self.logger.debug('Appending flat filename: {}.'.format(
                     self.flat_list[i].split('/')[-1]))
                 self.flat_filename.append(self.flat_list[i].split('/')[-1])
-
-                self.flat_CCDData[i].data /= self.flat_time[i]
 
             # combine the arc frames
             self.flat_main = self.combine_flat()
@@ -1836,7 +1830,9 @@ class ImageReduction:
 
         if type(light) == np.ndarray:
 
-            light = CCDData(light, unit=u.ct)
+            light = CCDData(light.astype('float'), unit=u.ct)
+
+        light.data /= exposure_time
 
         self.light_CCDData.append(light)
         self.light_header.append(header)
@@ -1846,16 +1842,18 @@ class ImageReduction:
 
         if type(arc) == np.ndarray:
 
-            arc = CCDData(arc, unit=u.ct)
+            arc = CCDData(arc.astype('float'), unit=u.ct)
 
         self.arc_CCDData.append(arc)
         self.arc_header.append(header)
-
+    
     def add_flat(self, flat, header, exposure_time):
 
         if type(flat) == np.ndarray:
 
-            flat = CCDData(flat, unit=u.ct)
+            flat = CCDData(flat.astype('float'), unit=u.ct)
+
+        flat.data /= exposure_time
 
         self.flat_CCDData.append(flat)
         self.flat_header.append(header)
@@ -1865,7 +1863,9 @@ class ImageReduction:
 
         if type(dark) == np.ndarray:
 
-            dark = CCDData(dark, unit=u.ct)
+            dark = CCDData(dark.astype('float'), unit=u.ct)
+
+        dark.data /= exposure_time
 
         self.dark_CCDData.append(dark)
         self.dark_header.append(header)
@@ -1875,7 +1875,7 @@ class ImageReduction:
 
         if type(bias) == np.ndarray:
 
-            bias = CCDData(bias, unit=u.ct)
+            bias = CCDData(bias.astype('float'), unit=u.ct)
 
         self.bias_CCDData.append(bias)
         self.bias_header.append(header)
@@ -2292,14 +2292,14 @@ class ImageReduction:
         self.light_reduced = self.light_main
 
         # Process the arc
-        if len(self.arc_list) > 0:
+        if len(self.arc_CCDData) > 0:
 
             if self.arc_main is None:
 
                 self.arc_main = self.combine_arc()
 
         # Bias subtraction
-        if len(self.bias_list) > 0:
+        if len(self.bias_CCDData) > 0:
 
             if self.bias_main is None:
 
@@ -2313,7 +2313,7 @@ class ImageReduction:
                                 'performed.')
 
         # Dark subtraction
-        if len(self.dark_list) > 0:
+        if len(self.dark_CCDData) > 0:
 
             if self.dark_main is None:
 
@@ -2327,11 +2327,11 @@ class ImageReduction:
                                 'performed.')
 
         # Field flattening
-        if len(self.flat_list) > 0:
+        if len(self.flat_CCDData) > 0:
 
             if self.flat_main is None:
 
-                self.combine_flat = self.combine_flat()
+                self.flat_main = self.combine_flat()
 
             self._flatfield()
 

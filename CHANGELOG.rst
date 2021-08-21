@@ -21,7 +21,6 @@ We aim to track and report as many changes as possible, but this is not an exhau
     * ImageReduction frames (in type of CCDData or ndarray) can be added with add_light(), add_arc(), add_flat(), add_dark(), add_bias()
     * ImageReduction properties seeting can now be set with set_properties(), set_light_properties(), set_dark_properties(), set_flat_properties(), set_bias_properties(), set_arc_properties(), set_cosmic_properties(), set_detector_properties()
 
-
 * New Experimental Features:
 
     * Added `TwoDSpec.compute_rectification()` and `TwoDSpec.apply_rectification()` to correct the curvature of the frames.
@@ -50,5 +49,6 @@ We aim to track and report as many changes as possible, but this is not an exhau
     * ImageReduction properties has to be added with set_properties().
     * Individual properties can be added one by one without affecting other existing properties.
     * twodspec.apply_twodspec_mask_to_arc() is changed to twodspec.apply_mask_to_arc().
+    * twodspec.ap_extract() is now sigma clipping outliers when modelling the sky.
 
 * See also the changelogs in `RASCAL v0.3.0 <https://github.com/jveitchmichaelis/rascal/blob/main/CHANGELOG.rst>`__.

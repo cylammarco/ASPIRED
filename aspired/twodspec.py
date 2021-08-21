@@ -139,47 +139,12 @@ class TwoDSpec:
         self.transpose_applied = False
         self.flip_applied = False
 
-        # Default values if not supplied or cannot be automatically identified
-        # from the header
-        if 'airmass' in kwargs:
-
-            self.set_airmass(kwargs['airmass'])
-
-        else:
-
-            self.set_airmass(1.)
-
-        if 'readnoise' in kwargs:
-
-            self.set_readnoise(kwargs['readnoise'])
-
-        else:
-
-            self.set_readnoise(0.)
-
-        if 'gain' in kwargs:
-
-            self.set_gain(kwargs['gain'])
-
-        else:
-
-            self.set_gain(1.)
-
-        if 'seeing' in kwargs:
-
-            self.set_seeing(kwargs['seeing'])
-
-        else:
-
-            self.set_seeing(1.)
-
-        if 'exptime' in kwargs:
-
-            self.set_exptime(kwargs['exptime'])
-
-        else:
-
-            self.set_exptime(1.)
+        # Default values if not supplied
+        self.airmass = None
+        self.readnoise = None
+        self.gain = None
+        self.seeing = None
+        self.exptime = None
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -513,7 +478,7 @@ class TwoDSpec:
 
                 if psfmodel == 'gaussyx':
 
-                    self.img = detect_cosmics(self.img,
+                    self.img = detect_cosmics(self.img * self.exptime / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -529,7 +494,7 @@ class TwoDSpec:
 
                 elif psfmodel == 'gaussxy':
 
-                    self.img = detect_cosmics(self.img,
+                    self.img = detect_cosmics(self.img * self.exptime / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -545,7 +510,7 @@ class TwoDSpec:
 
                 else:
 
-                    self.img = detect_cosmics(self.img,
+                    self.img = detect_cosmics(self.img * self.exptime / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -554,14 +519,14 @@ class TwoDSpec:
 
             else:
 
-                self.img = detect_cosmics(self.img,
+                self.img = detect_cosmics(self.img * self.exptime / self.gain,
                                           gain=self.gain,
                                           readnoise=self.readnoise,
                                           fsmode=self.fsmode,
                                           psfmodel=self.psfmodel,
                                           **kwargs)[1]
 
-            self.img /= self.gain
+            self.img /= self.exptime
 
         if verbose is not None:
 
@@ -682,7 +647,7 @@ class TwoDSpec:
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
 
-        if readnoise is not None:
+        if (readnoise is not None) and (self.readnoise is not None):
 
             if isinstance(readnoise, str):
 
@@ -745,7 +710,7 @@ class TwoDSpec:
     # Get the gain
     def set_gain(self, gain=None):
 
-        if gain is not None:
+        if (gain is not None) and (self.gain is not None):
 
             if isinstance(gain, str):
 
@@ -803,7 +768,7 @@ class TwoDSpec:
     # Get the Seeing
     def set_seeing(self, seeing=None):
 
-        if seeing is not None:
+        if (seeing is not None) and (self.seeing is not None):
 
             if isinstance(seeing, str):
 
@@ -865,7 +830,7 @@ class TwoDSpec:
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
 
-        if exptime is not None:
+        if (exptime is not None) and (self.exptime is not None):
 
             if isinstance(exptime, str):
 
@@ -928,7 +893,7 @@ class TwoDSpec:
     # Get the Exposure Time
     def set_airmass(self, airmass=None):
 
-        if airmass is not None:
+        if (airmass is not None) and (self.airmass is not None):
 
             if isinstance(airmass, str):
 
@@ -1927,7 +1892,9 @@ class TwoDSpec:
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
             ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
-            self.logger.info('The trace is found at {}.'.format([(x, y) for (x, y) in zip(ap_p, ap)]))
+            self.logger.info('The trace is found at {}.'.format([
+                (x, y) for (x, y) in zip(ap_p, ap)
+            ]))
 
             # Get the centre of the upsampled spectrum
             ap_centre_idx = ap[start_window_idx] * resample_factor
@@ -2512,7 +2479,7 @@ class TwoDSpec:
             self.logger.info('Rectification is not computed, it cannot be '
                              'applied to the arc.')
 
-    def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_width_dn,
+    def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_sigma, sky_width_dn,
                  sky_width_up, sky_polyfit_order):
         """
         Fit the sky background from the given extraction_slice and the aperture
@@ -2525,6 +2492,8 @@ class TwoDSpec:
             regions to be fitted and subtracted from.
         extraction_bad_mask: 1D numpy.ndarray
             The mask of the bad pixels. They should be marked as 1 or True.
+        sky_sigma: float
+            Number of sigma to be clipped.
         sky_width_dn: int
             Number of pixels used for sky modelling on the lower side of the
             spectrum.
@@ -2549,19 +2518,20 @@ class TwoDSpec:
             sky_mask[-(sky_width_dn + 1):-1] = True
 
             sky_mask *= ~extraction_bad_mask
+            sky_bad_mask = ~sigma_clip(extraction_slice[sky_mask], sigma=sky_sigma).mask
 
             if (sky_polyfit_order == 0):
 
                 count_sky_extraction_slice = np.ones(
-                    len(extraction_slice[sky_mask])) * np.nanmean(
-                        extraction_slice[sky_mask])
+                    len(extraction_slice[sky_mask][sky_bad_mask])) * np.nanmean(
+                        extraction_slice[sky_mask][sky_bad_mask])
 
             elif (sky_polyfit_order > 0):
 
                 # fit a polynomial to the sky in this column
                 polyfit_coeff = np.polynomial.polynomial.polyfit(
-                    np.arange(extraction_slice.size)[sky_mask],
-                    extraction_slice[sky_mask], sky_polyfit_order)
+                    np.arange(extraction_slice.size)[sky_mask][sky_bad_mask],
+                    extraction_slice[sky_mask][sky_bad_mask], sky_polyfit_order)
 
                 # evaluate the polynomial across the extraction_slice, and sum
                 count_sky_extraction_slice = np.polynomial.polynomial.polyval(
@@ -2591,6 +2561,7 @@ class TwoDSpec:
                    skysep=3,
                    skywidth=5,
                    skydeg=1,
+                   sky_sigma=3.,
                    spec_id=None,
                    optimal=True,
                    algorithm='horne86',
@@ -2868,8 +2839,10 @@ class TwoDSpec:
                     extraction_bad_mask = np.zeros_like(extraction_slice,
                                                         dtype='bool')
 
+                extraction_bad_mask = extraction_bad_mask & ~np.isfinite(extraction_slice) & ~np.isnan(extraction_slice) 
+
                 count_sky_extraction_slice = self._fit_sky(
-                    extraction_slice, extraction_bad_mask, sky_width_dn,
+                    extraction_slice, extraction_bad_mask, sky_sigma, sky_width_dn,
                     sky_width_up, skydeg)
 
                 count_sky_source_slice = count_sky_extraction_slice[
@@ -3028,8 +3001,8 @@ class TwoDSpec:
 
             # All the extraction methods return signal and noise in the
             # same format
-            count /= self.exptime
-            count_err /= self.exptime
+            count
+            count_err
 
             spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
                               sky_width_up)

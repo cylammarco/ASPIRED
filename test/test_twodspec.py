@@ -95,7 +95,7 @@ def test_logger():
         '{} is logged.'.format(debug_debug_length)
     assert debug_info_length == 9, 'Expecting 9 lines in the log file, ' +\
         '{} is logged.'.format(debug_info_length)
-    assert debug_warning_length == 3, 'Expecting 3 lines in the log file, ' +\
+    assert debug_warning_length == 8, 'Expecting 8 lines in the log file, ' +\
         '{} is logged.'.format(debug_warning_length)
     assert debug_error_length == 2, 'Expecting 2 lines in the log file, ' +\
         '{} is logged.'.format(debug_error_length)
