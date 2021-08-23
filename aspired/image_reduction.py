@@ -1846,7 +1846,7 @@ class ImageReduction:
 
         self.arc_CCDData.append(arc)
         self.arc_header.append(header)
-    
+
     def add_flat(self, flat, header, exposure_time):
 
         if type(flat) == np.ndarray:

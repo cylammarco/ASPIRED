@@ -478,7 +478,8 @@ class TwoDSpec:
 
                 if psfmodel == 'gaussyx':
 
-                    self.img = detect_cosmics(self.img * self.exptime / self.gain,
+                    self.img = detect_cosmics(self.img * self.exptime /
+                                              self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -494,7 +495,8 @@ class TwoDSpec:
 
                 elif psfmodel == 'gaussxy':
 
-                    self.img = detect_cosmics(self.img * self.exptime / self.gain,
+                    self.img = detect_cosmics(self.img * self.exptime /
+                                              self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -510,7 +512,8 @@ class TwoDSpec:
 
                 else:
 
-                    self.img = detect_cosmics(self.img * self.exptime / self.gain,
+                    self.img = detect_cosmics(self.img * self.exptime /
+                                              self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -1608,7 +1611,7 @@ class TwoDSpec:
                  percentile=2,
                  shift_tol=10,
                  fit_deg=3,
-                 ap_faint=10,
+                 ap_faint=20,
                  display=False,
                  renderer='default',
                  width=1280,
@@ -1883,11 +1886,12 @@ class TwoDSpec:
 
                 # rounding
                 idx = int(np.round(spec_idx[i][j] + 0.5))
-                ap_val[j] = np.nanmedian(img_split[j], axis=1)[idx]
+                subspec_cleaned = sigma_clip(img_split[j], sigma=3)
+                ap_val[j] = np.nanmean(subspec_cleaned, axis=1)[idx]
 
-            # Mask out the faintest ap_faint percentile
-            mask = np.argsort(ap_val) > int(
-                np.round(len(ap_val) * ap_faint / 100))
+            # Mask out the faintest ap_faint percent of trace
+            mask = np.argsort(
+                ap_val)[int(np.round(len(ap_val) * ap_faint / 100)):]
 
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
@@ -1925,7 +1929,7 @@ class TwoDSpec:
                                 spec_spatial[start_idx:end_idx][non_nan_mask],
                                 p0=pguess)
             ap_sigma = abs(popt[3]) / resample_factor
-            ap = ap
+
             self.logger.info('Aperture is fitted with a Gaussian sigma of '
                              '{} pix.'.format(ap_sigma))
 
@@ -2479,8 +2483,8 @@ class TwoDSpec:
             self.logger.info('Rectification is not computed, it cannot be '
                              'applied to the arc.')
 
-    def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_sigma, sky_width_dn,
-                 sky_width_up, sky_polyfit_order):
+    def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_sigma,
+                 sky_width_dn, sky_width_up, sky_polyfit_order):
         """
         Fit the sky background from the given extraction_slice and the aperture
         parameters.
@@ -2518,20 +2522,22 @@ class TwoDSpec:
             sky_mask[-(sky_width_dn + 1):-1] = True
 
             sky_mask *= ~extraction_bad_mask
-            sky_bad_mask = ~sigma_clip(extraction_slice[sky_mask], sigma=sky_sigma).mask
+            sky_bad_mask = ~sigma_clip(extraction_slice[sky_mask],
+                                       sigma=sky_sigma).mask
 
             if (sky_polyfit_order == 0):
 
                 count_sky_extraction_slice = np.ones(
-                    len(extraction_slice[sky_mask][sky_bad_mask])) * np.nanmean(
-                        extraction_slice[sky_mask][sky_bad_mask])
+                    len(extraction_slice[sky_mask][sky_bad_mask])
+                ) * np.nanmean(extraction_slice[sky_mask][sky_bad_mask])
 
             elif (sky_polyfit_order > 0):
 
                 # fit a polynomial to the sky in this column
                 polyfit_coeff = np.polynomial.polynomial.polyfit(
                     np.arange(extraction_slice.size)[sky_mask][sky_bad_mask],
-                    extraction_slice[sky_mask][sky_bad_mask], sky_polyfit_order)
+                    extraction_slice[sky_mask][sky_bad_mask],
+                    sky_polyfit_order)
 
                 # evaluate the polynomial across the extraction_slice, and sum
                 count_sky_extraction_slice = np.polynomial.polynomial.polyval(
@@ -2793,6 +2799,7 @@ class TwoDSpec:
             count = np.zeros(len_trace)
             var = np.ones((len_trace, width_dn + width_up + 1)) *\
                 self.readnoise**2.
+            profile = np.zeros((len_trace, width_dn + width_up + 1))
             is_optimal = np.zeros(len_trace, dtype=bool)
 
             # Sky extraction
@@ -2800,6 +2807,8 @@ class TwoDSpec:
 
                 itrace = int(pos)
                 pix_frac = pos - itrace
+
+                profile_start_idx = 0
 
                 # fix width if trace is too close to the edge
                 if (itrace + width_up > self.spatial_size):
@@ -2809,6 +2818,8 @@ class TwoDSpec:
                     sep_up = 0
                     sky_width_up = 0
 
+                profile_end_idx = width_dn + width_up + 1
+
                 if (itrace - width_dn < 0):
 
                     offset = width_dn - itrace
@@ -2816,6 +2827,8 @@ class TwoDSpec:
                     width_dn = itrace - 1
                     sep_dn = 0
                     sky_width_dn = 0
+                    profile_start_idx = offset - 1
+                    profile_end_idx = offset + width_up + 1
 
                 # Pixels where the source spectrum and the sky regions are
                 source_pix = np.arange(itrace - width_dn,
@@ -2839,11 +2852,13 @@ class TwoDSpec:
                     extraction_bad_mask = np.zeros_like(extraction_slice,
                                                         dtype='bool')
 
-                extraction_bad_mask = extraction_bad_mask & ~np.isfinite(extraction_slice) & ~np.isnan(extraction_slice) 
+                extraction_bad_mask = (extraction_bad_mask
+                                       & ~np.isfinite(extraction_slice)
+                                       & ~np.isnan(extraction_slice))
 
                 count_sky_extraction_slice = self._fit_sky(
-                    extraction_slice, extraction_bad_mask, sky_sigma, sky_width_dn,
-                    sky_width_up, skydeg)
+                    extraction_slice, extraction_bad_mask, sky_sigma,
+                    sky_width_dn, sky_width_up, skydeg)
 
                 count_sky_source_slice = count_sky_extraction_slice[
                     source_pix - itrace].copy()
@@ -2944,8 +2959,9 @@ class TwoDSpec:
 
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
-                    (count[i], count_err[i], is_optimal[i], profile,
-                        var_temp) =\
+                    (count[i], count_err[i], is_optimal[i],
+                     profile[i][profile_start_idx:profile_end_idx],
+                     var_temp) =\
                         self._optimal_extraction_horne86(
                             pix=source_pix,
                             source_slice=source_slice,
@@ -3001,13 +3017,11 @@ class TwoDSpec:
 
             # All the extraction methods return signal and noise in the
             # same format
-            count
-            count_err
-
             spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
                               sky_width_up)
             spec.add_count(list(count), list(count_err), list(count_sky))
             spec.add_variances(var)
+            spec.add_profile(profile)
             spec.gain = self.gain
             spec.optimal_pixel = is_optimal
             spec.add_spectrum_header(self.header)
@@ -4120,6 +4134,111 @@ class TwoDSpec:
         if return_jsonstring:
 
             return to_return
+
+    def inspect_residual(self,
+                         log=True,
+                         display=True,
+                         renderer='default',
+                         width=1280,
+                         height=720,
+                         return_jsonstring=False,
+                         save_fig=False,
+                         fig_type='iframe+png',
+                         filename=None,
+                         open_iframe=False):
+        '''
+        Display the reduced image with a supported plotly renderer or export
+        as json strings.
+
+        Parameters
+        ----------
+        log: bool
+            Log the ADU count per second in the display. Default is True.
+        display: bool
+            Set to True to display disgnostic plot.
+        renderer: str
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the save_iframe in the default browser if set to True.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True.
+
+        '''
+
+        if log:
+
+            fig = go.Figure(data=go.Heatmap(z=np.log10(self.img_residual),
+                                            colorscale="Viridis"))
+        else:
+
+            fig = go.Figure(
+                data=go.Heatmap(z=self.img_residual, colorscale="Viridis"))
+
+        fig.update_layout(
+            yaxis_title='Spatial Direction / pixel',
+            xaxis=dict(zeroline=False,
+                       showgrid=False,
+                       title='Spectral Direction / pixel'),
+            bargap=0,
+            hovermode='closest',
+            showlegend=False,
+            autosize=False,
+            height=height,
+            width=width,
+        )
+
+        if filename is None:
+
+            filename = 'residual_image'
+
+        if save_fig:
+
+            fig_type_split = fig_type.split('+')
+
+            for t in fig_type_split:
+
+                if t == 'iframe':
+
+                    pio.write_html(fig,
+                                   filename + '.' + t,
+                                   auto_open=open_iframe)
+
+                elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                    pio.write_image(fig, filename + '.' + t)
+
+        if display:
+
+            if renderer == 'default':
+
+                fig.show()
+
+            else:
+
+                fig.show(renderer)
+
+        if return_jsonstring:
+
+            return fig.to_json()
 
     def extract_arc_spec(self,
                          spec_id=None,

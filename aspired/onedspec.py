@@ -3870,151 +3870,137 @@ class OneDSpec():
 
         if not self.atmospheric_extinction_correction_available:
 
-            self.logger.error(
+            self.logger.warning(
                 "Atmospheric extinction correction is not configured, "
-                "sensitivity curve will be generated without extinction "
-                "correction.")
+                "The default ORM extinction curve is used.")
+
+            self.set_atmospheric_extinction()
+
+        standard_spec = self.standard_spectrum_list[0]
+
+        if standard_airmass is not None:
+
+            if isinstance(standard_airmass, (int, float)):
+
+                standard_am = standard_airmass
+                self.logger.info(
+                    'Airmass is set to be {}.'.format(standard_am))
+
+            if isinstance(standard_airmass, str):
+
+                try:
+
+                    standard_am = standard_spec.spectrum_header[
+                        standard_airmass]
+
+                except Exception as e:
+
+                    self.logger.warning(str(e))
+
+                    standard_am = 1.0
+                    self.logger.warning(
+                        'Keyword for airmass: {} cannot be found '
+                        'in header.'.format(standard_airmass))
+                    self.logger.warning('Airmass is set to be 1.0')
 
         else:
 
-            if self.science_flux_calibrated & self.standard_flux_calibrated:
+            try:
 
-                standard_spec = self.standard_spectrum_list[0]
+                standard_am = standard_spec.spectrum_header['AIRMASS']
 
-                if standard_airmass is not None:
+            except Exception as e:
 
-                    if isinstance(standard_airmass, (int, float)):
+                self.logger.warning(str(e))
 
-                        standard_am = standard_airmass
-                        self.logger.info(
-                            'Airmass is set to be {}.'.format(standard_am))
+                standard_am = 1.0
+                self.logger.warning(
+                    'Keyword for airmass: AIRMASS cannot be found '
+                    'in header.')
+                self.logger.warning('Airmass is set to be 1.0')
 
-                    if isinstance(standard_airmass, str):
+        if spec_id is not None:
 
-                        try:
+            if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())):
 
-                            standard_am = standard_spec.spectrum_header[
-                                standard_airmass]
+                error_msg = 'The given spec_id does not exist.'
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
 
-                        except Exception as e:
+        else:
 
-                            self.logger.warning(str(e))
+            # if spec_id is None, contraints are applied to all
+            #  calibrators
+            spec_id = list(self.science_spectrum_list.keys())
 
-                            standard_am = 1.0
-                            self.logger.warning(
-                                'Keyword for airmass: {} cannot be found '
-                                'in header.'.format(standard_airmass))
-                            self.logger.warning('Airmass is set to be 1.0')
+        if isinstance(spec_id, int):
 
-                else:
+            spec_id = [spec_id]
+
+        for i in spec_id:
+
+            science_spec = self.science_spectrum_list[i]
+
+            if science_airmass is not None:
+
+                if isinstance(science_airmass, (int, float)):
+
+                    science_am = science_airmass
+
+                if isinstance(science_airmass, str):
 
                     try:
 
-                        standard_am = standard_spec.spectrum_header['AIRMASS']
+                        science_am = science_spec.spectrum_header[
+                            science_airmass]
 
                     except Exception as e:
 
                         self.logger.warning(str(e))
-
-                        standard_am = 1.0
-                        self.logger.warning(
-                            'Keyword for airmass: AIRMASS cannot be found '
-                            'in header.')
-                        self.logger.warning('Airmass is set to be 1.0')
-
-                if spec_id is not None:
-
-                    if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
-
-                        error_msg = 'The given spec_id does not exist.'
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-
-                    # if spec_id is None, contraints are applied to all
-                    #  calibrators
-                    spec_id = list(self.science_spectrum_list.keys())
-
-                if isinstance(spec_id, int):
-
-                    spec_id = [spec_id]
-
-                for i in spec_id:
-
-                    science_spec = self.science_spectrum_list[i]
-
-                    if science_airmass is not None:
-
-                        if isinstance(science_airmass, (int, float)):
-
-                            science_am = science_airmass
-
-                        if isinstance(science_airmass, str):
-
-                            try:
-
-                                science_am = science_spec.spectrum_header[
-                                    science_airmass]
-
-                            except Exception as e:
-
-                                self.logger.warning(str(e))
-                                science_am = 1.0
-
-                    else:
-
-                        if science_airmass is None:
-
-                            try:
-
-                                science_am =\
-                                    science_spec.spectrum_header['AIRMASS']
-
-                            except Exception as e:
-
-                                self.logger.warning(str(e))
-                                science_am = 1.0
-
-                    if science_am is None:
-
                         science_am = 1.0
-
-                    self.logger.info(
-                        'Standard airmass is {}.'.format(standard_am))
-                    self.logger.info(
-                        'Science airmass is {}.'.format(science_am))
-
-                    # Get the atmospheric extinction correction factor
-                    science_flux_extinction_factor = 10.**(
-                        -(self.extinction_func(science_spec.wave) * science_am)
-                        / 2.5)
-                    standard_flux_extinction_factor = 10.**(
-                        -(self.extinction_func(science_spec.wave) *
-                          standard_am) / 2.5)
-                    science_spec.flux /= (science_flux_extinction_factor /
-                                          standard_flux_extinction_factor)
-
-                    science_flux_resampled_extinction_factor = 10.**(
-                        -(self.extinction_func(science_spec.wave_resampled) *
-                          science_am) / 2.5)
-                    standard_flux_resampled_extinction_factor = 10.**(
-                        -(self.extinction_func(science_spec.wave_resampled) *
-                          standard_am) / 2.5)
-                    science_spec.flux_resampled /= (
-                        science_flux_resampled_extinction_factor /
-                        standard_flux_resampled_extinction_factor)
-
-                self.atmospheric_extinction_corrected = True
-                self.logger.info('Atmospheric extinction is corrected.')
 
             else:
 
-                self.logger.error('Flux calibration was not performed, the '
-                                  'spectrum cannot be extinction corrected. '
-                                  'Process continues with the uncorrected '
-                                  'spectrum.')
+                if science_airmass is None:
+
+                    try:
+
+                        science_am =\
+                            science_spec.spectrum_header['AIRMASS']
+
+                    except Exception as e:
+
+                        self.logger.warning(str(e))
+                        science_am = 1.0
+
+            if science_am is None:
+
+                science_am = 1.0
+
+            self.logger.info('Standard airmass is {}.'.format(standard_am))
+            self.logger.info('Science airmass is {}.'.format(science_am))
+
+            # Get the atmospheric extinction correction factor
+            science_flux_extinction_factor = 10.**(
+                -(self.extinction_func(science_spec.wave) * science_am) / 2.5)
+            standard_flux_extinction_factor = 10.**(
+                -(self.extinction_func(science_spec.wave) * standard_am) / 2.5)
+            science_spec.flux /= (science_flux_extinction_factor /
+                                  standard_flux_extinction_factor)
+
+            science_flux_resampled_extinction_factor = 10.**(
+                -(self.extinction_func(science_spec.wave_resampled) *
+                  science_am) / 2.5)
+            standard_flux_resampled_extinction_factor = 10.**(
+                -(self.extinction_func(science_spec.wave_resampled) *
+                  standard_am) / 2.5)
+            science_spec.flux_resampled /= (
+                science_flux_resampled_extinction_factor /
+                standard_flux_resampled_extinction_factor)
+
+        self.atmospheric_extinction_corrected = True
+        self.logger.info('Atmospheric extinction is corrected.')
 
     def inspect_reduced_spectrum(self,
                                  spec_id=None,

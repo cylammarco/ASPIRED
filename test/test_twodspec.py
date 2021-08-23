@@ -451,6 +451,15 @@ def test_gauss_ap_extract():
     twodspec.add_data(img)
     twodspec.ap_trace()
     twodspec.ap_extract(model='gauss')
+    twodspec.inspect_extracted_spectrum(
+        display=False,
+        save_fig=True,
+        return_jsonstring=True,
+        filename='test/test_output/extracted_spectrum')
+    twodspec.inspect_residual(display=False,
+                              save_fig=True,
+                              return_jsonstring=True,
+                              filename='test/test_output/residual_image')
 
 
 # lowess ap_extract
@@ -459,6 +468,15 @@ def test_lowess_ap_extract():
     twodspec.add_data(img)
     twodspec.ap_trace()
     twodspec.ap_extract(model='lowess')
+    twodspec.inspect_extracted_spectrum(
+        display=False,
+        save_fig=True,
+        return_jsonstring=True,
+        filename='test/test_output/extracted_spectrum')
+    twodspec.inspect_residual(display=False,
+                              save_fig=True,
+                              return_jsonstring=True,
+                              filename='test/test_output/residual_image')
 
 
 # compare gauss and lowess ap_extract

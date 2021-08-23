@@ -654,6 +654,18 @@ class Spectrum1D():
 
         self.var = None
 
+    def add_profile(self, profile):
+        '''
+        Adding the extraction profile.
+
+        '''
+
+        self.profile = profile
+
+    def remove_profile(self):
+
+        self.profile = None
+
     def add_arc_spec(self, arc_spec):
         '''
         Adding the extracted spectrum of the arc.
