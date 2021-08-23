@@ -37,6 +37,7 @@ def test_full_run():
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
         cosmicray=True,
+        psfmodel='gaussxy',
         readnoise=5.7,
         log_level='INFO',
         log_file_folder='test/test_output/')
@@ -97,6 +98,7 @@ def test_full_run():
     hilt102_twodspec = spectral_reduction.TwoDSpec(
         standard_frame,
         cosmicray=True,
+        psfmodel='gaussyx',
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
         readnoise=5.7,
@@ -115,9 +117,12 @@ def test_full_run():
     # Extract the 1D arc by aperture sum of the traces provided
     lhs6328_twodspec.extract_arc_spec(
         display=False,
+        save_fig=True,
+        fig_type='jpg+png+pdf+svg+iframe',
         filename='test/test_output/test_full_run_arc_spec',
         return_jsonstring=True)
     hilt102_twodspec.extract_arc_spec(display=False)
+    hilt102_twodspec.create_fits(output='trace+count')
 
     # Handle 1D Science spectrum
     lhs6328_onedspec = spectral_reduction.OneDSpec(

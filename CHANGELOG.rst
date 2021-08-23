@@ -20,6 +20,7 @@ We aim to track and report as many changes as possible, but this is not an exhau
     * ImageReduction frame location can be added with add_filelist(), and then added by executing load_data().
     * ImageReduction frames (in type of CCDData or ndarray) can be added with add_light(), add_arc(), add_flat(), add_dark(), add_bias()
     * ImageReduction properties seeting can now be set with set_properties(), set_light_properties(), set_dark_properties(), set_flat_properties(), set_bias_properties(), set_arc_properties(), set_cosmic_properties(), set_detector_properties()
+    * Added 'twodspec.inspect_residual()
 
 * New Experimental Features:
 
@@ -34,6 +35,8 @@ We aim to track and report as many changes as possible, but this is not an exhau
 * Major bug fixes:
 
     * Loggers are propagated properly upon object creations.
+    * Sky modelling is sigma-clipping outliers and bad values.
+    * ap_trace() is masking out the faint parts of the spectrum when fitting a polynomial to the trace.
 
 * (API) changes:
 
