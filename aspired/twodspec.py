@@ -1958,7 +1958,7 @@ class TwoDSpec:
                            zmin=self.zmin,
                            zmax=self.zmax,
                            colorscale="Viridis",
-                           colorbar=dict(title='log( e- / s )')))
+                           colorbar=dict(title='log( e- count )')))
 
             for i in range(len(spec_idx)):
 
@@ -2387,7 +2387,7 @@ class TwoDSpec:
                                                  90),
                            xaxis='x',
                            yaxis='y',
-                           colorbar=dict(title='log( e- / s )')))
+                           colorbar=dict(title='log( e- count / s)')))
             if self.arc_rectified is not None:
                 fig.add_trace(
                     go.Heatmap(
@@ -2838,14 +2838,15 @@ class TwoDSpec:
                     itrace + width_up + sep_up + sky_width_up + 1)
 
                 # trace +/- aperture size
-                source_slice = self.img[source_pix, i].copy()
+                source_slice = self.img[source_pix, i].copy() * self.exptime
                 if self.bad_mask is not None:
                     source_bad_mask = self.bad_mask[source_pix, i]
                 else:
                     source_bad_mask = np.zeros_like(source_slice, dtype='bool')
 
                 # trace +/- aperture and sky region size
-                extraction_slice = self.img[extraction_pix, i].copy()
+                extraction_slice = self.img[extraction_pix,
+                                            i].copy() * self.exptime
                 if self.bad_mask is not None:
                     extraction_bad_mask = self.bad_mask[extraction_pix, i]
                 else:
@@ -3000,8 +3001,8 @@ class TwoDSpec:
 
                 count, count_err, is_optimal, profile, var =\
                     self._optimal_extraction_marsh89(
-                        frame=self.img,
-                        residual_frame=self.img_residual,
+                        frame=self.img * self.exptime,
+                        residual_frame=self.img_residual * self.exptime,
                         variance=variances,
                         trace=spec.trace,
                         spectrum=count,
@@ -3017,6 +3018,12 @@ class TwoDSpec:
 
             # All the extraction methods return signal and noise in the
             # same format
+
+            count /= self.exptime
+            count_err /= self.exptime
+            count_sky /= self.exptime
+            var /= self.exptime
+
             spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
                               sky_width_up)
             spec.add_count(list(count), list(count_err), list(count_sky))
@@ -3078,7 +3085,7 @@ class TwoDSpec:
                                zmax=self.zmax,
                                xaxis='x',
                                yaxis='y',
-                               colorbar=dict(title='log( e- / s )')))
+                               colorbar=dict(title='log( e- count / s )')))
 
                 # Middle black box on the image
                 fig.add_trace(
@@ -3169,21 +3176,21 @@ class TwoDSpec:
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='firebrick'),
-                               name='Sky count / (e- / s)'))
+                               name='Sky e- count / s'))
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
                                y=count_err,
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='orange'),
-                               name='Uncertainty count / (e- / s)'))
+                               name='Uncertainty e- count / s'))
                 fig.add_trace(
                     go.Scatter(x=np.arange(len_trace),
                                y=count,
                                xaxis='x2',
                                yaxis='y2',
                                line=dict(color='royalblue'),
-                               name='Target count / (e- / s)'))
+                               name='Target e- count / s'))
 
                 # Decorative stuff
                 fig.update_layout(
@@ -3210,7 +3217,7 @@ class TwoDSpec:
                         zeroline=False,
                         domain=[0, 0.5],
                         showgrid=True,
-                        title='Count / s',
+                        title=' e- count',
                     ),
                     yaxis3=dict(title='S/N ratio',
                                 anchor="x2",
@@ -3442,7 +3449,7 @@ class TwoDSpec:
         """
 
         # step 2 - initial variance estimates
-        var1 = readnoise + np.abs(source_slice) / gain
+        var1 = readnoise**2. + np.abs(source_slice) / gain
 
         # step 4a - extract standard spectrum
         f = source_slice - sky
@@ -3459,35 +3466,35 @@ class TwoDSpec:
                               '{} is given. lowess is used.'.format(model))
             model = 'lowess'
 
-        if model == 'gauss':
-
-            P = self._gaus(pix, 1., 0., mu, sigma)
-
-        else:
-
-            P = lowess(f,
-                       pix,
-                       frac=lowess_frac,
-                       it=lowess_it,
-                       delta=lowess_delta,
-                       return_sorted=False)
-
-        P[P < 0] = 0.
-        P /= np.nansum(P)
-
         f_diff = 1
         v_diff = 1
         i = 0
         is_optimal = True
 
-        mask_cr = np.ones(len(P), dtype=bool)
-        mask_cr = mask_cr & ~bad_mask.astype(bool)
-
-        if forced:
-
-            var_f = variances
-
         while (f_diff > tol) | (v_diff > tol):
+
+            if model == 'gauss':
+
+                P = self._gaus(pix, 1., 0., mu, sigma)
+
+            else:
+
+                P = lowess(f,
+                           pix,
+                           frac=lowess_frac,
+                           it=lowess_it,
+                           delta=lowess_delta,
+                           return_sorted=False)
+
+            P[P < 0] = 0.
+            P /= np.nansum(P)
+
+            mask_cr = np.ones(len(P), dtype=bool)
+            mask_cr = mask_cr & ~bad_mask.astype(bool)
+
+            if forced:
+
+                var_f = variances
 
             f0 = f1
             v0 = v1
@@ -3496,7 +3503,7 @@ class TwoDSpec:
             # var_f is the V in Horne87
             if not forced:
 
-                var_f = readnoise + np.abs(P * f0 + sky) / gain
+                var_f = readnoise**2. + np.abs(P * f0 + sky) / gain
 
             # step 7 - cosmic ray mask, only start considering after the
             # 2nd iteration. 1 pixel is masked at a time until convergence,
@@ -4042,21 +4049,21 @@ class TwoDSpec:
                            xaxis='x2',
                            yaxis='y2',
                            line=dict(color='firebrick'),
-                           name='Sky count / (e- / s)'))
+                           name='Sky e- count / s'))
             fig.add_trace(
                 go.Scatter(x=np.arange(len_trace),
                            y=count_err,
                            xaxis='x2',
                            yaxis='y2',
                            line=dict(color='orange'),
-                           name='Uncertainty count / (e- / s)'))
+                           name='Uncertainty e- count / s'))
             fig.add_trace(
                 go.Scatter(x=np.arange(len_trace),
                            y=count,
                            xaxis='x2',
                            yaxis='y2',
                            line=dict(color='royalblue'),
-                           name='Target count / (e- / s)'))
+                           name='Target e- count / s'))
 
             # Decorative stuff
             fig.update_layout(yaxis2=dict(
@@ -4360,7 +4367,7 @@ class TwoDSpec:
                     title='Dispersion Direction / pixel'),
                                   yaxis=dict(zeroline=False,
                                              range=[0, max(arc_spec)],
-                                             title='e- / s'),
+                                             title='e- count / s'),
                                   hovermode='closest',
                                   showlegend=False)
 
