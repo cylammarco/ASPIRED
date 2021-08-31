@@ -478,15 +478,14 @@ class TwoDSpec:
 
                 if psfmodel == 'gaussyx':
 
-                    self.img = detect_cosmics(self.img * self.exptime /
-                                              self.gain,
+                    self.img = detect_cosmics(self.img / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
                                               psfmodel='gaussy',
                                               **kwargs)[1]
 
-                    self.img = detect_cosmics(self.img,
+                    self.img = detect_cosmics(self.img / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -495,15 +494,14 @@ class TwoDSpec:
 
                 elif psfmodel == 'gaussxy':
 
-                    self.img = detect_cosmics(self.img * self.exptime /
-                                              self.gain,
+                    self.img = detect_cosmics(self.img / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
                                               psfmodel='gaussx',
                                               **kwargs)[1]
 
-                    self.img = detect_cosmics(self.img,
+                    self.img = detect_cosmics(self.img / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -512,8 +510,7 @@ class TwoDSpec:
 
                 else:
 
-                    self.img = detect_cosmics(self.img * self.exptime /
-                                              self.gain,
+                    self.img = detect_cosmics(self.img / self.gain,
                                               gain=self.gain,
                                               readnoise=self.readnoise,
                                               fsmode='convolve',
@@ -522,14 +519,12 @@ class TwoDSpec:
 
             else:
 
-                self.img = detect_cosmics(self.img * self.exptime / self.gain,
+                self.img = detect_cosmics(self.img / self.gain,
                                           gain=self.gain,
                                           readnoise=self.readnoise,
                                           fsmode=self.fsmode,
                                           psfmodel=self.psfmodel,
                                           **kwargs)[1]
-
-            self.img /= self.exptime
 
         if verbose is not None:
 
@@ -2838,7 +2833,7 @@ class TwoDSpec:
                     itrace + width_up + sep_up + sky_width_up + 1)
 
                 # trace +/- aperture size
-                source_slice = self.img[source_pix, i].copy() * self.exptime
+                source_slice = self.img[source_pix, i].copy()
                 if self.bad_mask is not None:
                     source_bad_mask = self.bad_mask[source_pix, i]
                 else:
@@ -2846,7 +2841,7 @@ class TwoDSpec:
 
                 # trace +/- aperture and sky region size
                 extraction_slice = self.img[extraction_pix,
-                                            i].copy() * self.exptime
+                                            i].copy()
                 if self.bad_mask is not None:
                     extraction_bad_mask = self.bad_mask[extraction_pix, i]
                 else:
@@ -2882,8 +2877,7 @@ class TwoDSpec:
                     count[i], count_err[i], is_optimal[i] =\
                         self._tophat_extraction(
                             source_slice=source_slice,
-                            sky_source_slice=(
-                                count_sky_source_slice),
+                            sky_source_slice=count_sky_source_slice,
                             pix_frac=pix_frac,
                             gain=self.gain,
                             sky_width_dn=sky_width_dn,
@@ -3001,8 +2995,8 @@ class TwoDSpec:
 
                 count, count_err, is_optimal, profile, var =\
                     self._optimal_extraction_marsh89(
-                        frame=self.img * self.exptime,
-                        residual_frame=self.img_residual * self.exptime,
+                        frame=self.img,
+                        residual_frame=self.img_residual,
                         variance=variances,
                         trace=spec.trace,
                         spectrum=count,
@@ -3018,7 +3012,6 @@ class TwoDSpec:
 
             # All the extraction methods return signal and noise in the
             # same format
-
             count /= self.exptime
             count_err /= self.exptime
             count_sky /= self.exptime

@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 from scipy import ndimage
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
 def bfixpix(data, badmask, n=4, retdat=False):
@@ -268,3 +269,16 @@ def grow_mask(mask, iterations, diagonal):
                                          iterations=iterations)
 
     return mask_grown
+
+
+def get_continuum(x, y, **kwargs):
+
+    if 'frac' not in kwargs:
+
+        kwargs['frac'] = 0.1
+
+    if 'return_sorted' not in kwargs:
+
+        kwargs['return_sorted'] = False
+
+    return lowess(y, x, **kwargs)

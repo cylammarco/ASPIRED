@@ -25,8 +25,11 @@ We aim to track and report as many changes as possible, but this is not an exhau
 * New Experimental Features:
 
     * Added `TwoDSpec.compute_rectification()` and `TwoDSpec.apply_rectification()` to correct the curvature of the frames.
+    * Added `OneDSpec.set_atmospheric_extinction()` to choose or provide an atmospheric reddening law.
     * Added `OneDSpec.apply_atmospheric_extinction_correction()` to remove atmospheric reddening.
-    * Added `OneDSpec.apply_telluric_correction()` to correct for the Telluric absorptions.
+    * Added `OneDSpec.compute_telluric_profile()` to compute Telluric absorption profile.
+    * Added `OneDSpec.inspect_telluric_profile()` to display the Telluric absorption profile and how the correction would look like.
+    * Added `OneDSpec.apply_telluric_correction()` to apply the Telluric absorptions and modify the state of the flux.
 
 * Dropped Features (see also API changes below):
 
@@ -34,7 +37,7 @@ We aim to track and report as many changes as possible, but this is not an exhau
 
 * Major bug fixes:
 
-    * Loggers are propagated properly upon object creations.
+    * Loggers are propagated between objects upon initialisations.
     * Sky modelling is sigma-clipping outliers and bad values.
     * ap_trace() is masking out the faint parts of the spectrum when fitting a polynomial to the trace.
 

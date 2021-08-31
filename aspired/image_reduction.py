@@ -1652,7 +1652,7 @@ class ImageReduction:
                     if self.psfmodel == 'gaussyx':
 
                         self.light_CCDData[i].data = detect_cosmics(
-                            self.light_CCDData[i].data,
+                            self.light_CCDData[i].data / self.gain,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -1660,7 +1660,7 @@ class ImageReduction:
                             **self.cr_kwargs)[1]
 
                         self.light_CCDData[i].data = detect_cosmics(
-                            self.light_CCDData[i].data,
+                            self.light_CCDData[i].data / self.gain,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -1670,7 +1670,7 @@ class ImageReduction:
                     elif self.psfmodel == 'gaussxy':
 
                         self.light_CCDData[i].data = detect_cosmics(
-                            self.light_CCDData[i].data,
+                            self.light_CCDData[i].data / self.gain,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -1678,7 +1678,7 @@ class ImageReduction:
                             **self.cr_kwargs)[1]
 
                         self.light_CCDData[i].data = detect_cosmics(
-                            self.light_CCDData[i].data,
+                            self.light_CCDData[i].data / self.gain,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -1688,7 +1688,7 @@ class ImageReduction:
                     else:
 
                         self.light_CCDData[i].data = detect_cosmics(
-                            self.light_CCDData[i].data,
+                            self.light_CCDData[i].data / self.gain,
                             gain=self.gain,
                             readnoise=self.readnoise,
                             fsmode='convolve',
@@ -1698,7 +1698,7 @@ class ImageReduction:
                 elif self.fsmode == 'median':
 
                     self.light_CCDData[i].data = detect_cosmics(
-                        self.light_CCDData[i].data,
+                        self.light_CCDData[i].data / self.gain,
                         gain=self.gain,
                         readnoise=self.readnoise,
                         fsmode=self.fsmode,
@@ -1832,8 +1832,6 @@ class ImageReduction:
 
             light = CCDData(light.astype('float'), unit=u.ct)
 
-        light.data /= exposure_time
-
         self.light_CCDData.append(light)
         self.light_header.append(header)
         self.light_time.append(exposure_time)
@@ -1853,8 +1851,6 @@ class ImageReduction:
 
             flat = CCDData(flat.astype('float'), unit=u.ct)
 
-        flat.data /= exposure_time
-
         self.flat_CCDData.append(flat)
         self.flat_header.append(header)
         self.flat_time.append(exposure_time)
@@ -1864,8 +1860,6 @@ class ImageReduction:
         if type(dark) == np.ndarray:
 
             dark = CCDData(dark.astype('float'), unit=u.ct)
-
-        dark.data /= exposure_time
 
         self.dark_CCDData.append(dark)
         self.dark_header.append(header)
@@ -2171,8 +2165,9 @@ class ImageReduction:
         if self.dark_filename != []:
 
             # Dark subtraction adjusted for exposure time
-            self.light_reduced =\
-                self.light_reduced.subtract(self.dark_main)
+            self.light_reduced = self.light_reduced.subtract(
+                self.dark_main.divide(
+                    np.nanmean(self.dark_time) / np.nanmean(self.light_time)))
             self.logger.info('Light frame is dark subtracted.')
 
     def _flatfield(self):

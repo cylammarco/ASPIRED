@@ -223,13 +223,25 @@ class Spectrum1D():
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
 
-        # Sensitivity curve properties
+        # Continuum
+        self.count_continuum = None
+        self.count_continuum_resampled = None
+        self.flux_continuum = None
+        self.flux_continuum_resampled = None
+
+        # Sensitivity curve smoothing properties
         self.smooth = None
         self.slength = None
         self.sorder = None
 
+        # Tellurics
         self.telluric_func = None
-        self.telluric_filler_func = None
+        self.telluric_profile = None
+        self.telluric_profile_resampled = None
+        self.telluric_factor = 0.
+        self.telluric_factor_resampled = 0.
+
+        # Sensitivity curve properties
         self.sensitivity = None
         self.sensitivity_resampled = None
         self.sensitivity_func = None
@@ -1249,7 +1261,39 @@ class Spectrum1D():
         self.wave_literature = None
         self.flux_literature = None
 
-    def add_telluric(self, telluric_func, telluric_filler_func):
+    def add_count_continuum(self, count_continuum):
+
+        self.count_continuum = count_continuum
+
+    def remove_count_continuum(self):
+
+        self.count_continuum = None
+
+    def add_count_continuum_resampled(self, count_continuum_resampled):
+
+        self.count_continuum_resampled = count_continuum_resampled
+
+    def remove_count_continuum_resampled(self):
+
+        self.count_continuum_resampled = None
+
+    def add_flux_continuum(self, flux_continuum):
+
+        self.flux_continuum = flux_continuum
+
+    def remove_flux_continuum(self):
+
+        self.flux_continuum = None
+
+    def add_flux_continuum_resampled(self, flux_continuum_resampled):
+
+        self.flux_continuum_resampled = flux_continuum_resampled
+
+    def remove_flux_continuum_resampled(self):
+
+        self.flux_continuum_resampled = None
+
+    def add_telluric(self, telluric_func):
         """
         Adding the Telluric profiles.
 
@@ -1264,12 +1308,10 @@ class Spectrum1D():
         """
 
         self.telluric_func = telluric_func
-        self.telluric_filler_func = telluric_filler_func
 
     def remove_telluric(self):
 
         self.telluric_func = None
-        self.telluric_filler_func = None
 
     def add_flux(self, flux, flux_err, flux_sky):
         """

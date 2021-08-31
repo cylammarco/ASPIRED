@@ -11,9 +11,9 @@ from plotly import io as pio
 from scipy import signal
 from scipy import interpolate as itp
 from spectres import spectres
-from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .spectrum1D import Spectrum1D
+from .util import get_continuum
 
 base_dir = os.path.dirname(__file__)
 
@@ -614,6 +614,9 @@ class FluxCalibration(StandardLibrary):
         self.standard_wave_true = None
         self.standard_fluxmag_true = None
 
+        self.count_continuum = None
+        self.flux_continuum = None
+
     def from_spectrum1D(self, spectrum1D, merge=False):
         '''
         This function copies all the info from the spectrum1D, because users
@@ -688,19 +691,136 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D.add_wavelength(wavelength)
         self.spectrum1D.add_count(count, count_err, count_sky)
 
+    def get_telluric_profile(self,
+                             wave,
+                             flux,
+                             mask_range,
+                             return_function=False):
+
+        telluric_profile = np.zeros_like(wave)
+
+        if getattr(self.spectrum1D, 'flux_continuum') is None:
+
+            self.spectrum1D.add_flux_continuum(get_continuum(wave, flux))
+
+        continuum = getattr(self.spectrum1D, 'flux_continuum')
+
+        # Get the continuum of the spectrum
+        residual = flux - continuum
+
+        for m in mask_range:
+
+            # Get the indices for the two sides of the masking region
+            # at the native pixel scale
+            left_of_mask = np.where(wave <= m[0])[0]
+            right_of_mask = np.where(wave >= m[1])[0] + 1
+
+            if (len(left_of_mask) == 0) or (len(right_of_mask) == 0):
+
+                continue
+
+            left_telluric_start = int(max(left_of_mask))
+            right_telluric_end = int(min(right_of_mask)) + 1
+
+            # resample to match the shape of "wave"
+            telluric_profile[
+                left_telluric_start:right_telluric_end] = residual[
+                    left_telluric_start:right_telluric_end] - np.nanmin(
+                        residual[left_telluric_start:right_telluric_end])
+
+        telluric_profile /= np.nanmax(telluric_profile)
+
+        telluric_func = itp.interp1d(wave,
+                                     telluric_profile,
+                                     fill_value='extrapolate')
+
+        self.spectrum1D.add_telluric(telluric_func)
+
+        if return_function:
+
+            return telluric_func
+
+    def inspect_telluric_profile(self,
+                                 display=True,
+                                 renderer='default',
+                                 width=1280,
+                                 height=720,
+                                 return_jsonstring=False,
+                                 save_fig=False,
+                                 fig_type='iframe+png',
+                                 filename=None,
+                                 open_iframe=False):
+
+        fig = go.Figure(layout=dict(
+            autosize=False, height=height, width=width, title='Log scale'))
+        # show the image on the top
+        fig.add_trace(
+            go.Scatter(x=self.spectrum1D.wave,
+                       y=self.spectrum1D.telluric_func(self.spectrum1D.wave),
+                       line=dict(color='royalblue', width=4),
+                       name='Count / s (Observed)'))
+
+        fig.update_layout(hovermode='closest',
+                          title='Telluric Profile',
+                          showlegend=True,
+                          xaxis_title=r'$\text{Wavelength / A}$',
+                          yaxis_title='Arbitrary',
+                          yaxis=dict(title='Count / s'),
+                          legend=go.layout.Legend(x=0,
+                                                  y=1,
+                                                  traceorder="normal",
+                                                  font=dict(
+                                                      family="sans-serif",
+                                                      size=12,
+                                                      color="black"),
+                                                  bgcolor='rgba(0,0,0,0)'))
+
+        if filename is None:
+
+            filename = 'telluric_profile'
+
+        if save_fig:
+
+            fig_type_split = fig_type.split('+')
+
+            for t in fig_type_split:
+
+                if t == 'iframe':
+
+                    pio.write_html(fig,
+                                   filename + '.' + t,
+                                   auto_open=open_iframe)
+
+                elif t in ['jpg', 'png', 'svg', 'pdf']:
+
+                    pio.write_image(fig, filename + '.' + t)
+
+        if display:
+
+            if renderer == 'default':
+
+                fig.show()
+
+            else:
+
+                fig.show(renderer)
+
+        if return_jsonstring:
+
+            return fig.to_json()
+
     def compute_sensitivity(self,
                             k=3,
-                            smooth=False,
                             method='interpolate',
-                            slength=7,
-                            sorder=3,
-                            mask_range=[[6850, 6960], [7575, 7700],
+                            mask_range=[[6850, 6960], [7580, 7700],
                                         [8925, 9050]],
                             mask_fit_order=1,
-                            mask_fit_size=1,
+                            mask_fit_size=5,
+                            smooth=True,
+                            slength=5,
+                            sorder=3,
                             return_function=True,
-                            use_lowess=True,
-                            lowess_frac=0.1,
+                            use_continuum=True,
                             sens_deg=7,
                             **kwargs):
         '''
@@ -719,17 +839,11 @@ class FluxCalibration(StandardLibrary):
         ----------
         k: integer [1,2,3,4,5 only]
             The order of the spline.
-        smooth: bool
-            Set to smooth the input spectrum with scipy.signal.savgol_filter
         method: str (Default: interpolate)
             This should be either 'interpolate' of 'polynomial'. Note that the
             polynomial is computed from the interpolated function. The
             default is interpolate because it is much more stable at the
             wavelength limits of a spectrum in an automated system.
-        slength: int
-            SG-filter window size
-        sorder: int
-            SG-filter polynomial order
         mask_range: None or list of list
             Masking out regions of Telluric absorption when fitting the
             sensitivity curve. None for no mask. List of list has the pattern
@@ -738,17 +852,26 @@ class FluxCalibration(StandardLibrary):
             Order of polynomial to be fitted over the masked regions
         mask_fit_size: int
             Number of "pixels" to be fitted on each side of the masked regions.
-        return_function: bool
-            Set to True to return the callable function of the sensitivity
-            curve.
-        use_lowess: bool (Default: True)
-            Use a lowess function to get the continuum.
+        smooth: bool (Default: False)
+            set to smooth the input spectrum with scipy.signal.savgol_filter
+        slength: int (Default: 7)
+            SG-filter window size
+        sorder: int (Default: 3)
+            SG-filter polynomial order
+        use_continuum: bool
+            Use LOWESS function to get a continuum of the flux for computing
+            the sensitivity curve.
         sens_deg: int (Default: 7)
-            The degree of polynomial of the sensitivity curve.
+            The degree of polynomial of the sensitivity curve, only used if
+            the method is 'polynomial'.
+        **kwargs:
+            keyword arguments for passing to the LOWESS function, see
+            `statsmodels.nonparametric.smoothers_lowess.lowess()`
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        A callable function as a function of wavelength if return_function is
+        set to True.
 
         '''
 
@@ -758,6 +881,12 @@ class FluxCalibration(StandardLibrary):
         count = getattr(self.spectrum1D, 'count')
         count_err = getattr(self.spectrum1D, 'count_err')
         wave = getattr(self.spectrum1D, 'wave')
+
+        if use_continuum:
+
+            if getattr(self.spectrum1D, 'count_continuum') is None:
+
+                count = get_continuum(wave, count, **kwargs)
 
         # If the median resolution of the observed spectrum is higher than
         # the literature one
@@ -789,30 +918,14 @@ class FluxCalibration(StandardLibrary):
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
 
-            standard_flux_smoothed = signal.savgol_filter(
-                standard_flux, slength, sorder)
+            standard_flux = signal.savgol_filter(standard_flux, slength,
+                                                 sorder)
             # Set the smoothing parameters
             self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
-        else:
-
-            standard_flux_smoothed = standard_flux.copy()
-
-        if use_lowess:
-
-            standard_flux_smoothed = lowess(standard_flux_smoothed,
-                                            standard_wave_true,
-                                            return_sorted=False,
-                                            frac=lowess_frac,
-                                            **kwargs)
-
         # Get the sensitivity curve
-        sensitivity = standard_flux_true / standard_flux_smoothed
+        sensitivity = standard_flux_true / standard_flux
         sensitivity_masked = sensitivity.copy()
-
-        telluric_profile = np.zeros_like(wave)
-        telluric_filler = np.zeros_like(wave)
-        telluric_func = None
 
         if mask_range is not None:
 
@@ -825,10 +938,11 @@ class FluxCalibration(StandardLibrary):
                     continue
 
                 # Get the indices for the two sides of the masking region
-                left_end = int(max(np.where(standard_wave_true <= m[0])[0]))
+                left_end = int(max(
+                    np.where(standard_wave_true <= m[0])[0])) + 1
                 left_start = int(left_end - mask_fit_size)
                 right_start = int(min(np.where(standard_wave_true >= m[1])[0]))
-                right_end = int(right_start + mask_fit_size)
+                right_end = int(right_start + mask_fit_size) + 1
 
                 # Get the wavelengths of the two sides
                 wave_temp = np.concatenate(
@@ -852,44 +966,6 @@ class FluxCalibration(StandardLibrary):
                 sensitivity_masked[
                     left_end:right_start] = np.polynomial.polynomial.polyval(
                         standard_wave_true[left_end:right_start], coeff)
-
-                # Get the indices for the two sides of the masking region
-                # at the native pixel scale
-                left_telluric_start = int(max(np.where(wave <= m[0])[0]))
-                right_telluric_end = int(min(np.where(wave >= m[1])[0]))
-
-                # Filled-in place Telluric Profile
-                telluric_filler_itp = itp.interp1d(
-                    standard_wave_true,
-                    standard_flux_smoothed * np.polynomial.polynomial.polyval(
-                        standard_wave_true, coeff),
-                    fill_value='extrapolate')
-                # resample to match the shape of "wave"
-                telluric_filler[left_telluric_start:
-                                right_telluric_end] = telluric_filler_itp(
-                                    wave
-                                )[left_telluric_start:right_telluric_end]
-
-                # Telluric profile
-                standard_flux_smoothed_itp = itp.interp1d(
-                    standard_wave_true,
-                    (standard_flux_smoothed * np.polynomial.polynomial.polyval(
-                        standard_wave_true, coeff)),
-                    fill_value='extrapolate')
-
-                # resample to match the shape of "wave"
-                telluric_profile[left_telluric_start:right_telluric_end] = (
-                    standard_flux_smoothed_itp(wave) -
-                    count * np.polynomial.polynomial.polyval(wave, coeff)
-                )[left_telluric_start:right_telluric_end]
-
-            telluric_func = itp.interp1d(wave,
-                                         telluric_profile,
-                                         fill_value='extrapolate')
-
-            telluric_filler_func = itp.interp1d(wave,
-                                                telluric_filler,
-                                                fill_value='extrapolate')
 
         mask = np.isfinite(np.log10(sensitivity_masked)) & ~np.isnan(
             np.log10(sensitivity_masked))
@@ -928,10 +1004,16 @@ class FluxCalibration(StandardLibrary):
         # Add to each Spectrum1D object
         self.spectrum1D.add_sensitivity_func(sensitivity_func)
 
-        # Add the Telluric profile(s)
-        if telluric_func is not None:
+        if use_continuum:
 
-            self.spectrum1D.add_telluric(telluric_func, telluric_filler_func)
+            self.spectrum1D.add_count_continuum(count)
+            self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
+
+        # Get the Telluric profile
+        self.get_telluric_profile(
+            wave,
+            getattr(self.spectrum1D, 'count') * sensitivity_func(wave),
+            mask_range)
 
         if return_function:
 
@@ -966,8 +1048,7 @@ class FluxCalibration(StandardLibrary):
                             save_fig=False,
                             fig_type='iframe+png',
                             filename=None,
-                            open_iframe=False,
-                            browser='default'):
+                            open_iframe=False):
         '''
         Display the computed sensitivity curve.
 
@@ -1008,7 +1089,6 @@ class FluxCalibration(StandardLibrary):
         sensitivity = getattr(self.spectrum1D, 'sensitivity')
         sensitivity_func = getattr(self.spectrum1D, 'sensitivity_func')
 
-        smooth = getattr(self.spectrum1D, 'smooth')
         library = getattr(self.spectrum1D, 'library')
         target = getattr(self.spectrum1D, 'target')
 
@@ -1065,18 +1145,8 @@ class FluxCalibration(StandardLibrary):
                        line=dict(color='black', width=2),
                        name='Best-fit Sensitivity Curve'))
 
-        if smooth:
-
-            slength = getattr(self.spectrum1D, 'slength')
-            sorder = getattr(self.spectrum1D, 'sorder')
-            fig.update_layout(title='SG(' + str(slength) + ', ' + str(sorder) +
-                              ')-Smoothed ' + library + ': ' + target,
-                              yaxis_title='Smoothed Count / s')
-
-        else:
-
-            fig.update_layout(title=library + ': ' + target,
-                              yaxis_title='Count / s')
+        fig.update_layout(title=library + ': ' + target,
+                          yaxis_title='Count / s')
 
         fig.update_layout(hovermode='closest',
                           showlegend=True,
@@ -1202,12 +1272,17 @@ class FluxCalibration(StandardLibrary):
         count_err = getattr(target_spectrum1D, 'count_err')
         count_sky = getattr(target_spectrum1D, 'count_sky')
 
+        if getattr(target_spectrum1D, 'count_continuum') is None:
+
+            target_spectrum1D.add_count_continuum(get_continuum(wave, count))
+
+        count_continuum = getattr(target_spectrum1D, 'count_continuum')
+
         # apply the flux calibration
         sensitivity_func = getattr(self.spectrum1D, 'sensitivity_func')
         sensitivity = 10.**sensitivity_func(wave)
 
         flux = sensitivity * count
-
         flux_resampled = spectres(np.array(wave_resampled).reshape(-1),
                                   np.array(wave).reshape(-1),
                                   np.array(flux).reshape(-1),
@@ -1236,6 +1311,25 @@ class FluxCalibration(StandardLibrary):
                                           np.array(wave).reshape(-1),
                                           np.array(flux_sky).reshape(-1),
                                           verbose=True)
+
+        flux_continuum = sensitivity * count_continuum
+        flux_continuum_resampled = spectres(
+            np.array(wave_resampled).reshape(-1),
+            np.array(wave).reshape(-1),
+            np.array(flux_continuum).reshape(-1),
+            verbose=True)
+        flux_continuum_resampled[np.isnan(flux_continuum_resampled)] = 0.
+        count_continuum_resampled = spectres(
+            np.array(wave_resampled).reshape(-1),
+            np.array(wave).reshape(-1),
+            np.array(count_continuum).reshape(-1),
+            verbose=True)
+
+        target_spectrum1D.add_flux_continuum(flux_continuum)
+        target_spectrum1D.add_flux_continuum_resampled(
+            flux_continuum_resampled)
+        target_spectrum1D.add_count_continuum_resampled(
+            count_continuum_resampled)
 
         # Only computed for diagnostic
         sensitivity_resampled = spectres(np.array(wave_resampled).reshape(-1),
@@ -1328,6 +1422,14 @@ class FluxCalibration(StandardLibrary):
                                y=flux_sky_resampled,
                                line=dict(color='orange'),
                                name='Sky Flux'))
+
+            if flux_continuum is not None:
+
+                fig.add_trace(
+                    go.Scatter(x=wave_resampled,
+                               y=flux_continuum_resampled,
+                               line=dict(color='grey'),
+                               name='Continuum'))
 
             fig.update_layout(hovermode='closest',
                               showlegend=True,

@@ -180,6 +180,8 @@ def test_full_run():
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
+    lhs6328_onedspec.compute_telluric_profile()
+    lhs6328_onedspec.inspect_telluric_profile(display=False)
     lhs6328_onedspec.apply_telluric_correction()
 
     # Apply atmospheric extinction correction
