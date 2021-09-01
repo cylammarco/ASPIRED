@@ -2110,23 +2110,23 @@ class TwoDSpec:
 
             self.spectrum_list[i].remove_trace()
 
-    def compute_rectification(self,
-                              upsample_factor=10,
-                              bin_size=6,
-                              n_bin=10,
-                              spline_order=3,
-                              order=2,
-                              coeff=None,
-                              apply=False,
-                              display=False,
-                              renderer='default',
-                              width=1280,
-                              height=720,
-                              return_jsonstring=False,
-                              save_fig=False,
-                              fig_type='iframe+png',
-                              filename=None,
-                              open_iframe=False):
+    def get_rectification(self,
+                          upsample_factor=10,
+                          bin_size=6,
+                          n_bin=10,
+                          spline_order=3,
+                          order=2,
+                          coeff=None,
+                          apply=False,
+                          display=False,
+                          renderer='default',
+                          width=1280,
+                          height=720,
+                          return_jsonstring=False,
+                          save_fig=False,
+                          fig_type='iframe+png',
+                          filename=None,
+                          open_iframe=False):
         '''
         ONLY possible if there is ONE trace. If more than one trace is
         provided, only the first one (i.e. spec_id = 0) will get
@@ -2840,8 +2840,7 @@ class TwoDSpec:
                     source_bad_mask = np.zeros_like(source_slice, dtype='bool')
 
                 # trace +/- aperture and sky region size
-                extraction_slice = self.img[extraction_pix,
-                                            i].copy()
+                extraction_slice = self.img[extraction_pix, i].copy()
                 if self.bad_mask is not None:
                     extraction_bad_mask = self.bad_mask[extraction_pix, i]
                 else:

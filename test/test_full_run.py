@@ -174,13 +174,13 @@ def test_full_run():
     # Get the standard from the library
     lhs6328_onedspec.load_standard(target='hiltner102')
 
-    lhs6328_onedspec.compute_sensitivity(k=3,
-                                         method='interpolate',
-                                         mask_fit_size=1)
+    lhs6328_onedspec.get_sensitivity(k=3,
+                                     method='interpolate',
+                                     mask_fit_size=1)
 
     lhs6328_onedspec.apply_flux_calibration(stype='science+standard')
 
-    lhs6328_onedspec.compute_telluric_profile()
+    lhs6328_onedspec.get_telluric_profile()
     lhs6328_onedspec.inspect_telluric_profile(display=False)
     lhs6328_onedspec.apply_telluric_correction()
 

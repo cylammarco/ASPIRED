@@ -60,7 +60,7 @@ def test_sensitivity():
                           fig_type='iframe+png',
                           filename='test/test_output/fluxcal_inspect_standard')
 
-    sens.compute_sensitivity()
+    sens.get_sensitivity()
 
     # Get back the spectrum1D and merge
     hiltner_spectrum1D.merge(sens.get_spectrum1D())
@@ -106,7 +106,7 @@ def test_fluxcalibration():
 
     # Load standard star from literature
     fluxcalibrator.load_standard('hiltner102')
-    fluxcalibrator.compute_sensitivity()
+    fluxcalibrator.get_sensitivity()
 
     # Get back the spectrum1D and merge
     fluxcalibrator.apply_flux_calibration(

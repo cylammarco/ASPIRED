@@ -11,7 +11,7 @@ install_requires = [
     'scipy>=1.5.2', 'astropy>=4.0', 'ccdproc>=2.1',
     'plotly>=5.0', 'spectres>=2.1.1', 'statsmodels>=0.12',
     'astroscrappy @ git+https://github.com/astropy/astroscrappy@master#egg=astroscrappy',
-    'rascal==0.3'
+    'rascal>=0.3'
 ]
 
 __packagename__ = "aspired"

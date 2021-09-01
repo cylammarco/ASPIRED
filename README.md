@@ -11,7 +11,7 @@ ASPIRED is written for use with python 3.6, 3.7 and 3.8 (will revisit [3.9](http
 
 More background information can be referred to the [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract), which will appeare in the [Astronomical Society of the Pacific Conference Series (ASPCS)](http://www.aspbooks.org/a/volumes/upcoming/?book_id=606). This is in concurrent development with the automated wavelength calibration software [RASCAL](https://github.com/jveitchmichaelis/rascal), further information can be referred to this [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205883V/abstract) and it will appear in the same volume of ASPCS.
 
-Example notebooks can be found [here](https://github.com/cylammarco/ASPIRED-example).
+Example notebooks and scripts can be found [here](https://github.com/cylammarco/ASPIRED-example).
 
 ## Use cases
 We are to cover as many use cases as possible. If you would like to apply some reduction techniques that we have overseen, please use the [issue tracker](https://github.com/cylammarco/ASPIRED/issues) to request new features. The following is the list of scenarios that we can handle:
@@ -47,10 +47,10 @@ See the examples of these use cases at [aspired-example](https://github.com/cyla
 * [astropy](https://github.com/astropy/astropy)
 * [astroscrappy](https://github.com/astropy/astroscrappy)
 * [ccdproc](https://github.com/astropy/ccdproc)
-* [plotly](https://github.com/plotly/plotly.py) >= 4.0
-* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.2
+* [plotly](https://github.com/plotly/plotly.py) >= 5.0
+* [rascal](https://github.com/jveitchmichaelis/rascal) == 0.3
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
-* [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.12.2
+* [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.12
 
 ## Installation
 Instructions can be found [here](https://aspired.readthedocs.io/en/latest/installation/pip.html).
@@ -71,3 +71,5 @@ Style -- as long as it passes flake8.
 (January 2019 - March 2020)
 2. Polish NCN grant Daina No. 2017/27/L/ST9/03221
 (May - June 2020)
+3. European Research Council Starting Grant (grant agreement No. 852097)
+(Sept 2020 - Current)

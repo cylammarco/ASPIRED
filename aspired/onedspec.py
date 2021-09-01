@@ -3484,20 +3484,19 @@ class OneDSpec():
 
             return return_jsonstring
 
-    def compute_sensitivity(self,
-                            k=3,
-                            method='interpolate',
-                            mask_range=[[6850, 6960], [7580, 7700],
-                                        [8925, 9050]],
-                            mask_fit_order=1,
-                            mask_fit_size=5,
-                            smooth=True,
-                            slength=7,
-                            sorder=3,
-                            return_function=False,
-                            use_continuum=True,
-                            sens_deg=7,
-                            **kwargs):
+    def get_sensitivity(self,
+                        k=3,
+                        method='interpolate',
+                        mask_range=[[6850, 6960], [7580, 7700], [8925, 9050]],
+                        mask_fit_order=1,
+                        mask_fit_size=5,
+                        smooth=True,
+                        slength=7,
+                        sorder=3,
+                        return_function=False,
+                        use_continuum=True,
+                        sens_deg=7,
+                        **kwargs):
         '''
         Parameters
         ----------
@@ -3540,18 +3539,18 @@ class OneDSpec():
 
         if self.standard_wavelength_calibrated:
 
-            self.fluxcal.compute_sensitivity(k=k,
-                                             method=method,
-                                             mask_range=mask_range,
-                                             mask_fit_order=mask_fit_order,
-                                             mask_fit_size=mask_fit_size,
-                                             smooth=smooth,
-                                             slength=slength,
-                                             sorder=sorder,
-                                             return_function=return_function,
-                                             use_continuum=use_continuum,
-                                             sens_deg=sens_deg,
-                                             **kwargs)
+            self.fluxcal.get_sensitivity(k=k,
+                                         method=method,
+                                         mask_range=mask_range,
+                                         mask_fit_order=mask_fit_order,
+                                         mask_fit_size=mask_fit_size,
+                                         smooth=smooth,
+                                         slength=slength,
+                                         sorder=sorder,
+                                         return_function=return_function,
+                                         use_continuum=use_continuum,
+                                         sens_deg=sens_deg,
+                                         **kwargs)
             self.logger.info('Sensitivity curve computed.')
             self.sensitivity_curve_available = True
 
@@ -3740,32 +3739,97 @@ class OneDSpec():
 
         else:
 
-            # if spec_id is None, contraints are applied to all
-            #  calibrators
             spec_id = list(self.science_spectrum_list.keys())
 
         for i in spec_id:
 
             science_spec = self.science_spectrum_list[i]
 
-            if isinstance(telluric, callable):
+            if callable(telluric):
 
-                science_spec.add_telluric(telluric)
+                science_spec.add_telluric_func(telluric)
 
             if isinstance(telluric, (np.ndarray, list)):
 
-                science_spec.add_telluric(interp1d(telluric[0], telluric[1]))
+                science_spec.add_telluric_func(
+                    interp1d(telluric[0], telluric[1]))
 
             if science_spec.wave is not None:
 
-                science_spec.telluric_profile = science_spec.telluric_func(
-                    science_spec.wave)
+                science_spec.add_telluric_profile(
+                    science_spec.telluric_func(science_spec.wave))
 
-    def compute_telluric_profile(self,
-                                 spec_id=None,
-                                 factor=1.0,
-                                 auto_apply=False,
-                                 **kwargs):
+    def get_continuum(self, spec_id=None, **kwargs):
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())):
+
+                error_msg = 'The given spec_id does not exist.'
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+        else:
+
+            spec_id = list(self.science_spectrum_list.keys())
+
+        # Get the telluric profile
+        for i in spec_id:
+
+            science_spec = self.science_spectrum_list[i]
+
+            wave = science_spec.wave
+            count = science_spec.count
+            flux = science_spec.flux
+
+            science_spec.add_flux_continuum(get_continuum(
+                wave, flux, **kwargs))
+            science_spec.add_count_continuum(
+                get_continuum(wave, count, **kwargs))
+
+    def get_resampled_continuum(self, spec_id=None, **kwargs):
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())):
+
+                error_msg = 'The given spec_id does not exist.'
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+        else:
+
+            spec_id = list(self.science_spectrum_list.keys())
+
+        # Get the telluric profile
+        for i in spec_id:
+
+            science_spec = self.science_spectrum_list[i]
+
+            wave_resampled = science_spec.wave_resampled
+            count_resampled = science_spec.count_resampled
+            flux_resampled = science_spec.flux_resampled
+
+            science_spec.add_flux_resampled_continuum(
+                get_continuum(wave_resampled, flux_resampled, **kwargs))
+            science_spec.add_count_resampled_continuum(
+                get_continuum(wave_resampled, count_resampled, **kwargs))
+
+    def get_telluric_profile(self,
+                             spec_id=None,
+                             factor=1.0,
+                             auto_apply=False,
+                             **kwargs):
         '''
         Parameters
         ----------
@@ -3793,8 +3857,6 @@ class OneDSpec():
 
         else:
 
-            # if spec_id is None, contraints are applied to all
-            #  calibrators
             spec_id = list(self.science_spectrum_list.keys())
 
         # Get the telluric profile
@@ -3815,8 +3877,8 @@ class OneDSpec():
 
                 else:
 
-                    science_spec.telluric_func =\
-                        self.standard_spectrum_list[0].telluric_func
+                    science_spec.add_telluric_func(
+                        self.standard_spectrum_list[0].telluric_func)
 
             wave = science_spec.wave
             flux = science_spec.flux
@@ -3824,15 +3886,14 @@ class OneDSpec():
             if ((science_spec.flux_continuum is None)
                     or (len(kwargs.keys()) > 0)):
 
-                science_spec.add_flux_continuum(
-                    get_continuum(wave, flux, **kwargs))
+                self.get_continuum(i, **kwargs)
 
             flux_continuum = science_spec.flux_continuum
 
             if science_spec.telluric_profile is None:
 
-                science_spec.telluric_profile = science_spec.telluric_func(
-                    wave)
+                science_spec.add_telluric_profile(
+                    science_spec.telluric_func(wave))
 
             mask = np.where(science_spec.telluric_profile != 0.0)
 
@@ -3845,7 +3906,7 @@ class OneDSpec():
                     'maxiter': 10000
                 }).x
 
-            science_spec.telluric_factor = telluric_factor
+            science_spec.add_telluric_factor(telluric_factor)
             self.logger.info('telluric_factor is {}.'.format(telluric_factor))
 
             if self.science_wavelength_resampled:
@@ -3853,20 +3914,18 @@ class OneDSpec():
                 wave_resampled = science_spec.wave_resampled
                 flux_resampled = science_spec.flux_resampled
 
-                if science_spec.flux_continuum_resampled is None:
+                if science_spec.flux_resampled_continuum is None:
 
-                    science_spec.add_flux_continuum_resampled(
-                        get_continuum(wave_resampled, flux_resampled,
-                                      **kwargs))
+                    self.get_resampled_continuum(i, **kwargs)
 
-                flux_continuum_resampled =\
-                    science_spec.flux_continuum_resampled
+                flux_resampled_continuum =\
+                    science_spec.flux_resampled_continuum
 
                 if ((science_spec.telluric_profile_resampled is None)
                         or (len(kwargs.keys()) > 0)):
 
-                    science_spec.telluric_profile_resampled =\
-                        science_spec.telluric_func(wave_resampled)
+                    science_spec.add_telluric_profile_resampled(
+                        science_spec.telluric_func(wave_resampled))
 
                 mask_resampled = np.where(
                     science_spec.telluric_profile_resampled != 0.0)
@@ -3875,7 +3934,7 @@ class OneDSpec():
                     np.nanmedian(flux_resampled),
                     args=(flux_resampled[mask_resampled], science_spec.
                           telluric_profile_resampled[mask_resampled],
-                          flux_continuum_resampled[mask_resampled]),
+                          flux_resampled_continuum[mask_resampled]),
                     options={
                         'maxiter': 10000
                     }).x
@@ -3883,8 +3942,8 @@ class OneDSpec():
                 self.logger.info('telluric_factor_resampled is {}.'.format(
                     telluric_factor_resampled))
 
-                science_spec.telluric_factor_resampled =\
-                    telluric_factor_resampled
+                science_spec.add_telluric_factor_resampled(
+                    telluric_factor_resampled)
 
             self.logger.info('telluric_factor is {}.'.format(telluric_factor))
 
@@ -3893,6 +3952,7 @@ class OneDSpec():
             self.apply_telluric_correction(factor=factor, spec_id=spec_id)
 
     def inspect_telluric_profile(self,
+                                 factor=1.0,
                                  spec_id=None,
                                  display=True,
                                  renderer='default',
@@ -4005,13 +4065,14 @@ class OneDSpec():
 
             fig_sci.add_trace(
                 go.Scatter(x=wave,
-                           y=(fluxcount + telluric_profile * telluric_factor),
+                           y=(fluxcount +
+                              telluric_profile * telluric_factor * factor),
                            line=dict(color='orange'),
                            name="Telluric Corrected Spectrum"))
 
             fig_sci.add_trace(
                 go.Scatter(x=wave,
-                           y=(telluric_profile * telluric_factor),
+                           y=(telluric_profile * telluric_factor * factor),
                            line=dict(color='grey'),
                            name="Telluric Profile"))
 
@@ -4102,14 +4163,14 @@ class OneDSpec():
 
             science_spec.flux = (science_spec.flux +
                                  science_spec.telluric_profile *
-                                 science_spec.telluric_factor / factor)
+                                 science_spec.telluric_factor * factor)
 
             if self.science_wavelength_resampled:
 
                 science_spec.flux_resampled = (
                     science_spec.flux_resampled +
                     science_spec.telluric_profile_resampled *
-                    science_spec.telluric_factor / factor)
+                    science_spec.telluric_factor * factor)
 
     def apply_atmospheric_extinction_correction(self,
                                                 science_airmass=None,
@@ -4409,7 +4470,7 @@ class OneDSpec():
                         fluxcount_err_name = 'Flux Uncertainty'
                         telluric = spec.telluric_profile_resampled
                         telluric_factor = spec.telluric_factor_resampled
-                        fluxcount_continuum = spec.flux_continuum_resampled
+                        fluxcount_continuum = spec.flux_resampled_continuum
                     else:
                         fluxcount = spec.count_resampled
                         fluxcount_sky = spec.count_sky_resampled
@@ -4417,7 +4478,7 @@ class OneDSpec():
                         fluxcount_name = 'Count / (e- / s)'
                         fluxcount_sky_name = 'Sky Count / (e- / s)'
                         fluxcount_err_name = 'Count Uncertainty / (e- / s)'
-                        fluxcount_continuum = spec.count_continuum_resampled
+                        fluxcount_continuum = spec.count_resampled_continuum
 
                 wave_mask = ((np.array(wave).reshape(-1) > wave_min)
                              & (np.array(wave).reshape(-1) < wave_max))
@@ -4610,7 +4671,7 @@ class OneDSpec():
                     standard_fluxcount_sky_name = 'Sky Flux'
                     standard_fluxcount_err_name = 'Flux Uncertainty'
                     standard_fluxcount_continuum =\
-                        spec.flux_continuum_resampled
+                        spec.flux_resampled_continuum
                 else:
                     standard_fluxcount = spec.count_resampled
                     standard_fluxcount_sky = spec.count_sky_resampled
@@ -4620,7 +4681,7 @@ class OneDSpec():
                     standard_fluxcount_err_name =\
                         'Count Uncertainty / (e- / s)'
                     standard_fluxcount_continuum =\
-                        spec.count_continuum_resampled
+                        spec.count_resampled_continuum
 
             standard_wave_mask = (
                 (np.array(standard_wave).reshape(-1) > wave_min) &

@@ -225,9 +225,9 @@ class Spectrum1D():
 
         # Continuum
         self.count_continuum = None
-        self.count_continuum_resampled = None
+        self.count_resampled_continuum = None
         self.flux_continuum = None
-        self.flux_continuum_resampled = None
+        self.flux_resampled_continuum = None
 
         # Sensitivity curve smoothing properties
         self.smooth = None
@@ -1269,13 +1269,13 @@ class Spectrum1D():
 
         self.count_continuum = None
 
-    def add_count_continuum_resampled(self, count_continuum_resampled):
+    def add_count_resampled_continuum(self, count_resampled_continuum):
 
-        self.count_continuum_resampled = count_continuum_resampled
+        self.count_resampled_continuum = count_resampled_continuum
 
-    def remove_count_continuum_resampled(self):
+    def remove_count_resampled_continuum(self):
 
-        self.count_continuum_resampled = None
+        self.count_resampled_continuum = None
 
     def add_flux_continuum(self, flux_continuum):
 
@@ -1285,15 +1285,15 @@ class Spectrum1D():
 
         self.flux_continuum = None
 
-    def add_flux_continuum_resampled(self, flux_continuum_resampled):
+    def add_flux_resampled_continuum(self, flux_resampled_continuum):
 
-        self.flux_continuum_resampled = flux_continuum_resampled
+        self.flux_resampled_continuum = flux_resampled_continuum
 
-    def remove_flux_continuum_resampled(self):
+    def remove_flux_resampled_continuum(self):
 
-        self.flux_continuum_resampled = None
+        self.flux_resampled_continuum = None
 
-    def add_telluric(self, telluric_func):
+    def add_telluric_func(self, telluric_func):
         """
         Adding the Telluric profiles.
 
@@ -1309,9 +1309,41 @@ class Spectrum1D():
 
         self.telluric_func = telluric_func
 
-    def remove_telluric(self):
+    def remove_telluric_func(self):
 
         self.telluric_func = None
+
+    def add_telluric_profile(self, telluric_profile):
+
+        self.telluric_profile = telluric_profile
+
+    def remove_telluric_profile(self):
+
+        self.telluric_profile = None
+
+    def add_telluric_profile_resampled(self, telluric_profile_resampled):
+
+        self.telluric_profile_resampled = telluric_profile_resampled
+
+    def remove_telluric_profile_resampled(self):
+
+        self.telluric_profile_resampled = None
+
+    def add_telluric_factor(self, telluric_factor):
+
+        self.telluric_factor = telluric_factor
+
+    def remove_telluric_factor(self):
+
+        self.telluric_factor = None
+
+    def add_telluric_factor_resampled(self, telluric_factor_resampled):
+
+        self.telluric_factor_resampled = telluric_factor_resampled
+
+    def remove_telluric_factor_resampled(self):
+
+        self.telluric_factor_resampled = None
 
     def add_flux(self, flux, flux_err, flux_sky):
         """

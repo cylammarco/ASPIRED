@@ -734,7 +734,7 @@ class FluxCalibration(StandardLibrary):
                                      telluric_profile,
                                      fill_value='extrapolate')
 
-        self.spectrum1D.add_telluric(telluric_func)
+        self.spectrum1D.add_telluric_func(telluric_func)
 
         if return_function:
 
@@ -809,20 +809,19 @@ class FluxCalibration(StandardLibrary):
 
             return fig.to_json()
 
-    def compute_sensitivity(self,
-                            k=3,
-                            method='interpolate',
-                            mask_range=[[6850, 6960], [7580, 7700],
-                                        [8925, 9050]],
-                            mask_fit_order=1,
-                            mask_fit_size=5,
-                            smooth=True,
-                            slength=5,
-                            sorder=3,
-                            return_function=True,
-                            use_continuum=True,
-                            sens_deg=7,
-                            **kwargs):
+    def get_sensitivity(self,
+                        k=3,
+                        method='interpolate',
+                        mask_range=[[6850, 6960], [7580, 7700], [8925, 9050]],
+                        mask_fit_order=1,
+                        mask_fit_size=5,
+                        smooth=True,
+                        slength=5,
+                        sorder=3,
+                        return_function=True,
+                        use_continuum=True,
+                        sens_deg=7,
+                        **kwargs):
         '''
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
@@ -1032,9 +1031,6 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D.add_sensitivity_func(sensitivity_func=sensitivity_func)
         self.spectrum1D.add_literature_standard(self.standard_wave_true,
                                                 self.standard_fluxmag_true)
-
-    def get_sensitivity_func(self):
-        pass
 
     def save_sensitivity_func(self):
         pass
@@ -1326,9 +1322,9 @@ class FluxCalibration(StandardLibrary):
             verbose=True)
 
         target_spectrum1D.add_flux_continuum(flux_continuum)
-        target_spectrum1D.add_flux_continuum_resampled(
+        target_spectrum1D.add_flux_resampled_continuum(
             flux_continuum_resampled)
-        target_spectrum1D.add_count_continuum_resampled(
+        target_spectrum1D.add_count_resampled_continuum(
             count_continuum_resampled)
 
         # Only computed for diagnostic

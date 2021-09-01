@@ -40,7 +40,7 @@ lhs6328_twodspec.ap_trace(nspec=2, display=False)
 # input
 def test_rectify():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.compute_rectification(
+    twodspec.get_rectification(
         bin_size=6,
         n_bin=[2, 4],
         display=False,
@@ -56,7 +56,7 @@ def test_rectify():
 # input
 def test_rectify_2():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.compute_rectification(
+    twodspec.get_rectification(
         bin_size=6,
         n_bin='lala',
         display=False,
@@ -71,9 +71,9 @@ def test_rectify_2():
 # assert the resampled image has replaced the input image
 def test_rectify_3():
     twodspec = copy.copy(lhs6328_twodspec)
-    twodspec.compute_rectification(bin_size=6,
-                                   n_bin=7,
-                                   apply=True,
-                                   display=False,
-                                   return_jsonstring=True)
+    twodspec.get_rectification(bin_size=6,
+                               n_bin=7,
+                               apply=True,
+                               display=False,
+                               return_jsonstring=True)
     assert np.sum(twodspec.img) == np.sum(twodspec.img_rectified)

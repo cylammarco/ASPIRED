@@ -1217,7 +1217,7 @@ onedspec.add_sensitivity_func(
 # Not implemented yet
 # onedspec.save_sensitivity_func('test/test_output/' +\
 # 'test_onedspec_sensitivity_func')
-# onedspec.compute_sensitivity()
+# onedspec.get_sensitivity()
 onedspec.set_atmospheric_extinction()
 onedspec.apply_flux_calibration()
 
@@ -1228,6 +1228,69 @@ onedspec.create_fits(output='trace+count+wavelength+count_resampled+'
                      'sensitivity+flux+sensitivity_resampled+'
                      'flux_resampled',
                      empty_primary_hdu=False)
+
+
+def test_adding_telluric_function():
+
+    onedspec.add_telluric_function(
+        lambda x: np.polynomial.polynomial.polyval(x, coeff))
+    onedspec.add_telluric_function(
+        lambda x: np.polynomial.polynomial.polyval(x, coeff), spec_id=0)
+    onedspec.add_telluric_function(
+        lambda x: np.polynomial.polynomial.polyval(x, coeff), spec_id=[0])
+
+    onedspec.add_telluric_function([np.arange(10000), np.arange(10000)])
+    onedspec.add_telluric_function(
+        [np.arange(10000), np.arange(10000)], spec_id=0)
+    onedspec.add_telluric_function(
+        [np.arange(10000), np.arange(10000)], spec_id=[0])
+
+
+def test_getting_telluric_profile():
+
+    onedspec.add_telluric_function([np.arange(10000), np.arange(10000)])
+
+    onedspec.get_telluric_profile()
+    onedspec.get_telluric_profile(spec_id=0)
+    onedspec.get_telluric_profile(spec_id=[0])
+
+    onedspec.inspect_telluric_profile(display=False,
+                                      save_fig=True,
+                                      fig_type='iframe+png+jpg+svg+pdf',
+                                      filename='test/test_output/test_onedspec_inspect_telluric_profile')
+    onedspec.inspect_telluric_profile(display=False,
+                                      spec_id=0,
+                                      return_jsonstring=True)
+    onedspec.inspect_telluric_profile(display=False, spec_id=[0])
+
+    onedspec.apply_telluric_correction()
+    onedspec.apply_telluric_correction(spec_id=0)
+    onedspec.apply_telluric_correction(spec_id=[0])
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_adding_telluric_function_wrong_spec_id():
+
+    onedspec.add_telluric_function(
+        lambda x: np.polynomial.polynomial.polyval(x, coeff), spec_id=1000)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_getting_telluric_profile_wrong_spec_id():
+
+    onedspec.get_telluric_profile(spec_id=1000)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_inspecting_telluric_profile_wrong_spec_id():
+
+    onedspec.inspect_telluric_profile(spec_id=1000)
+
+
+@pytest.mark.xfail(raises=ValueError)
+def test_applying_atmospheric_extinction_correction_wrong_spec_id():
+
+    onedspec.apply_atmospheric_extinction_correction(spec_id=1000)
 
 
 def test_miscellaneous():
