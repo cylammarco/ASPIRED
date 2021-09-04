@@ -647,8 +647,8 @@ class TwoDSpec:
         '''
         Set the readnoise of the image.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         readnoise: str, float, int or None (Default: None)
             If a string is provided, it will be treated as a header keyword
             for the readnoise value. Float or int will be used as the
@@ -722,8 +722,8 @@ class TwoDSpec:
         '''
         Set the gain of the image.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         gain: str, float, int or None (Default: None)
             If a string is provided, it will be treated as a header keyword
             for the gain value. Float or int will be used as the
@@ -792,8 +792,8 @@ class TwoDSpec:
         '''
         Set the seeing of the image.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         seeing: str, float, int or None (Default: None)
             If a string is provided, it will be treated as a header keyword
             for the seeing value. Float or int will be used as the
@@ -866,8 +866,8 @@ class TwoDSpec:
         '''
         Set the exptime of the image.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         exptime: str, float, int or None (Default: None)
             If a string is provided, it will be treated as a header keyword
             for the exptime value. Float or int will be used as the
@@ -941,8 +941,8 @@ class TwoDSpec:
         '''
         Set the airmass of the image.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         airmass: str, float, int or None (Default: None)
             If a string is provided, it will be treated as a header keyword
             for the airmass value. Float or int will be used as the

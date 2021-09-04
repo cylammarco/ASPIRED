@@ -867,7 +867,7 @@ class WavelengthCalibration():
 
     def do_hough_transform(self, brute_force=False):
         '''
-        * brute_force is EXPERIMENTAL as of 1 Sept 2021 *
+        ** brute_force is EXPERIMENTAL as of 1 Sept 2021 **
         The brute force method is supposed to provide all the possible
         solution, hence given a sufficiently large max_tries, the solution
         should always be the best possible outcome. However, it does not
@@ -1213,8 +1213,8 @@ class WavelengthCalibration():
         Remove fitted pixel-wavelength pair from the Calibrator for refitting.
         The positions can be found from get_pix_wave_pairs(). One at a time.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         arg: int
             The position of the pairs in the arrays.
 

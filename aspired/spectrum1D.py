@@ -978,8 +978,8 @@ class Spectrum1D():
         different from the one in the header as this can be overwritten
         by an user input, while the header value is raw.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         gain: float
             The gain value of the detector.
 
@@ -1002,8 +1002,8 @@ class Spectrum1D():
         different from the one in the header as this can be overwritten
         by an user input, while the header value is raw.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         readnoise: float
             The read noise value of the detector.
 
@@ -1026,8 +1026,8 @@ class Spectrum1D():
         different from the one in the header as this can be overwritten
         by an user input, while the header value is raw.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         exptime: float
             The exposure time of the input image.
 
@@ -1050,8 +1050,8 @@ class Spectrum1D():
         can be different from the one in the header as this can be
         overwritten by an user input, while the header value is raw.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         airmass: float
             The effective airmass during the exposure.
 
@@ -1074,8 +1074,8 @@ class Spectrum1D():
         can be different from the one in the header as this can be
         overwritten by an user input, while the header value is raw.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         seeing: float
             The effective seeing of the observation.
 
@@ -1133,8 +1133,8 @@ class Spectrum1D():
         Add the kind of polynomial used for fitting the pixel-to-wavelength
         function.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit_type: str
             The type of polynomial for fitting the pixel-wavelength function.
 
@@ -1159,8 +1159,8 @@ class Spectrum1D():
         function. Note that this overwrites the wavelength calibrated
         fit coefficients.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         fit_coeff: list or 1-d array
             The set of coefficients of the pixel-wavelength function.
 
@@ -1185,8 +1185,8 @@ class Spectrum1D():
         '''
         Add the properties of the RASCAL Calibrator.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         num_pix: int
             The number of pixels in the dispersion direction
         pixel_list: list or numpy array
@@ -1489,8 +1489,8 @@ class Spectrum1D():
         '''
         Add the wavelength of each effective pixel.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         wave: list or 1d-array
             The wavelength values at each effective pixel.
 
@@ -1515,8 +1515,8 @@ class Spectrum1D():
         Add the wavelength of the resampled spectrum which has an evenly
         distributed wavelength spacing.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         wave: list or 1d-array
             The resampled wavelength values.
 
@@ -1545,8 +1545,8 @@ class Spectrum1D():
         Add the photoelectron counts of the resampled spectrum which has
         an evenly distributed wavelength spacing.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         count_resampled: list or 1d-array
             The resampled photoelectron count.
         count_err_resampled: list or 1d-array
@@ -1599,8 +1599,8 @@ class Spectrum1D():
         '''
         Add the SG smoothing parameters for computing the sensitivity curve.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         smooth: bool
             Indicate if smoothing was applied.
         slength: int
@@ -1628,8 +1628,8 @@ class Spectrum1D():
         '''
         Add the callable function of the sensitivity curve.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         sensitivity_func: callable function
             The sensitivity curve as a function of wavelength.
 
@@ -1650,8 +1650,8 @@ class Spectrum1D():
         Add the sensitivity values for each pixel (the list from dividing
         the literature standard by the photoelectron count).
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         sensitivity: list or 1-d array
             The sensitivity at the effective pixel.
 
@@ -1671,8 +1671,8 @@ class Spectrum1D():
         '''
         Add the sensitivity after the spectrum is resampled.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         sensitivity: list or 1-d array
             The sensitivity in the reasmpled space.
 
@@ -1719,8 +1719,8 @@ class Spectrum1D():
         '''
         Add the continuum count value (should be the same size as count).
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         count_continuum: list or 1-d array
             The photoelectron count of the continuum.
 
@@ -1741,8 +1741,8 @@ class Spectrum1D():
         Add the continuum count_resampled value (should be the same size as
         count_resampled).
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         count_resampled_continuum: list or 1-d array
             The photoelectron count of the continuum at the resampled
             wavelength.
@@ -1763,8 +1763,8 @@ class Spectrum1D():
         '''
         Add the continuum flux value (should be the same size as flux).
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         flux_continuum: list or 1-d array
             The flux of the continuum.
 
@@ -1785,8 +1785,8 @@ class Spectrum1D():
         Add the continuum flux_resampled value (should be the same size as
         flux_resampled).
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         flux_resampled_continuum: list or 1-d array
             The flux of the continuum at the resampled wavelength.
 
@@ -1893,8 +1893,8 @@ class Spectrum1D():
         '''
         Add the Telluric factor found using the resampled flux.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         telluric_factor_resampled: float
             The multiplier to the telluric profile that minimises the sum
             of the deviation of corrected spectrum from the resampled
