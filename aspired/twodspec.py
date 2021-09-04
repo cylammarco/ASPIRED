@@ -33,9 +33,9 @@ class TwoDSpec:
                  header=None,
                  verbose=True,
                  logger_name='TwoDSpec',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default',
+                 log_file_name=None,
                  **kwargs):
         '''
         The constructor takes the data and the header, and the the header
@@ -58,7 +58,7 @@ class TwoDSpec:
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARNING)
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
@@ -71,7 +71,7 @@ class TwoDSpec:
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: "default")
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to print to screen only.
         **kwargs: keyword arguments (Default: see set_properties())
             see set_properties().
@@ -318,9 +318,9 @@ class TwoDSpec:
         +--------+--------+-------+-------+
         |  right |  left  |   1   |  True |
         +--------+--------+-------+-------+
-        |   top  | bottom |   0   | False |
+        |  top   | bottom |   0   | False |
         +--------+--------+-------+-------+
-        | bottom |   top  |   0   |  True |
+        | bottom |  top   |   0   |  True |
         +--------+--------+-------+-------+
 
         Spectra are sorted by their brightness. If there are multiple spectra
@@ -644,6 +644,18 @@ class TwoDSpec:
 
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
+        '''
+        Set the readnoise of the image.
+
+        Parameter
+        ---------
+        readnoise: str, float, int or None (Default: None)
+            If a string is provided, it will be treated as a header keyword
+            for the readnoise value. Float or int will be used as the
+            readnoise value. If None is provided, the header will be searched
+            with the set of default readnoise keywords.
+
+        '''
 
         if (readnoise is not None) and (self.readnoise is not None):
 
@@ -707,6 +719,18 @@ class TwoDSpec:
 
     # Get the gain
     def set_gain(self, gain=None):
+        '''
+        Set the gain of the image.
+
+        Parameter
+        ---------
+        gain: str, float, int or None (Default: None)
+            If a string is provided, it will be treated as a header keyword
+            for the gain value. Float or int will be used as the
+            gain value. If None is provided, the header will be searched
+            with the set of default gain keywords.
+
+        '''
 
         if (gain is not None) and (self.gain is not None):
 
@@ -765,6 +789,18 @@ class TwoDSpec:
 
     # Get the Seeing
     def set_seeing(self, seeing=None):
+        '''
+        Set the seeing of the image.
+
+        Parameter
+        ---------
+        seeing: str, float, int or None (Default: None)
+            If a string is provided, it will be treated as a header keyword
+            for the seeing value. Float or int will be used as the
+            seeing value. If None is provided, the header will be searched
+            with the set of default seeing keywords.
+
+        '''
 
         if (seeing is not None) and (self.seeing is not None):
 
@@ -827,6 +863,18 @@ class TwoDSpec:
 
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
+        '''
+        Set the exptime of the image.
+
+        Parameter
+        ---------
+        exptime: str, float, int or None (Default: None)
+            If a string is provided, it will be treated as a header keyword
+            for the exptime value. Float or int will be used as the
+            exptime value. If None is provided, the header will be searched
+            with the set of default exptime keywords.
+
+        '''
 
         if (exptime is not None) and (self.exptime is not None):
 
@@ -890,6 +938,18 @@ class TwoDSpec:
 
     # Get the Exposure Time
     def set_airmass(self, airmass=None):
+        '''
+        Set the airmass of the image.
+
+        Parameter
+        ---------
+        airmass: str, float, int or None (Default: None)
+            If a string is provided, it will be treated as a header keyword
+            for the airmass value. Float or int will be used as the
+            airmass value. If None is provided, the header will be searched
+            with the set of default airmass keywords.
+
+        '''
 
         if (airmass is not None) and (self.airmass is not None):
 
@@ -1161,6 +1221,12 @@ class TwoDSpec:
         """
         Adding the header for the arc.
 
+        Parameters
+        ----------
+        header: FITS header (deafult: None)
+            An astropy.io.fits.Header object. This is not used if arc is
+            a PrimaryHDU or ImageHDU.
+
         """
 
         # If it is a fits.hdu.header.Header object
@@ -1289,6 +1355,9 @@ class TwoDSpec:
             List of keyword (string).
         append: bool (Default: False)
             Set to False to overwrite the current list.
+        update: bool (Default: True)
+            Set to True to search for the readnoise after the new list
+            is provided.
 
         '''
 
@@ -1342,6 +1411,9 @@ class TwoDSpec:
             List of keyword (string).
         append: bool (Default: False)
             Set to False to overwrite the current list.
+        update: bool (Default: True)
+            Set to True to search for the readnoise after the new list
+            is provided.
 
         '''
 
@@ -1394,6 +1466,9 @@ class TwoDSpec:
             List of keyword (string).
         append: bool (Default: False)
             Set to False to overwrite the current list.
+        update: bool (Default: True)
+            Set to True to search for the readnoise after the new list
+            is provided.
 
         '''
 
@@ -1446,6 +1521,9 @@ class TwoDSpec:
             List of keyword (string).
         append: bool (Default: False)
             Set to False to overwrite the current list.
+        update: bool (Default: True)
+            Set to True to search for the readnoise after the new list
+            is provided.
 
         '''
 
@@ -1498,6 +1576,9 @@ class TwoDSpec:
             List of keyword (string).
         append: bool (Default: False)
             Set to False to overwrite the current list.
+        update: bool (Default: True)
+            Set to True to search for the readnoise after the new list
+            is provided.
 
         '''
 
@@ -1651,7 +1732,8 @@ class TwoDSpec:
         nspec: int
             Number of spectra to be extracted.
         smooth: bool (Default: False)
-            Set to true to apply a 3x3 median filter before tracing.
+            Set to true to apply a 3x3 median filter before tracing. Not
+            recommended for use with faint spectrum.
         nwindow: int
             Number of spectral slices (subspectra) to be produced for
             cross-correlation.
@@ -3292,7 +3374,7 @@ class TwoDSpec:
         ----------
         source_slice: 1-d numpy array (N)
             The counts along the profile for aperture extraction.
-        sky_source_slice: 1-d numpy array (N)
+        sky_source_slice: 1-d numpy array (M)
             Count of the fitted sky along the pix, has to be the same
             length as pix
         pix_frac: float
@@ -3311,6 +3393,10 @@ class TwoDSpec:
         width_up: int
             Number of pixels used for aperture extraction on the upper side
             of the spectrum.
+        source_bad_mask: 1-d numpy array (N, default: None)
+            Masking the unusable pixels for extraction.
+        sky_source_bad_mask: 1-d numpy array (M, default: None)
+            Masking the unusable pixels for sky subtraction.
 
         """
 
@@ -3551,7 +3637,9 @@ class TwoDSpec:
                                     nreject=100):
         """
         Optimally extract curved spectra taken and updated from
-        https://people.ucsc.edu/~ianc/python/_modules/spec.html,
+        Ian Crossfield's code
+
+        https://people.ucsc.edu/~ianc/python/_modules/spec.html#superExtract,
         following Marsh 1989.
 
         Parameters
@@ -3587,7 +3675,7 @@ class TwoDSpec:
             Order of profile polynomials; 1 = linear, etc.
         cosmicray_sigma: int (Default: 5)
             Sigma-clipping threshold for cleaning & cosmic-ray rejection.
-        qmode: str (Default: 'fast-linear')
+        qmode: str (Default: 'slow-nearest')
             How to compute Marsh's Q-matrix. Valid inputs are 'fast-linear',
             'slow-linear', 'fast-nearest', and 'slow-nearest'. These select
             between various methods of integrating the nearest-neighbor or
@@ -4266,6 +4354,9 @@ class TwoDSpec:
         ----------
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
+        spec_width: int (Default: None)
+            The number of pixels in the spatial direction used to sum for the
+            arc spectrum
         display: bool
             Set to True to display disgnostic plot.
         renderer: str

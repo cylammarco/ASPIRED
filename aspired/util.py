@@ -9,7 +9,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
     Replace pixels flagged as nonzero in a bad-pixel mask with the
     average of their nearest four good neighboring pixels.
 
-    Based on Ian Crossfield's code
+    Taken and updated from Ian Crossfield's code
     https://www.lpl.arizona.edu/~ianc/python/_modules/nsdata.html#bfixpix
 
     Parameters
@@ -272,6 +272,23 @@ def grow_mask(mask, iterations, diagonal):
 
 
 def get_continuum(x, y, **kwargs):
+    '''
+    This is a wrapper function of the lowess function from statsmodels that
+    uses a different frac default value that is more appropriate in getting
+    a first guess continuum which reject "outliers" much more aggressively.
+    This function also takes in values in a Pythonic way that of providing
+    arguments: "first x then y".
+
+    Parameters
+    ----------
+    x: list or numpy.ndarray
+        Absicissa (conventionally the first number of a coordinate pair)
+    y: list or numpy.ndarray
+        Ordinate (conventionally the second number of a coordinate pair)
+    **kwargs: dict
+        The keyword arguments for the lowess function.
+
+    '''
 
     if 'frac' not in kwargs:
 

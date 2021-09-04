@@ -18,9 +18,9 @@ class WavelengthCalibration():
     def __init__(self,
                  verbose=True,
                  logger_name='WavelengthCalibration',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default'):
+                 log_file_name=None):
         '''
         This is a wrapper for using RASCAL to perform wavelength calibration,
         which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
@@ -46,7 +46,7 @@ class WavelengthCalibration():
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARNING)
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
@@ -59,7 +59,7 @@ class WavelengthCalibration():
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: "default")
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to self.logger.warning to screen
             only.
 
@@ -139,10 +139,15 @@ class WavelengthCalibration():
         ----------
         spectrum1D: Spectrum1D object
             The Spectrum1D to be referenced or copied.
-        merge: bool (Default: None)
+        merge: bool (Default: False)
             Set to True to copy everything over to the local Spectrum1D,
             hence FluxCalibration will not be acting on the Spectrum1D
             outside.
+        overwrite: bool (Default: False)
+            Set to True to make a complete copy of the spectrum1D to the
+            target spectrum1D, that includes all the Nones and other settings.
+            Use with caution, as it removes the properties set before this
+            function call.
 
         '''
 
@@ -168,24 +173,31 @@ class WavelengthCalibration():
         self.spectrum1D.add_peaks_refined(peaks)
 
     def remove_arc_lines(self):
+        '''
+        Remove all the refined arc lines.
+
+        '''
 
         self.spectrum1D.remove_peaks_refined()
 
     def add_arc_spec(self, arc_spec):
         '''
-        Provide the collapsed 1D spectrum/a of the arc image.
+        Provide the 1D spectrum of the arc image.
 
         Parameters
         ----------
         arc_spec: list
-            The Count/flux of the 1D arc spectrum/a. Multiple spectrum/a
-            can be provided as list of list or list of arrays.
+            The photoelectron count of the 1D arc spectrum.
 
         '''
 
         self.spectrum1D.add_arc_spec(arc_spec)
 
     def remove_arc_spec(self):
+        '''
+        Remove the aspectrm of the arc
+
+        '''
 
         self.spectrum1D.remove_arc_spec()
 
@@ -265,31 +277,33 @@ class WavelengthCalibration():
         arc_spec: list, array or None (Default: None)
             If not provided, it will look for the arc_spec in the spectrum1D.
             Otherwise, the input arc_spec will be used.
-        background: int
+        background: int (Default: None)
             User-supplied estimated background level (percentage of max).
-        percentile: float
+        percentile: float (Default: 2.)
             The percentile of the flux to be used as the estimate of the
             background sky level to the first order. Only used if background
             is None. [Count]
-        prominence: float
+        prominence: float (Default: 5.)
             The minimum prominence to be considered as a peak (% of max).
-        distance: float
+        top_n_peaks: int (Default: None)
+            The N most prominent peaks. None means keeping all peaks.
+        distance: float (Default: 5.)
             Minimum separation between peaks.
-        refine: bool
+        refine: bool (Default: True)
             Set to true to fit a gaussian to get the peak at sub-pixel
             precision.
-        refine_window_width: bool
+        refine_window_width: int (Default: 5)
             The number of pixels (on each side of the existing peaks) to be
             fitted with gaussian profiles over.
-        display: bool
+        display: bool (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (Default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs.
-        height: int/float
+        height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs.
-        return_jsonstring: bool
+        return_jsonstring: bool (Default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_fig: bool (default: False)
@@ -299,11 +313,12 @@ class WavelengthCalibration():
         fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
             jpg, png, svg, pdf and iframe. Delimiter is '+'.
-        filename: str
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: bool
-            Open the iframe in the default browser if set to True.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True. Only used
+            if an iframe is saved.
 
         Returns
         -------
@@ -613,6 +628,14 @@ class WavelengthCalibration():
             Set to use the hough space to weigh the fit. The theoretical
             optimal weighting is unclear. The larger the value, the heavily it
             relies on the overdensity in the hough space for a good fit.
+        minimum_matches: int (Default: 3)
+            Minimum number of fitted peaks to accept as a solution. This has
+            to be smaller than or equal to the sample size.
+        minimum_peak_utilisation: float (Default: 0.)
+            The minimum percentage of peaks used in order to accept as a
+            valid solution.
+        minimum_fit_error: float (Default 1e-4)
+            Set to remove overfitted/unrealistic fits.
 
         '''
 
@@ -683,24 +706,30 @@ class WavelengthCalibration():
 
         Parameters
         ----------
-        elements : list
+        elements: list
             Element (required). Preferably a standard (i.e. periodic table)
             name for convenience with built-in atlases
-        wavelengths : list
+        wavelengths: list
             Wavelength to add (Angstrom)
-        intensities : list
+        intensities: list
             Relative line intensities
-        constrain_poly : bool
+        candidate_tolerance: float (Default: 10)
+            Tolerance (Angstroms) for considering a point to be an inlier
+            during candidate peak/line selection. This should be reasonable
+            small as we want to search for candidate points which are
+            *locally* linear.
+        constrain_poly : bool (Default: False)
             Apply a polygonal constraint on possible peak/atlas pairs
-        vacuum: bool
+        vacuum: bool (Default: False)
             Set to true to convert the input wavelength to air-wavelengths
             based on the given pressure, temperature and humidity.
-        pressure: float
+        pressure: float (Default: 101325.)
             Pressure when the observation took place, in Pascal.
-            If it is not known, assume 10% decrement per 1000 meter altitude
-        temperature: float
+            If it is not known, assume 10% decrement from 1 atm (the default)
+            per 1000 meter altitude.
+        temperature: float (Default: 273.15)
             Temperature when the observation took place, in Kelvin.
-        relative_humidity: float
+        relative_humidity: float (Default: 0.)
             In percentage.
 
         '''
@@ -762,21 +791,21 @@ class WavelengthCalibration():
         min_distance: float (Default: None)
             Minimum separation between neighbouring arc lines.
         candidate_tolerance: float (Default: 10)
-            toleranceold  (Angstroms) for considering a point to be an inlier
+            Tolerance (Angstroms) for considering a point to be an inlier
             during candidate peak/line selection. This should be reasonable
             small as we want to search for candidate points which are
             *locally* linear.
-        constrain_poly: bool
+        constrain_poly: bool (Default: Flase)
             Apply a polygonal constraint on possible peak/atlas pairs
-        vacuum: bool
+        vacuum: bool (Default: False)
             Set to True if the light path from the arc lamb to the detector
             plane is entirely in vacuum.
-        pressure: float
+        pressure: float (Default: 101325.)
             Pressure when the observation took place, in Pascal.
             If it is not known, assume 10% decrement per 1000 meter altitude
-        temperature: float
+        temperature: float (Default: 273.15)
             Temperature when the observation took place, in Kelvin.
-        relative_humidity: float
+        relative_humidity: float (Default: 0.)
             In percentage.
 
         '''
@@ -806,7 +835,7 @@ class WavelengthCalibration():
 
     def remove_atlas_lines_range(self, wavelength, tolerance=10.):
         '''
-        Remove arc lines within a certain wavelength range.
+        Remove arc lines within the given wavelength range (tolerance).
 
         Parameters
         ----------
@@ -817,8 +846,8 @@ class WavelengthCalibration():
 
         '''
 
-        self.spectrum1D.calibrator.remove_atlas_lines_range(wavelength,
-                                                            tolerance=10.)
+        self.spectrum1D.calibrator.remove_atlas_lines_range(
+            wavelength, tolerance=tolerance)
 
     def list_atlas(self):
         '''
@@ -838,12 +867,19 @@ class WavelengthCalibration():
 
     def do_hough_transform(self, brute_force=False):
         '''
+        * brute_force is EXPERIMENTAL as of 1 Sept 2021 *
+        The brute force method is supposed to provide all the possible
+        solution, hence given a sufficiently large max_tries, the solution
+        should always be the best possible outcome. However, it does not
+        seem to work in a small fraction of our tests. Use with caution,
+        and it is not the recommended way for now.
+
         Perform Hough transform on the pixel-wavelength pairs with the
         configuration set by the set_hough_properties().
 
         Parameters
         ----------
-        brute_force: bool (Default: Ture)
+        brute_force: bool (Default: False)
             Set to true to compute the gradient and intercept between
             every two data points
 
@@ -955,11 +991,11 @@ class WavelengthCalibration():
             Set to show the progress using tdqm (if imported).
         return_jsonstring: (default: False)
             Set to True to save the plotly figure as json string.
-        display: bool
+        display: bool (Default: False)
             Set to show diagnostic plot.
         renderer: str (Default: 'default')
             plotly renderer options.
-        save_fig: string
+        save_fig: string (Default: False)
             Set to save figure.
         fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
@@ -1235,10 +1271,18 @@ class WavelengthCalibration():
                     self.rms, self.residuals)
 
     def get_calibrator(self):
+        '''
+        Get the calibrator object.
+
+        '''
 
         return getattr(self.spectrum1D, 'calibrator')
 
     def get_spectrum1D(self):
+        '''
+        Get the spectrum1D object.
+
+        '''
 
         return self.spectrum1D
 

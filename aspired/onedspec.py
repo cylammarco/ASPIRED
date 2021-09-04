@@ -23,9 +23,9 @@ class OneDSpec():
     def __init__(self,
                  verbose=True,
                  logger_name='OneDSpec',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default'):
+                 log_file_name=None):
         '''
         This class applies the wavelength calibrations and compute & apply the
         flux calibration to the extracted 1D spectra. The standard TwoDSpec
@@ -42,7 +42,7 @@ class OneDSpec():
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: 'WARNING')
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
@@ -55,7 +55,7 @@ class OneDSpec():
         log_file_folder: None or str (Default: 'default')
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: 'default')
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to print to screen only.
 
         '''
@@ -361,9 +361,9 @@ class OneDSpec():
 
         Parameters
         ----------
-        wave : numeric value, list or numpy 1D array (N) (Default: None)
+        wave : numeric value, list or numpy 1D array (N)
             The wavelength of each pixels of the spectrum.
-        spec_id: int
+        spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
@@ -1040,7 +1040,7 @@ class OneDSpec():
             Standard deviation of the Gaussian profile of a trace
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
-        pixel_list: list or numpy.narray
+        pixel_list: list or numpy.narray (Default: None)
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(len(spec.trace[0])), for example, in the case of accounting
@@ -1757,8 +1757,8 @@ class OneDSpec():
                              num_slopes=5000,
                              xbins=200,
                              ybins=200,
-                             min_wavelength=3500,
-                             max_wavelength=8500,
+                             min_wavelength=3000.,
+                             max_wavelength=10000.,
                              range_tolerance=500,
                              linearity_tolerance=100,
                              stype='science+standard'):
@@ -1773,9 +1773,9 @@ class OneDSpec():
             Number of bins for Hough accumulation
         ybins: int (Default: 200)
             Number of bins for Hough accumulation
-        min_wavelength: float (Default: 3500)
+        min_wavelength: float (Default: 3000.)
             Minimum wavelength of the spectrum.
-        max_wavelength: float (Default: 8500)
+        max_wavelength: float (Default: 10000.)
             Maximum wavelength of the spectrum.
         range_tolerance: float (Default: 500)
             Estimation of the error on the provided spectral range
@@ -1872,7 +1872,7 @@ class OneDSpec():
             known polynomial.
         filter_close: bool (Default: False)
             Remove the pairs that are out of bounds in the hough space.
-        ransac_tolerance: float (Default: 1)
+        ransac_tolerance: float (Default: 5)
             The distance criteria  (Angstroms) to be considered an inlier to a
             fit. This should be close to the size of the expected residuals on
             the final fit (e.g. 1A is typical)
@@ -1882,6 +1882,14 @@ class OneDSpec():
             Set to use the hough space to weigh the fit. The theoretical
             optimal weighting is unclear. The larger the value, the heavily it
             relies on the overdensity in the hough space for a good fit.
+        minimum_matches: int (Default: 3)
+            Minimum number of fitted peaks to accept as a solution. This has
+            to be smaller than or equal to the sample size.
+        minimum_peak_utilisation: float (Default: 0.)
+            The minimum percentage of peaks used in order to accept as a
+            valid solution.
+        minimum_fit_error: float (Default 1e-4)
+            Set to remove overfitted/unrealistic fits.
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2005,7 +2013,7 @@ class OneDSpec():
                        candidate_tolerance=10.,
                        constrain_poly=False,
                        vacuum=False,
-                       pressure=101325,
+                       pressure=101325.,
                        temperature=273.15,
                        relative_humidity=0.,
                        stype='science+standard'):
@@ -2022,7 +2030,7 @@ class OneDSpec():
         elements : list
             Element (required). Preferably a standard (i.e. periodic table)
             name for convenience with built-in atlases
-        wavelengths : list or None (Default: None)
+        wavelengths : list
             Wavelength to add (Angstrom)
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
@@ -2038,7 +2046,7 @@ class OneDSpec():
         vacuum: bool (Default: False)
             Set to true to convert the input wavelength to air-wavelengths
             based on the given pressure, temperature and humidity.
-        pressure: float (Default: 101325)
+        pressure: float (Default: 101325.)
             Pressure when the observation took place, in Pascal.
             If it is not known, assume 10% decrement per 1000 meter altitude
         temperature: float (Default: 273.15)
@@ -2126,8 +2134,8 @@ class OneDSpec():
     def add_atlas(self,
                   elements,
                   spec_id=None,
-                  min_atlas_wavelength=1000.,
-                  max_atlas_wavelength=30000.,
+                  min_atlas_wavelength=3000.,
+                  max_atlas_wavelength=10000.,
                   min_intensity=10.,
                   min_distance=10.,
                   candidate_tolerance=10.,
@@ -2144,9 +2152,9 @@ class OneDSpec():
             Chemical symbol, case insensitive
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
-        min_atlas_wavelength: float (Default: None)
+        min_atlas_wavelength: float (Default: 3000.)
             Minimum wavelength of the arc lines.
-        max_atlas_wavelength: float (Default: None)
+        max_atlas_wavelength: float (Default: 10000.)
             Maximum wavelength of the arc lines.
         min_intensity: float (Default: 10.)
             Minimum intensity of the arc lines. Refer to NIST for the
@@ -2163,7 +2171,7 @@ class OneDSpec():
         vacuum: bool (Default: False)
             Set to true to convert the input wavelength to air-wavelengths
             based on the given pressure, temperature and humidity.
-        pressure: float (Default: 101325)
+        pressure: float (Default: 101325.)
             Pressure when the observation took place, in Pascal.
             If it is not known, assume 10% decrement per 1000 meter altitude
         temperature: float (Default: 273.15)
@@ -2249,7 +2257,7 @@ class OneDSpec():
         ----------
         wavelength: float
             Wavelength to remove (Angstrom)
-        tolerance: float
+        tolerance: float (Default: 10.)
             Tolerance around this wavelength where atlas lines will be removed
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
@@ -2438,11 +2446,18 @@ class OneDSpec():
                            brute_force=False,
                            stype='science+standard'):
         '''
+        * brute_force is EXPERIMENTAL as of 1 Sept 2021 *
+        The brute force method is supposed to provide all the possible
+        solution, hence given a sufficiently large max_tries, the solution
+        should always be the best possible outcome. However, it does not
+        seem to work in a small fraction of our tests. Use with caution,
+        and it is not the recommended way for now.
+
         Parameters
         ----------
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
-        brute_force: bool (Default: Ture)
+        brute_force: bool (Default: False)
             Set to true to compute the gradient and intercept between
             every two data points
         stype: str (Default: 'science+standard')
@@ -2503,6 +2518,11 @@ class OneDSpec():
                           display=False,
                           stype='science+standard'):
         '''
+        A wrapper function to plot the search space in the Hough space.
+
+        If fit fit_coefficients are provided, the model solution will be
+        overplotted.
+
         Parameters
         ----------
         spec_id: int (Default: None)
@@ -2595,32 +2615,39 @@ class OneDSpec():
             filename=None,
             stype='science+standard'):
         '''
+        A wrapper function to perform wavelength calibration with RASCAL. As of
+        14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
+        `NIST <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
+
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
-        max_tries: int (Default: 5000)
+        max_tries: int
             Number of trials of polynomial fitting.
         fit_deg: int (Default: 4)
             The degree of the polynomial to be fitted.
         fit_coeff: list (Default: None)
+            *NOT CURRENTLY USED, as of 17 Jan 2021*
             Set the baseline of the least square fit. If no fits outform this
             set of polynomial coefficients, this will be used as the best fit.
         fit_tolerance: float (Default: 10)
             Sets a tolerance on whether a fit found by RANSAC is considered
-            acceptable
-        fit_type: str (Default: 'poly')
-            One of 'poly', 'legendre' or 'chebyshev'
+            acceptable.
+        fit_type: string (Default: 'poly')
+            One of 'poly', 'legendre' or 'chebyshev'.
+        candidate_tolerance: float (default: 2.0)
+            toleranceold  (Angstroms) for considering a point to be an inlier
         brute_force: bool (Default: False)
             Set to True to try all possible combination in the given parameter
-            space
+            space.
         progress: bool (Default: True)
             Set to show the progress using tdqm (if imported).
-        return_solution: bool (Default: True)
-            Set to True to return the best fit polynomial coefficients.
+        return_jsonstring: (default: False)
+            Set to True to save the plotly figure as json string.
         display: bool (Default: False)
             Set to show diagnostic plot.
-        save_fig: bool (Default: False)
+        renderer: str (Default: 'default')
+            plotly renderer options.
+        save_fig: string (Default: False)
             Set to save figure.
         fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
@@ -2736,7 +2763,7 @@ class OneDSpec():
                      filename=None,
                      stype='science+standard'):
         '''
-        ** EXPERIMENTAL, as of 17 Jan 2021 **
+        ** EXPERIMENTAL, as of 1 Sept 2021 **
         Refine the fitted solution with a minimisation method as provided by
         scipy.optimize.minimize().
 
@@ -2871,16 +2898,19 @@ class OneDSpec():
         Return the list of matched_peaks and matched_atlas with their
         position in the array.
 
-        Return
-        ------
-        pw_pairs: disctoary
-            Dictionary of 'science' and/or 'standard' where the values are
-            lists of tuples each containing the array position, peak (pixel)
-            and atlas (wavelength) in the order of the given spec_id.
+        Parameters
+        ----------
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        Return
+        ------
+        pw_pairs: dictionary
+            Dictionary of 'science' and/or 'standard' where the values are
+            lists of tuples each containing the array position, peak (pixel)
+            and atlas (wavelength) in the order of the given spec_id.
 
         '''
 
@@ -3365,6 +3395,7 @@ class OneDSpec():
         location: str (Default: orm)
             Location of the observatory, currently contains:
             (1) ORM - Roque de los Muchachos Observatory (ORM)
+            Only used if extinction_func is None.
         extinction_func: callable function (Default: None)
             Input wavelength in Angstrom, output magnitude of extinction per
             airmass. It will override the 'location'.
@@ -3407,15 +3438,22 @@ class OneDSpec():
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
         '''
+        Read the standard flux/magnitude file. And return the wavelength and
+        flux/mag. The units of the data are always in
+
+        | wavelength: A
+        | flux:       ergs / cm / cm / s / A
+        | mag:        mag (AB)
+
         Parameters
         ----------
         target: string
             Name of the standard star
-        library: string
+        library: string (Default: None)
             Name of the library of standard star
-        ftype: string
+        ftype: string (Default: 'flux')
             'flux' or 'mag'
-        cutoff: float
+        cutoff: float (Default: 0.4)
             The toleranceold for the word similarity in the range of [0, 1].
 
         '''
@@ -3491,10 +3529,9 @@ class OneDSpec():
                         mask_fit_order=1,
                         mask_fit_size=5,
                         smooth=True,
-                        slength=7,
+                        slength=5,
                         sorder=3,
                         return_function=False,
-                        use_continuum=True,
                         sens_deg=7,
                         **kwargs):
         '''
@@ -3502,7 +3539,7 @@ class OneDSpec():
         ----------
         k: integer [1,2,3,4,5 only]
             The order of the spline.
-        method: str (Default: interpolate)
+        method: str (Default: 'interpolate')
             This should be either 'interpolate' of 'polynomial'. Note that the
             polynomial is computed from the interpolated function. The
             default is interpolate because it is much more stable at the
@@ -3514,20 +3551,17 @@ class OneDSpec():
             [[min1, max1], [min2, max2],...]
         mask_fit_order: int (Default: 1)
             Order of polynomial to be fitted over the masked regions
-        mask_fit_size: int (Default: 1)
+        mask_fit_size: int (Default: 5)
             Number of "pixels" to be fitted on each side of the masked regions.
-        smooth: bool (Default: False)
+        smooth: bool (Default: True)
             set to smooth the input spectrum with scipy.signal.savgol_filter
-        slength: int (Default: 7)
+        slength: int (Default:5)
             SG-filter window size
         sorder: int (Default: 3)
             SG-filter polynomial order
-        return_function: bool
+        return_function: bool (Default: False)
             Set to True to return the callable function of the sensitivity
             curve.
-        use_continuum: bool
-            Use LOWESS function to get a continuum of the flux for computing
-            the sensitivity curve.
         sens_deg: int (Default: 7)
             The degree of polynomial of the sensitivity curve, only used if
             the method is 'polynomial'.
@@ -3548,7 +3582,6 @@ class OneDSpec():
                                          slength=slength,
                                          sorder=sorder,
                                          return_function=return_function,
-                                         use_continuum=use_continuum,
                                          sens_deg=sens_deg,
                                          **kwargs)
             self.logger.info('Sensitivity curve computed.')
@@ -3563,6 +3596,8 @@ class OneDSpec():
 
     def save_sensitivity_func(self, filename='sensitivity_func.npy'):
         '''
+        Not-implemented wrapper.
+
         Parameters
         ----------
         filename: str
@@ -3575,6 +3610,8 @@ class OneDSpec():
 
     def add_sensitivity_func(self, sensitivity_func):
         '''
+        Provide a callable function of the detector sensitivity response.
+
         Parameters
         ----------
         sensitivity_func: str
@@ -3646,12 +3683,61 @@ class OneDSpec():
             self.logger.warning('Sensitivity function not available, it '
                                 'cannot be inspected.')
 
-    def apply_flux_calibration(self, spec_id=None, stype='science+standard'):
+    def apply_flux_calibration(self,
+                               spec_id=None,
+                               inspect=False,
+                               wave_min=3500.,
+                               wave_max=8500.,
+                               display=False,
+                               renderer='default',
+                               width=1280,
+                               height=720,
+                               return_jsonstring=False,
+                               save_fig=False,
+                               fig_type='iframe+png',
+                               filename=None,
+                               open_iframe=False,
+                               stype='science+standard'):
         '''
+        Apply the computed sensitivity curve. And resample the spectra to
+        match the highest resolution (the smallest wavelength bin) part of the
+        spectrum.
+
+        Note: This function directly modify the *target_spectrum1D*.
+
         Parameters
         ----------
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
+        inspect: bool (Default: False)
+            Set to True to create/display/save figure
+        wave_min: float (Default: 3500)
+            Minimum wavelength to display
+        wave_max: float (Default: 8500)
+            Maximum wavelength to display
+        display: bool (Default: False)
+            Set to True to display disgnostic plot.
+        renderer: string (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3685,7 +3771,19 @@ class OneDSpec():
                 for i in spec_id:
 
                     self.fluxcal.apply_flux_calibration(
-                        target_spectrum1D=self.science_spectrum_list[i])
+                        target_spectrum1D=self.science_spectrum_list[i],
+                        inspect=inspect,
+                        wave_min=wave_min,
+                        wave_max=wave_max,
+                        display=display,
+                        renderer=renderer,
+                        width=width,
+                        height=height,
+                        return_jsonstring=return_jsonstring,
+                        save_fig=save_fig,
+                        fig_type=fig_type,
+                        filename=filename,
+                        open_iframe=open_iframe)
                     self.science_spectrum_list[i].add_standard_header(
                         self.standard_spectrum_list[0].spectrum_header)
                     self.logger.info(
@@ -3697,7 +3795,19 @@ class OneDSpec():
             if 'standard' in stype_split:
 
                 self.fluxcal.apply_flux_calibration(
-                    target_spectrum1D=self.standard_spectrum_list[0])
+                    target_spectrum1D=self.standard_spectrum_list[0],
+                    inspect=inspect,
+                    wave_min=wave_min,
+                    wave_max=wave_max,
+                    display=display,
+                    renderer=renderer,
+                    width=width,
+                    height=height,
+                    return_jsonstring=return_jsonstring,
+                    save_fig=save_fig,
+                    fig_type=fig_type,
+                    filename=filename,
+                    open_iframe=open_iframe)
                 self.standard_spectrum_list[0].add_standard_header(
                     self.standard_spectrum_list[0].spectrum_header)
                 self.logger.info('Flux calibration is applied for the '
@@ -3711,6 +3821,25 @@ class OneDSpec():
                                 'flux calibration is not possible.')
 
     def _min_std(self, factor, flux, telluric_profile, continuum, sigma=3.5):
+        '''
+        Minimisation function to get the best mutiplier for the strength
+        of the Telluric profile.
+
+        Parameters
+        ----------
+        factor: float
+            The multiplier for the strength of the Telluric profile.
+        flux: 1-d array (N)
+            Flux of the target.
+        telluric_profile: 1-d array (N)
+            Telluric Profile normalised to 1 being the most strongly absorbed,
+            0 being outside the Telluric regions.
+        continuum: 1-d array (N)
+            Continuum flux array.
+        sigma: float (default: 3.5)
+            Level of sigma clipping.
+
+        '''
 
         if factor < 0:
 
@@ -3723,6 +3852,18 @@ class OneDSpec():
         return nansum
 
     def add_telluric_function(self, telluric, spec_id=None):
+        '''
+        Provide a callable function that gives the Telluric profile.
+
+        Parameters
+        ----------
+        telluric: callable function
+            A function that gives the absorption profile as a function
+            of wavelength.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+
+        '''
 
         if isinstance(spec_id, int):
 
@@ -3760,6 +3901,18 @@ class OneDSpec():
                     science_spec.telluric_func(science_spec.wave))
 
     def get_continuum(self, spec_id=None, **kwargs):
+        '''
+        Get the continnum from the wave, count and flux.
+
+        Parameters
+        ----------
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        **kwargs: dictionary
+            The keyword arguments to be passed to the lowess function
+            for generating the continuum.
+
+        '''
 
         if isinstance(spec_id, int):
 
@@ -3835,10 +3988,13 @@ class OneDSpec():
         ----------
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
-        ignore_standard: bool (Default: False)
-            Set the True to extract the Telluric absorption from the science
-            instead of from the standard. If standard star is not available,
-            this will be forced to True.
+        factor: float (Default: 1.0)
+            The extra fudge factor multiplied to the telluric profile to
+            manally adjust the strength.
+        auto_apply: bool (Default: False)
+            Set to True to accept the computed telluric absorption correction
+            automatically, which is currently an irresversible process through
+            the public API.
 
         '''
 
@@ -3958,11 +4114,51 @@ class OneDSpec():
                                  renderer='default',
                                  width=1280,
                                  height=720,
+                                 return_jsonstring=False,
                                  save_fig=False,
                                  fig_type='iframe+png',
                                  filename=None,
-                                 open_iframe=False,
-                                 return_jsonstring=False):
+                                 open_iframe=False):
+        '''
+        Inspect the Telluric absorption correction on top of the flux
+        calibrated spectra.
+
+        Parameters
+        ----------
+        factor: float (Default: 1.0)
+            The extra fudge factor multiplied to the telluric profile to
+            manally adjust the strength.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        display: bool (Default: True)
+            Set to True to display disgnostic plot.
+        renderer: string (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True.
+
+        '''
 
         if isinstance(spec_id, int):
 
@@ -4132,6 +4328,18 @@ class OneDSpec():
                 to_return.append(fig_sci.to_json())
 
     def apply_telluric_correction(self, factor=1.0, spec_id=None):
+        '''
+        Apply the telluric correction with the extra multiplier 'factor'.
+
+        Parameters
+        ----------
+        factor: float (Default: None)
+            The extra fudge factor multiplied to the telluric profile to
+            manally adjust the strength.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+
+        '''
 
         if isinstance(spec_id, int):
 
@@ -4177,7 +4385,6 @@ class OneDSpec():
                                                 standard_airmass=None,
                                                 spec_id=None):
         '''
-        ** EXPERIMENTAL, as of 17 Jan 2021 **
         This is the first step in allowing atmospheric extinction correction
         of the spectra. Currently it only works if both the science and
         standard spectra are present and both airmass values are provided.
@@ -4359,8 +4566,8 @@ class OneDSpec():
     def inspect_reduced_spectrum(self,
                                  spec_id=None,
                                  stype='science+standard',
-                                 wave_min=4000.,
-                                 wave_max=8000.,
+                                 wave_min=3500.,
+                                 wave_max=8500.,
                                  display=True,
                                  renderer='default',
                                  width=1280,
@@ -4377,9 +4584,9 @@ class OneDSpec():
             The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
-        wave_min: float (Default: 4000.)
+        wave_min: float (Default: 3500.)
             Minimum wavelength to display
-        wave_max: float (Default: 8000.)
+        wave_max: float (Default: 8500.)
             Maximum wavelength to display
         display: bool (Default: True)
             Set to True to display disgnostic plot.

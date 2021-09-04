@@ -814,12 +814,12 @@ def test_calibrator_science():
         onedspec.science_wavecal[0].spectrum1D.calibrator.atlas_elements) == 20
     onedspec.remove_atlas_lines_range(wavelength=5., tolerance=1.5, spec_id=0)
     assert len(
-        onedspec.science_wavecal[0].spectrum1D.calibrator.atlas_elements) == 10
+        onedspec.science_wavecal[0].spectrum1D.calibrator.atlas_elements) == 16
     assert len(
         onedspec.science_wavecal[1].spectrum1D.calibrator.atlas_elements) == 20
     onedspec.remove_atlas_lines_range(wavelength=5., tolerance=1.5)
     assert len(
-        onedspec.science_wavecal[1].spectrum1D.calibrator.atlas_elements) == 10
+        onedspec.science_wavecal[1].spectrum1D.calibrator.atlas_elements) == 16
 
     onedspec.clear_atlas()
     assert onedspec.science_wavecal[
@@ -1254,10 +1254,11 @@ def test_getting_telluric_profile():
     onedspec.get_telluric_profile(spec_id=0)
     onedspec.get_telluric_profile(spec_id=[0])
 
-    onedspec.inspect_telluric_profile(display=False,
-                                      save_fig=True,
-                                      fig_type='iframe+png+jpg+svg+pdf',
-                                      filename='test/test_output/test_onedspec_inspect_telluric_profile')
+    onedspec.inspect_telluric_profile(
+        display=False,
+        save_fig=True,
+        fig_type='iframe+png+jpg+svg+pdf',
+        filename='test/test_output/test_onedspec_inspect_telluric_profile')
     onedspec.inspect_telluric_profile(display=False,
                                       spec_id=0,
                                       return_jsonstring=True)

@@ -31,9 +31,9 @@ class ImageReduction:
     def __init__(self,
                  verbose=True,
                  logger_name='ImageReduction',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default'):
+                 log_file_name=None):
         '''
         The initialisation only sets up the logger.
 
@@ -47,7 +47,7 @@ class ImageReduction:
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARNING)
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
@@ -60,7 +60,7 @@ class ImageReduction:
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: "default")
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to print to screen only.
 
         '''
@@ -423,6 +423,15 @@ class ImageReduction:
         self.light_hdunum = self.hdunum[self.imtype == 'light']
 
     def set_saxis(self, saxis=None):
+        '''
+        Set the orientation of the image.
+
+        Parameter
+        ---------
+        saxis: 0, 1 or None
+            0 for a spectrum going left-right, 1 for top-down.
+
+        '''
 
         if saxis is None:
 
@@ -489,8 +498,6 @@ class ImageReduction:
         sxais: int, 0 or 1 (Default: None)
             OVERRIDE the SAXIS value in the FITS header, or to provide the
             SAXIS if it does not exist
-        saxis_keyword: str (Default: None)
-            Supply the saxis keyword used in the header.
         combinetype_light: str (Default: 'median')
             'average' or 'median' for CCDproc.Combiner.average_combine() and
             CCDproc.Combiner.median_combine(). All the frame types follow
@@ -653,6 +660,13 @@ class ImageReduction:
                              clip_high_light=-1,
                              exptime_light=-1,
                              exptime_light_keyword=-1):
+        '''
+        Set the properties of the light frame. -1 means stay the same, None
+        means use the default value, and any other valid input for the
+        respective argument. See set_properties() for the argument
+        description.
+
+        '''
 
         # combinetype_light
         if combinetype_light is None:
@@ -816,6 +830,13 @@ class ImageReduction:
                             clip_high_dark=-1,
                             exptime_dark=-1,
                             exptime_dark_keyword=-1):
+        '''
+        Set the properties of the dark frame. -1 means stay the same, None
+        means use the default value, and any other valid input for the
+        respective argument. See set_properties() for the argument
+        description.
+
+        '''
 
         if combinetype_dark is None:
 
@@ -984,6 +1005,13 @@ class ImageReduction:
                             clip_high_flat=-1,
                             exptime_flat=-1,
                             exptime_flat_keyword=-1):
+        '''
+        Set the properties of the flat frame. -1 means stay the same, None
+        means use the default value, and any other valid input for the
+        respective argument. See set_properties() for the argument
+        description.
+
+        '''
 
         # combinetype_flat
         if combinetype_flat is None:
@@ -1146,6 +1174,13 @@ class ImageReduction:
                             sigma_clipping_bias=-1,
                             clip_low_bias=-1,
                             clip_high_bias=-1):
+        '''
+        Set the properties of the bias frame. -1 means stay the same, None
+        means use the default value, and any other valid input for the
+        respective argument. See set_properties() for the argument
+        description.
+
+        '''
 
         if combinetype_bias is None:
 
@@ -1254,6 +1289,13 @@ class ImageReduction:
                            sigma_clipping_arc=-1,
                            clip_low_arc=-1,
                            clip_high_arc=-1):
+        '''
+        Set the properties of the arc frame. -1 means stay the same, None
+        means use the default value, and any other valid input for the
+        respective argument. See set_properties() for the argument
+        description.
+
+        '''
 
         # combinetype_arc
         if combinetype_arc is None:
@@ -1368,6 +1410,11 @@ class ImageReduction:
                               fsmode=-1,
                               psfmodel=-1,
                               kwargs=-1):
+        '''
+        Set the properties for the cosmic ray rejection with AstroScrappy.
+        See set_properties() for the argument description.
+
+        '''
 
         # cosmicray
         if isinstance(cosmicray, (float, int)):
@@ -1487,6 +1534,11 @@ class ImageReduction:
                                 grow=-1,
                                 iterations=-1,
                                 diagonal=-1):
+        '''
+        Set the properties for the detector. See set_properties() for the
+        argument description.
+
+        '''
 
         # gain
         if isinstance(gain, (float, int)):
@@ -1624,6 +1676,11 @@ class ImageReduction:
                 self.diagonal_default))
 
     def load_data(self):
+        '''
+        Load the data listed in the filelist and apply the property setting
+        as provided by the various set properties commands.
+
+        '''
 
         # If there is no science frames, nothing to process.
         assert (self.light_list.size > 0), 'There is no light frame.'
@@ -1827,6 +1884,19 @@ class ImageReduction:
             self.bias_main = self.combine_bias()
 
     def add_light(self, light, header, exposure_time):
+        '''
+        Add the light frame.
+
+        Parameters
+        ----------
+        light: 2-d array or CCDData object
+            The light image (i.e. science/target frame)
+        header: astropy header object
+            The FITS header
+        exposure_time: float
+            The exposure time of the frame.
+
+        '''
 
         if type(light) == np.ndarray:
 
@@ -1837,6 +1907,17 @@ class ImageReduction:
         self.light_time.append(exposure_time)
 
     def add_arc(self, arc, header):
+        '''
+        Add the arc frame.
+
+        Parameters
+        ----------
+        arc: 2-d array or CCDData object
+            The arc image
+        header: astropy header object
+            The FITS header
+
+        '''
 
         if type(arc) == np.ndarray:
 
@@ -1846,6 +1927,19 @@ class ImageReduction:
         self.arc_header.append(header)
 
     def add_flat(self, flat, header, exposure_time):
+        '''
+        Add the flat frame.
+
+        Parameters
+        ----------
+        flat: 2-d array or CCDData object
+            The flat image
+        header: astropy header object
+            The FITS header
+        exposure_time: float
+            The exposure time of the frame.
+
+        '''
 
         if type(flat) == np.ndarray:
 
@@ -1856,6 +1950,19 @@ class ImageReduction:
         self.flat_time.append(exposure_time)
 
     def add_dark(self, dark, header, exposure_time):
+        '''
+        Add the dark frame.
+
+        Parameters
+        ----------
+        dark: 2-d array or CCDData object
+            The dark image
+        header: astropy header object
+            The FITS header
+        exposure_time: float
+            The exposure time of the frame.
+
+        '''
 
         if type(dark) == np.ndarray:
 
@@ -1866,6 +1973,17 @@ class ImageReduction:
         self.dark_time.append(exposure_time)
 
     def add_bias(self, bias, header):
+        '''
+        Add the bias frame.
+
+        Parameters
+        ----------
+        bias: 2-d array or CCDData object
+            The bias image
+        header: astropy header object
+            The FITS header
+
+        '''
 
         if type(bias) == np.ndarray:
 
@@ -1978,6 +2096,11 @@ class ImageReduction:
                       sigma_clipping_light=None,
                       clip_low_light=None,
                       clip_high_light=None):
+        '''
+        Combine the light frames. The parameters provide here OVERRIDE those
+        set previously. Use with caution.
+
+        '''
 
         if combinetype_light is not None:
 
@@ -2004,6 +2127,11 @@ class ImageReduction:
                     sigma_clipping_arc=None,
                     clip_low_arc=None,
                     clip_high_arc=None):
+        '''
+        Combine the arc frames. The parameters provide here OVERRIDE those
+        set previously. Use with caution.
+
+        '''
 
         if combinetype_arc is not None:
 
@@ -2030,6 +2158,11 @@ class ImageReduction:
                      sigma_clipping_flat=None,
                      clip_low_flat=None,
                      clip_high_flat=None):
+        '''
+        Combine the flat frames. The parameters provide here OVERRIDE those
+        set previously. Use with caution.
+
+        '''
 
         if combinetype_flat is not None:
 
@@ -2056,6 +2189,11 @@ class ImageReduction:
                      sigma_clipping_dark=None,
                      clip_low_dark=None,
                      clip_high_dark=None):
+        '''
+        Combine the dark frames. The parameters provide here OVERRIDE those
+        set previously. Use with caution.
+
+        '''
 
         if combinetype_dark is not None:
 
@@ -2082,6 +2220,11 @@ class ImageReduction:
                      sigma_clipping_bias=None,
                      clip_low_bias=None,
                      clip_high_bias=None):
+        '''
+        Combine the bias frames. The parameters provide here OVERRIDE those
+        set previously. Use with caution.
+
+        '''
 
         if combinetype_bias is not None:
 
@@ -2251,6 +2394,10 @@ class ImageReduction:
             self.create_bad_mask()
 
     def create_bad_mask(self):
+        """
+        Create mask for bad pixels, and saturated pixels.
+
+        """
 
         if self.bad_pixel_mask is None:
 
@@ -2761,4 +2908,5 @@ class ImageReduction:
         '''
 
         for i in self.filelist:
+
             print(i)

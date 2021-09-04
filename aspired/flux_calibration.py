@@ -24,9 +24,9 @@ class StandardLibrary:
     def __init__(self,
                  verbose=True,
                  logger_name='StandardLibrary',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default'):
+                 log_file_name=None):
         '''
         This class handles flux calibration by comparing the extracted and
         wavelength-calibrated standard observation to the "ground truth"
@@ -47,7 +47,7 @@ class StandardLibrary:
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARNING)
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
@@ -60,7 +60,7 @@ class StandardLibrary:
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: "default")
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to logging.warning to screen
             only.
 
@@ -330,16 +330,15 @@ class StandardLibrary:
         | flux:       ergs / cm / cm / s / A
         | mag:        mag (AB)
 
-
         Parameters
         ----------
         target: string
             Name of the standard star
-        library: string
+        library: string (Default: None)
             Name of the library of standard star
-        ftype: string
+        ftype: string (Default: 'flux')
             'flux' or 'mag'
-        cutoff: float
+        cutoff: float (Default: 0.4)
             The toleranceold for the word similarity in the range of [0, 1].
 
         '''
@@ -411,15 +410,15 @@ class StandardLibrary:
 
         Parameters
         ----------
-        display: bool
+        display: bool (Default: True)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (Default: default)
             plotly renderer options.
-        width: int/float
+        width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: bool
+        return_jsonstring: bool (Default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_fig: bool (default: False)
@@ -429,7 +428,7 @@ class StandardLibrary:
         fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
             jpg, png, svg, pdf and iframe. Delimiter is '+'.
-        filename: str
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
         open_iframe: bool (Default: False)
@@ -527,9 +526,9 @@ class FluxCalibration(StandardLibrary):
     def __init__(self,
                  verbose=True,
                  logger_name='FluxCalibration',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default'):
+                 log_file_name=None):
         '''
         Initialise a FluxCalibration object.
 
@@ -543,14 +542,14 @@ class FluxCalibration(StandardLibrary):
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARNING)
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity:
             CRITICAL, DEBUG, INFO, WARNING, ERROR
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: "default")
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to logging.warning to screen
             only.
 
@@ -632,7 +631,7 @@ class FluxCalibration(StandardLibrary):
         ----------
         spectrum1D: Spectrum1D object
             The Spectrum1D to be referenced or copied.
-        merge: bool (Default: None)
+        merge: bool (Default: False)
             Set to True to copy everything over to the local Spectrum1D,
             hence FluxCalibration will not be acting on the Spectrum1D
             outside.
@@ -657,10 +656,27 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D_imported = False
 
     def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
-        """
-        Load the literature values of the standard star.
+        '''
+        Read the standard flux/magnitude file. And return the wavelength and
+        flux/mag. The units of the data are always in
 
-        """
+        | wavelength: A
+        | flux:       ergs / cm / cm / s / A
+        | mag:        mag (AB)
+
+
+        Parameters
+        ----------
+        target: string
+            Name of the standard star
+        library: string (Default: None)
+            Name of the library of standard star
+        ftype: string (Default: 'flux')
+            'flux' or 'mag'
+        cutoff: float (Default: 0.4)
+            The toleranceold for the word similarity in the range of [0, 1].
+
+        '''
 
         super().load_standard(target=target,
                               library=library,
@@ -680,9 +696,9 @@ class FluxCalibration(StandardLibrary):
             The wavelength at each pixel of the trace.
         count: 1-d array
             The summed count at each column about the trace.
-        count_err: 1-d array
+        count_err: 1-d array (Default: None)
             the uncertainties of the count values
-        count_sky: 1-d array
+        count_sky: 1-d array (Default: None)
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
 
@@ -694,16 +710,31 @@ class FluxCalibration(StandardLibrary):
     def get_telluric_profile(self,
                              wave,
                              flux,
+                             continuum,
                              mask_range,
                              return_function=False):
+        '''
+        Getting the Telluric absorption profile from the continuum of the
+        standard star spectrum.
+
+        Parameters
+        ----------
+        wave: list or 1-d array (N)
+            Wavelength.
+        flux: list or 1-d array (N)
+            Flux.
+        continuum: list or 1-d array (N)
+            Continuum Flux.
+        mask_range: list of list
+            list of lists with 2 values indicating the range marked by each
+            of the Telluric regions.
+        return_function: bool (Default: False)
+            Set to True to explicitly return the interpolated function of
+            the Telluric profile.
+
+        '''
 
         telluric_profile = np.zeros_like(wave)
-
-        if getattr(self.spectrum1D, 'flux_continuum') is None:
-
-            self.spectrum1D.add_flux_continuum(get_continuum(wave, flux))
-
-        continuum = getattr(self.spectrum1D, 'flux_continuum')
 
         # Get the continuum of the spectrum
         residual = flux - continuum
@@ -750,7 +781,40 @@ class FluxCalibration(StandardLibrary):
                                  fig_type='iframe+png',
                                  filename=None,
                                  open_iframe=False):
+        '''
+        Display the Telluric profile.
 
+        Parameters
+        ----------
+        display: bool (Default: True)
+            Set to True to display disgnostic plot.
+        renderer: string (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True.
+
+        '''
         fig = go.Figure(layout=dict(
             autosize=False, height=height, width=width, title='Log scale'))
         # show the image on the top
@@ -819,7 +883,6 @@ class FluxCalibration(StandardLibrary):
                         slength=5,
                         sorder=3,
                         return_function=True,
-                        use_continuum=True,
                         sens_deg=7,
                         **kwargs):
         '''
@@ -847,24 +910,25 @@ class FluxCalibration(StandardLibrary):
             Masking out regions of Telluric absorption when fitting the
             sensitivity curve. None for no mask. List of list has the pattern
             [[min_pix_1, max_pix_1], [min_pix_2, max_pix_2],...]
-        mask_fit_order: int
+        mask_fit_order: int (Default: 1)
             Order of polynomial to be fitted over the masked regions
-        mask_fit_size: int
+        mask_fit_size: int (Default: 5)
             Number of "pixels" to be fitted on each side of the masked regions.
-        smooth: bool (Default: False)
+        smooth: bool (Default: True)
             set to smooth the input spectrum with scipy.signal.savgol_filter
-        slength: int (Default: 7)
+        slength: int (Default: 5)
             SG-filter window size
         sorder: int (Default: 3)
             SG-filter polynomial order
-        use_continuum: bool
-            Use LOWESS function to get a continuum of the flux for computing
-            the sensitivity curve.
+        return_function: bool (Default: True)
+            Set to True to explicity return the interpolated function of the
+            sensitivity curve.
         sens_deg: int (Default: 7)
             The degree of polynomial of the sensitivity curve, only used if
             the method is 'polynomial'.
         **kwargs:
-            keyword arguments for passing to the LOWESS function, see
+            keyword arguments for passing to the LOWESS functionj for getting
+            the continuum, see
             `statsmodels.nonparametric.smoothers_lowess.lowess()`
 
         Returns
@@ -881,11 +945,9 @@ class FluxCalibration(StandardLibrary):
         count_err = getattr(self.spectrum1D, 'count_err')
         wave = getattr(self.spectrum1D, 'wave')
 
-        if use_continuum:
+        if getattr(self.spectrum1D, 'count_continuum') is None:
 
-            if getattr(self.spectrum1D, 'count_continuum') is None:
-
-                count = get_continuum(wave, count, **kwargs)
+            count = get_continuum(wave, count, **kwargs)
 
         # If the median resolution of the observed spectrum is higher than
         # the literature one
@@ -1002,17 +1064,13 @@ class FluxCalibration(StandardLibrary):
 
         # Add to each Spectrum1D object
         self.spectrum1D.add_sensitivity_func(sensitivity_func)
+        self.spectrum1D.add_count_continuum(count)
+        self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
 
-        if use_continuum:
-
-            self.spectrum1D.add_count_continuum(count)
-            self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
-
-        # Get the Telluric profile
         self.get_telluric_profile(
             wave,
             getattr(self.spectrum1D, 'count') * sensitivity_func(wave),
-            mask_range)
+            getattr(self.spectrum1D, 'flux_continuum'), mask_range)
 
         if return_function:
 
@@ -1050,15 +1108,15 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
-        display: bool
+        display: bool (Default: True)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (Default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
-        return_jsonstring: bool
+        return_jsonstring: bool (Default: False)
             set to True to return json string that can be rendered by Plotly
             in any support language.
         save_fig: bool (default: False)
@@ -1068,10 +1126,10 @@ class FluxCalibration(StandardLibrary):
         fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
             jpg, png, svg, pdf and iframe. Delimiter is '+'.
-        filename: str
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: bool
+        open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
 
         Returns
@@ -1199,8 +1257,8 @@ class FluxCalibration(StandardLibrary):
     def apply_flux_calibration(self,
                                target_spectrum1D,
                                inspect=False,
-                               wave_min=4000.,
-                               wave_max=8000.,
+                               wave_min=3500.,
+                               wave_max=8500.,
                                display=False,
                                renderer='default',
                                width=1280,
@@ -1223,22 +1281,23 @@ class FluxCalibration(StandardLibrary):
         ----------
         target_spectrum1D: Spectrum1D object
             The spectrum to be flux calibrated.
-        sensitivity: Spectrum1D object or callable function
-            To use for flux calibration of the target.
-        inspect: bool
+        inspect: bool (Default: False)
             Set to True to create/display/save figure
-        wave_min: float
+        wave_min: float (Default: 3500)
             Minimum wavelength to display
-        wave_max: float
+        wave_max: float (Default: 8500)
             Maximum wavelength to display
-        display: bool
+        display: bool (Default: False)
             Set to True to display disgnostic plot.
-        renderer: string
+        renderer: string (Default: 'default')
             plotly renderer options.
-        width: int/float
+        width: int/float (Default: 1280)
             Number of pixels in the horizontal direction of the outputs
-        height: int/float
+        height: int/float (Default: 720)
             Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
         save_fig: bool (default: False)
             Save an image if set to True. Plotly uses the pio.write_html()
             or pio.write_image(). The support format types should be provided
@@ -1246,10 +1305,10 @@ class FluxCalibration(StandardLibrary):
         fig_type: string (default: 'iframe+png')
             Image type to be saved, choose from:
             jpg, png, svg, pdf and iframe. Delimiter is '+'.
-        filename: str
+        filename: str (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
-        open_iframe: bool
+        open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
 
         Returns
@@ -1607,13 +1666,14 @@ class FluxCalibration(StandardLibrary):
                 Flux, uncertainty, sky, and sensitivity (pixel)
             flux_resampled: 4 HDUs
                 Flux, uncertainty, sky, and sensitivity (wavelength)
-        filename: String
+        filename: String (Default: None)
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        overwrite: bool
-            Default is False.
+        overwrite: bool (Default: False)
+            Set to True to allow overwriting the FITS data at the file
+            destination.
         recreate: bool (Default: False)
-            Set to True to overwrite the FITS data and header.
+            Set to True to regenerate the FITS data and header.
 
         '''
 
@@ -1630,5 +1690,9 @@ class FluxCalibration(StandardLibrary):
                                  recreate=recreate)
 
     def get_spectrum1D(self):
+        '''
+        Return the spectrum1D object.
+
+        '''
 
         return self.spectrum1D

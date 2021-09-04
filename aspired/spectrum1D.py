@@ -13,17 +13,19 @@ class Spectrum1D():
     '''
     Base class of a 1D spectral object to hold the information of each
     extracted spectrum and the raw headers if was provided during the
-    data reduction.
+    data reduction. The FITS or CSV file output are all done here.
 
     '''
     def __init__(self,
                  spec_id=None,
                  verbose=True,
                  logger_name='Spectrum1D',
-                 log_level='WARNING',
+                 log_level='INFO',
                  log_file_folder='default',
-                 log_file_name='default'):
-        """
+                 log_file_name=None):
+        '''
+        Initialise the object with a logger.
+
         Parameters
         ----------
         spec_id: int (Default: None)
@@ -37,7 +39,7 @@ class Spectrum1D():
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
             provided.
-        log_level: str (Default: WARNING)
+        log_level: str (Default: 'INFO')
             Four levels of logging are available, in decreasing order of
             information and increasing order of severity: (1) DEBUG, (2) INFO,
             (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
@@ -50,11 +52,11 @@ class Spectrum1D():
         log_file_folder: None or str (Default: "default")
             Folder in which the file is save, set to default to save to the
             current path.
-        log_file_name: None or str (Default: "default")
+        log_file_name: None or str (Default: None)
             File name of the log, set to None to self.logger.warning to screen
             only.
 
-        """
+        '''
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
@@ -248,11 +250,13 @@ class Spectrum1D():
         self.wave_literature = None
         self.flux_literature = None
 
+        # Atmospheric extinction properties
         self.standard_flux_extinction_fraction = None
         self.standard_flux_resampled_extinction_fraction = None
         self.science_flux_extinction_fraction = None
         self.science_flux_resampled_extinction_fraction = None
 
+        # HDU lists for output
         self.trace_hdulist = None
         self.count_hdulist = None
         self.arc_spec_hdulist = None
@@ -262,6 +266,7 @@ class Spectrum1D():
         self.flux_resampled_hdulist = None
         self.wavelength_hdulist = None
 
+        # FITS output properties
         self.hdu_output = None
         self.empty_primary_hdu = True
 
@@ -394,6 +399,10 @@ class Spectrum1D():
                     'can beaccepted.'.format(type(header)))
 
     def remove_spectrum_header(self):
+        '''
+        Remove the FITS header of the target.
+
+        '''
 
         self.spectrum_header = None
 
@@ -426,6 +435,10 @@ class Spectrum1D():
                     'can be accepted.'.format(type(header)))
 
     def remove_standard_header(self):
+        '''
+        Remove the FITS header of the standard.
+
+        '''
 
         self.standard_header = None
 
@@ -456,6 +469,10 @@ class Spectrum1D():
                     'can be accepted.'.format(type(header)))
 
     def remove_arc_header(self):
+        '''
+        Remove the arc_header.
+
+        '''
 
         self.arc_header = None
 
@@ -515,6 +532,12 @@ class Spectrum1D():
         self.add_pixel_mapping_itp(pixel_mapping_itp)
 
     def remove_trace(self):
+        '''
+        Remove the trace, trace_sigma and len_trace, also remove the pixel_list
+        and the interpolation function that maps the pixel values to the
+        effective pixel values.
+
+        '''
 
         self.trace = None
         self.trace_sigma = None
@@ -524,7 +547,7 @@ class Spectrum1D():
 
     def add_aperture(self, widthdn, widthup, sepdn, sepup, skywidthdn,
                      skywidthup):
-        """
+        '''
         The size of the aperture in which the spectrum is extracted. This is
         merely the limit where extraction is performed, it does not hold the
         information of the weighting::
@@ -535,11 +558,11 @@ class Spectrum1D():
                         .................................     ^
                         .................................     | sepup
                         .................................     v
-                        .................................   ^
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ^
                         ---------------------------------   |   widthup
             Spectrum    =================================   v ^
                         ---------------------------------     | widthdn
-                        .................................     v
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     v
                         .................................   ^
                         .................................   |   sepdn
                         .................................   v
@@ -564,7 +587,7 @@ class Spectrum1D():
         skywidthup: real positive number
             The sky region on the top side of the spectrum.
 
-        """
+        '''
 
         assert np.isfinite(widthdn), 'widthdn has to be finite.'
         assert np.isfinite(widthup), 'widthup has to be finite.'
@@ -580,8 +603,8 @@ class Spectrum1D():
         self.skywidthup = skywidthup
 
     def add_count(self, count, count_err=None, count_sky=None):
-        """
-        Adding the photoelectron counts and the asociated optional
+        '''
+        Add the photoelectron counts and the associated optional
         uncertainty and sky counts.
 
         Parameters
@@ -594,8 +617,9 @@ class Spectrum1D():
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
 
-        """
+        '''
 
+        # Check data type
         assert isinstance(
             count,
             (list, np.ndarray)), 'count has to be a list or a numpy array'
@@ -618,9 +642,9 @@ class Spectrum1D():
             assert len(count_sky) == len(
                 count), 'count_sky has to be the same size as count'
 
-        # Only add if all assertions are passed.
         self.count = count
 
+        # Only add if they are provided
         if count_err is not None:
 
             self.count_err = count_err
@@ -649,6 +673,10 @@ class Spectrum1D():
                     'to be the same size.'
 
     def remove_count(self):
+        '''
+        Remove the count, count_err and count_sky.
+
+        '''
 
         self.count = None
         self.count_err = None
@@ -656,31 +684,54 @@ class Spectrum1D():
 
     def add_variances(self, var):
         '''
-        Adding the weight map of the extraction.
+        Add the weight map of the extraction.
+
+        Parameters
+        ----------
+        var: 2-d array
+            The weigh map of the input image for extraction.
 
         '''
 
         self.var = var
 
     def remove_variances(self):
+        '''
+        Remove the variances.
+
+        '''
 
         self.var = None
 
     def add_profile(self, profile):
         '''
-        Adding the extraction profile.
+        Add the extraction profile.
+
+        Parameters
+        ----------
+        profile: 1-d array
+            The weight function of the extraction profile.
 
         '''
 
         self.profile = profile
 
     def remove_profile(self):
+        '''
+        Remove the extraction profile.
+
+        '''
 
         self.profile = None
 
     def add_arc_spec(self, arc_spec):
         '''
-        Adding the extracted spectrum of the arc.
+        Add the extracted 1D spectrum of the arc.
+
+        Parameters
+        ----------
+        arc_spec: 1-d array
+            The photoelectron count of the spectrum of the arc lamp.
 
         '''
 
@@ -690,12 +741,21 @@ class Spectrum1D():
         self.arc_spec = arc_spec
 
     def remove_arc_spec(self):
+        '''
+        Remove the 1D spectrum of the arc.
+
+        '''
         self.arc_spec = None
 
     def add_pixel_list(self, pixel_list):
         '''
-        Adding the pixel list, which contain the effective pixel values that
-        has accounted for chip gaps etc.
+        Add the pixel list, which contain the effective pixel values that
+        has accounted for chip gaps and non-integer pixel value.
+
+        Parameters
+        ----------
+        pixel_list: 1-d array
+            The effective position of the pixel.
 
         '''
 
@@ -705,13 +765,22 @@ class Spectrum1D():
         self.pixel_list = pixel_list
 
     def remove_pixel_list(self):
+        '''
+        Remove the pixel list.
+
+        '''
 
         self.pixel_list = None
 
     def add_pixel_mapping_itp(self, pixel_mapping_itp):
         '''
-        Adding the interpolated callable function that convert raw pixel
+        Add the interpolated callable function that convert raw pixel
         values into effective pixel values.
+
+        Parameters
+        ----------
+        pixel_mapping_itp: callable function
+            The mapping function for raw-effective pixel position.
 
         '''
 
@@ -722,12 +791,22 @@ class Spectrum1D():
         self.pixel_mapping_itp = pixel_mapping_itp
 
     def remove_pixel_mapping_itp(self):
+        '''
+        Remove the interpolation function that maps the pixel values to the
+        effective pixel value.
+
+        '''
 
         self.pixel_mapping_itp = None
 
     def add_peaks(self, peaks):
         '''
-        Adding the pixel values (int) where arc lines are located.
+        Add the pixel values (int) where arc lines are located.
+
+        Parameters
+        ----------
+        peaks: 1-d array
+            The pixel value of the identified peaks.
 
         '''
 
@@ -737,12 +816,21 @@ class Spectrum1D():
         self.peaks = peaks
 
     def remove_peaks(self):
+        '''
+        Remove the list of peaks.
+
+        '''
 
         self.peaks = None
 
     def add_peaks_refined(self, peaks_refined):
         '''
-        Adding the refined pixel values (float) where arc lines are located.
+        Add the refined pixel values (float) where arc lines are located.
+
+        Parameters
+        ----------
+        peaks: 1-d array
+            The pixel value of the refined peak positions.
 
         '''
 
@@ -753,12 +841,21 @@ class Spectrum1D():
         self.peaks_refined = peaks_refined
 
     def remove_peaks_refined(self):
+        '''
+        Remove the list of refined peaks.
+
+        '''
 
         self.peaks_refined = None
 
     def add_peaks_wave(self, peaks_wave):
         '''
-        Adding the wavelength (Angstrom) of the arc lines.
+        Add the wavelength (Angstrom) of the arc lines.
+
+        Parameters
+        ----------
+        peaks: 1-d array
+            The wavelength value of the peaks.
 
         '''
 
@@ -768,25 +865,45 @@ class Spectrum1D():
         self.peaks_wave = peaks_wave
 
     def remove_peaks_wave(self):
+        '''
+        Remove the list of wavelengths of the arc lines.
+
+        '''
 
         self.peaks_wave = None
 
     def add_calibrator(self, calibrator):
         '''
-        Adding a RASCAL Calibrator object.
+        Add a RASCAL Calibrator object.
+
+        Parameters
+        ----------
+        calibrator: rascal.Calibrator()
+            A RASCAL Calibrator object.
 
         '''
 
         self.calibrator = calibrator
 
     def remove_calibrator(self):
+        '''
+        Remove the Calibrator.
+
+        '''
 
         self.calibrator = None
 
     def add_atlas_wavelength_range(self, min_atlas_wavelength,
                                    max_atlas_wavelength):
         '''
-        Adding the allowed range of wavelength calibration.
+        Add the allowed range of wavelength calibration.
+
+        Parameters
+        ----------
+        min_atlas_wavelength: float
+            The minimum wavelength of the atlas.
+        max_atlas_wavelength: float
+            The maximum wavelength of the atlas.
 
         '''
 
@@ -798,14 +915,23 @@ class Spectrum1D():
         self.max_atlas_wavelength = max_atlas_wavelength
 
     def remove_atlas_wavelength_range(self):
+        '''
+        Remove the atlas wavelength range.
+
+        '''
 
         self.min_atlas_wavelength = None
         self.max_atlas_wavelength = None
 
     def add_min_atlas_intensity(self, min_atlas_intensity):
         '''
-        Adding the minimum allowed line intensity (theoretical NIST value)
+        Add the minimum allowed line intensity (theoretical NIST value)
         that were used for wavelength calibration.
+
+        Parameters
+        ----------
+        min_atlas_intensity: float
+            The minimum line strength used to get the atlas.
 
         '''
 
@@ -814,14 +940,23 @@ class Spectrum1D():
         self.min_atlas_intensity = min_atlas_intensity
 
     def remove_min_atlas_intensity(self):
+        '''
+        Remove the minimum atlas intensity.
+
+        '''
 
         self.min_atlas_intensity = None
 
     def add_min_atlas_distance(self, min_atlas_distance):
         '''
-        Adding the minimum allowed line distance (only consider lines that
+        Add the minimum allowed line distance (only consider lines that
         passed the minimum intensity threshold) that were used for
         wavelength calibration.
+
+        Parameters
+        ----------
+        min_atlas_distance: float
+            Minimum wavelength separation between neighbouring lines.
 
         '''
 
@@ -830,92 +965,150 @@ class Spectrum1D():
         self.min_atlas_distance = min_atlas_distance
 
     def remove_min_atlas_distance(self):
+        '''
+        Remove the minimum distance between lines to be accepted.
+
+        '''
 
         self.min_atlas_distance = None
 
     def add_gain(self, gain):
-        """
-        Adding the gain value of the spectral image. This value can be
+        '''
+        Add the gain value of the spectral image. This value can be
         different from the one in the header as this can be overwritten
         by an user input, while the header value is raw.
 
-        """
+        Parameter
+        ---------
+        gain: float
+            The gain value of the detector.
+
+        '''
 
         assert np.isfinite(gain), 'gain has to be finite.'
         self.gain = gain
 
     def remove_gain(self):
+        '''
+        Remove the gain value.
+
+        '''
 
         self.gain = None
 
     def add_readnoise(self, readnoise):
-        """
-        Adding the readnoise value of the spectral image. This value can be
+        '''
+        Add the readnoise value of the spectral image. This value can be
         different from the one in the header as this can be overwritten
         by an user input, while the header value is raw.
 
-        """
+        Parameter
+        ---------
+        readnoise: float
+            The read noise value of the detector.
+
+        '''
 
         assert np.isfinite(readnoise), 'readnoise has to be finite.'
         self.readnoise = readnoise
 
     def remove_readnoise(self):
+        '''
+        Remove the readnoise value.
+
+        '''
 
         self.readnoise = None
 
     def add_exptime(self, exptime):
-        """
-        Adding the exposure time of the spectral image. This value can be
+        '''
+        Add the exposure time of the spectral image. This value can be
         different from the one in the header as this can be overwritten
         by an user input, while the header value is raw.
 
-        """
+        Parameter
+        ---------
+        exptime: float
+            The exposure time of the input image.
+
+        '''
 
         assert np.isfinite(exptime), 'exptime has to be finite.'
         self.exptime = exptime
 
     def remove_exptime(self):
+        '''
+        Remove the exptime value.
+
+        '''
 
         self.exptime = None
 
     def add_airmass(self, airmass):
-        """
-        Adding the airmass when the observation was carried out. This value
+        '''
+        Add the airmass when the observation was carried out. This value
         can be different from the one in the header as this can be
         overwritten by an user input, while the header value is raw.
 
-        """
+        Parameter
+        ---------
+        airmass: float
+            The effective airmass during the exposure.
+
+        '''
 
         assert np.isfinite(airmass), 'airmass has to be finite.'
         self.airmass = airmass
 
     def remove_airmass(self):
+        '''
+        Remove the airmass value.
+
+        '''
 
         self.airmass = None
 
     def add_seeing(self, seeing):
-        """
-        Adding the seeing when the observation was carried out. This value
+        '''
+        Add the seeing when the observation was carried out. This value
         can be different from the one in the header as this can be
         overwritten by an user input, while the header value is raw.
 
-        """
+        Parameter
+        ---------
+        seeing: float
+            The effective seeing of the observation.
+
+        '''
 
         assert np.isfinite(seeing), 'airmass has to be finite.'
         self.seeing = seeing
 
     def remove_seeing(self):
+        '''
+        Remove the seeing value.
+
+        '''
 
         self.seeing = None
 
     def add_weather_condition(self, pressure, temperature, relative_humidity):
-        """
-        Adding the pressure, temperature and relative humidity when the
-        spectral image was taken. These value can be different from the ones
-        in the header as this can be overwritten by an user input, while the
-        header value is raw.
+        '''
+        Add the pressure, temperature and relative humidity when the spectral
+        image was taken. These value can be different from the ones in the
+        header as this can be overwritten by an user input, while the header
+        value is raw.
 
-        """
+        Parameters
+        ----------
+        pressure: float
+            The air pressure during the observation (in pascal).
+        temperature: float
+            The temperature during the observation (in Kelvin).
+        relative_hhumidity: float
+            The relative humidity during the observation (between 0 and 1).
+
+        '''
 
         assert np.isfinite(pressure), 'pressure has to be finite.'
         assert np.isfinite(temperature), 'temperature has to be finite.'
@@ -926,17 +1119,26 @@ class Spectrum1D():
         self.relative_humidity = relative_humidity
 
     def remove_weather_condition(self):
+        '''
+        Remove the Pressure, Temperature and Humidity.
+
+        '''
 
         self.pressure = None
         self.temperature = None
         self.relative_humidity = None
 
     def add_fit_type(self, fit_type):
-        """
-        Adding the kind of polynomial used for fitting the
-        pixel-to-wavelength function.
+        '''
+        Add the kind of polynomial used for fitting the pixel-to-wavelength
+        function.
 
-        """
+        Parameter
+        ---------
+        fit_type: str
+            The type of polynomial for fitting the pixel-wavelength function.
+
+        '''
 
         assert type(fit_type) == str, 'fit_type has to be a string'
         assert fit_type in ['poly', 'leg', 'cheb'], 'fit_type must be '
@@ -944,16 +1146,25 @@ class Spectrum1D():
         self.fit_type = fit_type
 
     def remove_fit_type(self):
+        '''
+        Remove the chosen type of polynomial.
+
+        '''
 
         self.fit_type = None
 
     def add_fit_coeff(self, fit_coeff):
-        """
-        Adding the polynomial co-efficients of the pixel-to-wavelength
+        '''
+        Add the polynomial co-efficients of the pixel-to-wavelength
         function. Note that this overwrites the wavelength calibrated
         fit coefficients.
 
-        """
+        Parameter
+        ---------
+        fit_coeff: list or 1-d array
+            The set of coefficients of the pixel-wavelength function.
+
+        '''
 
         assert isinstance(
             fit_coeff,
@@ -961,15 +1172,35 @@ class Spectrum1D():
         self.fit_coeff = fit_coeff
 
     def remove_fit_coeff(self):
+        '''
+        Remove the polynomial co-efficients of the pixel-to-wavelength
+        function.
+
+        '''
 
         self.fit_coeff = None
 
     def add_calibrator_properties(self, num_pix, pixel_list, plotting_library,
                                   log_level):
-        """
-        Adding the properties of the RASCAL Calibrator.
+        '''
+        Add the properties of the RASCAL Calibrator.
 
-        """
+        Parameter
+        ---------
+        num_pix: int
+            The number of pixels in the dispersion direction
+        pixel_list: list or numpy array
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(num_pix), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+        plotting_library : string
+            Choose between matplotlib and plotly.
+        log_level : string
+            Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
+
+        '''
 
         self.num_pix = num_pix
         self.plotting_library = plotting_library
@@ -977,6 +1208,11 @@ class Spectrum1D():
         self.pixel_list = pixel_list
 
     def remove_calibrator_properties(self):
+        '''
+        Remove the properties of the RASCAL Calibrator as recorded in ASPIRED.
+        This does NOT remove the calibrator properites INSIDE the calibrator.
+
+        '''
 
         self.num_pix = None
         self.pixel_list = None
@@ -986,10 +1222,31 @@ class Spectrum1D():
     def add_hough_properties(self, num_slopes, xbins, ybins, min_wavelength,
                              max_wavelength, range_tolerance,
                              linearity_tolerance):
-        """
-        Adding the hough transform configuration of the RASCAL Calibrator.
+        '''
+        Add the hough transform configuration of the RASCAL Calibrator.
 
-        """
+        Parameters
+        ----------
+        num_slopes: int
+            Number of slopes to consider during Hough transform
+        xbins: int
+            Number of bins for Hough accumulation
+        ybins: int
+            Number of bins for Hough accumulation
+        min_wavelength: float
+            Minimum wavelength of the spectrum.
+        max_wavelength: float
+            Maximum wavelength of the spectrum.
+        range_tolerance: float
+            Estimation of the error on the provided spectral range
+            e.g. 3000-5000 with tolerance 500 will search for
+            solutions that may satisfy 2500-5500
+        linearity_tolerance: float
+            A toleranceold (Ansgtroms) which defines some padding around the
+            range tolerance to allow for non-linearity. This should be the
+            maximum expected excursion from linearity.
+
+        '''
 
         self.num_slopes = num_slopes
         self.xbins = xbins
@@ -1000,6 +1257,12 @@ class Spectrum1D():
         self.linearity_tolerance = linearity_tolerance
 
     def remove_hough_properties(self):
+        '''
+        Remove the hough transform configuration of the RASCAL Calibrator.
+        This does NOT remove the hough transform configuration INSIDE the
+        calibrator.
+
+        '''
 
         self.num_slopes = None
         self.xbins = None
@@ -1014,10 +1277,33 @@ class Spectrum1D():
                               candidate_weighted, hough_weight,
                               minimum_matches, minimum_peak_utilisation,
                               minimum_fit_error):
-        """
-        Adding the RANSAC properties of the RASCAL Calibrator.
+        '''
+        Add the RANSAC properties of the RASCAL Calibrator.
 
-        """
+        Parameters
+        ----------
+        sample_size: int
+            Number of pixel-wavelength hough pairs to be used for each arc line
+            being picked.
+        top_n_candidate: int
+            Top ranked lines to be fitted.
+        linear: bool
+            True to use the hough transformed gradient, otherwise, use the
+            known polynomial.
+        filter_close: bool
+            Remove the pairs that are out of bounds in the hough space.
+        ransac_tolerance: float
+            The distance criteria  (Angstroms) to be considered an inlier to a
+            fit. This should be close to the size of the expected residuals on
+            the final fit (e.g. 1A is typical)
+        candidate_weighted: bool
+            Set to True to down-weight pairs that are far from the fit.
+        hough_weight: float or None
+            Set to use the hough space to weigh the fit. The theoretical
+            optimal weighting is unclear. The larger the value, the heavily it
+            relies on the overdensity in the hough space for a good fit.
+
+        '''
 
         self.sample_size = sample_size
         self.top_n_candidate = top_n_candidate
@@ -1031,6 +1317,10 @@ class Spectrum1D():
         self.minimum_fit_error = minimum_fit_error
 
     def remove_ransac_properties(self):
+        '''
+        Remove the RANSAC properties of the RASCAL Calibrator.
+
+        '''
 
         self.sample_size = None
         self.top_n_candidate = None
@@ -1046,10 +1336,28 @@ class Spectrum1D():
     def add_fit_output_final(self, fit_coeff, matched_peaks, matched_atlas,
                              rms, residual, peak_utilisation,
                              atlas_utilisation):
-        """
-        Adding the final accepted polynomial solution.
+        '''
+        Add the final accepted polynomial solution.
 
-        """
+        Parameters
+        ----------
+        fit_coeff: list
+            Set the baseline of the least square fit. If no fits outform this
+            set of polynomial coefficients, this will be used as the best fit.
+        matched_peaks: list
+            List of matched peaks
+        matched_atlas: list
+            List of matched atlas lines
+        rms: float
+            The root-mean-squared of the fit
+        residual: list
+            The residual of each fitted peak
+        peak_utilisation: float
+            The fraction of the input peaks used in the fit
+        atlas_utilisation: float
+            The fraction of the input atlas used in the fit
+
+        '''
 
         # add assertion here
         self.fit_coeff = fit_coeff
@@ -1061,6 +1369,9 @@ class Spectrum1D():
         self.atlas_utilisation = atlas_utilisation
 
     def remove_fit_output_final(self):
+        '''
+        Remove the accepted polynomial solultion.
+        '''
 
         self.fit_coeff = None
         self.matched_peaks = None
@@ -1073,10 +1384,28 @@ class Spectrum1D():
     def add_fit_output_rascal(self, fit_coeff, matched_peaks, matched_atlas,
                               rms, residual, peak_utilisation,
                               atlas_utilisation):
-        """
-        Adding the final accepted RASCAL polynomial solution.
+        '''
+        Add the RASCAL polynomial solution.
 
-        """
+        Parameters
+        ----------
+        fit_coeff: list
+            Set the baseline of the least square fit. If no fits outform this
+            set of polynomial coefficients, this will be used as the best fit.
+        matched_peaks: list
+            List of matched peaks
+        matched_atlas: list
+            List of matched atlas lines
+        rms: float
+            The root-mean-squared of the fit
+        residual: list
+            The residual of each fitted peak
+        peak_utilisation: float
+            The fraction of the input peaks used in the fit
+        atlas_utilisation: float
+            The fraction of the input atlas used in the fit
+
+        '''
 
         # add assertion here
         self.fit_coeff_rascal = fit_coeff
@@ -1091,6 +1420,10 @@ class Spectrum1D():
                                   atlas_utilisation)
 
     def remove_fit_output_rascal(self):
+        '''
+        Remove the RASCAL polynomial solution.
+
+        '''
 
         self.fit_coeff_rascal = None
         self.matched_peaks_rascal = None
@@ -1103,10 +1436,28 @@ class Spectrum1D():
     def add_fit_output_refine(self, fit_coeff, matched_peaks, matched_atlas,
                               rms, residual, peak_utilisation,
                               atlas_utilisation):
-        """
-        Adding the refined polynomial solution.
+        '''
+        Add the refined RASCAL polynomial solution.
 
-        """
+        Parameters
+        ----------
+        fit_coeff: list
+            Set the baseline of the least square fit. If no fits outform this
+            set of polynomial coefficients, this will be used as the best fit.
+        matched_peaks: list
+            List of matched peaks
+        matched_atlas: list
+            List of matched atlas lines
+        rms: float
+            The root-mean-squared of the fit
+        residual: list
+            The residual of each fitted peak
+        peak_utilisation: float
+            The fraction of the input peaks used in the fit
+        atlas_utilisation: float
+            The fraction of the input atlas used in the fit
+
+        '''
 
         # add assertion here
         self.fit_coeff_refine = fit_coeff
@@ -1121,6 +1472,10 @@ class Spectrum1D():
                                   atlas_utilisation)
 
     def remove_fit_output_refine(self):
+        '''
+        Remove the refined RASCAL polynomial solution.
+
+        '''
 
         self.fit_coeff_refine = None
         self.matched_peaks_refine = None
@@ -1131,10 +1486,15 @@ class Spectrum1D():
         self.atlas_utilisation_refine = None
 
     def add_wavelength(self, wave):
-        """
-        Adding the wavelength of each (effective) pixel.
+        '''
+        Add the wavelength of each effective pixel.
 
-        """
+        Parameter
+        ---------
+        wave: list or 1d-array
+            The wavelength values at each effective pixel.
+
+        '''
 
         self.wave = wave
         # Note that the native pixels have varing bin size.
@@ -1143,15 +1503,24 @@ class Spectrum1D():
         self.wave_end = np.max(wave)
 
     def remove_wavelength(self):
+        '''
+        Remove the wavelength of each effective pixel.
+
+        '''
 
         self.wave = None
 
     def add_wavelength_resampled(self, wave_resampled):
-        """
-        Adding the wavelength of the resampled spectrum which has an evenly
+        '''
+        Add the wavelength of the resampled spectrum which has an evenly
         distributed wavelength spacing.
 
-        """
+        Parameter
+        ---------
+        wave: list or 1d-array
+            The resampled wavelength values.
+
+        '''
 
         # We assume that the resampled spectrum has fixed bin size
         self.wave_bin = np.nanmedian(np.array(np.ediff1d(wave_resampled)))
@@ -1160,6 +1529,10 @@ class Spectrum1D():
         self.wave_resampled = wave_resampled
 
     def remove_wavelength_resampled(self):
+        '''
+        Add the resampled wavelength.
+
+        '''
 
         self.wave_bin = None
         self.wave_start = None
@@ -1168,195 +1541,402 @@ class Spectrum1D():
 
     def add_count_resampled(self, count_resampled, count_err_resampled,
                             count_sky_resampled):
-        """
-        Adding the photoelectron counts of the resampled spectrum which has
+        '''
+        Add the photoelectron counts of the resampled spectrum which has
         an evenly distributed wavelength spacing.
 
-        """
+        Parameter
+        ---------
+        count_resampled: list or 1d-array
+            The resampled photoelectron count.
+        count_err_resampled: list or 1d-array
+            The uncertainty of the resampled photoelectron count.
+        count_sky_resampled: list or 1d-array
+            The background sky level of the resampled photoelectron count.
+
+        '''
 
         self.count_resampled = count_resampled
         self.count_err_resampled = count_err_resampled
         self.count_sky_resampled = count_sky_resampled
 
     def remove_count_resampled(self):
+        '''
+        Remove the photoelectron counts of the resampled spectrum.
+
+        '''
 
         self.count_resampled = None
         self.count_err_resampled = None
         self.count_sky_resampled = None
 
     def add_standard_star(self, library, target):
-        """
-        Adding the name of the standard star and its source.
+        '''
+        Add the name of the standard star and its source.
 
-        """
+        Parameters
+        ----------
+        library: str
+            The name of the colelction of standard stars.
+        target: str
+            The name of the standard star.
+
+        '''
 
         self.library = library
         self.target = target
 
-    def add_smoothing(self, smooth, slength, sorder):
-        """
-        Adding the smoothing parameters for computing the sensitivity curve.
+    def remove_standard_star(self):
+        '''
+        Remove the name of the standard star and its source.
 
-        """
+        '''
+
+        self.library = None
+        self.target = None
+
+    def add_smoothing(self, smooth, slength, sorder):
+        '''
+        Add the SG smoothing parameters for computing the sensitivity curve.
+
+        Parameter
+        ---------
+        smooth: bool
+            Indicate if smoothing was applied.
+        slength: int
+            The size of the smoothing window.
+        sorder: int
+            The order of polynomial used for SG smoothing.
+
+        '''
 
         self.smooth = smooth
         self.slength = slength
         self.sorder = sorder
 
     def remove_smoothing(self):
+        '''
+        Remove the smoothing parameters for computing the sensitivity curve.
+
+        '''
 
         self.smooth = None
         self.slength = None
         self.sorder = None
 
     def add_sensitivity_func(self, sensitivity_func):
-        """
-        Adding the callable function of the sensitivity curve.
+        '''
+        Add the callable function of the sensitivity curve.
 
-        """
+        Parameter
+        ---------
+        sensitivity_func: callable function
+            The sensitivity curve as a function of wavelength.
+
+        '''
 
         self.sensitivity_func = sensitivity_func
 
     def remove_sensitivity_func(self):
+        '''
+        Remove the sensitivity curve function.
+
+        '''
 
         self.sensitivity_func = None
 
     def add_sensitivity(self, sensitivity):
-        """
-        Adding the sensitivity as it is when dividing the literature standard
-        by the photoelectron count.
+        '''
+        Add the sensitivity values for each pixel (the list from dividing
+        the literature standard by the photoelectron count).
 
-        """
+        Parameter
+        ---------
+        sensitivity: list or 1-d array
+            The sensitivity at the effective pixel.
+
+        '''
 
         self.sensitivity = sensitivity
 
     def remove_sensitivity(self):
+        '''
+        Remove the sensitivity values.
+
+        '''
 
         self.sensitivity = None
 
     def add_sensitivity_resampled(self, sensitivity_resampled):
-        """
-        Adding the sensitivity after the spectrum is resampled.
+        '''
+        Add the sensitivity after the spectrum is resampled.
 
-        """
+        Parameter
+        ---------
+        sensitivity: list or 1-d array
+            The sensitivity in the reasmpled space.
+
+        '''
 
         self.sensitivity_resampled = sensitivity_resampled
 
     def remove_sensitivity_resampled(self):
+        '''
+        Remove the sensitivity after the spectrum is resampled.
+
+        '''
 
         self.sensitivity_resampled = None
 
     def add_literature_standard(self, wave_literature, flux_literature):
-        """
-        Adding the literature wavelength and flux values of the standard star
+        '''
+        Add the literature wavelength and flux values of the standard star
         used for calibration.
 
-        """
+        Parameters
+        ----------
+        wave_literature: list or 1-d array
+            The wavelength values of the literature standard used.
+        flux_literature: list or 1-d array
+            The flux values of the literature standard used.
+
+        '''
 
         self.wave_literature = wave_literature
         self.flux_literature = flux_literature
 
     def remove_literature_standard(self):
+        '''
+        Remove the literature wavelength and flux values of the standard
+        star used for calibration
+
+        '''
 
         self.wave_literature = None
         self.flux_literature = None
 
     def add_count_continuum(self, count_continuum):
+        '''
+        Add the continuum count value (should be the same size as count).
+
+        Parameter
+        ---------
+        count_continuum: list or 1-d array
+            The photoelectron count of the continuum.
+
+        '''
 
         self.count_continuum = count_continuum
 
     def remove_count_continuum(self):
+        '''
+        Remove the continuum count values.
+
+        '''
 
         self.count_continuum = None
 
     def add_count_resampled_continuum(self, count_resampled_continuum):
+        '''
+        Add the continuum count_resampled value (should be the same size as
+        count_resampled).
+
+        Parameter
+        ---------
+        count_resampled_continuum: list or 1-d array
+            The photoelectron count of the continuum at the resampled
+            wavelength.
+
+        '''
 
         self.count_resampled_continuum = count_resampled_continuum
 
     def remove_count_resampled_continuum(self):
+        '''
+        Remove the continuum count_resampled values.
+
+        '''
 
         self.count_resampled_continuum = None
 
     def add_flux_continuum(self, flux_continuum):
+        '''
+        Add the continuum flux value (should be the same size as flux).
+
+        Parameter
+        ---------
+        flux_continuum: list or 1-d array
+            The flux of the continuum.
+
+        '''
 
         self.flux_continuum = flux_continuum
 
     def remove_flux_continuum(self):
+        '''
+        Remove the continuum flux values.
+
+        '''
 
         self.flux_continuum = None
 
     def add_flux_resampled_continuum(self, flux_resampled_continuum):
+        '''
+        Add the continuum flux_resampled value (should be the same size as
+        flux_resampled).
+
+        Parameter
+        ---------
+        flux_resampled_continuum: list or 1-d array
+            The flux of the continuum at the resampled wavelength.
+
+        '''
 
         self.flux_resampled_continuum = flux_resampled_continuum
 
     def remove_flux_resampled_continuum(self):
+        '''
+        Remove the continuum flux_resampled values.
+
+        '''
 
         self.flux_resampled_continuum = None
 
     def add_telluric_func(self, telluric_func):
-        """
-        Adding the Telluric profiles.
+        '''
+        Add the Telluric interpolated function.
 
         Parameters
         ----------
         telluric: Callable function
-            A callable function to interpolate the telluric features
-        telluric_filler: Callable function
-            A callable function to interpolate the flux used to replace the
-            Telluric features when computing the sensitivity curve
+            A callable function to interpolate the telluric features [0, 1]
 
-        """
+        '''
 
         self.telluric_func = telluric_func
 
     def remove_telluric_func(self):
+        '''
+        Remove the Telluric interpolated function.
+
+        '''
 
         self.telluric_func = None
 
     def add_telluric_profile(self, telluric_profile):
+        '''
+        Add the Telluric profile - relative intensity at each pixel.
+
+        Parameters
+        ----------
+        telluric_profile: list or numpy.ndarray
+            The relative intensity of the telluric absorption strength [0, 1]
+
+        '''
 
         self.telluric_profile = telluric_profile
 
     def remove_telluric_profile(self):
+        '''
+        Remove the Telluric profile.
+
+        '''
 
         self.telluric_profile = None
 
     def add_telluric_profile_resampled(self, telluric_profile_resampled):
+        '''
+        Add the Telluric profile - relative intensity at each resampled
+        wavelength.
+
+        Parameters
+        ----------
+        telluric_profile: list or numpy.ndarray
+            The relative intensity of the telluric absorption strength [0, 1]
+
+        '''
 
         self.telluric_profile_resampled = telluric_profile_resampled
 
     def remove_telluric_profile_resampled(self):
+        '''
+        Remove the Telluric profile at the resampled wavelengths.
+
+        '''
 
         self.telluric_profile_resampled = None
 
     def add_telluric_factor(self, telluric_factor):
+        '''
+        Add the Telluric factor.
+
+        Parameters
+        ----------
+        telluric_factor: float
+            The multiplier to the telluric profile that minimises the sum
+            of the deviation of corrected spectrum from the continuum
+            spectrum.
+
+        '''
 
         self.telluric_factor = telluric_factor
 
     def remove_telluric_factor(self):
+        '''
+        Remove the Telluric factor.
+
+        '''
 
         self.telluric_factor = None
 
     def add_telluric_factor_resampled(self, telluric_factor_resampled):
+        '''
+        Add the Telluric factor found using the resampled flux.
+
+        Parameter
+        ---------
+        telluric_factor_resampled: float
+            The multiplier to the telluric profile that minimises the sum
+            of the deviation of corrected spectrum from the resampled
+            continuum spectrum.
+
+        '''
 
         self.telluric_factor_resampled = telluric_factor_resampled
 
     def remove_telluric_factor_resampled(self):
+        '''
+        Remove the Telluric factor for the resampled spectrum.
+
+        '''
 
         self.telluric_factor_resampled = None
 
     def add_flux(self, flux, flux_err, flux_sky):
-        """
-        Adding the flux and the associated uncertainty and sky background
+        '''
+        Add the flux and the associated uncertainty and sky background
         in the raw pixel sampling.
 
-        """
+        Parameters
+        ----------
+        flux: list or numpy.ndarray
+            The flux at each extracted column of pixels.
+        flux_err: list or numpy.ndarray
+            The uncertainty in flux at each extracted column of pixels.
+        flux_sky: list or numpy.ndarray
+            The flux of the background sky at each extracted column of pixels.
+
+        '''
 
         self.flux = flux
         self.flux_err = flux_err
         self.flux_sky = flux_sky
 
     def remove_flux(self):
+        '''
+        Remove the flux, uncertainty of flux, and background sky flux.
+
+        '''
 
         self.flux = None
         self.flux_err = None
@@ -1364,27 +1944,41 @@ class Spectrum1D():
 
     def add_flux_resampled(self, flux_resampled, flux_err_resampled,
                            flux_sky_resampled):
-        """
-        Adding the flux and the associated uncertainty and sky background
+        '''
+        Add the flux and the associated uncertainty and sky background
         of the resampled spectrum.
 
-        """
+        Parameters
+        ----------
+        flux: list or numpy.ndarray
+            The flux at the resampled wavelenth.
+        flux_err: list or numpy.ndarray
+            The uncertainty in flux at the resampled wavelenth.
+        flux_sky: list or numpy.ndarray
+            The flux of the background sky at the resampled wavelenth.
+
+        '''
 
         self.flux_resampled = flux_resampled
         self.flux_err_resampled = flux_err_resampled
         self.flux_sky_resampled = flux_sky_resampled
 
     def remove_flux_resampled(self):
+        '''
+        Remove the flux, uncertainty of flux, and background sky flux
+        of the resampled spectrum.
+
+        '''
 
         self.flux_resampled = None
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
 
     def _modify_imagehdu_data(self, hdulist, idx, method, *args):
-        """
+        '''
         Wrapper function to modify the data of an ImageHDU object.
 
-        """
+        '''
 
         method_to_call = getattr(hdulist[idx].data, method)
         method_to_call(*args)
@@ -1588,6 +2182,10 @@ class Spectrum1D():
                                      *args)
 
     def create_trace_fits(self):
+        '''
+        Create an ImageHDU for the trace.
+
+        '''
 
         try:
 
@@ -1633,6 +2231,10 @@ class Spectrum1D():
             self.trace_hdulist = None
 
     def create_count_fits(self):
+        '''
+        Create an ImageHDU for the extracted spectrum in photoelectron counts.
+
+        '''
 
         try:
 
@@ -1699,6 +2301,10 @@ class Spectrum1D():
             self.count_hdulist = None
 
     def create_weight_map_fits(self):
+        '''
+        Create an ImageHDU for the extraction profile weight function.
+
+        '''
 
         try:
 
@@ -1737,6 +2343,11 @@ class Spectrum1D():
             self.weight_map_hdulist = None
 
     def create_count_resampled_fits(self):
+        '''
+        Create an ImageHDU for the extracted spectrum in photoelectron count
+        at the resampled wavelengths.
+
+        '''
 
         try:
 
@@ -1809,6 +2420,10 @@ class Spectrum1D():
             self.count_resampled_hdulist = None
 
     def create_arc_spec_fits(self):
+        '''
+        Create an ImageHDU for the spectrum of the arc lamp.
+
+        '''
 
         try:
 
@@ -1860,6 +2475,11 @@ class Spectrum1D():
             self.arc_spec_hdulist = None
 
     def create_wavecal_fits(self):
+        '''
+        Create an ImageHDU for the polynomial coeffcients of the
+        pixel-wavelength mapping function.
+
+        '''
 
         try:
 
@@ -1919,6 +2539,10 @@ class Spectrum1D():
             self.wavecal_hdulist = None
 
     def create_wavelength_fits(self):
+        '''
+        Create an ImageHDU for the wavelength at each of the native pixel.
+
+        '''
 
         try:
 
@@ -1955,6 +2579,10 @@ class Spectrum1D():
             self.wavelength_hdulist = None
 
     def create_sensitivity_fits(self):
+        '''
+        Create an ImageHDU for the sensitivity at each of the native pixel.
+
+        '''
 
         try:
 
@@ -1989,6 +2617,11 @@ class Spectrum1D():
             self.sensitivity_hdulist = None
 
     def create_flux_fits(self):
+        '''
+        Create an ImageHDU for the flux calibrated spectrum at each native
+        pixel.
+
+        '''
 
         try:
 
@@ -2066,6 +2699,10 @@ class Spectrum1D():
             self.flux_hdulist = None
 
     def create_sensitivity_resampled_fits(self):
+        '''
+        Create an ImageHDU for the sensitivity at the resampled wavelength.
+
+        '''
 
         try:
 
@@ -2099,6 +2736,11 @@ class Spectrum1D():
             self.sensitivity_resampled_hdulist = None
 
     def create_flux_resampled_fits(self):
+        '''
+        Create an ImageHDU for the flux calibrated spectrum at the resampled
+        wavelength.
+
+        '''
 
         try:
 
@@ -2185,32 +2827,92 @@ class Spectrum1D():
             self.flux_resampled_hdulist = None
 
     def remove_trace_fits(self):
+        '''
+        Remove the trace FITS HDUList.
+
+        '''
 
         self.trace_hdulist = None
 
     def remove_count_fits(self):
+        '''
+        Remove the count FITS HDUList.
+
+        '''
 
         self.count_hdulist = None
 
     def remove_count_resampled_fits(self):
+        '''
+        Remove the count_resampled FITS HDUList.
+
+        '''
 
         self.count_resampled_hdulist = None
 
     def remove_arc_spec_fits(self):
+        '''
+        Remove the arc_spec FITS HDUList.
+
+        '''
 
         self.arc_spec_hdulist = None
 
     def remove_wavecal_fits(self):
+        '''
+        Remove the wavecal FITS HDUList.
+
+        '''
 
         self.wavecal_hdulist = None
 
     def remove_flux_resampled_fits(self):
+        '''
+        Remove the flux_resampled FITS HDUList.
+
+        '''
 
         self.flux_resampled_hdulist = None
 
     def remove_wavelength_fits(self):
+        '''
+        Remove the wavelength FITS HDUList.
+
+        '''
 
         self.wavelength_hdulist = None
+
+    def remove_weight_map_fits(self):
+        '''
+        Remove the weight_map FITS HDUList.
+
+        '''
+
+        self.weight_map = None
+
+    def remove_flux_fits(self):
+        '''
+        Remove the flux FITS HDUList.
+
+        '''
+
+        self.flux = None
+
+    def remove_wavelength_resampled_fits(self):
+        '''
+        Remove the resampled wavelength FITS HDUList.
+
+        '''
+
+        self.wavelength_resampled_hdulist = None
+
+    def remove_sensitivity_resampled_fits(self):
+        '''
+        Remove the sensitivity_resampled FITS HDUList.
+
+        '''
+
+        self.sensitivity_resampled = None
 
     def create_fits(self,
                     output,
@@ -2247,7 +2949,7 @@ class Spectrum1D():
                     Sensitivity (pixel)
                 flux: 4 HDUs
                     Flux, uncertainty, and sky (pixel)
-                sensitivity: 1 HDU
+                sensitivity_resampled: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)

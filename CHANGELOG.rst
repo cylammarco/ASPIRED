@@ -43,18 +43,20 @@ We aim to track and report as many changes as possible, but this is not an exhau
 
 * (API) changes:
 
+    * All loggers are now displaying `INFO` level of logs and by default it is print to screen only.
     * ImageReduction.add_filelist() no longer accepts properties.
     * ImageReduction properties has to be added with set_properties().
     * In ImageReduction, individual properties can be added one by one without affecting other existing properties.
+    * Arc frame has to be MANUALLY flipped or transposed if it is being added AFTER `TwoDSpec.set_properties()`. If arc frame will be flipped and transposed AUTOMATICALLY if it is added BEFORE `TwoDSpec.set_properties()`.
+    * `TwoDSpec.apply_twodspec_mask_to_arc()` is changed to TwoDSpec.apply_mask_to_arc().
+    * `TwoDSpec.ap_extract()` is now sigma clipping outliers when modelling the sky.
+    * `TwoDSpec.ap_trace()` argument ap_faint is now defined by the percentage of the faintest subspectra.
     * `wavelength_calibration.load_user_atlas()` is changed to `wavelength_calibration.add_user_atlas()`.
     * `OneDSpec.refine_fit()` and `wavelength_calibration.refine_fit()` are changed to `robust_refit()`.
     * `OneDSpec.load_user_atlas()` is changed to `OneDSpec.add_user_atlas()`.
     * `OneDSpec.find_arc_lines()` and `wavelength_calibration.find_arc_lines()` are using the percentage of the (maximum - minimum count) in the arc spectrum (before continuum subtraction) for the `prominence`, whereas `percentile` is the count level threshold AFTER the arc_spec is subtracted by the minimum value of the arc spectrum.
     * `OneDSpec.compute_sensitivity()` is changed to `OneDSpec.get_sensitivity()`.
     * `TwoDSpec.set_properties()` is defaulted to NOT set `airmass`, `gain`, `readnoise`, `seeing`, and `exptime`.
-    * Arc frame has to be MANUALLY flipped or transposed if it is being added AFTER `TwoDSpec.set_properties()`. If arc frame will be flipped and transposed AUTOMATICALLY if it is added BEFORE `TwoDSpec.set_properties()`.
-    * TwoDSpec.apply_twodspec_mask_to_arc() is changed to TwoDSpec.apply_mask_to_arc().
-    * TwoDSpec.ap_extract() is now sigma clipping outliers when modelling the sky.
     * `save_iframe()` in various functions is no longer in use, it is merged into `save_fig()`.
     * `display` argument is merged into the `renderer` argument.
 
