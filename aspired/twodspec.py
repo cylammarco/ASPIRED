@@ -2904,8 +2904,8 @@ class TwoDSpec:
                     width_dn = itrace - 1
                     sep_dn = 0
                     sky_width_dn = 0
-                    profile_start_idx = offset - 1
-                    profile_end_idx = offset + width_up + 1
+                    profile_start_idx = offset
+                    profile_end_idx = offset + width_dn + width_up + 1
 
                 # Pixels where the source spectrum and the sky regions are
                 source_pix = np.arange(itrace - width_dn,
