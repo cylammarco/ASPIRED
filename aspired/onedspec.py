@@ -3383,46 +3383,6 @@ class OneDSpec():
 
             self.standard_wavelength_calibrated = True
 
-    def set_atmospheric_extinction(self, location='orm', extinction_func=None):
-        '''
-        ** EXPERIMENTAL, as of 17 Jan 2021 **
-
-        The ORM atmospheric extinction correction chart is taken from
-        http://www.ing.iac.es/astronomy/observing/manuals/ps/tech_notes/tn031.pdf
-
-        Parameters
-        ----------
-        location: str (Default: orm)
-            Location of the observatory, currently contains:
-            (1) ORM - Roque de los Muchachos Observatory (ORM)
-            Only used if extinction_func is None.
-        extinction_func: callable function (Default: None)
-            Input wavelength in Angstrom, output magnitude of extinction per
-            airmass. It will override the 'location'.
-
-        '''
-
-        if (extinction_func is not None) and (callable(extinction_func)):
-
-            self.extinction_func = extinction_func
-            self.logger.info(
-                'Manual extinction correction function is loaded.')
-
-        else:
-
-            filename = pkg_resources.resource_filename(
-                'aspired', 'extinction/{}_atm_extinct.txt'.format(location))
-            extinction_table = np.loadtxt(filename, delimiter=',')
-            self.extinction_func = interp1d(extinction_table[:, 0],
-                                            extinction_table[:, 1],
-                                            kind='cubic',
-                                            fill_value='extrapolate')
-            self.logger.info(
-                '{} extinction correction function is loaded.'.format(
-                    location))
-
-        self.atmospheric_extinction_correction_available = True
-
     def lookup_standard_libraries(self, target, cutoff=0.4):
         '''
         Parameters
@@ -3528,7 +3488,7 @@ class OneDSpec():
                         mask_range=[[6850, 6960], [7580, 7700], [8925, 9050]],
                         mask_fit_order=1,
                         mask_fit_size=5,
-                        smooth=True,
+                        smooth=False,
                         slength=5,
                         sorder=3,
                         return_function=False,
@@ -3553,7 +3513,7 @@ class OneDSpec():
             Order of polynomial to be fitted over the masked regions
         mask_fit_size: int (Default: 5)
             Number of "pixels" to be fitted on each side of the masked regions.
-        smooth: bool (Default: True)
+        smooth: bool (Default: False)
             set to smooth the input spectrum with scipy.signal.savgol_filter
         slength: int (Default:5)
             SG-filter window size
@@ -4379,6 +4339,64 @@ class OneDSpec():
                     science_spec.flux_resampled +
                     science_spec.telluric_profile_resampled *
                     science_spec.telluric_factor * factor)
+
+    def set_atmospheric_extinction(self,
+                                   location='orm',
+                                   extinction_func=None,
+                                   kind='cubic',
+                                   fill_value='extrapolate',
+                                   **kwargs):
+        '''
+        ** EXPERIMENTAL, as of 1 September 2021 **
+
+        The ORM atmospheric extinction correction table is taken from
+        http://www.ing.iac.es/astronomy/observing/manuals/ps/tech_notes/tn031.pdf
+
+        The MK atmospheric extinction correction table is taken from
+        Buton et al. (2013A&A...549A...8B)
+
+        The CP atmospheric extinction correction table is taken from
+        Patat et al. (2011A&A...527A..91P)
+
+        The LS atmospheric extinction correction table is taken from
+        THE ESO USERS MANUAL 1993
+
+        Parameters
+        ----------
+        location: str (Default: orm)
+            Location of the observatory, currently contains:
+            (1) orm - Roque de los Muchachos Observatory (2420 m)
+            (2) mk - Mauna Kea (4205 m)
+            (3) cp - Cerro Paranal (2635 m)
+            (4) ls - La Silla (2400 m)
+            Only used if extinction_func is None.
+        extinction_func: callable function (Default: None)
+            Input wavelength in Angstrom, output magnitude of extinction per
+            airmass. It will override the 'location'.
+
+        '''
+
+        if (extinction_func is not None) and (callable(extinction_func)):
+
+            self.extinction_func = extinction_func
+            self.logger.info(
+                'Manual extinction correction function is loaded.')
+
+        else:
+
+            filename = pkg_resources.resource_filename(
+                'aspired', 'extinction/{}_atm_extinct.txt'.format(location))
+            extinction_table = np.loadtxt(filename, delimiter=',')
+            self.extinction_func = interp1d(extinction_table[:, 0],
+                                            extinction_table[:, 1],
+                                            kind=kind,
+                                            fill_value=fill_value,
+                                            **kwargs)
+            self.logger.info(
+                '{} extinction correction function is loaded.'.format(
+                    location))
+
+        self.atmospheric_extinction_correction_available = True
 
     def apply_atmospheric_extinction_correction(self,
                                                 science_airmass=None,

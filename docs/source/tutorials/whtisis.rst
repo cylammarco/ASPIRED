@@ -33,9 +33,9 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
       # Set the dispersion direction
       Saxis = 0
 
-      science_frame = image_reduction.ImageReduction(
-          'isis_pso1801p6254.list',
-          saxis=Saxis)
+      science_frame = image_reduction.ImageReduction()
+      science_frame.add_filelist('isis_pso1801p6254.list')
+      science_frame.set_properties(saxis=Saxis)
       science_frame.reduce()
       science_frame.inspect(
           filename='reduced_image_pso1801p6254',
@@ -50,9 +50,9 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
 
     .. code-block:: python
 
-      standard_frame = image_reduction.ImageReduction(
-          'isis_g93m48.list',
-          saxis=Saxis)
+      standard_frame = image_reduction.ImageReduction()
+      standard_frame.add_filelist('isis_g93m48.list')
+      standard_frame.set_properties(saxis=Saxis)
       standard_frame.reduce()
       standard_frame.inspect()
 
@@ -143,15 +143,11 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
 
     .. code-block:: python
 
-      pso.add_arc(np.transpose(science_frame.arc_master), stype='science')
-      pso.apply_twodspec_mask_to_arc()
       pso.extract_arc_spec(
           display=True,
           save_iframe=True,
           filename='science_arc_spec')
 
-      g93.add_arc(np.transpose(standard_frame.arc_master), stype='standard')
-      g93.apply_twodspec_mask_to_arc()
       g93.extract_arc_spec(
           display=True,
           save_iframe=True,
@@ -195,7 +191,7 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
           elements=["Cu", "Ne", 'Ar'],
           stype='science+standard')
       pso_reduced.do_hough_transform()
-      pso_reduced.fit(max_tries=1000, stype='science+standard')
+      pso_reduced.fit(max_tries=2000, stype='science+standard')
       pso_reduced.apply_wavelength_calibration(stype='science+standard')
 
 8.  Next step is the perform the flux calibration, which requires comparing the
@@ -218,7 +214,7 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
 
     .. code-block:: python
 
-      pso_reduced.compute_sensitivity(kind='cubic')
+      pso_reduced.get_sensitivity(kind='cubic')
       pso_reduced.inspect_sensitivity(
           save_iframe=True
           filename='sensitivity')

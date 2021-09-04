@@ -40,7 +40,9 @@ science and standard spectra are shown.
 
     .. code-block:: python
 
-      science_frame = image_reduction.ImageReduction('examples/sprat_LHS6328.list')
+      science_frame = image_reduction.ImageReduction()
+      science_frame.add_filelist('examples/sprat_LHS6328.list')
+      science_frame.load_data()
       science_frame.reduce()
       science_frame.inspect()
 
@@ -56,12 +58,15 @@ science and standard spectra are shown.
 
     .. code-block:: python
 
-      standard_frame = image_reduction.ImageReduction('examples/sprat_Hiltner102.list')
+      standard_frame = image_reduction.ImageReduction()
+      standard_frame.add_filelist('examples/sprat_Hiltner102.list')
+      standard_frame.load_data()
       standard_frame.reduce()
       standard_frame.inspect()
 
 2.  With the image reduced, we can start performing spectral reduction,
-    starting from the 2D spectrum:
+    starting from the 2D spectrum. The arc frames listed in the filelist 
+    were also loaded, and they are propagated to the TwoDSpec automatically:
 
     .. code-block:: python
 
@@ -99,15 +104,12 @@ science and standard spectra are shown.
 
     and the spectrum of the standard frame:
 
-5.  Add the 2D arc. The `extract_arc_spec()` automatrically apply the traces
+5.  The `extract_arc_spec()` automatrically apply the traces
     found above to extract the spectra of the arcs.
 
     .. code-block:: python
 
-      science2D.add_arc(science_frame)
       science2D.extract_arc_spec()
-
-      standard2D.add_arc(standard_frame)
       standard2D.extract_arc_spec()
 
 6.  Initialise the OneDSpec for wavelength and flux calibration; get the traces
@@ -165,7 +167,7 @@ science and standard spectra are shown.
 
     .. code-block:: python
 
-      onedspec.compute_sensitivity()
+      onedspec.get_sensitivity()
       onedspec.inspect_sensitivity()
 
     .. raw:: html

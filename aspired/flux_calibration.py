@@ -879,7 +879,7 @@ class FluxCalibration(StandardLibrary):
                         mask_range=[[6850, 6960], [7580, 7700], [8925, 9050]],
                         mask_fit_order=1,
                         mask_fit_size=5,
-                        smooth=True,
+                        smooth=False,
                         slength=5,
                         sorder=3,
                         return_function=True,
@@ -914,7 +914,7 @@ class FluxCalibration(StandardLibrary):
             Order of polynomial to be fitted over the masked regions
         mask_fit_size: int (Default: 5)
             Number of "pixels" to be fitted on each side of the masked regions.
-        smooth: bool (Default: True)
+        smooth: bool (Default: False)
             set to smooth the input spectrum with scipy.signal.savgol_filter
         slength: int (Default: 5)
             SG-filter window size
