@@ -1,4 +1,4 @@
-Standard List
-=============
+Utility
+=======
 
 .. literalinclude:: ../../../aspired/util.py

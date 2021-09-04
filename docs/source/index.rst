@@ -58,6 +58,12 @@ User Guide
 
    modules/standardlistmodule
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Utility
+
+   modules/utility
+
 
 Basic Usage
 ===========
