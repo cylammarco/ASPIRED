@@ -616,7 +616,7 @@ class FluxCalibration(StandardLibrary):
         self.count_continuum = None
         self.flux_continuum = None
 
-    def from_spectrum1D(self, spectrum1D, merge=False):
+    def from_spectrum1D(self, spectrum1D, merge=False, overwrite=False):
         '''
         This function copies all the info from the spectrum1D, because users
         may supply different level/combination of reduction, everything is
@@ -639,8 +639,11 @@ class FluxCalibration(StandardLibrary):
         '''
 
         if merge:
-            self.spectrum1D.merge(spectrum1D)
+
+            self.spectrum1D.merge(spectrum1D, overwrite=overwrite)
+
         else:
+
             self.spectrum1D = spectrum1D
 
         self.spectrum1D_imported = True
@@ -941,13 +944,16 @@ class FluxCalibration(StandardLibrary):
         # resampling both the observed and the database standard spectra
         # in unit of flux per second. The higher resolution spectrum is
         # resampled to match the lower resolution one.
-        count = getattr(self.spectrum1D, 'count')
-        count_err = getattr(self.spectrum1D, 'count_err')
-        wave = getattr(self.spectrum1D, 'wave')
+        count = np.asarray(getattr(self.spectrum1D, 'count'))
+        count_err = np.asarray(getattr(self.spectrum1D, 'count_err'))
+        wave = np.asarray(getattr(self.spectrum1D, 'wave'))
 
         if getattr(self.spectrum1D, 'count_continuum') is None:
 
-            count = get_continuum(wave, count, **kwargs)
+            self.spectrum1D.add_count_continuum(
+                get_continuum(wave, count, **kwargs))
+
+        count = np.asarray(getattr(self.spectrum1D, 'count_continuum'))
 
         # If the median resolution of the observed spectrum is higher than
         # the literature one
