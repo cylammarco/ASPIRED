@@ -5,6 +5,7 @@ import os
 from itertools import chain
 
 import numpy as np
+from astropy import nddata
 from astropy.io import fits
 from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
@@ -1826,8 +1827,7 @@ class TwoDSpec:
             scaling_range = np.ones(1)
 
         # estimate the n-th percentile as the sky background level
-        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init,
-                                                      percentile)
+        lines_ref = lines_ref_init - np.nanmedian(lines_ref_init)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -1875,7 +1875,7 @@ class TwoDSpec:
 
                 # Maximum corr position is the shift
                 corr_val[j] = np.nanmax(corr)
-                corr_idx[j] = np.nanargmax(corr) - shift_tol_len
+                corr_idx[j] = np.nanargmax(corr) - shift_tol_len - 1
 
             # Maximum corr_val position is the scaling
             shift_solution[i] = corr_idx[np.nanargmax(corr_val)]
@@ -1956,7 +1956,7 @@ class TwoDSpec:
         for i in range(len(spec_idx)):
 
             # Get the median of the subspectrum and then get the Count at the
-            # centre of the aperture
+            # central 5 pixels of the aperture
             ap_val = np.zeros(nwindow)
 
             for j in range(nwindow):
@@ -1964,11 +1964,17 @@ class TwoDSpec:
                 # rounding
                 idx = int(np.round(spec_idx[i][j] + 0.5))
                 subspec_cleaned = sigma_clip(img_split[j], sigma=3)
-                ap_val[j] = np.nanmean(subspec_cleaned, axis=1)[idx]
+                ap_val[j] = np.sum(
+                    np.nansum(subspec_cleaned, axis=1)[idx - 2:idx + 2])/5 -\
+                    np.nanmedian(subspec_cleaned)
 
             # Mask out the faintest ap_faint percent of trace
-            mask = np.argsort(
-                ap_val)[int(np.round(len(ap_val) * ap_faint / 100)):]
+            n_faint = int(np.round(len(ap_val) * ap_faint / 100))
+            mask = np.argsort(ap_val)[n_faint:]
+            self.logger.info(
+                'The faintest {} subspectra are '.format(n_faint) +
+                'going to be ignored in the tracing. They are {}.'.format(
+                    np.argsort(ap_val)[:n_faint]))
 
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
@@ -2193,12 +2199,13 @@ class TwoDSpec:
             self.spectrum_list[i].remove_trace()
 
     def get_rectification(self,
-                          upsample_factor=10,
+                          upsample_factor=5,
                           bin_size=6,
-                          n_bin=10,
+                          n_bin=15,
                           spline_order=3,
                           order=2,
                           coeff=None,
+                          use_arc=True,
                           apply=False,
                           display=False,
                           renderer='default',
@@ -2226,12 +2233,12 @@ class TwoDSpec:
             The upsampling rate for the correlation (10 times means
             precise to 1/10 of a pixel). The upsampling uses cubic
             spline that is adopted in the scipy.ndimage.zoom() function.
-        bin_size: int (Default: 4)
+        bin_size: int (Default: 6)
             Number of rows in a slice.
-        n_bin: int (Default: 15)
+        n_bin: int (Default: 10)
             Number of slices parallel to the trace to be correlated to to
             compute the distortion in the dispersion direction. (i.e.
-            there are 9 // 2 = 4 slices below and above the trace.)
+            there are 10 // 2 = 5 slices below and above the trace.)
         spline_order: int (Default: 3)
             The order of spline for resampling.
         order: int (Default: 2)
@@ -2272,8 +2279,7 @@ class TwoDSpec:
         spec_size_tmp = spec.len_trace * upsample_factor
 
         # Upsample and shift in the dispersion direction
-        img_tmp = signal.medfilt2d(self.img)
-        img_tmp = ndimage.zoom(img_tmp,
+        img_tmp = ndimage.zoom(self.img.astype(float),
                                zoom=upsample_factor,
                                order=spline_order)
         y_tmp = ndimage.zoom(np.array(spec.trace),
@@ -2286,9 +2292,24 @@ class TwoDSpec:
                 'Arc frame is not available, only the data image '
                 'will be rectified.')
 
+            if use_arc:
+
+                self.logger.warning(
+                    'Arc frame is not available, retification '
+                    'polynomials are forced to be found with the '
+                    'light frame. ')
+                use_arc = False
+
+        elif isinstance(self.arc, nddata.CCDData):
+
+            arc_tmp = ndimage.zoom(self.arc.data.astype(float),
+                                   zoom=upsample_factor,
+                                   order=spline_order)
+            self.logger.info('The arc frame is upsampled.')
+
         else:
 
-            arc_tmp = ndimage.zoom(self.arc,
+            arc_tmp = ndimage.zoom(self.arc.astype(float),
                                    zoom=upsample_factor,
                                    order=spline_order)
             self.logger.info('The arc frame is upsampled.')
@@ -2298,6 +2319,7 @@ class TwoDSpec:
         for i in range(self.spec_size * upsample_factor):
 
             shift_i = int(np.round(y_tmp[i] - ref))
+
             img_tmp[:, i] = np.roll(img_tmp[:, i], -shift_i)
 
             if self.arc is not None:
@@ -2341,75 +2363,143 @@ class TwoDSpec:
             x = np.arange(spec.len_trace * upsample_factor).astype('int')
 
             # s for "flattened signal of the slice"
-            s = [
-                np.sum([
-                    img_tmp[int(np.round(ref - bin_half_size)
-                                ):int(np.round(ref + bin_half_size)), i]
-                    for i in x
-                ],
-                       axis=1)
-            ]
+            if use_arc:
+
+                s = [
+                    np.nansum([
+                        arc_tmp[int(np.round(ref - bin_half_size)
+                                    ):int(np.round(ref + bin_half_size) + 1),
+                                i] for i in x
+                    ],
+                              axis=1)
+                ]
+
+            else:
+
+                s = [
+                    np.nansum([
+                        img_tmp[int(np.round(ref - bin_half_size)
+                                    ):int(np.round(ref + bin_half_size) + 1),
+                                i] for i in x
+                    ],
+                              axis=1)
+                ]
+
+            one_tenth = len(s[0]) // 10
+
+            s[0] -= lowess(s[0],
+                           np.arange(spec_size_tmp),
+                           frac=0.05,
+                           return_sorted=False)
+            s[0] -= min(s[0][one_tenth:-one_tenth])
+            s[0] /= max(s[0][one_tenth:-one_tenth])
             s_down = []
             s_up = []
 
             # Loop through the spectra below the trace
             for k in range(n_down):
                 start = k * bin_half_size
-                end = start + bin_size * upsample_factor
+                end = start + bin_size * upsample_factor + 1
                 # Note the start and end are counting up, while the
                 # indices are becoming smaller.
-                s_down.append(
-                    np.sum([
-                        img_tmp[int(np.round(ref -
-                                             end)):int(np.round(ref - start)),
-                                i] for i in x
-                    ],
-                           axis=1))
+                if use_arc:
+
+                    s_down.append(
+                        np.nansum([
+                            arc_tmp[int(np.round(ref - end)
+                                        ):int(np.round(ref - start)), i]
+                            for i in x
+                        ],
+                                  axis=1))
+
+                else:
+
+                    s_down.append(
+                        np.nansum([
+                            img_tmp[int(np.round(ref - end)
+                                        ):int(np.round(ref - start)), i]
+                            for i in x
+                        ],
+                                  axis=1))
+
+                s_down[k] -= lowess(s_down[k],
+                                    np.arange(spec_size_tmp),
+                                    frac=0.05,
+                                    return_sorted=False)
+                s_down[k] -= min(s_down[k][one_tenth:-one_tenth])
+                s_down[k] /= max(s_down[k][one_tenth:-one_tenth])
 
             # Loop through the spectra above the trace
             for k in range(n_up):
                 start = k * bin_half_size
-                end = start + bin_size * upsample_factor
-                s_up.append(
-                    np.sum([
-                        img_tmp[int(np.round(ref +
-                                             start)):int(np.round(ref + end)),
-                                i] for i in x
-                    ],
-                           axis=1))
+                end = start + bin_size * upsample_factor + 1
+
+                if use_arc:
+
+                    s_up.append(
+                        np.nansum([
+                            arc_tmp[int(np.round(ref + start)
+                                        ):int(np.round(ref + end)), i]
+                            for i in x
+                        ],
+                                  axis=1))
+
+                else:
+
+                    s_up.append(
+                        np.nansum([
+                            img_tmp[int(np.round(ref + start)
+                                        ):int(np.round(ref + end)), i]
+                            for i in x
+                        ],
+                                  axis=1))
+                s_up[k] -= lowess(s_up[k],
+                                  np.arange(spec_size_tmp),
+                                  frac=0.05,
+                                  return_sorted=False)
+                s_up[k] -= min(s_up[k][one_tenth:-one_tenth])
+                s_up[k] /= max(s_up[k][one_tenth:-one_tenth])
 
             s_all = s_down[::-1] + s + s_up
 
             self.logger.info(
                 '{} subspectra is used for cross-correlation.'.format(s_all))
 
-            y_trace_upsampled = np.arange(-n_down, n_up + 1) * bin_half_size
+            y_trace_upsampled = np.arange(-n_down + 1,
+                                          n_up + 1) * bin_half_size + ref
 
             # correlate with the neighbouring slice to compute the shifts
             shift_upsampled = np.zeros_like(y_trace_upsampled)
-            one_tenth = len(s_all[0]) // 10
+
             for i in range(1, len(s_all)):
+
                 # Note: indice n_down is s
-                corr = signal.correlate(s_all[i - 1], s_all[i])
+                corr = signal.correlate(
+                    10.**s_all[i][one_tenth:-one_tenth],
+                    10.**s_all[i - 1][one_tenth:-one_tenth])
+                shift_upsampled[i - 1:] += (
+                    spec_size_tmp - 2 * one_tenth -
+                    np.argwhere(corr == corr[np.argmax(corr)])[0] - 1)
 
-                shift_upsampled[i:] += (np.argwhere(
-                    corr == corr[spec_size_tmp - one_tenth:spec_size_tmp +
-                                 one_tenth]
-                    [np.argmax(corr[spec_size_tmp - one_tenth:spec_size_tmp +
-                                    one_tenth])])[0] - spec_size_tmp - 1)
+            # Turn the shift to relative to the spectrum
+            shift_upsampled -= shift_upsampled[n_down]
 
-            shift_upsampled -= (shift_upsampled[n_down])
+            self.logger.info('The upsampled y-coordinates of subspectra '
+                             'are: {} '.format(y_trace_upsampled) +
+                             'and the corresponding upsampled shifts '
+                             'are: {}.'.format(shift_upsampled))
+
+            self.logger.info(
+                'The y-coordinates of subspectra '
+                'are: {} '.format(y_trace_upsampled / upsample_factor) +
+                'and the corresponding shifts '
+                'are: {}.'.format(shift_upsampled / upsample_factor))
 
             # fit the distortion in the spectral direction as a function
-            # of distance from trace. The coeff is in the upsampled
-            # resolution
-            # ignore the central 3 subspectra
-            mask = np.ones_like(shift_upsampled, dtype='bool')
-            mask[n_down - 1:n_down + 1] = 0
+            # of y-pixel. The coeff is in the upsampled resolution
             coeff = np.polynomial.polynomial.polyfit(
-                y_trace_upsampled[mask],
-                lowess(shift_upsampled[mask],
-                       y_trace_upsampled[mask],
+                y_trace_upsampled,
+                lowess(shift_upsampled, y_trace_upsampled,
                        return_sorted=False), order)
             self.logger.info(
                 'Best fit polynomial for rectifying in the spatial direction.'
@@ -2420,13 +2510,17 @@ class TwoDSpec:
         # For each row j (sort of a line of spectrum...)
         for j in range(len(img_tmp)):
 
-            # (j - ref) is the distance from the trace
             shift_j = np.polynomial.polynomial.polyval(j, coeff)
-            img_tmp[j] = np.roll(img_tmp[j], -int(np.round(shift_j)))
+
+            if j % 10 == 0:
+                self.logger.info('The shift at line j = {} is {}.'.format(
+                    j, shift_j))
+
+            img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
 
             if self.arc is not None:
 
-                arc_tmp[j] = np.roll(arc_tmp[j], -int(np.round(shift_j)))
+                arc_tmp[j] = np.roll(arc_tmp[j], int(np.round(shift_j)))
 
         self.rec_coeff = coeff
         self.rec_n_down = n_down
@@ -2440,6 +2534,7 @@ class TwoDSpec:
                                           zoom=1. / upsample_factor,
                                           order=spline_order)
         if self.arc is not None:
+
             self.arc_rectified = ndimage.zoom(arc_tmp,
                                               zoom=1. / upsample_factor,
                                               order=spline_order)

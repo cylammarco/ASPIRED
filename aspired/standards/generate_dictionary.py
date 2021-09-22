@@ -19,27 +19,27 @@ essential
 
 # the order in which the standard libraries goes through in automated mode
 library_rank = {
-    'esoxshooter': 1,
-    'esowdstan': 2,
-    'esohststan': 3,
-    'esookestan': 4,
-    'esoctiostan': 5,
-    'ing_oke': 6,
-    'ing_mas': 7,
-    'irafctionewcal': 8,
-    'irafspec16cal': 9,
-    'ing_fg': 10,
-    'ing_og': 11,
-    'ing_sto': 12,
-    'irafoke1990': 13,
-    'irafspec50cal': 14,
-    'irafspechayescal': 15,
-    'irafctiocal': 16,
-    'irafredcal': 17,
-    'irafirscal': 18,
-    'irafiidscal': 19,
-    'irafbstdscal': 20,
-    'irafblackbody': 21
+    'ing_oke': 1,
+    'ing_mas': 2,
+    'irafctionewcal': 3,
+    'irafspec16cal': 4,
+    'irafiidscal': 5,
+    'ing_fg': 6,
+    'ing_og': 7,
+    'ing_sto': 8,
+    'irafoke1990': 9,
+    'irafspec50cal': 10,
+    'irafspechayescal': 11,
+    'irafctiocal': 12,
+    'irafredcal': 13,
+    'irafirscal': 14,
+    'irafbstdscal': 15,
+    'irafblackbody': 16,
+    'esoxshooter': 17,
+    'esowdstan': 18,
+    'esohststan': 19,
+    'esookestan': 20,
+    'esoctiostan': 21
 }
 
 # Create dictionary for libraries to unique names

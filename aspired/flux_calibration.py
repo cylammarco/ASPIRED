@@ -351,7 +351,7 @@ class StandardLibrary:
 
         if success:
 
-            if library in libraries:
+            if np.in1d([library], libraries):
 
                 self.library = library
 
@@ -714,7 +714,7 @@ class FluxCalibration(StandardLibrary):
                              wave,
                              flux,
                              continuum,
-                             mask_range,
+                             mask_range=[[6850, 6960], [7580, 7700]],
                              return_function=False):
         '''
         Getting the Telluric absorption profile from the continuum of the
@@ -740,14 +740,15 @@ class FluxCalibration(StandardLibrary):
         telluric_profile = np.zeros_like(wave)
 
         # Get the continuum of the spectrum
-        residual = flux - continuum
+        # This should give the POSITIVE values over the telluric region
+        residual = continuum - flux
 
         for m in mask_range:
 
             # Get the indices for the two sides of the masking region
             # at the native pixel scale
             left_of_mask = np.where(wave <= m[0])[0]
-            right_of_mask = np.where(wave >= m[1])[0] + 1
+            right_of_mask = np.where(wave >= m[1])[0]
 
             if (len(left_of_mask) == 0) or (len(right_of_mask) == 0):
 
@@ -756,14 +757,12 @@ class FluxCalibration(StandardLibrary):
             left_telluric_start = int(max(left_of_mask))
             right_telluric_end = int(min(right_of_mask)) + 1
 
-            # resample to match the shape of "wave"
             telluric_profile[
                 left_telluric_start:right_telluric_end] = residual[
-                    left_telluric_start:right_telluric_end] - np.nanmin(
-                        residual[left_telluric_start:right_telluric_end])
+                    left_telluric_start:right_telluric_end]
 
-        telluric_profile /= np.nanmax(telluric_profile)
-
+        # normalise the profile
+        telluric_profile /= np.ptp(telluric_profile)
         telluric_func = itp.interp1d(wave,
                                      telluric_profile,
                                      fill_value='extrapolate')
@@ -879,7 +878,7 @@ class FluxCalibration(StandardLibrary):
     def get_sensitivity(self,
                         k=3,
                         method='interpolate',
-                        mask_range=[[6850, 6960], [7580, 7700], [8925, 9050]],
+                        mask_range=[[6850, 6960], [7580, 7700]],
                         mask_fit_order=1,
                         mask_fit_size=5,
                         smooth=False,
@@ -1022,7 +1021,7 @@ class FluxCalibration(StandardLibrary):
                      sensitivity[right_start:right_end]))
 
                 finite_mask = ~np.isnan(sensitivity_temp) & (
-                    sensitivity_temp > 0.) & (sensitivity_temp != np.inf)
+                    sensitivity_temp > 0.) & np.isfinite(sensitivity_temp)
 
                 # Fit the polynomial across the masked region
                 coeff = np.polynomial.polynomial.polyfit(
@@ -1073,10 +1072,11 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D.add_count_continuum(count)
         self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
 
-        self.get_telluric_profile(
-            wave,
-            getattr(self.spectrum1D, 'count') * sensitivity_func(wave),
-            getattr(self.spectrum1D, 'flux_continuum'), mask_range)
+        self.get_telluric_profile(wave,
+                                  getattr(self.spectrum1D, 'count') *
+                                  10.**sensitivity_func(wave),
+                                  count * 10.**sensitivity_func(wave),
+                                  mask_range=mask_range)
 
         if return_function:
 

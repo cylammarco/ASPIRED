@@ -246,8 +246,6 @@ class WavelengthCalibration():
 
     def find_arc_lines(self,
                        arc_spec=None,
-                       background=None,
-                       percentile=2.,
                        prominence=5.,
                        top_n_peaks=None,
                        distance=5.,
@@ -277,12 +275,6 @@ class WavelengthCalibration():
         arc_spec: list, array or None (Default: None)
             If not provided, it will look for the arc_spec in the spectrum1D.
             Otherwise, the input arc_spec will be used.
-        background: int (Default: None)
-            User-supplied estimated background level (percentage of max).
-        percentile: float (Default: 2.)
-            The percentile of the flux to be used as the estimate of the
-            background sky level to the first order. Only used if background
-            is None. [Count]
         prominence: float (Default: 5.)
             The minimum prominence to be considered as a peak (% of max).
         top_n_peaks: int (Default: None)
@@ -346,11 +338,7 @@ class WavelengthCalibration():
 
         arc_spec = getattr(self.spectrum1D, 'arc_spec')
 
-        if background is None:
-
-            background = np.nanpercentile(arc_spec, percentile)
-
-        arc_spec -= background
+        arc_spec -= np.nanmin(arc_spec)
         arc_spec /= np.nanmax(arc_spec)
 
         peaks, prop = signal.find_peaks(arc_spec,

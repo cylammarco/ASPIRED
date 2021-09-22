@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+from scipy import interpolate as itp
 from scipy import ndimage
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
@@ -298,4 +299,15 @@ def get_continuum(x, y, **kwargs):
 
         kwargs['return_sorted'] = False
 
-    return lowess(y, x, **kwargs)
+    x = np.asarray(x)
+    y = np.asarray(y)
+
+    mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.)
+
+    x_smoothed = x[mask]
+    y_smoothed = lowess(y[mask], x_smoothed, **kwargs)
+
+    return itp.interp1d(x_smoothed,
+                        y_smoothed,
+                        kind='cubic',
+                        fill_value='extrapolate')(x)
