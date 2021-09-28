@@ -2639,8 +2639,6 @@ class OneDSpec():
             Set to True to save the plotly figure as json string.
         display: bool (Default: False)
             Set to show diagnostic plot.
-        renderer: str (Default: 'default')
-            plotly renderer options.
         save_fig: string (Default: False)
             Set to save figure.
         fig_type: string (default: 'iframe+png')
@@ -3899,10 +3897,13 @@ class OneDSpec():
             count = science_spec.count
             flux = science_spec.flux
 
-            science_spec.add_flux_continuum(get_continuum(
-                wave, flux, **kwargs))
             science_spec.add_count_continuum(
                 get_continuum(wave, count, **kwargs))
+
+            if flux is not None:
+
+                science_spec.add_flux_continuum(
+                    get_continuum(wave, flux, **kwargs))
 
     def get_resampled_continuum(self, spec_id=None, **kwargs):
 
@@ -4158,15 +4159,15 @@ class OneDSpec():
 
             if np.sum(flux_mask) > 0:
 
-                flux_min = np.log10(
-                    np.nanmin(np.array(fluxcount).reshape(-1)[flux_mask]))
-                flux_max = np.log10(
-                    np.nanmax(np.array(fluxcount).reshape(-1)[flux_mask]))
+                flux_min = np.nanmin(
+                    np.array(fluxcount).reshape(-1)[flux_mask])
+                flux_max = np.nanmax(
+                    np.array(fluxcount).reshape(-1)[flux_mask])
 
             else:
 
-                flux_min = np.log10(np.nanmin(np.array(fluxcount).reshape(-1)))
-                flux_max = np.log10(np.nanmax(np.array(fluxcount).reshape(-1)))
+                flux_min = np.nanmin(np.array(fluxcount).reshape(-1))
+                flux_max = np.nanmax(np.array(fluxcount).reshape(-1))
 
             fig_sci = go.Figure(
                 layout=dict(autosize=False,
@@ -4232,7 +4233,7 @@ class OneDSpec():
                                   xaxis=dict(title='Wavelength / A'),
                                   yaxis=dict(title='Flux',
                                              range=[flux_min, flux_max],
-                                             type='log'),
+                                             type='linear'),
                                   legend=go.layout.Legend(
                                       x=0,
                                       y=1,
@@ -4716,25 +4717,23 @@ class OneDSpec():
                              & (np.array(wave).reshape(-1) < wave_max))
 
                 flux_low = np.nanpercentile(
-                    np.array(fluxcount).reshape(-1)[wave_mask], 5) / 1.5
+                    np.array(fluxcount).reshape(-1)[wave_mask], 10) / 1.5
                 flux_high = np.nanpercentile(
-                    np.array(fluxcount).reshape(-1)[wave_mask], 95) * 1.5
+                    np.array(fluxcount).reshape(-1)[wave_mask], 90) * 1.5
                 flux_mask = ((np.array(fluxcount).reshape(-1) > flux_low)
                              & (np.array(fluxcount).reshape(-1) < flux_high))
 
                 if np.sum(flux_mask) > 0:
 
-                    flux_min = np.log10(
-                        np.nanmin(np.array(fluxcount).reshape(-1)[flux_mask]))
-                    flux_max = np.log10(
-                        np.nanmax(np.array(fluxcount).reshape(-1)[flux_mask]))
+                    flux_min = np.nanmin(
+                        np.array(fluxcount).reshape(-1)[flux_mask])
+                    flux_max = np.nanmax(
+                        np.array(fluxcount).reshape(-1)[flux_mask])
 
                 else:
 
-                    flux_min = np.log10(
-                        np.nanmin(np.array(fluxcount).reshape(-1)))
-                    flux_max = np.log10(
-                        np.nanmax(np.array(fluxcount).reshape(-1)))
+                    flux_min = np.nanmin(np.array(fluxcount).reshape(-1))
+                    flux_max = np.nanmax(np.array(fluxcount).reshape(-1))
 
                 fig_sci = go.Figure(
                     layout=dict(autosize=False,
@@ -4767,7 +4766,7 @@ class OneDSpec():
                                         ]),
                                     )
                                 ]),
-                                title='Log scale'))
+                                title='Science Spectrum'))
 
                 # show the image on the top
                 fig_sci.add_trace(
@@ -4814,7 +4813,7 @@ class OneDSpec():
                                                  range=[wave_min, wave_max]),
                                       yaxis=dict(title='Flux',
                                                  range=[flux_min, flux_max],
-                                                 type='log'),
+                                                 type='linear'),
                                       legend=go.layout.Legend(
                                           x=0,
                                           y=1,
@@ -4921,28 +4920,26 @@ class OneDSpec():
             standard_flux_mask = (
                 (np.array(standard_fluxcount).reshape(-1) > np.nanpercentile(
                     np.array(standard_fluxcount).reshape(-1)
-                    [standard_wave_mask], 5) / 1.5) &
+                    [standard_wave_mask], 10) / 1.5) &
                 (np.array(standard_fluxcount).reshape(-1) < np.nanpercentile(
                     np.array(standard_fluxcount).reshape(-1)
-                    [standard_wave_mask], 95) * 1.5))
+                    [standard_wave_mask], 90) * 1.5))
 
             if np.nansum(standard_flux_mask) > 0:
 
-                standard_flux_min = np.log10(
-                    np.nanmin(
-                        np.array(standard_fluxcount).reshape(-1)
-                        [standard_flux_mask]))
-                standard_flux_max = np.log10(
-                    np.nanmax(
-                        np.array(standard_fluxcount).reshape(-1)
-                        [standard_flux_mask]))
+                standard_flux_min = np.nanmin(
+                    np.array(standard_fluxcount).reshape(-1)
+                    [standard_flux_mask])
+                standard_flux_max = np.nanmax(
+                    np.array(standard_fluxcount).reshape(-1)
+                    [standard_flux_mask])
 
             else:
 
-                standard_flux_min = np.log10(
-                    np.nanmin(np.array(standard_fluxcount).reshape(-1)))
-                standard_flux_max = np.log10(
-                    np.nanmax(np.array(standard_fluxcount).reshape(-1)))
+                standard_flux_min = np.nanmin(
+                    np.array(standard_fluxcount).reshape(-1))
+                standard_flux_max = np.nanmax(
+                    np.array(standard_fluxcount).reshape(-1))
 
             fig_standard = go.Figure(layout=dict(updatemenus=list([
                 dict(
@@ -4974,7 +4971,7 @@ class OneDSpec():
                                                  autosize=False,
                                                  height=height,
                                                  width=width,
-                                                 title='Log scale'))
+                                                 title='Standard Spectrum'))
 
             # show the image on the top
             fig_standard.add_trace(
@@ -5021,7 +5018,7 @@ class OneDSpec():
                 xaxis=dict(title='Wavelength / A', range=[wave_min, wave_max]),
                 yaxis=dict(title='Flux',
                            range=[standard_flux_min, standard_flux_max],
-                           type='log'),
+                           type='linear'),
                 legend=go.layout.Legend(x=0,
                                         y=1,
                                         traceorder="normal",

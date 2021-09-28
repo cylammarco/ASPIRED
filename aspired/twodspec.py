@@ -5,7 +5,7 @@ import os
 from itertools import chain
 
 import numpy as np
-from astropy import nddata
+from astropy.nddata import CCDData
 from astropy.io import fits
 from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
@@ -2300,7 +2300,7 @@ class TwoDSpec:
                     'light frame. ')
                 use_arc = False
 
-        elif isinstance(self.arc, nddata.CCDData):
+        elif isinstance(self.arc, CCDData):
 
             arc_tmp = ndimage.zoom(self.arc.data.astype(float),
                                    zoom=upsample_factor,

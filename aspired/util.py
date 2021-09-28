@@ -299,8 +299,8 @@ def get_continuum(x, y, **kwargs):
 
         kwargs['return_sorted'] = False
 
-    x = np.asarray(x)
-    y = np.asarray(y)
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
 
     mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.)
 

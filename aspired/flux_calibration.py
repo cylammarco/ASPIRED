@@ -222,6 +222,8 @@ class StandardLibrary:
         self.standard_wave_true = np.array(wave).astype('float')
         self.standard_fluxmag_true = np.array(fluxmag).astype('float')
 
+        # See https://www.stsci.edu/~strolger/docs/UNITS.txt for the unit
+        # conversion.
         if self.ftype == 'flux':
 
             # Trap the ones without flux files
@@ -236,14 +238,14 @@ class StandardLibrary:
             if unit == 'mjy':
 
                 self.standard_fluxmag_true = (self.standard_fluxmag_true *
-                                              1e-3 * 3.33564095e4 *
+                                              1e-3 * 2.99792458E-05 /
                                               self.standard_wave_true**2)
 
             # convert micro-Jy into F_lambda
             if unit == 'microjanskys':
 
                 self.standard_fluxmag_true = (self.standard_fluxmag_true *
-                                              1e-6 * 3.33564095e4 *
+                                              1e-6 * 2.99792458E-05 /
                                               self.standard_wave_true**2)
 
     def _get_iraf_standard(self):
@@ -880,7 +882,7 @@ class FluxCalibration(StandardLibrary):
                         method='interpolate',
                         mask_range=[[6850, 6960], [7580, 7700]],
                         mask_fit_order=1,
-                        mask_fit_size=5,
+                        mask_fit_size=3,
                         smooth=False,
                         slength=5,
                         sorder=3,
@@ -914,7 +916,7 @@ class FluxCalibration(StandardLibrary):
             [[min_pix_1, max_pix_1], [min_pix_2, max_pix_2],...]
         mask_fit_order: int (Default: 1)
             Order of polynomial to be fitted over the masked regions
-        mask_fit_size: int (Default: 5)
+        mask_fit_size: int (Default: 3)
             Number of "pixels" to be fitted on each side of the masked regions.
         smooth: bool (Default: False)
             set to smooth the input spectrum with scipy.signal.savgol_filter

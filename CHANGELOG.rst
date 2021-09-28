@@ -40,6 +40,7 @@ We aim to track and report as many changes as possible, but this is not an exhau
     * Loggers are propagated between objects upon initialisations.
     * Sky modelling is sigma-clipping outliers and bad values.
     * ap_trace() is masking out the faint parts of the spectrum when fitting a polynomial to the trace.
+    * Jansky conversion was wrong when using the ING standards
 
 * (API) changes:
 
