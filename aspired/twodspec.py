@@ -1685,7 +1685,7 @@ class TwoDSpec:
                  scaling_min=0.9995,
                  scaling_max=1.0005,
                  scaling_step=0.001,
-                 percentile=2,
+                 percentile=5,
                  shift_tol=10,
                  fit_deg=3,
                  ap_faint=20,
@@ -1802,6 +1802,8 @@ class TwoDSpec:
 
         img_tmp = self.img.astype(float)
         img_tmp[np.isnan(img_tmp)] = 0.
+        img_tmp[img_tmp < np.nanpercentile(
+            img_tmp, percentile)] = np.nanpercentile(img_tmp, percentile)
 
         if smooth:
 
@@ -1826,8 +1828,9 @@ class TwoDSpec:
 
             scaling_range = np.ones(1)
 
-        # estimate the 25-th percentile as the sky background level
-        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init, 25)
+        # subtract the sky background level
+        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init,
+                                                      percentile)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -1850,7 +1853,6 @@ class TwoDSpec:
             lines[np.isnan(lines)] = 0.
             lines = signal.resample(lines, nresample)
             lines = lines - np.nanpercentile(lines, percentile)
-            lines[lines<0] = 0
 
             # cross-correlation values and indices
             corr_val = np.zeros(len(scaling_range))
@@ -1876,7 +1878,7 @@ class TwoDSpec:
 
                 # Maximum corr position is the shift
                 corr_val[j] = np.nanmax(corr)
-                corr_idx[j] = np.nanargmax(corr) - shift_tol_len - 1
+                corr_idx[j] = np.nanargmax(corr) - shift_tol_len
 
             # Maximum corr_val position is the scaling
             shift_solution[i] = corr_idx[np.nanargmax(corr_val)]
