@@ -1826,8 +1826,8 @@ class TwoDSpec:
 
             scaling_range = np.ones(1)
 
-        # estimate the n-th percentile as the sky background level
-        lines_ref = lines_ref_init - np.nanmedian(lines_ref_init)
+        # estimate the 25-th percentile as the sky background level
+        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init, 25)
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -1850,6 +1850,7 @@ class TwoDSpec:
             lines[np.isnan(lines)] = 0.
             lines = signal.resample(lines, nresample)
             lines = lines - np.nanpercentile(lines, percentile)
+            lines[lines<0] = 0
 
             # cross-correlation values and indices
             corr_val = np.zeros(len(scaling_range))
