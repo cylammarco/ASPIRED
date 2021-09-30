@@ -2988,8 +2988,13 @@ class TwoDSpec:
                 # fix width if trace is too close to the edge
                 if (itrace + width_up > self.spatial_size):
 
+                    self.logger.info(
+                        'Extration is over the upper edge of the detector '
+                        'plane. Fixing indices. width_up is changed '
+                        'from {} to {}.'.format(width_up, self.spatial_size -
+                                                itrace - 1))
                     # ending at the last pixel
-                    width_up = self.spatial_size - itrace - 1
+                    width_up = self.spatial_size - itrace - 3
                     sep_up = 0
                     sky_width_up = 0
 
@@ -2997,6 +3002,8 @@ class TwoDSpec:
 
                 if (itrace - width_dn < 0):
 
+                    self.logger.info('Extration is over the lower edge of '
+                                     'the detector plane. Fixing indices.')
                     offset = width_dn - itrace
                     # starting at pixel row 0
                     width_dn = itrace - 1
