@@ -89,15 +89,19 @@ def test_telluric_square_wave():
     onedspec.science_spectrum_list[0].add_wavelength(wave)
     onedspec.science_spectrum_list[0].add_flux(flux_sci, None, None)
     onedspec.science_spectrum_list[0].add_flux_continuum(flux_sci_continuum)
-    onedspec.add_telluric_function(telluric_func)
-    onedspec.get_telluric_profile()
+    #onedspec.fluxcal.spectrum1D.add_wavelength(wave)
+    #onedspec.fluxcal.spectrum1D.add_flux(flux_std, None, None)
+    #onedspec.fluxcal.spectrum1D.add_flux_continuum(flux_std_continuum)
+
+    onedspec.add_telluric_function(telluric_func, stype='science')
+    onedspec.get_telluric_correction()
     onedspec.apply_telluric_correction()
 
     assert np.isclose(np.nansum(onedspec.science_spectrum_list[0].flux),
                       np.nansum(flux_sci_continuum),
                       rtol=1e-2)
 
-    onedspec.inspect_telluric_profile(
+    onedspec.inspect_telluric_correction(
         display=False,
         return_jsonstring=True,
         save_fig=True,
@@ -124,8 +128,11 @@ def test_telluric_real_data():
     onedspec.science_spectrum_list[0].add_wavelength(sci_wave)
     onedspec.science_spectrum_list[0].add_flux(sci_flux, None, None)
     onedspec.science_spectrum_list[0].add_flux_continuum(sci_flux_continuum)
+    onedspec.fluxcal.spectrum1D.add_wavelength(std_wave)
+    onedspec.fluxcal.spectrum1D.add_flux(std_flux, None, None)
+    onedspec.fluxcal.spectrum1D.add_flux_continuum(std_flux_continuum)
+
     onedspec.add_telluric_function(telluric_func)
-    onedspec.get_telluric_profile()
     onedspec.apply_telluric_correction()
 
     assert np.isclose(np.nansum(onedspec.science_spectrum_list[0].flux),

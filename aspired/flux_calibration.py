@@ -822,9 +822,10 @@ class FluxCalibration(StandardLibrary):
         fig = go.Figure(layout=dict(
             autosize=False, height=height, width=width, title='Log scale'))
         # show the image on the top
+        self.logger.info(np.asarray(self.spectrum1D.wave))
         fig.add_trace(
-            go.Scatter(x=self.spectrum1D.wave,
-                       y=self.spectrum1D.telluric_func(self.spectrum1D.wave),
+            go.Scatter(x=np.asarray(self.spectrum1D.wave),
+                       y=self.spectrum1D.telluric_func(np.asarray(self.spectrum1D.wave)),
                        line=dict(color='royalblue', width=4),
                        name='Count / s (Observed)'))
 

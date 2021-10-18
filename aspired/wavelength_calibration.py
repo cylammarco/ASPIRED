@@ -1053,9 +1053,9 @@ class WavelengthCalibration():
                      robust_refit=True,
                      fit_deg=None,
                      display=False,
+                     renderer='default',
                      filename=None,
                      return_jsonstring=False,
-                     renderer='default',
                      save_fig=False,
                      fig_type='iframe+png',
                      return_solution=True):

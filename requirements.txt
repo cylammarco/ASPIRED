@@ -1,7 +1,7 @@
 astropy>=4.0
 ccdproc>=2.1
 Cython>=0.29.23
-rascal==0.3
+rascal==0.3.1
 plotly>=5.0
 git+git://github.com/astropy/astroscrappy@master#egg=astroscrappy
 spectres>=2.1.1

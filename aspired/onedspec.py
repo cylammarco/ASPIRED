@@ -2440,7 +2440,7 @@ class OneDSpec():
                            brute_force=False,
                            stype='science+standard'):
         '''
-        ** brute_force is EXPERIMENTAL as of 1 Sept 2021 **
+        ** brute_force is EXPERIMENTAL as of 1 Oct 2021 **
         The brute force method is supposed to provide all the possible
         solution, hence given a sufficiently large max_tries, the solution
         should always be the best possible outcome. However, it does not
@@ -2604,6 +2604,7 @@ class OneDSpec():
             progress=True,
             return_solution=False,
             display=False,
+            renderer='default',
             save_fig=False,
             fig_type='iframe+png',
             filename=None,
@@ -2639,6 +2640,8 @@ class OneDSpec():
             Set to True to save the plotly figure as json string.
         display: bool (Default: False)
             Set to show diagnostic plot.
+        renderer: str (Default: 'default')
+            plotly renderer options.
         save_fig: string (Default: False)
             Set to save figure.
         fig_type: string (default: 'iframe+png')
@@ -2692,6 +2695,7 @@ class OneDSpec():
                         brute_force=brute_force,
                         progress=progress,
                         display=display,
+                        renderer=renderer,
                         save_fig=save_fig,
                         fig_type=fig_type,
                         filename=filename,
@@ -2722,6 +2726,7 @@ class OneDSpec():
                     brute_force=brute_force,
                     progress=progress,
                     display=display,
+                    renderer=renderer,
                     save_fig=save_fig,
                     fig_type=fig_type,
                     filename=filename,
@@ -2751,11 +2756,12 @@ class OneDSpec():
                      fit_deg=None,
                      return_solution=False,
                      display=False,
+                     renderer='default',
                      save_fig=False,
                      filename=None,
                      stype='science+standard'):
         '''
-        ** EXPERIMENTAL, as of 1 Sept 2021 **
+        ** EXPERIMENTAL, as of 1 October 2021 **
         Refine the fitted solution with a minimisation method as provided by
         scipy.optimize.minimize().
 
@@ -2784,6 +2790,8 @@ class OneDSpec():
             Set to True to return the best fit polynomial coefficients.
         display: bool (Default: False)
             Set to show diagnostic plot.
+        renderer: str (Default: 'default')
+            plotly renderer options.
         save_fig: bool (Default: False)
             Set to save figure.
         filename: str or None (Default: None)
@@ -2839,6 +2847,7 @@ class OneDSpec():
                             robust_refit=robust_refit,
                             fit_deg=fit_deg,
                             display=display,
+                            renderer=renderer,
                             save_fig=save_fig,
                             filename=filename,
                             return_solution=return_solution))
@@ -2871,6 +2880,7 @@ class OneDSpec():
                     robust_refit=robust_refit,
                     fit_deg=fit_deg,
                     display=display,
+                    renderer=renderer,
                     save_fig=save_fig,
                     filename=filename,
                     return_solution=return_solution)
@@ -3799,11 +3809,14 @@ class OneDSpec():
 
         diff = flux + factor * telluric_profile - continuum
         diff = sigma_clip(diff, sigma=sigma) * 1e20
-        nansum = np.abs(np.nansum(diff))
+        nansum = np.nansum(np.abs(diff))
 
         return nansum
 
-    def add_telluric_function(self, telluric, spec_id=None):
+    def add_telluric_function(self,
+                              telluric,
+                              spec_id=None,
+                              stype='science+standard'):
         '''
         Provide a callable function that gives the Telluric profile.
 
@@ -3817,45 +3830,74 @@ class OneDSpec():
 
         '''
 
-        if isinstance(spec_id, int):
+        stype_split = stype.split('+')
 
-            spec_id = [spec_id]
+        if 'science' in stype_split:
 
-        if spec_id is not None:
+            if isinstance(spec_id, int):
 
-            if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                spec_id = [spec_id]
 
-                error_msg = 'The given spec_id does not exist.'
-                self.logger.critical(error_msg)
-                raise ValueError(error_msg)
+            if spec_id is not None:
 
-        else:
+                if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())):
 
-            spec_id = list(self.science_spectrum_list.keys())
+                    error_msg = 'The given spec_id does not exist.'
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
-        for i in spec_id:
+            else:
 
-            science_spec = self.science_spectrum_list[i]
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                science_spec = self.science_spectrum_list[i]
+
+                if callable(telluric):
+
+                    science_spec.add_telluric_func(telluric)
+
+                if isinstance(telluric, (np.ndarray, list)):
+
+                    science_spec.add_telluric_func(
+                        interp1d(telluric[0], telluric[1]))
+
+                if science_spec.wave is not None:
+
+                    science_spec.add_telluric_profile(
+                        science_spec.telluric_func(science_spec.wave))
+
+                if science_spec.wave_resampled is not None:
+
+                    science_spec.add_telluric_profile_resampled(
+                        science_spec.telluric_func(
+                            science_spec.wave_resampled))
+
+        if 'standard' in stype_split:
+
+            # Add to the standard spectrum
+            standard_spec = self.standard_spectrum_list[0]
 
             if callable(telluric):
 
-                science_spec.add_telluric_func(telluric)
+                standard_spec.add_telluric_func(telluric)
 
             if isinstance(telluric, (np.ndarray, list)):
 
-                science_spec.add_telluric_func(
+                standard_spec.add_telluric_func(
                     interp1d(telluric[0], telluric[1]))
 
-            if science_spec.wave is not None:
+            if standard_spec.wave is not None:
 
-                science_spec.add_telluric_profile(
-                    science_spec.telluric_func(science_spec.wave))
+                standard_spec.add_telluric_profile(
+                    standard_spec.telluric_func(standard_spec.wave))
 
-            if science_spec.wave_resampled is not None:
+            if standard_spec.wave_resampled is not None:
 
-                science_spec.add_telluric_profile_resampled(
-                    science_spec.telluric_func(science_spec.wave_resampled))
+                standard_spec.add_telluric_profile_resampled(
+                    standard_spec.telluric_func(standard_spec.wave_resampled))
 
     def get_continuum(self, spec_id=None, **kwargs):
         '''
@@ -3940,10 +3982,79 @@ class OneDSpec():
 
     def get_telluric_profile(self,
                              spec_id=None,
-                             factor=1.0,
-                             auto_apply=False,
-                             **kwargs):
+                             mask_range=[[6850, 6960], [7580, 7700]],
+                             return_function=False):
         '''
+        Getting the Telluric absorption profile from the continuum of the
+        standard star spectrum.
+
+        Parameters
+        ----------
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        mask_range: list of list
+            list of lists with 2 values indicating the range marked by each
+            of the Telluric regions.
+        return_function: bool (Default: False)
+            Set to True to explicitly return the interpolated function of
+            the Telluric profile.
+
+        '''
+
+        telluric_func = self.fluxcal.get_telluric_profile(
+            wave=self.standard_spectrum_list[0].wave,
+            flux=self.standard_spectrum_list[0].flux,
+            continuum=self.standard_spectrum_list[0].flux_continuum,
+            mask_range=mask_range,
+            return_function=return_function)
+
+        self.logger.info('Copying the telluric absorption profile to '
+                         'the science spectrum1D(s).')
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())):
+
+                error_msg = 'The given spec_id does not exist.'
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+        else:
+
+            spec_id = list(self.science_spectrum_list.keys())
+
+        # Get the telluric profile
+        for i in spec_id:
+
+            science_spec = self.science_spectrum_list[i]
+
+            science_spec.add_telluric_profile(self.fluxcal.spectrum1D.telluric_profile)
+
+        if return_function:
+
+            return telluric_func
+
+    def get_telluric_correction(self,
+                                spec_id=None,
+                                factor=1.0,
+                                auto_apply=False,
+                                **kwargs):
+        '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
+        Get the telluric absorption profile from the standard star based on
+        the masked regions given in generating the sensitivity curve. Note
+        that the profile has a "positive" flux so that in the step of applying
+        a correction, a POSITIVE constant is found to multiply with the
+        normalised telluric profile before ADDING to the spectrum for
+        telluric absorption correction (counter-intuitive to the term
+        telluric absorption subtraction).
+
         Parameters
         ----------
         spec_id: int or None (Default: None)
@@ -4064,8 +4175,6 @@ class OneDSpec():
             self.apply_telluric_correction(factor=factor, spec_id=spec_id)
 
     def inspect_telluric_profile(self,
-                                 factor=1.0,
-                                 spec_id=None,
                                  display=True,
                                  renderer='default',
                                  width=1280,
@@ -4076,8 +4185,69 @@ class OneDSpec():
                                  filename=None,
                                  open_iframe=False):
         '''
-        Inspect the Telluric absorption correction on top of the flux
-        calibrated spectra.
+        Display the Telluric profile.
+
+        Parameters
+        ----------
+        display: bool (Default: True)
+            Set to True to display disgnostic plot.
+        renderer: string (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True.
+
+        '''
+
+        self.fluxcal.inspect_telluric_profile(
+            display=display,
+            renderer=renderer,
+            width=width,
+            height=height,
+            return_jsonstring=return_jsonstring,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            open_iframe=open_iframe)
+        self.logger.info('Inspecting the telluric absorption profile.')
+
+    def inspect_telluric_correction(self,
+                                    factor=1.0,
+                                    spec_id=None,
+                                    display=True,
+                                    renderer='default',
+                                    width=1280,
+                                    height=720,
+                                    return_jsonstring=False,
+                                    save_fig=False,
+                                    fig_type='iframe+png',
+                                    filename=None,
+                                    open_iframe=False):
+        '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
+        Inspect the Telluric absorption correction on top of pre-corrected
+        spectra.
 
         Parameters
         ----------
@@ -4289,7 +4459,16 @@ class OneDSpec():
 
     def apply_telluric_correction(self, factor=1.0, spec_id=None):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
         Apply the telluric correction with the extra multiplier 'factor'.
+        The 'factor' provided in the profile() is NOT
+        propagated to this function, it has to be explicitly provided
+        to this function.
+
+        The telluric absorption profile is normalised to 1 at the most
+        absorpted wavelegnth, the factor manually provided can be
+        negative in case of over/under-subtraction.
 
         Parameters
         ----------
@@ -4331,16 +4510,27 @@ class OneDSpec():
                     'Telluric profile is not available, please '
                     'construct a profile with get_telluric_profile().')
 
-            science_spec.flux = (science_spec.flux +
-                                 science_spec.telluric_profile *
-                                 science_spec.telluric_factor * factor)
+            else:
+
+                science_spec.flux = (science_spec.flux +
+                                     science_spec.telluric_profile *
+                                     science_spec.telluric_factor * factor)
 
             if self.science_wavelength_resampled:
 
-                science_spec.flux_resampled = (
-                    science_spec.flux_resampled +
-                    science_spec.telluric_profile_resampled *
-                    science_spec.telluric_factor * factor)
+                if science_spec.telluric_profile_resampled is None:
+
+                    self.logger.warning(
+                        'A resampled telluric profile is not available, '
+                        'please construct a profile with '
+                        'get_telluric_profile().')
+
+                else:
+
+                    science_spec.flux_resampled = (
+                        science_spec.flux_resampled +
+                        science_spec.telluric_profile_resampled *
+                        science_spec.telluric_factor * factor)
 
     def set_atmospheric_extinction(self,
                                    location='orm',
@@ -4349,7 +4539,7 @@ class OneDSpec():
                                    fill_value='extrapolate',
                                    **kwargs):
         '''
-        ** EXPERIMENTAL, as of 1 September 2021 **
+        ** EXPERIMENTAL, as of 1 October 2021 **
 
         The ORM atmospheric extinction correction table is taken from
         http://www.ing.iac.es/astronomy/observing/manuals/ps/tech_notes/tn031.pdf
@@ -4406,6 +4596,8 @@ class OneDSpec():
                                                 standard_airmass=None,
                                                 spec_id=None):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
         This is the first step in allowing atmospheric extinction correction
         of the spectra. Currently it only works if both the science and
         standard spectra are present and both airmass values are provided.

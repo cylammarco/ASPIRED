@@ -1250,19 +1250,15 @@ def test_getting_telluric_profile():
 
     onedspec.add_telluric_function([np.arange(10000), np.arange(10000)])
 
-    onedspec.get_telluric_profile()
-    onedspec.get_telluric_profile(spec_id=0)
-    onedspec.get_telluric_profile(spec_id=[0])
-
     onedspec.inspect_telluric_profile(
         display=False,
         save_fig=True,
         fig_type='iframe+png+jpg+svg+pdf',
         filename='test/test_output/test_onedspec_inspect_telluric_profile')
-    onedspec.inspect_telluric_profile(display=False,
-                                      spec_id=0,
-                                      return_jsonstring=True)
-    onedspec.inspect_telluric_profile(display=False, spec_id=[0])
+    onedspec.inspect_telluric_correction(display=False,
+                                         spec_id=0,
+                                         return_jsonstring=True)
+    onedspec.inspect_telluric_correction(display=False, spec_id=[0])
 
     onedspec.apply_telluric_correction()
     onedspec.apply_telluric_correction(spec_id=0)
@@ -1276,6 +1272,7 @@ def test_adding_telluric_function_wrong_spec_id():
         lambda x: np.polynomial.polynomial.polyval(x, coeff), spec_id=1000)
 
 
+# spec_id is irrelevant, there is only ONE standard spectrum
 @pytest.mark.xfail(raises=ValueError)
 def test_getting_telluric_profile_wrong_spec_id():
 
@@ -1283,9 +1280,9 @@ def test_getting_telluric_profile_wrong_spec_id():
 
 
 @pytest.mark.xfail(raises=ValueError)
-def test_inspecting_telluric_profile_wrong_spec_id():
+def test_inspecting_telluric_correction_wrong_spec_id():
 
-    onedspec.inspect_telluric_profile(spec_id=1000)
+    onedspec.inspect_telluric_correction(spec_id=1000)
 
 
 @pytest.mark.xfail(raises=ValueError)
