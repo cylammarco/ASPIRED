@@ -3784,6 +3784,8 @@ class OneDSpec():
 
     def _min_std(self, factor, flux, telluric_profile, continuum, sigma=2.0):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
         Minimisation function to get the best mutiplier for the strength
         of the Telluric profile.
 
@@ -3818,6 +3820,8 @@ class OneDSpec():
                               spec_id=None,
                               stype='science+standard'):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
         Provide a callable function that gives the Telluric profile.
 
         Parameters
@@ -3901,6 +3905,8 @@ class OneDSpec():
 
     def get_continuum(self, spec_id=None, **kwargs):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
         Get the continnum from the wave, count and flux.
 
         Parameters
@@ -3948,6 +3954,20 @@ class OneDSpec():
                     get_continuum(wave, flux, **kwargs))
 
     def get_resampled_continuum(self, spec_id=None, **kwargs):
+        '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
+        Get the continnum from the resampled wave, count and flux.
+
+        Parameters
+        ----------
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        **kwargs: dictionary
+            The keyword arguments to be passed to the lowess function
+            for generating the continuum.
+
+        '''
 
         if isinstance(spec_id, int):
 
@@ -3985,6 +4005,8 @@ class OneDSpec():
                              mask_range=[[6850, 6960], [7580, 7700]],
                              return_function=False):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+
         Getting the Telluric absorption profile from the continuum of the
         standard star spectrum.
 
@@ -4033,7 +4055,8 @@ class OneDSpec():
 
             science_spec = self.science_spectrum_list[i]
 
-            science_spec.add_telluric_profile(self.fluxcal.spectrum1D.telluric_profile)
+            science_spec.add_telluric_profile(
+                self.fluxcal.spectrum1D.telluric_profile)
 
         if return_function:
 
@@ -4185,6 +4208,8 @@ class OneDSpec():
                                  filename=None,
                                  open_iframe=False):
         '''
+        ** EXPERIMENTAL, as of 1 October 2021 **
+ 
         Display the Telluric profile.
 
         Parameters
