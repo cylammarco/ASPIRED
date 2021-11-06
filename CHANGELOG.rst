@@ -1,7 +1,7 @@
-Version 0.4.0
+Version 0.4.1
 -------------
 
-:Date X X 2021
+:Date 6-Nov-2021
 
 We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
 
