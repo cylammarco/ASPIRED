@@ -3,7 +3,7 @@ ccdproc>=2.1
 Cython>=0.29.23
 rascal==0.3.1
 plotly>=5.0
-astroscrappy==1.0.8
+astroscrappy==1.1.0
 spectres>=2.1.1
 numpy>=1.16
 scipy>=1.5.2
