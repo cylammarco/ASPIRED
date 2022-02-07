@@ -52,22 +52,24 @@ def bfixpix(data, badmask, n=4, retdat=False):
             xmax = min(nx, badx[i] + rad)
             ymin = max(0, bady[i] - rad)
             ymax = min(ny, bady[i] + rad)
-            x = np.arange(nx)[xmin:xmax + 1]
-            y = np.arange(ny)[ymin:ymax + 1]
+            x = np.arange(nx)[xmin : xmax + 1]
+            y = np.arange(ny)[ymin : ymax + 1]
             yy, xx = np.meshgrid(y, x)
 
-            rr = abs(xx + 1j * yy) * (1. -
-                                      badmask[xmin:xmax + 1, ymin:ymax + 1])
+            rr = abs(xx + 1j * yy) * (
+                1.0 - badmask[xmin : xmax + 1, ymin : ymax + 1]
+            )
             numNearbyGoodPixels = (rr > 0).sum()
 
         closestDistances = np.unique(np.sort(rr[rr > 0])[0:n])
         numDistances = len(closestDistances)
-        localSum = 0.
-        localDenominator = 0.
+        localSum = 0.0
+        localDenominator = 0.0
 
         for j in range(numDistances):
-            localSum += data[xmin:xmax + 1,
-                             ymin:ymax + 1][rr == closestDistances[j]].sum()
+            localSum += data[xmin : xmax + 1, ymin : ymax + 1][
+                rr == closestDistances[j]
+            ].sum()
             localDenominator += (rr == closestDistances[j]).sum()
 
         data[badx[i], bady[i]] = 1.0 * localSum / localDenominator
@@ -83,11 +85,9 @@ def bfixpix(data, badmask, n=4, retdat=False):
     return ret
 
 
-def create_cutoff_mask(data,
-                       cutoff=65535.,
-                       grow=False,
-                       iterations=1,
-                       diagonal=False):
+def create_cutoff_mask(
+    data, cutoff=65535.0, grow=False, iterations=1, diagonal=False
+):
     """
     Create a simple mask from a numpy.ndarray, pixel values above
     (or below) the specified cutoff value(s) are masked as *BAD* pixels as
@@ -122,9 +122,12 @@ def create_cutoff_mask(data,
 
         else:
 
-            err_msg = "Please supply a list or array for the cutoff. " +\
-                "The given cutoff is {} and and a size of {}.".format(
-                    cutoff, len(cutoff))
+            err_msg = (
+                "Please supply a list or array for the cutoff. "
+                + "The given cutoff is {} and and a size of {}.".format(
+                    cutoff, len(cutoff)
+                )
+            )
             logging.error(err_msg)
             raise RuntimeError(err_msg)
 
@@ -135,8 +138,10 @@ def create_cutoff_mask(data,
 
     else:
 
-        err_msg = "Please supply a numeric value for the cutoff. " +\
-            "The given cutoff is {} of type {}.".format(cutoff, type(cutoff))
+        err_msg = (
+            "Please supply a numeric value for the cutoff. "
+            + "The given cutoff is {} of type {}.".format(cutoff, type(cutoff))
+        )
         logging.error(err_msg)
         raise RuntimeError(err_msg)
 
@@ -144,13 +149,13 @@ def create_cutoff_mask(data,
 
     if grow:
 
-        cutoff_mask = grow_mask(cutoff_mask,
-                                iterations=iterations,
-                                diagonal=diagonal)
+        cutoff_mask = grow_mask(
+            cutoff_mask, iterations=iterations, diagonal=diagonal
+        )
 
     if (data > upper_limit).any():
 
-        logging.warning('Saturated pixels detected.')
+        logging.warning("Saturated pixels detected.")
         return cutoff_mask, True
 
     else:
@@ -185,13 +190,13 @@ def create_bad_pixel_mask(data, grow=False, iterations=1, diagonal=False):
 
     if grow:
 
-        bad_pixel_mask = grow_mask(mask=bad_pixel_mask,
-                                   iterations=iterations,
-                                   diagonal=diagonal)
+        bad_pixel_mask = grow_mask(
+            mask=bad_pixel_mask, iterations=iterations, diagonal=diagonal
+        )
 
     if bad_pixel_mask.any():
 
-        logging.warning('Bad pixels detected.')
+        logging.warning("Bad pixels detected.")
         return bad_pixel_mask, True
 
     else:
@@ -265,15 +270,15 @@ def grow_mask(mask, iterations, diagonal):
 
         struct = ndimage.generate_binary_structure(2, 1)
 
-    mask_grown = ndimage.binary_dilation(input=mask,
-                                         structure=struct,
-                                         iterations=iterations)
+    mask_grown = ndimage.binary_dilation(
+        input=mask, structure=struct, iterations=iterations
+    )
 
     return mask_grown
 
 
 def get_continuum(x, y, **kwargs):
-    '''
+    """
     This is a wrapper function of the lowess function from statsmodels that
     uses a different frac default value that is more appropriate in getting
     a first guess continuum which reject "outliers" much more aggressively.
@@ -289,25 +294,24 @@ def get_continuum(x, y, **kwargs):
     **kwargs: dict
         The keyword arguments for the lowess function.
 
-    '''
+    """
 
-    if 'frac' not in kwargs:
+    if "frac" not in kwargs:
 
-        kwargs['frac'] = 0.1
+        kwargs["frac"] = 0.1
 
-    if 'return_sorted' not in kwargs:
+    if "return_sorted" not in kwargs:
 
-        kwargs['return_sorted'] = False
+        kwargs["return_sorted"] = False
 
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 
-    mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.)
+    mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.0)
 
     x_smoothed = x[mask]
     y_smoothed = lowess(y[mask], x_smoothed, **kwargs)
 
-    return itp.interp1d(x_smoothed,
-                        y_smoothed,
-                        kind='cubic',
-                        fill_value='extrapolate')(x)
+    return itp.interp1d(
+        x_smoothed, y_smoothed, kind="cubic", fill_value="extrapolate"
+    )(x)

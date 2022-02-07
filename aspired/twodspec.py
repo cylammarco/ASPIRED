@@ -21,24 +21,27 @@ from .image_reduction import ImageReduction
 from .spectrum1D import Spectrum1D
 from .util import create_bad_pixel_mask, bfixpix
 
-__all__ = ['TwoDSpec']
+__all__ = ["TwoDSpec"]
 
 
 class TwoDSpec:
-    '''
+    """
     This is a class for processing a 2D spectral image.
 
-    '''
-    def __init__(self,
-                 data=None,
-                 header=None,
-                 verbose=True,
-                 logger_name='TwoDSpec',
-                 log_level='INFO',
-                 log_file_folder='default',
-                 log_file_name=None,
-                 **kwargs):
-        '''
+    """
+
+    def __init__(
+        self,
+        data=None,
+        header=None,
+        verbose=True,
+        logger_name="TwoDSpec",
+        log_level="INFO",
+        log_file_folder="default",
+        log_file_name=None,
+        **kwargs
+    ):
+        """
         The constructor takes the data and the header, and the the header
         infromation will be read automatically. See set_properties()
         for the detail information of the keyword arguments. The extraction
@@ -77,7 +80,7 @@ class TwoDSpec:
         **kwargs: keyword arguments (Default: see set_properties())
             see set_properties().
 
-        '''
+        """
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
@@ -92,30 +95,33 @@ class TwoDSpec:
         elif log_level == "DEBUG":
             self.logger.setLevel(logging.DEBUG)
         else:
-            raise ValueError('Unknonw logging level.')
+            raise ValueError("Unknonw logging level.")
 
         formatter = logging.Formatter(
-            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
-            '%(message)s',
-            datefmt='%a, %d %b %Y %H:%M:%S')
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
+            "%(message)s",
+            datefmt="%a, %d %b %Y %H:%M:%S",
+        )
 
         if log_file_name is None:
             # Only print log to screen
             self.handler = logging.StreamHandler()
         else:
-            if log_file_name == 'default':
-                log_file_name = '{}_{}.log'.format(
+            if log_file_name == "default":
+                log_file_name = "{}_{}.log".format(
                     logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
+                )
             # Save log to file
-            if log_file_folder == 'default':
-                log_file_folder = ''
+            if log_file_folder == "default":
+                log_file_folder = ""
 
             self.handler = logging.FileHandler(
-                os.path.join(log_file_folder, log_file_name), 'a+')
+                os.path.join(log_file_folder, log_file_name), "a+"
+            )
 
         self.handler.setFormatter(formatter)
-        if (self.logger.hasHandlers()):
+        if self.logger.hasHandlers():
             self.logger.handlers.clear()
         self.logger.addHandler(self.handler)
 
@@ -128,8 +134,8 @@ class TwoDSpec:
         self.saxis = 1
         self.waxis = 0
 
-        self.spatial_mask = (1, )
-        self.spec_mask = (1, )
+        self.spatial_mask = (1,)
+        self.spec_mask = (1,)
         self.flip = False
         self.cosmicray = False
         self.fsmode = None
@@ -154,15 +160,25 @@ class TwoDSpec:
         self.log_file_name = log_file_name
 
         # Default keywords to be searched in the order in the list
-        self.readnoise_keyword = ['RDNOISE', 'RNOISE', 'RN']
-        self.gain_keyword = ['GAIN']
+        self.readnoise_keyword = ["RDNOISE", "RNOISE", "RN"]
+        self.gain_keyword = ["GAIN"]
         self.seeing_keyword = [
-            'SEEING', 'L1SEEING', 'ESTSEE', 'DIMMSEE', 'SEEDIMM', 'DSEEING'
+            "SEEING",
+            "L1SEEING",
+            "ESTSEE",
+            "DIMMSEE",
+            "SEEDIMM",
+            "DSEEING",
         ]
         self.exptime_keyword = [
-            'XPOSURE', 'EXPOSURE', 'EXPTIME', 'EXPOSED', 'TELAPSED', 'ELAPSED'
+            "XPOSURE",
+            "EXPOSURE",
+            "EXPTIME",
+            "EXPOSED",
+            "TELAPSED",
+            "ELAPSED",
         ]
-        self.airmass_keyword = ['AIRMASS', 'AMASS', 'AIRM', 'AIR']
+        self.airmass_keyword = ["AIRMASS", "AMASS", "AIRM", "AIR"]
 
         self.img_rectified = None
         self.arc_rectified = None
@@ -194,7 +210,7 @@ class TwoDSpec:
         if isinstance(data, np.ndarray):
 
             self.img = data
-            self.logger.info('An numpy array is loaded as data.')
+            self.logger.info("An numpy array is loaded as data.")
             self.header = header
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
 
@@ -204,17 +220,19 @@ class TwoDSpec:
             self.img = data[0].data
             self.header = data[0].header
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
-            self.logger.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+            self.logger.warning(
+                "An HDU list is provided, only the first " "HDU will be read."
+            )
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
-                data, fits.hdu.image.ImageHDU):
+            data, fits.hdu.image.ImageHDU
+        ):
 
             self.img = data.data
             self.header = data.header
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
-            self.logger.info('A PrimaryHDU is loaded as data.')
+            self.logger.info("A PrimaryHDU is loaded as data.")
 
         # If it is an ImageReduction object
         elif isinstance(data, ImageReduction):
@@ -235,9 +253,9 @@ class TwoDSpec:
         elif isinstance(data, str):
 
             # If HDU number is provided
-            if data[-1] == ']':
+            if data[-1] == "]":
 
-                filepath, hdunum = data.split('[')
+                filepath, hdunum = data.split("[")
                 hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
@@ -250,8 +268,11 @@ class TwoDSpec:
             fitsfile_tmp = fits.open(filepath)[hdunum]
             self.img = copy.deepcopy(fitsfile_tmp.data)
             self.header = copy.deepcopy(fitsfile_tmp.header)
-            logging.info('Loaded data from: {}, with hdunum: {}'.format(
-                filepath, hdunum))
+            logging.info(
+                "Loaded data from: {}, with hdunum: {}".format(
+                    filepath, hdunum
+                )
+            )
 
             fitsfile_tmp = None
 
@@ -261,9 +282,11 @@ class TwoDSpec:
 
         else:
 
-            error_msg = 'Please provide a numpy array, an ' +\
-                'astropy.io.fits.hdu.image.PrimaryHDU object ' +\
-                'or an ImageReduction object.'
+            error_msg = (
+                "Please provide a numpy array, an "
+                + "astropy.io.fits.hdu.image.PrimaryHDU object "
+                + "or an ImageReduction object."
+            )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
@@ -280,23 +303,25 @@ class TwoDSpec:
             self._get_image_size()
             self._get_image_zminmax()
 
-    def set_properties(self,
-                       saxis=None,
-                       variance=None,
-                       spatial_mask=None,
-                       spec_mask=None,
-                       flip=None,
-                       cosmicray=None,
-                       gain=-1,
-                       readnoise=-1,
-                       fsmode=None,
-                       psfmodel=None,
-                       seeing=-1,
-                       exptime=-1,
-                       airmass=-1,
-                       verbose=None,
-                       **kwargs):
-        '''
+    def set_properties(
+        self,
+        saxis=None,
+        variance=None,
+        spatial_mask=None,
+        spec_mask=None,
+        flip=None,
+        cosmicray=None,
+        gain=-1,
+        readnoise=-1,
+        fsmode=None,
+        psfmodel=None,
+        seeing=-1,
+        exptime=-1,
+        airmass=-1,
+        verbose=None,
+        **kwargs
+    ):
+        """
         The read noise, detector gain, seeing and exposure time will be
         automatically extracted from the FITS header if it conforms with the
         IAUFWG FITS standard.
@@ -402,7 +427,7 @@ class TwoDSpec:
                     psffwhm=2.5, psfsize=7, psfk=None, psfbeta=4.765,
                     verbose=False)
 
-        '''
+        """
 
         if saxis is not None:
 
@@ -420,8 +445,9 @@ class TwoDSpec:
 
                 self.saxis = 0
                 self.logger.error(
-                    "saxis can only be 0 or 1, {} is ".format(saxis) +
-                    "given. It is set to 0.")
+                    "saxis can only be 0 or 1, {} is ".format(saxis)
+                    + "given. It is set to 0."
+                )
 
         if spatial_mask is not None:
 
@@ -453,7 +479,7 @@ class TwoDSpec:
 
             if self.fsmode is None:
 
-                self.fsmode = 'convolve'
+                self.fsmode = "convolve"
 
         if psfmodel is not None:
 
@@ -463,7 +489,7 @@ class TwoDSpec:
 
             if self.psfmodel is None:
 
-                self.psfmodel = 'gaussy'
+                self.psfmodel = "gaussy"
 
         if kwargs is not None:
 
@@ -473,59 +499,72 @@ class TwoDSpec:
         if self.cosmicray:
 
             self.logger.info(
-                'Removing cosmic rays in mode: {}.'.format(psfmodel))
+                "Removing cosmic rays in mode: {}.".format(psfmodel)
+            )
 
-            if self.fsmode == 'convolve':
+            if self.fsmode == "convolve":
 
-                if psfmodel == 'gaussyx':
+                if psfmodel == "gaussyx":
 
-                    self.img = detect_cosmics(self.img / self.gain,
-                                              gain=self.gain,
-                                              readnoise=self.readnoise,
-                                              fsmode='convolve',
-                                              psfmodel='gaussy',
-                                              **kwargs)[1]
+                    self.img = detect_cosmics(
+                        self.img / self.gain,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode="convolve",
+                        psfmodel="gaussy",
+                        **kwargs
+                    )[1]
 
-                    self.img = detect_cosmics(self.img / self.gain,
-                                              gain=self.gain,
-                                              readnoise=self.readnoise,
-                                              fsmode='convolve',
-                                              psfmodel='gaussx',
-                                              **kwargs)[1]
+                    self.img = detect_cosmics(
+                        self.img / self.gain,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode="convolve",
+                        psfmodel="gaussx",
+                        **kwargs
+                    )[1]
 
-                elif psfmodel == 'gaussxy':
+                elif psfmodel == "gaussxy":
 
-                    self.img = detect_cosmics(self.img / self.gain,
-                                              gain=self.gain,
-                                              readnoise=self.readnoise,
-                                              fsmode='convolve',
-                                              psfmodel='gaussx',
-                                              **kwargs)[1]
+                    self.img = detect_cosmics(
+                        self.img / self.gain,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode="convolve",
+                        psfmodel="gaussx",
+                        **kwargs
+                    )[1]
 
-                    self.img = detect_cosmics(self.img / self.gain,
-                                              gain=self.gain,
-                                              readnoise=self.readnoise,
-                                              fsmode='convolve',
-                                              psfmodel='gaussy',
-                                              **kwargs)[1]
+                    self.img = detect_cosmics(
+                        self.img / self.gain,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode="convolve",
+                        psfmodel="gaussy",
+                        **kwargs
+                    )[1]
 
                 else:
 
-                    self.img = detect_cosmics(self.img / self.gain,
-                                              gain=self.gain,
-                                              readnoise=self.readnoise,
-                                              fsmode='convolve',
-                                              psfmodel=self.psfmodel,
-                                              **kwargs)[1]
+                    self.img = detect_cosmics(
+                        self.img / self.gain,
+                        gain=self.gain,
+                        readnoise=self.readnoise,
+                        fsmode="convolve",
+                        psfmodel=self.psfmodel,
+                        **kwargs
+                    )[1]
 
             else:
 
-                self.img = detect_cosmics(self.img / self.gain,
-                                          gain=self.gain,
-                                          readnoise=self.readnoise,
-                                          fsmode=self.fsmode,
-                                          psfmodel=self.psfmodel,
-                                          **kwargs)[1]
+                self.img = detect_cosmics(
+                    self.img / self.gain,
+                    gain=self.gain,
+                    readnoise=self.readnoise,
+                    fsmode=self.fsmode,
+                    psfmodel=self.psfmodel,
+                    **kwargs
+                )[1]
 
         if verbose is not None:
 
@@ -534,7 +573,7 @@ class TwoDSpec:
         if self.img is not None:
 
             # the valid y-range of the chip (i.e. spatial direction)
-            if (len(self.spatial_mask) > 1):
+            if len(self.spatial_mask) > 1:
 
                 if self.saxis == 1:
 
@@ -557,7 +596,7 @@ class TwoDSpec:
                 self.spatial_mask_applied = True
 
             # the valid x-range of the chip (i.e. spectral direction)
-            if (len(self.spec_mask) > 1):
+            if len(self.spec_mask) > 1:
 
                 if self.saxis == 1:
 
@@ -604,8 +643,9 @@ class TwoDSpec:
             self._get_image_size()
             self._get_image_zminmax()
 
-            if (variance is not None) & (np.shape(variance) == np.shape(
-                    self.img)):
+            if (variance is not None) & (
+                np.shape(variance) == np.shape(self.img)
+            ):
 
                 self.variance = variance
 
@@ -616,8 +656,9 @@ class TwoDSpec:
             else:
 
                 self.logger.info(
-                    'Variance image is created from the modulus of the image '
-                    'and the readnoise value.')
+                    "Variance image is created from the modulus of the image "
+                    "and the readnoise value."
+                )
                 self.variance = np.abs(self.img) + self.readnoise**2
 
         else:
@@ -629,9 +670,10 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(self.img)[1]
         self.spatial_size = np.shape(self.img)[0]
-        self.logger.info('spec_size is found to be {}.'.format(self.spec_size))
-        self.logger.info('spatial_size is found to be '
-                         '{}.'.format(self.spatial_size))
+        self.logger.info("spec_size is found to be {}.".format(self.spec_size))
+        self.logger.info(
+            "spatial_size is found to be " "{}.".format(self.spatial_size)
+        )
 
     def _get_image_zminmax(self):
 
@@ -640,12 +682,12 @@ class TwoDSpec:
         img_log_finite = img_log[np.isfinite(img_log)]
         self.zmin = np.nanpercentile(img_log_finite, 5)
         self.zmax = np.nanpercentile(img_log_finite, 95)
-        self.logger.info('zmin is set to {}.'.format(self.zmin))
-        self.logger.info('zmax is set to {}.'.format(self.zmax))
+        self.logger.info("zmin is set to {}.".format(self.zmin))
+        self.logger.info("zmax is set to {}.".format(self.zmax))
 
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
-        '''
+        """
         Set the readnoise of the image.
 
         Parameters
@@ -656,7 +698,7 @@ class TwoDSpec:
             readnoise value. If None is provided, the header will be searched
             with the set of default readnoise keywords.
 
-        '''
+        """
 
         if (readnoise is not None) and (self.readnoise is not None):
 
@@ -664,8 +706,9 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
-                self.logger.info('readnoise is found to be {}.'.format(
-                    self.readnoise))
+                self.logger.info(
+                    "readnoise is found to be {}.".format(self.readnoise)
+                )
 
             elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
 
@@ -677,16 +720,20 @@ class TwoDSpec:
 
                     # use the given readnoise value
                     self.readnoise = float(readnoise)
-                    self.logger.info('readnoise is set to {}.'.format(
-                        self.readnoise))
+                    self.logger.info(
+                        "readnoise is set to {}.".format(self.readnoise)
+                    )
 
             else:
 
-                self.readnoise = 0.
+                self.readnoise = 0.0
                 self.logger.warning(
-                    'readnoise has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(readnoise) + ' is ' +
-                    'given. It is set to 0.')
+                    "readnoise has to be None, a numeric value or the "
+                    + "FITS header keyword, "
+                    + str(readnoise)
+                    + " is "
+                    + "given. It is set to 0."
+                )
 
         else:
 
@@ -694,33 +741,40 @@ class TwoDSpec:
             # keyword exists in the default list.
             if self.header is not None:
 
-                readnoise_keyword_matched = np.in1d(self.readnoise_keyword,
-                                                    self.header)
+                readnoise_keyword_matched = np.in1d(
+                    self.readnoise_keyword, self.header
+                )
 
                 if readnoise_keyword_matched.any():
 
-                    self.readnoise = self.header[self.readnoise_keyword[
-                        np.where(readnoise_keyword_matched)[0][0]]]
-                    self.logger.info('readnoise is found to be {}.'.format(
-                        self.readnoise))
+                    self.readnoise = self.header[
+                        self.readnoise_keyword[
+                            np.where(readnoise_keyword_matched)[0][0]
+                        ]
+                    ]
+                    self.logger.info(
+                        "readnoise is found to be {}.".format(self.readnoise)
+                    )
 
                 else:
 
-                    self.readnoise = 0.
+                    self.readnoise = 0.0
                     self.logger.warning(
-                        'Readnoise value cannot be identified. ' +
-                        'It is set to 0.')
+                        "Readnoise value cannot be identified. "
+                        + "It is set to 0."
+                    )
 
             else:
 
-                self.readnoise = 0.
+                self.readnoise = 0.0
                 self.logger.warning(
-                    'Header is not provided. Readnoise value ' +
-                    'is not provided. It is set to 0.')
+                    "Header is not provided. Readnoise value "
+                    + "is not provided. It is set to 0."
+                )
 
     # Get the gain
     def set_gain(self, gain=None):
-        '''
+        """
         Set the gain of the image.
 
         Parameters
@@ -731,7 +785,7 @@ class TwoDSpec:
             gain value. If None is provided, the header will be searched
             with the set of default gain keywords.
 
-        '''
+        """
 
         if (gain is not None) and (self.gain is not None):
 
@@ -739,7 +793,7 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
-                self.logger.info('gain is found to be {}.'.format(self.gain))
+                self.logger.info("gain is found to be {}.".format(self.gain))
 
             elif isinstance(gain, (float, int)) & (~np.isnan(gain)):
 
@@ -751,15 +805,18 @@ class TwoDSpec:
 
                     # use the given gain value
                     self.gain = float(gain)
-                    self.logger.info('gain is set to {}.'.format(self.gain))
+                    self.logger.info("gain is set to {}.".format(self.gain))
 
             else:
 
-                self.gain = 1.
+                self.gain = 1.0
                 self.logger.warning(
-                    'Gain has to be None, a numeric value or the FITS ' +
-                    'header keyword, ' + str(gain) + ' is given. It is ' +
-                    'set to 1.')
+                    "Gain has to be None, a numeric value or the FITS "
+                    + "header keyword, "
+                    + str(gain)
+                    + " is given. It is "
+                    + "set to 1."
+                )
         else:
 
             # if None is given and header is provided, check if the read noise
@@ -770,27 +827,31 @@ class TwoDSpec:
 
                 if gain_keyword_matched.any():
 
-                    self.gain = self.header[self.gain_keyword[np.where(
-                        gain_keyword_matched)[0][0]]]
-                    self.logger.info('gain is found to be {}.'.format(
-                        self.gain))
+                    self.gain = self.header[
+                        self.gain_keyword[np.where(gain_keyword_matched)[0][0]]
+                    ]
+                    self.logger.info(
+                        "gain is found to be {}.".format(self.gain)
+                    )
 
                 else:
 
-                    self.gain = 1.
-                    self.logger.warning('Gain value cannot be identified. ' +
-                                        'It is set to 1.')
+                    self.gain = 1.0
+                    self.logger.warning(
+                        "Gain value cannot be identified. " + "It is set to 1."
+                    )
 
             else:
 
-                self.gain = 1.
+                self.gain = 1.0
                 self.logger.warning(
-                    'Header is not provide. Gain value is not ' +
-                    'provided. It is set to 1.')
+                    "Header is not provide. Gain value is not "
+                    + "provided. It is set to 1."
+                )
 
     # Get the Seeing
     def set_seeing(self, seeing=None):
-        '''
+        """
         Set the seeing of the image.
 
         Parameters
@@ -801,7 +862,7 @@ class TwoDSpec:
             seeing value. If None is provided, the header will be searched
             with the set of default seeing keywords.
 
-        '''
+        """
 
         if (seeing is not None) and (self.seeing is not None):
 
@@ -809,8 +870,9 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
-                self.logger.info('seeing is found to be {}.'.format(
-                    self.seeing))
+                self.logger.info(
+                    "seeing is found to be {}.".format(self.seeing)
+                )
 
             elif isinstance(seeing, (float, int)) & (~np.isnan(seeing)):
 
@@ -822,16 +884,20 @@ class TwoDSpec:
 
                     # use the given seeing value
                     self.seeing = float(seeing)
-                    self.logger.info('seeing is set to {}.'.format(
-                        self.seeing))
+                    self.logger.info(
+                        "seeing is set to {}.".format(self.seeing)
+                    )
 
             else:
 
-                self.seeing = 1.
+                self.seeing = 1.0
                 self.logger.warning(
-                    'Seeing has to be None, a numeric value or the FITS ' +
-                    'header keyword, ' + str(seeing) + ' is given. It is ' +
-                    'set to 1.')
+                    "Seeing has to be None, a numeric value or the FITS "
+                    + "header keyword, "
+                    + str(seeing)
+                    + " is given. It is "
+                    + "set to 1."
+                )
 
         else:
 
@@ -839,32 +905,40 @@ class TwoDSpec:
             # keyword exists in the default list.
             if self.header is not None:
 
-                seeing_keyword_matched = np.in1d(self.seeing_keyword,
-                                                 self.header)
+                seeing_keyword_matched = np.in1d(
+                    self.seeing_keyword, self.header
+                )
 
                 if seeing_keyword_matched.any():
 
-                    self.seeing = self.header[self.seeing_keyword[np.where(
-                        seeing_keyword_matched)[0][0]]]
-                    self.logger.info('seeing is found to be {}.'.format(
-                        self.seeing))
+                    self.seeing = self.header[
+                        self.seeing_keyword[
+                            np.where(seeing_keyword_matched)[0][0]
+                        ]
+                    ]
+                    self.logger.info(
+                        "seeing is found to be {}.".format(self.seeing)
+                    )
 
                 else:
 
-                    self.seeing = 1.
-                    self.logger.warning('Seeing value cannot be identified. ' +
-                                        'It is set to 1.')
+                    self.seeing = 1.0
+                    self.logger.warning(
+                        "Seeing value cannot be identified. "
+                        + "It is set to 1."
+                    )
 
             else:
 
-                self.seeing = 1.
+                self.seeing = 1.0
                 self.logger.warning(
-                    'Header is not provided. Seeing value is ' +
-                    'not provided. It is set to 1.')
+                    "Header is not provided. Seeing value is "
+                    + "not provided. It is set to 1."
+                )
 
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
-        '''
+        """
         Set the exptime of the image.
 
         Parameters
@@ -875,7 +949,7 @@ class TwoDSpec:
             exptime value. If None is provided, the header will be searched
             with the set of default exptime keywords.
 
-        '''
+        """
 
         if (exptime is not None) and (self.exptime is not None):
 
@@ -883,8 +957,9 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
-                self.logger.info('exptime is found to be {}.'.format(
-                    self.exptime))
+                self.logger.info(
+                    "exptime is found to be {}.".format(self.exptime)
+                )
 
             elif isinstance(exptime, (float, int)) & (~np.isnan(exptime)):
 
@@ -896,16 +971,20 @@ class TwoDSpec:
 
                     # use the given exptime value
                     self.exptime = float(exptime)
-                    self.logger.info('exptime is set to {}.'.format(
-                        self.exptime))
+                    self.logger.info(
+                        "exptime is set to {}.".format(self.exptime)
+                    )
 
             else:
 
-                self.exptime = 1.
+                self.exptime = 1.0
                 self.logger.warning(
-                    'Exposure Time has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(exptime) + ' is given. ' +
-                    'It is set to 1.')
+                    "Exposure Time has to be None, a numeric value or the "
+                    + "FITS header keyword, "
+                    + str(exptime)
+                    + " is given. "
+                    + "It is set to 1."
+                )
 
         else:
 
@@ -913,33 +992,41 @@ class TwoDSpec:
             # keyword exists in the default list.
             if self.header is not None:
 
-                exptime_keyword_matched = np.in1d(self.exptime_keyword,
-                                                  self.header)
+                exptime_keyword_matched = np.in1d(
+                    self.exptime_keyword, self.header
+                )
 
                 if exptime_keyword_matched.any():
 
-                    self.exptime = self.header[self.exptime_keyword[np.where(
-                        exptime_keyword_matched)[0][0]]]
-                    self.logger.info('exptime is found to be {}.'.format(
-                        self.exptime))
+                    self.exptime = self.header[
+                        self.exptime_keyword[
+                            np.where(exptime_keyword_matched)[0][0]
+                        ]
+                    ]
+                    self.logger.info(
+                        "exptime is found to be {}.".format(self.exptime)
+                    )
 
                 else:
 
-                    self.exptime = 1.
+                    self.exptime = 1.0
                     self.logger.warning(
-                        'Exposure Time value cannot be identified. ' +
-                        'It is set to 1.')
+                        "Exposure Time value cannot be identified. "
+                        + "It is set to 1."
+                    )
 
             else:
 
-                self.exptime = 1.
-                self.logger.warning('Header is not provided. ' +
-                                    'Exposure Time value is not provided. ' +
-                                    'It is set to 1.')
+                self.exptime = 1.0
+                self.logger.warning(
+                    "Header is not provided. "
+                    + "Exposure Time value is not provided. "
+                    + "It is set to 1."
+                )
 
     # Get the Exposure Time
     def set_airmass(self, airmass=None):
-        '''
+        """
         Set the airmass of the image.
 
         Parameters
@@ -950,7 +1037,7 @@ class TwoDSpec:
             airmass value. If None is provided, the header will be searched
             with the set of default airmass keywords.
 
-        '''
+        """
 
         if (airmass is not None) and (self.airmass is not None):
 
@@ -958,8 +1045,9 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.airmass = float(self.header[airmass])
-                self.logger.info('exptime is found to be {}.'.format(
-                    self.exptime))
+                self.logger.info(
+                    "exptime is found to be {}.".format(self.exptime)
+                )
 
             elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
 
@@ -971,15 +1059,19 @@ class TwoDSpec:
 
                     # use the given airmass value
                     self.airmass = float(airmass)
-                    self.logger.info('airmass is set to {}.'.format(
-                        self.airmass))
+                    self.logger.info(
+                        "airmass is set to {}.".format(self.airmass)
+                    )
 
             else:
 
                 self.logger.warning(
-                    'Exposure Time has to be None, a numeric value or the ' +
-                    'FITS header keyword, ' + str(airmass) + ' is ' +
-                    'given. It is set to 1.')
+                    "Exposure Time has to be None, a numeric value or the "
+                    + "FITS header keyword, "
+                    + str(airmass)
+                    + " is "
+                    + "given. It is set to 1."
+                )
 
         else:
 
@@ -987,32 +1079,40 @@ class TwoDSpec:
             # keyword exists in the default list.
             if self.header is not None:
 
-                airmass_keyword_matched = np.in1d(self.airmass_keyword,
-                                                  self.header)
+                airmass_keyword_matched = np.in1d(
+                    self.airmass_keyword, self.header
+                )
 
                 if airmass_keyword_matched.any():
 
-                    self.airmass = self.header[self.airmass_keyword[np.where(
-                        airmass_keyword_matched)[0][0]]]
-                    self.logger.info('exptime is found to be {}.'.format(
-                        self.airmass))
+                    self.airmass = self.header[
+                        self.airmass_keyword[
+                            np.where(airmass_keyword_matched)[0][0]
+                        ]
+                    ]
+                    self.logger.info(
+                        "exptime is found to be {}.".format(self.airmass)
+                    )
 
                 else:
 
-                    self.airmass = 1.
+                    self.airmass = 1.0
                     self.logger.warning(
-                        'Exposure Time value cannot be identified. ' +
-                        'It is set to 1.')
+                        "Exposure Time value cannot be identified. "
+                        + "It is set to 1."
+                    )
 
             else:
 
-                self.airmass = 1.
-                self.logger.warning('Header is not provided. ' +
-                                    'Exposure Time value is not provided. ' +
-                                    'It is set to 1.')
+                self.airmass = 1.0
+                self.logger.warning(
+                    "Header is not provided. "
+                    + "Exposure Time value is not provided. "
+                    + "It is set to 1."
+                )
 
     def add_bad_mask(self, bad_mask=None):
-        '''
+        """
         To provide a mask to ignore the bad pixels in the reduction.
 
         Parameters
@@ -1021,7 +1121,7 @@ class TwoDSpec:
             The bad pixel mask of the image, make sure it is of the same size
             as the image and the right orientation.
 
-        '''
+        """
 
         # If data provided is an numpy array
         if isinstance(bad_mask, np.ndarray):
@@ -1032,21 +1132,23 @@ class TwoDSpec:
         elif isinstance(bad_mask, fits.hdu.hdulist.HDUList):
 
             self.bad_mask = bad_mask[0].data
-            self.logger.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+            self.logger.warning(
+                "An HDU list is provided, only the first " "HDU will be read."
+            )
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(bad_mask, fits.hdu.image.PrimaryHDU) or isinstance(
-                bad_mask, fits.hdu.image.ImageHDU):
+            bad_mask, fits.hdu.image.ImageHDU
+        ):
             self.bad_mask = bad_mask.data
 
         # If a filepath is provided
         elif isinstance(bad_mask, str):
 
             # If HDU number is provided
-            if bad_mask[-1] == ']':
+            if bad_mask[-1] == "]":
 
-                filepath, hdunum = bad_mask.split('[')
+                filepath, hdunum = bad_mask.split("[")
                 hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
@@ -1057,30 +1159,32 @@ class TwoDSpec:
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
-            if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
+            if type(fitsfile_tmp) == "astropy.io.fits.hdu.hdulist.HDUList":
 
                 fitsfile_tmp = fitsfile_tmp[0]
-                self.logger.warning('An HDU list is provided, only the first '
-                                    'HDU will be read.')
+                self.logger.warning(
+                    "An HDU list is provided, only the first "
+                    "HDU will be read."
+                )
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
 
-                self.logger.debug('arc.data is 2 dimensional.')
+                self.logger.debug("arc.data is 2 dimensional.")
                 self.bad_mask = fitsfile_tmp.data
 
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
 
-                self.logger.debug('arc.data is 3 dimensional.')
+                self.logger.debug("arc.data is 3 dimensional.")
                 self.bad_mask = fitsfile_tmp.data[0]
 
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
 
-                self.logger.debug('arc.data is 1 dimensional.')
+                self.logger.debug("arc.data is 1 dimensional.")
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
@@ -1093,23 +1197,27 @@ class TwoDSpec:
 
             else:
 
-                error_msg = 'Please check the shape/dimension of the ' +\
-                            'input light frame, it is probably empty ' +\
-                            'or has an atypical output format.'
+                error_msg = (
+                    "Please check the shape/dimension of the "
+                    + "input light frame, it is probably empty "
+                    + "or has an atypical output format."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
         else:
 
-            error_msg = 'Please provide a numpy array, an ' +\
-                'astropy.io.fits.hdu.image.PrimaryHDU object, an ' +\
-                'astropy.io.fits.hdu.image.ImageHDU object, an ' +\
-                'astropy.io.fits.HDUList object.'
+            error_msg = (
+                "Please provide a numpy array, an "
+                + "astropy.io.fits.hdu.image.PrimaryHDU object, an "
+                + "astropy.io.fits.hdu.image.ImageHDU object, an "
+                + "astropy.io.fits.HDUList object."
+            )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
     def add_arc(self, arc, header=None):
-        '''
+        """
         To provide an arc image. Make sure left (small index) is blue,
         right (large index) is red.
 
@@ -1121,7 +1229,7 @@ class TwoDSpec:
             An astropy.io.fits.Header object. This is not used if arc is
             a PrimaryHDU or ImageHDU.
 
-        '''
+        """
 
         # If data provided is an numpy array
         if isinstance(arc, np.ndarray):
@@ -1134,12 +1242,14 @@ class TwoDSpec:
 
             self.arc = arc[0].data
             self.set_arc_header(arc[0].header)
-            self.logger.warning('An HDU list is provided, only the first '
-                                'HDU will be read.')
+            self.logger.warning(
+                "An HDU list is provided, only the first " "HDU will be read."
+            )
 
         # If it is a fits.hdu.image.PrimaryHDU object
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
-                arc, fits.hdu.image.ImageHDU):
+            arc, fits.hdu.image.ImageHDU
+        ):
 
             self.arc = arc.data
             self.set_arc_header(arc.header)
@@ -1148,9 +1258,9 @@ class TwoDSpec:
         elif isinstance(arc, str):
 
             # If HDU number is provided
-            if arc[-1] == ']':
+            if arc[-1] == "]":
 
-                filepath, hdunum = arc.split('[')
+                filepath, hdunum = arc.split("[")
                 hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
@@ -1161,18 +1271,20 @@ class TwoDSpec:
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
-            if type(fitsfile_tmp) == 'astropy.io.fits.hdu.hdulist.HDUList':
+            if type(fitsfile_tmp) == "astropy.io.fits.hdu.hdulist.HDUList":
 
                 fitsfile_tmp = fitsfile_tmp[0]
-                self.logger.warning('An HDU list is provided, only the first '
-                                    'HDU will be read.')
+                self.logger.warning(
+                    "An HDU list is provided, only the first "
+                    "HDU will be read."
+                )
 
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
 
-                self.logger.debug('arc.data is 2 dimensional.')
+                self.logger.debug("arc.data is 2 dimensional.")
                 self.arc = fitsfile_tmp.data
                 self.set_arc_header(fitsfile_tmp.header)
 
@@ -1180,14 +1292,14 @@ class TwoDSpec:
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
 
-                self.logger.debug('arc.data is 3 dimensional.')
+                self.logger.debug("arc.data is 3 dimensional.")
                 self.arc = fitsfile_tmp.data[0]
                 self.set_arc_header(fitsfile_tmp.header)
 
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
 
-                self.logger.debug('arc.data is 1 dimensional.')
+                self.logger.debug("arc.data is 1 dimensional.")
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
@@ -1202,19 +1314,23 @@ class TwoDSpec:
 
             else:
 
-                error_msg = 'Please check the shape/dimension of the ' +\
-                            'input light frame, it is probably empty ' +\
-                            'or has an atypical output format.'
+                error_msg = (
+                    "Please check the shape/dimension of the "
+                    + "input light frame, it is probably empty "
+                    + "or has an atypical output format."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
         else:
 
-            error_msg = 'Please provide a numpy array, an ' +\
-                'astropy.io.fits.hdu.image.PrimaryHDU object, an ' +\
-                'astropy.io.fits.hdu.image.ImageHDU object, an ' +\
-                'astropy.io.fits.HDUList object, or an ' +\
-                'aspired.ImageReduction object.'
+            error_msg = (
+                "Please provide a numpy array, an "
+                + "astropy.io.fits.hdu.image.PrimaryHDU object, an "
+                + "astropy.io.fits.hdu.image.ImageHDU object, an "
+                + "astropy.io.fits.HDUList object, or an "
+                + "aspired.ImageReduction object."
+            )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
@@ -1240,30 +1356,34 @@ class TwoDSpec:
             if isinstance(header[0], fits.header.Header):
 
                 self.arc_header = header[0]
-                self.logger.info('arc_header is set.')
+                self.logger.info("arc_header is set.")
 
             else:
 
                 self.arc_header = None
-                error_msg = 'Please provide a valid ' +\
-                    'astropy.io.fits.header.Header object. Process ' +\
-                    'without storing the header of the arc file.'
+                error_msg = (
+                    "Please provide a valid "
+                    + "astropy.io.fits.header.Header object. Process "
+                    + "without storing the header of the arc file."
+                )
                 self.logger.warning(error_msg)
 
         else:
 
             self.arc_header = None
-            error_msg = 'Please provide a valid ' +\
-                'astropy.io.fits.header.Header object. Process ' +\
-                'without storing the header of the arc file.'
+            error_msg = (
+                "Please provide a valid "
+                + "astropy.io.fits.header.Header object. Process "
+                + "without storing the header of the arc file."
+            )
             self.logger.warning(error_msg)
 
     def apply_mask_to_arc(self):
-        '''
+        """
         Apply both the spec_mask and spatial_mask that are already stroed in
         the object.
 
-        '''
+        """
 
         if self.transpose_applied is True:
 
@@ -1283,7 +1403,7 @@ class TwoDSpec:
             self.apply_spatial_mask_to_arc(self.spatial_mask)
 
     def apply_spec_mask_to_arc(self, spec_mask):
-        '''
+        """
         Apply to use only the valid x-range of the chip (i.e. dispersion
         direction)
 
@@ -1294,20 +1414,22 @@ class TwoDSpec:
             to be included (size <M) or a 1D numpy array of True/False (size M)
             (Default is (1,) i.e. keep everything)
 
-        '''
+        """
 
-        if (len(spec_mask) > 1):
+        if len(spec_mask) > 1:
 
             self.arc = self.arc[:, spec_mask]
-            self.logger.info('spec_mask is applied to arc.')
+            self.logger.info("spec_mask is applied to arc.")
 
         else:
 
-            self.logger.info('spec_mask has zero length, it cannot be '
-                             'applied to the arc.')
+            self.logger.info(
+                "spec_mask has zero length, it cannot be "
+                "applied to the arc."
+            )
 
     def apply_spatial_mask_to_arc(self, spatial_mask):
-        '''
+        """
         Apply to use only the valid y-range of the chip (i.e. spatial
         direction)
 
@@ -1318,36 +1440,38 @@ class TwoDSpec:
             to be included (size <N) or a 1D numpy array of True/False (size N)
             (Default is (1,) i.e. keep everything)
 
-        '''
+        """
 
-        if (len(spatial_mask) > 1):
+        if len(spatial_mask) > 1:
 
             self.arc = self.arc[spatial_mask]
-            self.logger.info('spatial_mask is applied to arc.')
+            self.logger.info("spatial_mask is applied to arc.")
 
         else:
 
-            self.logger.info('spatial_mask has zero length, it cannot be '
-                             'applied to the arc.')
+            self.logger.info(
+                "spatial_mask has zero length, it cannot be "
+                "applied to the arc."
+            )
 
     def apply_transpose_to_arc(self):
-        '''
+        """
         Apply transpose to arc.
 
-        '''
+        """
 
         self.arc = np.transpose(self.arc)
 
     def apply_flip_to_arc(self):
-        '''
+        """
         Apply flip to arc.
 
-        '''
+        """
 
         self.arc = np.flip(self.arc)
 
     def set_readnoise_keyword(self, keyword_list, append=False, update=True):
-        '''
+        """
         Set the readnoise keyword list.
 
         Parameters
@@ -1360,7 +1484,7 @@ class TwoDSpec:
             Set to True to search for the readnoise after the new list
             is provided.
 
-        '''
+        """
 
         if isinstance(keyword_list, str):
 
@@ -1377,20 +1501,25 @@ class TwoDSpec:
         else:
 
             self.logger.error(
-                'Please provide the keyword list in str, list or '
-                'numpy.ndarray.')
+                "Please provide the keyword list in str, list or "
+                "numpy.ndarray."
+            )
 
         if append:
 
             self.readnoise_keyword += keyword_list
-            self.logger.info('{} is appended to '.format(keyword_list) +
-                             'the readnoise_keyword list.')
+            self.logger.info(
+                "{} is appended to ".format(keyword_list)
+                + "the readnoise_keyword list."
+            )
 
         else:
 
             self.readnoise_keyword = keyword_list
-            self.logger.info('{} is used as '.format(keyword_list) +
-                             'the readnoise_keyword list.')
+            self.logger.info(
+                "{} is used as ".format(keyword_list)
+                + "the readnoise_keyword list."
+            )
 
         if update:
 
@@ -1399,11 +1528,12 @@ class TwoDSpec:
         else:
 
             self.logger.info(
-                'readnoise_keyword list is updated, but it is '
-                'opted not to update the readnoise automatically.')
+                "readnoise_keyword list is updated, but it is "
+                "opted not to update the readnoise automatically."
+            )
 
     def set_gain_keyword(self, keyword_list, append=False, update=True):
-        '''
+        """
         Set the gain keyword list.
 
         Parameters
@@ -1416,7 +1546,7 @@ class TwoDSpec:
             Set to True to search for the readnoise after the new list
             is provided.
 
-        '''
+        """
 
         if isinstance(keyword_list, str):
 
@@ -1433,20 +1563,25 @@ class TwoDSpec:
         else:
 
             self.logger.error(
-                'Please provide the keyword list in str, list or '
-                'numpy.ndarray.')
+                "Please provide the keyword list in str, list or "
+                "numpy.ndarray."
+            )
 
         if append:
 
             self.gain_keyword += keyword_list
-            self.logger.info('{} is appended to '.format(keyword_list) +
-                             'the gain_keyword list.')
+            self.logger.info(
+                "{} is appended to ".format(keyword_list)
+                + "the gain_keyword list."
+            )
 
         else:
 
             self.gain_keyword = keyword_list
-            self.logger.info('{} is used as '.format(keyword_list) +
-                             'the gain_keyword list.')
+            self.logger.info(
+                "{} is used as ".format(keyword_list)
+                + "the gain_keyword list."
+            )
 
         if update:
 
@@ -1454,11 +1589,13 @@ class TwoDSpec:
 
         else:
 
-            self.logger.info('gain_keyword list is updated, but it is '
-                             'opted not to update the gain automatically.')
+            self.logger.info(
+                "gain_keyword list is updated, but it is "
+                "opted not to update the gain automatically."
+            )
 
     def set_seeing_keyword(self, keyword_list, append=False, update=True):
-        '''
+        """
         Set the seeing keyword list.
 
         Parameters
@@ -1471,7 +1608,7 @@ class TwoDSpec:
             Set to True to search for the readnoise after the new list
             is provided.
 
-        '''
+        """
 
         if isinstance(keyword_list, str):
 
@@ -1488,20 +1625,25 @@ class TwoDSpec:
         else:
 
             self.logger.error(
-                'Please provide the keyword list in str, list or '
-                'numpy.ndarray.')
+                "Please provide the keyword list in str, list or "
+                "numpy.ndarray."
+            )
 
         if append:
 
             self.seeing_keyword += keyword_list
-            self.logger.info('{} is appended to '.format(keyword_list) +
-                             'the seeing_keyword list.')
+            self.logger.info(
+                "{} is appended to ".format(keyword_list)
+                + "the seeing_keyword list."
+            )
 
         else:
 
             self.seeing_keyword = keyword_list
-            self.logger.info('{} is used as '.format(keyword_list) +
-                             'the seeing_keyword list.')
+            self.logger.info(
+                "{} is used as ".format(keyword_list)
+                + "the seeing_keyword list."
+            )
 
         if update:
 
@@ -1509,11 +1651,13 @@ class TwoDSpec:
 
         else:
 
-            self.logger.info('seeing_keyword list is updated, but it is '
-                             'opted not to update the seeing automatically.')
+            self.logger.info(
+                "seeing_keyword list is updated, but it is "
+                "opted not to update the seeing automatically."
+            )
 
     def set_exptime_keyword(self, keyword_list, append=False, update=True):
-        '''
+        """
         Set the exptime keyword list.
 
         Parameters
@@ -1526,7 +1670,7 @@ class TwoDSpec:
             Set to True to search for the readnoise after the new list
             is provided.
 
-        '''
+        """
 
         if isinstance(keyword_list, str):
 
@@ -1543,20 +1687,25 @@ class TwoDSpec:
         else:
 
             self.logger.error(
-                'Please provide the keyword list in str, list or '
-                'numpy.ndarray.')
+                "Please provide the keyword list in str, list or "
+                "numpy.ndarray."
+            )
 
         if append:
 
             self.exptime_keyword += keyword_list
-            self.logger.info('{} is appended to '.format(keyword_list) +
-                             'the exptime_keyword list.')
+            self.logger.info(
+                "{} is appended to ".format(keyword_list)
+                + "the exptime_keyword list."
+            )
 
         else:
 
             self.exptime_keyword = keyword_list
-            self.logger.info('{} is used as '.format(keyword_list) +
-                             'the exptime_keyword list.')
+            self.logger.info(
+                "{} is used as ".format(keyword_list)
+                + "the exptime_keyword list."
+            )
 
         if update:
 
@@ -1564,11 +1713,13 @@ class TwoDSpec:
 
         else:
 
-            self.logger.info('exptime_keyword list is updated, but it is '
-                             'opted not to update the exptime automatically.')
+            self.logger.info(
+                "exptime_keyword list is updated, but it is "
+                "opted not to update the exptime automatically."
+            )
 
     def set_airmass_keyword(self, keyword_list, append=False, update=True):
-        '''
+        """
         Set the airmass keyword list.
 
         Parameters
@@ -1581,7 +1732,7 @@ class TwoDSpec:
             Set to True to search for the readnoise after the new list
             is provided.
 
-        '''
+        """
 
         if isinstance(keyword_list, str):
 
@@ -1598,20 +1749,25 @@ class TwoDSpec:
         else:
 
             self.logger.error(
-                'Please provide the keyword list in str, list or '
-                'numpy.ndarray.')
+                "Please provide the keyword list in str, list or "
+                "numpy.ndarray."
+            )
 
         if append:
 
             self.airmass_keyword += keyword_list
-            self.logger.info('{} is appended to '.format(keyword_list) +
-                             'the airmass_keyword list.')
+            self.logger.info(
+                "{} is appended to ".format(keyword_list)
+                + "the airmass_keyword list."
+            )
 
         else:
 
             self.airmass_keyword = keyword_list
-            self.logger.info('{} is used as '.format(keyword_list) +
-                             'the airmass_keyword list.')
+            self.logger.info(
+                "{} is used as ".format(keyword_list)
+                + "the airmass_keyword list."
+            )
 
         if update:
 
@@ -1619,11 +1775,13 @@ class TwoDSpec:
 
         else:
 
-            self.logger.info('airmass_keyword list is updated, but it is '
-                             'opted not to update the airmass automatically.')
+            self.logger.info(
+                "airmass_keyword list is updated, but it is "
+                "opted not to update the airmass automatically."
+            )
 
     def set_header(self, header):
-        '''
+        """
         Set/replace the header.
 
         Parameters
@@ -1631,7 +1789,7 @@ class TwoDSpec:
         header: astropy.io.fits.header.Header
             FITS header from a single HDU.
 
-        '''
+        """
 
         # If it is a fits.hdu.header.Header object
         if isinstance(header, fits.header.Header):
@@ -1644,8 +1802,9 @@ class TwoDSpec:
 
         else:
 
-            error_msg = 'Please provide an ' +\
-                'astropy.io.fits.header.Header object.'
+            error_msg = (
+                "Please provide an " + "astropy.io.fits.header.Header object."
+            )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
@@ -1672,33 +1831,35 @@ class TwoDSpec:
 
         """
 
-        return a * np.exp(-(x - x0)**2 / (2 * sigma**2)) + b
+        return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + b
 
-    def ap_trace(self,
-                 nspec=1,
-                 smooth=False,
-                 nwindow=20,
-                 spec_sep=5,
-                 trace_width=15,
-                 resample_factor=4,
-                 rescale=False,
-                 scaling_min=0.9995,
-                 scaling_max=1.0005,
-                 scaling_step=0.001,
-                 percentile=5,
-                 shift_tol=10,
-                 fit_deg=3,
-                 ap_faint=20,
-                 display=False,
-                 renderer='default',
-                 width=1280,
-                 height=720,
-                 return_jsonstring=False,
-                 save_fig=False,
-                 fig_type='iframe+png',
-                 filename=None,
-                 open_iframe=False):
-        '''
+    def ap_trace(
+        self,
+        nspec=1,
+        smooth=False,
+        nwindow=20,
+        spec_sep=5,
+        trace_width=15,
+        resample_factor=4,
+        rescale=False,
+        scaling_min=0.9995,
+        scaling_max=1.0005,
+        scaling_step=0.001,
+        percentile=5,
+        shift_tol=10,
+        fit_deg=3,
+        ap_faint=20,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         Aperture tracing by first using cross-correlation then the peaks are
         fitting with a polynomial with an order of floor(nwindow, 10) with a
         minimum order of 1. Nothing is returned unless return_jsonstring of the
@@ -1796,14 +1957,15 @@ class TwoDSpec:
         JSON-string if return_jsonstring is True, otherwise only an image is
         displayed
 
-        '''
+        """
 
         # Get the shape of the 2D spectrum and define upsampling ratio
 
         img_tmp = self.img.astype(float)
-        img_tmp[np.isnan(img_tmp)] = 0.
-        img_tmp[img_tmp < np.nanpercentile(
-            img_tmp, percentile)] = np.nanpercentile(img_tmp, percentile)
+        img_tmp[np.isnan(img_tmp)] = 0.0
+        img_tmp[
+            img_tmp < np.nanpercentile(img_tmp, percentile)
+        ] = np.nanpercentile(img_tmp, percentile)
 
         if smooth:
 
@@ -1817,7 +1979,7 @@ class TwoDSpec:
         start_window_idx = nwindow // 2
 
         lines_ref_init = np.nanmedian(img_split[start_window_idx], axis=1)
-        lines_ref_init[np.isnan(lines_ref_init)] = 0.
+        lines_ref_init[np.isnan(lines_ref_init)] = 0.0
 
         # linear scaling limits
         if rescale:
@@ -1829,8 +1991,9 @@ class TwoDSpec:
             scaling_range = np.ones(1)
 
         # subtract the sky background level
-        lines_ref = lines_ref_init - np.nanpercentile(lines_ref_init,
-                                                      percentile)
+        lines_ref = lines_ref_init - np.nanpercentile(
+            lines_ref_init, percentile
+        )
 
         shift_solution = np.zeros(nwindow)
         scale_solution = np.ones(nwindow)
@@ -1843,14 +2006,16 @@ class TwoDSpec:
         pix = np.arange(nresample)
 
         # Scipy correlate method, ignore first and last window
-        for i in chain(range(start_window_idx, nwindow),
-                       range(start_window_idx - 1, -1, -1)):
+        for i in chain(
+            range(start_window_idx, nwindow),
+            range(start_window_idx - 1, -1, -1),
+        ):
 
-            self.logger.info('Correlating the {}-th window.'.format(i))
+            self.logger.info("Correlating the {}-th window.".format(i))
 
             # smooth by taking the median
             lines = np.nanmedian(img_split[i], axis=1)
-            lines[np.isnan(lines)] = 0.
+            lines[np.isnan(lines)] = 0.0
             lines = signal.resample(lines, nresample)
             lines = lines - np.nanpercentile(lines, percentile)
 
@@ -1862,19 +2027,21 @@ class TwoDSpec:
             for j, scale in enumerate(scaling_range):
 
                 # Upsampling the reference lines
-                lines_ref_j = spectres(np.arange(int(nresample * scale)) /
-                                       scale,
-                                       np.arange(len(lines_ref)),
-                                       lines_ref,
-                                       fill=0.,
-                                       verbose=False)
+                lines_ref_j = spectres(
+                    np.arange(int(nresample * scale)) / scale,
+                    np.arange(len(lines_ref)),
+                    lines_ref,
+                    fill=0.0,
+                    verbose=False,
+                )
 
                 # find the linear shift
                 corr = signal.correlate(lines_ref_j, lines)
 
                 # only consider the defined range of shift tolerance
-                corr = corr[nresample - 1 - shift_tol_len:nresample +
-                            shift_tol_len]
+                corr = corr[
+                    nresample - 1 - shift_tol_len : nresample + shift_tol_len
+                ]
 
                 # Maximum corr position is the shift
                 corr_val[j] = np.nanmax(corr)
@@ -1891,17 +2058,20 @@ class TwoDSpec:
 
             pix = pix * scale_solution[i] + shift_solution[i]
 
-            spec_spatial_tmp = spectres(np.arange(nresample),
-                                        np.array(pix).reshape(-1),
-                                        np.array(lines).reshape(-1),
-                                        fill=0.,
-                                        verbose=False)
+            spec_spatial_tmp = spectres(
+                np.arange(nresample),
+                np.array(pix).reshape(-1),
+                np.array(lines).reshape(-1),
+                fill=0.0,
+                verbose=False,
+            )
             spec_spatial_tmp[np.isnan(spec_spatial_tmp)] = np.nanmin(
-                spec_spatial_tmp)
+                spec_spatial_tmp
+            )
             spec_spatial += spec_spatial_tmp
 
             # Update (increment) the reference line
-            if (i == nwindow - 1):
+            if i == nwindow - 1:
 
                 lines_ref = lines_ref_init
 
@@ -1909,23 +2079,30 @@ class TwoDSpec:
 
                 lines_ref = lines
 
-        nscaled = (nresample * scale_solution).astype('int')
+        nscaled = (nresample * scale_solution).astype("int")
 
         # Find the spectral position in the middle of the gram in the upsampled
         # pixel location location
         # FWHM cannot be smaller than 3 pixels for any real signal
-        peaks = signal.find_peaks(spec_spatial, distance=spec_sep, width=3.)
+        peaks = signal.find_peaks(spec_spatial, distance=spec_sep, width=3.0)
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
         self.nspec_traced = min(len(peaks[0]), nspec)
-        self.logger.info('{} spectra are identified.'.format(
-            self.nspec_traced))
+        self.logger.info(
+            "{} spectra are identified.".format(self.nspec_traced)
+        )
 
         # Sort the positions by the prominences, and return to the original
         # scale (i.e. with subpixel position)
-        spec_init = np.sort(peaks[0][np.argsort(-peaks[1]['prominences'])]
-                            [:self.nspec_traced]) / resample_factor
+        spec_init = (
+            np.sort(
+                peaks[0][np.argsort(-peaks[1]["prominences"])][
+                    : self.nspec_traced
+                ]
+            )
+            / resample_factor
+        )
 
         # Create array to populate the spectral locations
         spec_idx = np.zeros((len(spec_init), len(img_split)))
@@ -1939,22 +2116,24 @@ class TwoDSpec:
         for i in range(1, len(spec_pix)):
             spec_pix[i] += spec_pix[i - 1]
 
-        spec_pix = np.array(spec_pix).astype('int')
+        spec_pix = np.array(spec_pix).astype("int")
 
         # Looping through pixels larger than middle pixel
         for i in range(start_window_idx + 1, nwindow):
 
-            spec_idx[:,
-                     i] = (spec_idx[:, i - 1] * resample_factor * nscaled[i] /
-                           nresample - shift_solution[i]) / resample_factor
+            spec_idx[:, i] = (
+                spec_idx[:, i - 1] * resample_factor * nscaled[i] / nresample
+                - shift_solution[i]
+            ) / resample_factor
 
         # Looping through pixels smaller than middle pixel
         for i in range(start_window_idx - 1, -1, -1):
 
-            spec_idx[:, i] = (spec_idx[:, i + 1] * resample_factor -
-                              shift_solution[i]) / (
-                                  int(nresample * scale_solution[i + 1]) /
-                                  nresample) / resample_factor
+            spec_idx[:, i] = (
+                (spec_idx[:, i + 1] * resample_factor - shift_solution[i])
+                / (int(nresample * scale_solution[i + 1]) / nresample)
+                / resample_factor
+            )
 
         for i in range(len(spec_idx)):
 
@@ -1968,23 +2147,27 @@ class TwoDSpec:
                 idx = int(np.round(spec_idx[i][j] + 0.5))
                 subspec_cleaned = sigma_clip(img_split[j], sigma=3)
                 ap_val[j] = np.sum(
-                    np.nansum(subspec_cleaned, axis=1)[idx - 2:idx + 2])/5 -\
-                    np.nanmedian(subspec_cleaned)
+                    np.nansum(subspec_cleaned, axis=1)[idx - 2 : idx + 2]
+                ) / 5 - np.nanmedian(subspec_cleaned)
 
             # Mask out the faintest ap_faint percent of trace
             n_faint = int(np.round(len(ap_val) * ap_faint / 100))
             mask = np.argsort(ap_val)[n_faint:]
             self.logger.info(
-                'The faintest {} subspectra are '.format(n_faint) +
-                'going to be ignored in the tracing. They are {}.'.format(
-                    np.argsort(ap_val)[:n_faint]))
+                "The faintest {} subspectra are ".format(n_faint)
+                + "going to be ignored in the tracing. They are {}.".format(
+                    np.argsort(ap_val)[:n_faint]
+                )
+            )
 
             # fit the trace
             ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
             ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
-            self.logger.info('The trace is found at {}.'.format([
-                (x, y) for (x, y) in zip(ap_p, ap)
-            ]))
+            self.logger.info(
+                "The trace is found at {}.".format(
+                    [(x, y) for (x, y) in zip(ap_p, ap)]
+                )
+            )
 
             # Get the centre of the upsampled spectrum
             ap_centre_idx = ap[start_window_idx] * resample_factor
@@ -2005,19 +2188,25 @@ class TwoDSpec:
             # compute ONE sigma for each trace
             pguess = [
                 np.nanmax(spec_spatial[start_idx:end_idx]),
-                np.nanpercentile(spec_spatial, 10), ap_centre_idx, 3.
+                np.nanpercentile(spec_spatial, 10),
+                ap_centre_idx,
+                3.0,
             ]
 
             non_nan_mask = np.isfinite(spec_spatial[start_idx:end_idx])
 
-            popt, _ = curve_fit(self._gaus,
-                                np.arange(start_idx, end_idx)[non_nan_mask],
-                                spec_spatial[start_idx:end_idx][non_nan_mask],
-                                p0=pguess)
+            popt, _ = curve_fit(
+                self._gaus,
+                np.arange(start_idx, end_idx)[non_nan_mask],
+                spec_spatial[start_idx:end_idx][non_nan_mask],
+                p0=pguess,
+            )
             ap_sigma = abs(popt[3]) / resample_factor
 
-            self.logger.info('Aperture is fitted with a Gaussian sigma of '
-                             '{} pix.'.format(ap_sigma))
+            self.logger.info(
+                "Aperture is fitted with a Gaussian sigma of "
+                "{} pix.".format(ap_sigma)
+            )
 
             self.spectrum_list[i] = Spectrum1D(
                 spec_id=i,
@@ -2025,7 +2214,8 @@ class TwoDSpec:
                 logger_name=self.logger_name,
                 log_level=self.log_level,
                 log_file_folder=self.log_file_folder,
-                log_file_name=self.log_file_name)
+                log_file_name=self.log_file_name,
+            )
             self.spectrum_list[i].add_trace(list(ap), [ap_sigma] * len(ap))
             self.spectrum_list[i].add_gain(self.gain)
             self.spectrum_list[i].add_readnoise(self.readnoise)
@@ -2037,68 +2227,88 @@ class TwoDSpec:
         if save_fig or display or return_jsonstring:
 
             fig = go.Figure(
-                layout=dict(autosize=False, height=height, width=width))
+                layout=dict(autosize=False, height=height, width=width)
+            )
 
             fig.add_trace(
-                go.Heatmap(z=np.log10(self.img),
-                           zmin=self.zmin,
-                           zmax=self.zmax,
-                           colorscale="Viridis",
-                           colorbar=dict(title='log( e- count )')))
+                go.Heatmap(
+                    z=np.log10(self.img),
+                    zmin=self.zmin,
+                    zmax=self.zmax,
+                    colorscale="Viridis",
+                    colorbar=dict(title="log( e- count )"),
+                )
+            )
 
             for i in range(len(spec_idx)):
 
                 fig.add_trace(
-                    go.Scatter(x=np.arange(self.spec_size),
-                               y=self.spectrum_list[i].trace,
-                               line=dict(color='black')))
+                    go.Scatter(
+                        x=np.arange(self.spec_size),
+                        y=self.spectrum_list[i].trace,
+                        line=dict(color="black"),
+                    )
+                )
                 fig.add_trace(
-                    go.Scatter(x=spec_pix / resample_factor,
-                               y=spec_idx[i],
-                               mode='markers',
-                               marker=dict(color='grey')))
+                    go.Scatter(
+                        x=spec_pix / resample_factor,
+                        y=spec_idx[i],
+                        mode="markers",
+                        marker=dict(color="grey"),
+                    )
+                )
             fig.add_trace(
-                go.Scatter(x=np.ones(len(spec_idx)) *
-                           spec_pix[start_window_idx] / resample_factor,
-                           y=spec_idx[:, start_window_idx],
-                           mode='markers',
-                           marker=dict(color='firebrick')))
-            fig.update_layout(yaxis_title='Spatial Direction / pixel',
-                              xaxis=dict(zeroline=False,
-                                         showgrid=False,
-                                         title='Dispersion Direction / pixel'),
-                              bargap=0,
-                              hovermode='closest',
-                              showlegend=False)
+                go.Scatter(
+                    x=np.ones(len(spec_idx))
+                    * spec_pix[start_window_idx]
+                    / resample_factor,
+                    y=spec_idx[:, start_window_idx],
+                    mode="markers",
+                    marker=dict(color="firebrick"),
+                )
+            )
+            fig.update_layout(
+                yaxis_title="Spatial Direction / pixel",
+                xaxis=dict(
+                    zeroline=False,
+                    showgrid=False,
+                    title="Dispersion Direction / pixel",
+                ),
+                bargap=0,
+                hovermode="closest",
+                showlegend=False,
+            )
 
             if filename is None:
 
-                filename = 'ap_trace'
+                filename = "ap_trace"
 
             if save_fig:
 
-                fig_type_split = fig_type.split('+')
+                fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
 
-                    if t == 'iframe':
+                    if t == "iframe":
 
-                        pio.write_html(fig,
-                                       filename + '.' + t,
-                                       auto_open=open_iframe)
+                        pio.write_html(
+                            fig, filename + "." + t, auto_open=open_iframe
+                        )
 
-                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+                    elif t in ["jpg", "png", "svg", "pdf"]:
 
-                        pio.write_image(fig, filename + '.' + t)
+                        pio.write_image(fig, filename + "." + t)
 
                     self.logger.info(
-                        'Figure is saved to {} for the '.format(filename +
-                                                                '.' + t) +
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Figure is saved to {} for the ".format(
+                            filename + "." + t
+                        )
+                        + "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
             if display:
 
-                if renderer == 'default':
+                if renderer == "default":
 
                     fig.show()
 
@@ -2111,7 +2321,7 @@ class TwoDSpec:
                 return fig.to_json()
 
     def add_trace(self, trace, trace_sigma, spec_id=None):
-        '''
+        """
         Add user-supplied trace. The trace has to have the size as the 2D
         spectral image in the spectral direction.
 
@@ -2125,15 +2335,15 @@ class TwoDSpec:
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
             spec_id = [spec_id]
 
         assert isinstance(spec_id, (int, list, np.ndarray)) or (
-            spec_id is
-            None), 'spec_id has to be an integer, None, list or array.'
+            spec_id is None
+        ), "spec_id has to be an integer, None, list or array."
 
         if spec_id is None:
 
@@ -2150,12 +2360,13 @@ class TwoDSpec:
             spec_id = list(spec_id)
 
         assert isinstance(
-            trace, (list, np.ndarray)), 'trace has to be a list or an array.'
+            trace, (list, np.ndarray)
+        ), "trace has to be a list or an array."
         assert isinstance(
-            trace_sigma,
-            (list, np.ndarray)), 'trace_sigma has to be a list or an array.'
-        assert len(trace) == len(trace_sigma), 'trace and trace_sigma have to '
-        'be the same size.'
+            trace_sigma, (list, np.ndarray)
+        ), "trace_sigma has to be a list or an array."
+        assert len(trace) == len(trace_sigma), "trace and trace_sigma have to "
+        "be the same size."
 
         for i in spec_id:
 
@@ -2171,17 +2382,18 @@ class TwoDSpec:
                     logger_name=self.logger_name,
                     log_level=self.log_level,
                     log_file_folder=self.log_file_folder,
-                    log_file_name=self.log_file_name)
+                    log_file_name=self.log_file_name,
+                )
                 self.spectrum_list[i].add_trace(trace, trace_sigma)
 
     def remove_trace(self, spec_id=None):
-        '''
+        """
         Parameters
         ----------
         spec_id: int
             The ID corresponding to the spectrum1D object
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -2189,9 +2401,10 @@ class TwoDSpec:
 
         if spec_id is not None:
 
-            assert np.in1d(spec_id,
-                           list(self.spectrum_list.keys())).all(), 'Some '
-            'spec_id provided are not in the spectrum_list.'
+            assert np.in1d(
+                spec_id, list(self.spectrum_list.keys())
+            ).all(), "Some "
+            "spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -2201,25 +2414,27 @@ class TwoDSpec:
 
             self.spectrum_list[i].remove_trace()
 
-    def get_rectification(self,
-                          upsample_factor=5,
-                          bin_size=6,
-                          n_bin=15,
-                          spline_order=3,
-                          order=2,
-                          coeff=None,
-                          use_arc=True,
-                          apply=False,
-                          display=False,
-                          renderer='default',
-                          width=1280,
-                          height=720,
-                          return_jsonstring=False,
-                          save_fig=False,
-                          fig_type='iframe+png',
-                          filename=None,
-                          open_iframe=False):
-        '''
+    def get_rectification(
+        self,
+        upsample_factor=5,
+        bin_size=6,
+        n_bin=15,
+        spline_order=3,
+        order=2,
+        coeff=None,
+        use_arc=True,
+        apply=False,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         ONLY possible if there is ONE trace. If more than one trace is
         provided, only the first one (i.e. spec_id = 0) will get
         processed.
@@ -2276,46 +2491,55 @@ class TwoDSpec:
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
 
-        '''
+        """
 
         spec = self.spectrum_list[0]
         spec_size_tmp = spec.len_trace * upsample_factor
 
         # Upsample and shift in the dispersion direction
-        img_tmp = ndimage.zoom(self.img.astype(float),
-                               zoom=upsample_factor,
-                               order=spline_order)
-        y_tmp = ndimage.zoom(np.array(spec.trace),
-                             zoom=upsample_factor,
-                             order=spline_order) * upsample_factor
+        img_tmp = ndimage.zoom(
+            self.img.astype(float), zoom=upsample_factor, order=spline_order
+        )
+        y_tmp = (
+            ndimage.zoom(
+                np.array(spec.trace), zoom=upsample_factor, order=spline_order
+            )
+            * upsample_factor
+        )
 
         if self.arc is None:
 
             self.logger.warning(
-                'Arc frame is not available, only the data image '
-                'will be rectified.')
+                "Arc frame is not available, only the data image "
+                "will be rectified."
+            )
 
             if use_arc:
 
                 self.logger.warning(
-                    'Arc frame is not available, retification '
-                    'polynomials are forced to be found with the '
-                    'light frame. ')
+                    "Arc frame is not available, retification "
+                    "polynomials are forced to be found with the "
+                    "light frame. "
+                )
                 use_arc = False
 
         elif isinstance(self.arc, CCDData):
 
-            arc_tmp = ndimage.zoom(self.arc.data.astype(float),
-                                   zoom=upsample_factor,
-                                   order=spline_order)
-            self.logger.info('The arc frame is upsampled.')
+            arc_tmp = ndimage.zoom(
+                self.arc.data.astype(float),
+                zoom=upsample_factor,
+                order=spline_order,
+            )
+            self.logger.info("The arc frame is upsampled.")
 
         else:
 
-            arc_tmp = ndimage.zoom(self.arc.astype(float),
-                                   zoom=upsample_factor,
-                                   order=spline_order)
-            self.logger.info('The arc frame is upsampled.')
+            arc_tmp = ndimage.zoom(
+                self.arc.astype(float),
+                zoom=upsample_factor,
+                order=spline_order,
+            )
+            self.logger.info("The arc frame is upsampled.")
 
         # Shift the spectrum to spatially aligned to the trace at ref
         ref = y_tmp[len(y_tmp) // 2]
@@ -2336,8 +2560,9 @@ class TwoDSpec:
             n_up = None
 
             self.logger.info(
-                'Polynomial coefficients for rectifying in the spatial '
-                'direction is given as: {}.'.format(coeff))
+                "Polynomial coefficients for rectifying in the spatial "
+                "direction is given as: {}.".format(coeff)
+            )
 
         else:
 
@@ -2354,46 +2579,59 @@ class TwoDSpec:
             else:
 
                 self.logger.error(
-                    'The given n_bin is not numeric or a list/array of '
-                    'size 2: {}. Using the default value to proceed.'.format(
-                        n_bin))
+                    "The given n_bin is not numeric or a list/array of "
+                    "size 2: {}. Using the default value to proceed.".format(
+                        n_bin
+                    )
+                )
                 n_down = 5
                 n_up = 5
 
             bin_half_size = bin_size / 2 * upsample_factor
 
             # The x-coordinates of the trace (of length len_trace)
-            x = np.arange(spec.len_trace * upsample_factor).astype('int')
+            x = np.arange(spec.len_trace * upsample_factor).astype("int")
 
             # s for "flattened signal of the slice"
             if use_arc:
 
                 s = [
-                    np.nansum([
-                        arc_tmp[int(np.round(ref - bin_half_size)
-                                    ):int(np.round(ref + bin_half_size) + 1),
-                                i] for i in x
-                    ],
-                              axis=1)
+                    np.nansum(
+                        [
+                            arc_tmp[
+                                int(np.round(ref - bin_half_size)) : int(
+                                    np.round(ref + bin_half_size) + 1
+                                ),
+                                i,
+                            ]
+                            for i in x
+                        ],
+                        axis=1,
+                    )
                 ]
 
             else:
 
                 s = [
-                    np.nansum([
-                        img_tmp[int(np.round(ref - bin_half_size)
-                                    ):int(np.round(ref + bin_half_size) + 1),
-                                i] for i in x
-                    ],
-                              axis=1)
+                    np.nansum(
+                        [
+                            img_tmp[
+                                int(np.round(ref - bin_half_size)) : int(
+                                    np.round(ref + bin_half_size) + 1
+                                ),
+                                i,
+                            ]
+                            for i in x
+                        ],
+                        axis=1,
+                    )
                 ]
 
             one_tenth = len(s[0]) // 10
 
-            s[0] -= lowess(s[0],
-                           np.arange(spec_size_tmp),
-                           frac=0.05,
-                           return_sorted=False)
+            s[0] -= lowess(
+                s[0], np.arange(spec_size_tmp), frac=0.05, return_sorted=False
+            )
             s[0] -= min(s[0][one_tenth:-one_tenth])
             s[0] /= max(s[0][one_tenth:-one_tenth])
             s_down = []
@@ -2408,27 +2646,43 @@ class TwoDSpec:
                 if use_arc:
 
                     s_down.append(
-                        np.nansum([
-                            arc_tmp[int(np.round(ref - end)
-                                        ):int(np.round(ref - start)), i]
-                            for i in x
-                        ],
-                                  axis=1))
+                        np.nansum(
+                            [
+                                arc_tmp[
+                                    int(np.round(ref - end)) : int(
+                                        np.round(ref - start)
+                                    ),
+                                    i,
+                                ]
+                                for i in x
+                            ],
+                            axis=1,
+                        )
+                    )
 
                 else:
 
                     s_down.append(
-                        np.nansum([
-                            img_tmp[int(np.round(ref - end)
-                                        ):int(np.round(ref - start)), i]
-                            for i in x
-                        ],
-                                  axis=1))
+                        np.nansum(
+                            [
+                                img_tmp[
+                                    int(np.round(ref - end)) : int(
+                                        np.round(ref - start)
+                                    ),
+                                    i,
+                                ]
+                                for i in x
+                            ],
+                            axis=1,
+                        )
+                    )
 
-                s_down[k] -= lowess(s_down[k],
-                                    np.arange(spec_size_tmp),
-                                    frac=0.05,
-                                    return_sorted=False)
+                s_down[k] -= lowess(
+                    s_down[k],
+                    np.arange(spec_size_tmp),
+                    frac=0.05,
+                    return_sorted=False,
+                )
                 s_down[k] -= min(s_down[k][one_tenth:-one_tenth])
                 s_down[k] /= max(s_down[k][one_tenth:-one_tenth])
 
@@ -2440,36 +2694,54 @@ class TwoDSpec:
                 if use_arc:
 
                     s_up.append(
-                        np.nansum([
-                            arc_tmp[int(np.round(ref + start)
-                                        ):int(np.round(ref + end)), i]
-                            for i in x
-                        ],
-                                  axis=1))
+                        np.nansum(
+                            [
+                                arc_tmp[
+                                    int(np.round(ref + start)) : int(
+                                        np.round(ref + end)
+                                    ),
+                                    i,
+                                ]
+                                for i in x
+                            ],
+                            axis=1,
+                        )
+                    )
 
                 else:
 
                     s_up.append(
-                        np.nansum([
-                            img_tmp[int(np.round(ref + start)
-                                        ):int(np.round(ref + end)), i]
-                            for i in x
-                        ],
-                                  axis=1))
-                s_up[k] -= lowess(s_up[k],
-                                  np.arange(spec_size_tmp),
-                                  frac=0.05,
-                                  return_sorted=False)
+                        np.nansum(
+                            [
+                                img_tmp[
+                                    int(np.round(ref + start)) : int(
+                                        np.round(ref + end)
+                                    ),
+                                    i,
+                                ]
+                                for i in x
+                            ],
+                            axis=1,
+                        )
+                    )
+                s_up[k] -= lowess(
+                    s_up[k],
+                    np.arange(spec_size_tmp),
+                    frac=0.05,
+                    return_sorted=False,
+                )
                 s_up[k] -= min(s_up[k][one_tenth:-one_tenth])
                 s_up[k] /= max(s_up[k][one_tenth:-one_tenth])
 
             s_all = s_down[::-1] + s + s_up
 
             self.logger.info(
-                '{} subspectra is used for cross-correlation.'.format(s_all))
+                "{} subspectra is used for cross-correlation.".format(s_all)
+            )
 
-            y_trace_upsampled = np.arange(-n_down + 1,
-                                          n_up + 1) * bin_half_size + ref
+            y_trace_upsampled = (
+                np.arange(-n_down + 1, n_up + 1) * bin_half_size + ref
+            )
 
             # correlate with the neighbouring slice to compute the shifts
             shift_upsampled = np.zeros_like(y_trace_upsampled)
@@ -2478,35 +2750,46 @@ class TwoDSpec:
 
                 # Note: indice n_down is s
                 corr = signal.correlate(
-                    10.**s_all[i][one_tenth:-one_tenth],
-                    10.**s_all[i - 1][one_tenth:-one_tenth])
-                shift_upsampled[i - 1:] += (
-                    spec_size_tmp - 2 * one_tenth -
-                    np.argwhere(corr == corr[np.argmax(corr)])[0] - 1)
+                    10.0 ** s_all[i][one_tenth:-one_tenth],
+                    10.0 ** s_all[i - 1][one_tenth:-one_tenth],
+                )
+                shift_upsampled[i - 1 :] += (
+                    spec_size_tmp
+                    - 2 * one_tenth
+                    - np.argwhere(corr == corr[np.argmax(corr)])[0]
+                    - 1
+                )
 
             # Turn the shift to relative to the spectrum
             shift_upsampled -= shift_upsampled[n_down]
 
-            self.logger.info('The upsampled y-coordinates of subspectra '
-                             'are: {} '.format(y_trace_upsampled) +
-                             'and the corresponding upsampled shifts '
-                             'are: {}.'.format(shift_upsampled))
+            self.logger.info(
+                "The upsampled y-coordinates of subspectra "
+                "are: {} ".format(y_trace_upsampled)
+                + "and the corresponding upsampled shifts "
+                "are: {}.".format(shift_upsampled)
+            )
 
             self.logger.info(
-                'The y-coordinates of subspectra '
-                'are: {} '.format(y_trace_upsampled / upsample_factor) +
-                'and the corresponding shifts '
-                'are: {}.'.format(shift_upsampled / upsample_factor))
+                "The y-coordinates of subspectra "
+                "are: {} ".format(y_trace_upsampled / upsample_factor)
+                + "and the corresponding shifts "
+                "are: {}.".format(shift_upsampled / upsample_factor)
+            )
 
             # fit the distortion in the spectral direction as a function
             # of y-pixel. The coeff is in the upsampled resolution
             coeff = np.polynomial.polynomial.polyfit(
                 y_trace_upsampled,
-                lowess(shift_upsampled, y_trace_upsampled,
-                       return_sorted=False), order)
+                lowess(
+                    shift_upsampled, y_trace_upsampled, return_sorted=False
+                ),
+                order,
+            )
             self.logger.info(
-                'Best fit polynomial for rectifying in the spatial direction.'
-                'is {}.'.format(coeff))
+                "Best fit polynomial for rectifying in the spatial direction."
+                "is {}.".format(coeff)
+            )
 
         # shift in the spectral direction, the shift is as a function
         # of distance from the trace at ref
@@ -2516,8 +2799,9 @@ class TwoDSpec:
             shift_j = np.polynomial.polynomial.polyval(j, coeff)
 
             if j % 10 == 0:
-                self.logger.info('The shift at line j = {} is {}.'.format(
-                    j, shift_j))
+                self.logger.info(
+                    "The shift at line j = {} is {}.".format(j, shift_j)
+                )
 
             img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
 
@@ -2533,14 +2817,14 @@ class TwoDSpec:
         self.rec_n_bin = n_bin
         self.rec_spline_order = spline_order
         self.rec_order = order
-        self.img_rectified = ndimage.zoom(img_tmp,
-                                          zoom=1. / upsample_factor,
-                                          order=spline_order)
+        self.img_rectified = ndimage.zoom(
+            img_tmp, zoom=1.0 / upsample_factor, order=spline_order
+        )
         if self.arc is not None:
 
-            self.arc_rectified = ndimage.zoom(arc_tmp,
-                                              zoom=1. / upsample_factor,
-                                              order=spline_order)
+            self.arc_rectified = ndimage.zoom(
+                arc_tmp, zoom=1.0 / upsample_factor, order=spline_order
+            )
 
         if apply:
 
@@ -2549,78 +2833,91 @@ class TwoDSpec:
         if save_fig or display or return_jsonstring:
 
             fig = go.Figure(
-                layout=dict(autosize=False, height=height, width=width))
+                layout=dict(autosize=False, height=height, width=width)
+            )
 
             # show the image on the top
             # the 3 is the show a little bit outside the extraction regions
             fig.add_trace(
-                go.Heatmap(z=np.log10(self.img_rectified),
-                           colorscale="Viridis",
-                           zmin=np.nanpercentile(np.log10(self.img_rectified),
-                                                 10),
-                           zmax=np.nanpercentile(np.log10(self.img_rectified),
-                                                 90),
-                           xaxis='x',
-                           yaxis='y',
-                           colorbar=dict(title='log( e- count / s)')))
+                go.Heatmap(
+                    z=np.log10(self.img_rectified),
+                    colorscale="Viridis",
+                    zmin=np.nanpercentile(np.log10(self.img_rectified), 10),
+                    zmax=np.nanpercentile(np.log10(self.img_rectified), 90),
+                    xaxis="x",
+                    yaxis="y",
+                    colorbar=dict(title="log( e- count / s)"),
+                )
+            )
             if self.arc_rectified is not None:
                 fig.add_trace(
                     go.Heatmap(
                         z=np.log10(self.arc_rectified),
                         colorscale="Viridis",
-                        zmin=np.nanpercentile(np.log10(self.arc_rectified),
-                                              10),
-                        zmax=np.nanpercentile(np.log10(self.arc_rectified),
-                                              90),
-                        xaxis='x2',
-                        yaxis='y2'))
+                        zmin=np.nanpercentile(
+                            np.log10(self.arc_rectified), 10
+                        ),
+                        zmax=np.nanpercentile(
+                            np.log10(self.arc_rectified), 90
+                        ),
+                        xaxis="x2",
+                        yaxis="y2",
+                    )
+                )
 
                 # Decorative stuff
                 fig.update_layout(
-                    yaxis=dict(zeroline=False,
-                               domain=[0.5, 1],
-                               showgrid=False,
-                               title='Spatial Direction / pixel'),
+                    yaxis=dict(
+                        zeroline=False,
+                        domain=[0.5, 1],
+                        showgrid=False,
+                        title="Spatial Direction / pixel",
+                    ),
                     yaxis2=dict(
                         zeroline=False,
                         domain=[0, 0.5],
                         showgrid=False,
-                        title='Spatial Direction / pixel',
+                        title="Spatial Direction / pixel",
                     ),
                     xaxis=dict(showticklabels=False),
-                    xaxis2=dict(title='Dispersion Direction / pixel',
-                                anchor="y2",
-                                matches="x"),
+                    xaxis2=dict(
+                        title="Dispersion Direction / pixel",
+                        anchor="y2",
+                        matches="x",
+                    ),
                     bargap=0,
-                    hovermode='closest')
+                    hovermode="closest",
+                )
 
             if filename is None:
 
-                filename = 'rectified_image'
+                filename = "rectified_image"
 
             if save_fig:
 
-                fig_type_split = fig_type.split('+')
+                fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
 
-                    if t == 'iframe':
+                    if t == "iframe":
 
-                        pio.write_html(fig,
-                                       filename + '.' + t,
-                                       auto_open=open_iframe)
+                        pio.write_html(
+                            fig, filename + "." + t, auto_open=open_iframe
+                        )
 
-                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+                    elif t in ["jpg", "png", "svg", "pdf"]:
 
-                        pio.write_image(fig, filename + '.' + t)
+                        pio.write_image(fig, filename + "." + t)
 
                     self.logger.info(
-                        'Figure is saved to {} for the '.format(filename +
-                                                                '.' + t))
+                        "Figure is saved to {} for the ".format(
+                            filename + "." + t
+                        )
+                    )
 
             if display:
 
-                if renderer == 'default':
+                if renderer == "default":
 
                     fig.show()
 
@@ -2641,25 +2938,36 @@ class TwoDSpec:
         if self.img_rectified is not None:
 
             self.img = self.img_rectified
-            self.logger.info('Image rectification is applied')
+            self.logger.info("Image rectification is applied")
 
         else:
 
-            self.logger.info('Rectification is not computed, it cannot be '
-                             'applied to the image.')
+            self.logger.info(
+                "Rectification is not computed, it cannot be "
+                "applied to the image."
+            )
 
         if self.arc_rectified is not None:
 
             self.arc = self.arc_rectified
-            self.logger.info('Arc rectification is applied')
+            self.logger.info("Arc rectification is applied")
 
         else:
 
-            self.logger.info('Rectification is not computed, it cannot be '
-                             'applied to the arc.')
+            self.logger.info(
+                "Rectification is not computed, it cannot be "
+                "applied to the arc."
+            )
 
-    def _fit_sky(self, extraction_slice, extraction_bad_mask, sky_sigma,
-                 sky_width_dn, sky_width_up, sky_polyfit_order):
+    def _fit_sky(
+        self,
+        extraction_slice,
+        extraction_bad_mask,
+        sky_sigma,
+        sky_width_dn,
+        sky_width_up,
+        sky_polyfit_order,
+    ):
         """
         Fit the sky background from the given extraction_slice and the aperture
         parameters.
@@ -2694,81 +3002,90 @@ class TwoDSpec:
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_up] = True
-            sky_mask[-(sky_width_dn + 1):-1] = True
+            sky_mask[-(sky_width_dn + 1) : -1] = True
 
             sky_mask *= ~extraction_bad_mask
-            sky_bad_mask = ~sigma_clip(extraction_slice[sky_mask],
-                                       sigma=sky_sigma).mask
+            sky_bad_mask = ~sigma_clip(
+                extraction_slice[sky_mask], sigma=sky_sigma
+            ).mask
 
-            if (sky_polyfit_order == 0):
+            if sky_polyfit_order == 0:
 
                 count_sky_extraction_slice = np.ones(
                     len(extraction_slice[sky_mask][sky_bad_mask])
                 ) * np.nanmean(extraction_slice[sky_mask][sky_bad_mask])
 
-            elif (sky_polyfit_order > 0):
+            elif sky_polyfit_order > 0:
 
                 # fit a polynomial to the sky in this column
                 polyfit_coeff = np.polynomial.polynomial.polyfit(
                     np.arange(extraction_slice.size)[sky_mask][sky_bad_mask],
                     extraction_slice[sky_mask][sky_bad_mask],
-                    sky_polyfit_order)
+                    sky_polyfit_order,
+                )
 
                 # evaluate the polynomial across the extraction_slice, and sum
                 count_sky_extraction_slice = np.polynomial.polynomial.polyval(
-                    np.arange(extraction_slice.size), polyfit_coeff)
+                    np.arange(extraction_slice.size), polyfit_coeff
+                )
 
             else:
 
                 self.logger.warning(
-                    'sky_polyfit_order cannot be negative. sky '
-                    'background is set to zero.')
+                    "sky_polyfit_order cannot be negative. sky "
+                    "background is set to zero."
+                )
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
-            self.logger.debug('Background sky flux is '
-                              '{}.'.format(count_sky_extraction_slice))
+            self.logger.debug(
+                "Background sky flux is "
+                "{}.".format(count_sky_extraction_slice)
+            )
 
         else:
 
             # get the indexes of the sky regions
             count_sky_extraction_slice = np.zeros_like(extraction_slice)
-            self.logger.debug('Sky region is not provided, backgound is set '
-                              'to zero.')
+            self.logger.debug(
+                "Sky region is not provided, backgound is set " "to zero."
+            )
 
         return count_sky_extraction_slice
 
-    def ap_extract(self,
-                   apwidth=7,
-                   skysep=3,
-                   skywidth=5,
-                   skydeg=1,
-                   sky_sigma=3.,
-                   spec_id=None,
-                   optimal=True,
-                   algorithm='horne86',
-                   model='lowess',
-                   lowess_frac=0.1,
-                   lowess_it=3,
-                   lowess_delta=0.0,
-                   tolerance=1e-6,
-                   cosmicray_sigma=4.0,
-                   max_iter=99,
-                   forced=False,
-                   variances=None,
-                   npoly=21,
-                   polyspacing=1,
-                   pord=5,
-                   qmode='fast-linear',
-                   nreject=100,
-                   display=False,
-                   renderer='default',
-                   width=1280,
-                   height=720,
-                   return_jsonstring=False,
-                   save_fig=False,
-                   fig_type='iframe+png',
-                   filename=None,
-                   open_iframe=False):
+    def ap_extract(
+        self,
+        apwidth=7,
+        skysep=3,
+        skywidth=5,
+        skydeg=1,
+        sky_sigma=3.0,
+        spec_id=None,
+        optimal=True,
+        algorithm="horne86",
+        model="lowess",
+        lowess_frac=0.1,
+        lowess_it=3,
+        lowess_delta=0.0,
+        tolerance=1e-6,
+        cosmicray_sigma=4.0,
+        max_iter=99,
+        forced=False,
+        variances=None,
+        npoly=21,
+        polyspacing=1,
+        pord=5,
+        qmode="fast-linear",
+        nreject=100,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
         """
         Extract the spectra using the traces, support tophat or optimal
         extraction. The sky background is fitted in one dimention only. The
@@ -2894,9 +3211,10 @@ class TwoDSpec:
 
         if spec_id is not None:
 
-            assert np.in1d(spec_id,
-                           list(self.spectrum_list.keys())).all(), 'Some '
-            'spec_id provided are not in the spectrum_list.'
+            assert np.in1d(
+                spec_id, list(self.spectrum_list.keys())
+            ).all(), "Some "
+            "spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -2921,9 +3239,11 @@ class TwoDSpec:
 
             else:
 
-                self.logger.error('apwidth can only be an int or a list ' +
-                                  'of two ints. It is set to the default ' +
-                                  'value to continue the extraction.')
+                self.logger.error(
+                    "apwidth can only be an int or a list "
+                    + "of two ints. It is set to the default "
+                    + "value to continue the extraction."
+                )
                 width_dn = 7
                 width_up = 7
 
@@ -2940,9 +3260,11 @@ class TwoDSpec:
 
             else:
 
-                self.logger.error('skysep can only be an int or a list of ' +
-                                  'two ints. It is set to the default ' +
-                                  'value to continue the extraction.')
+                self.logger.error(
+                    "skysep can only be an int or a list of "
+                    + "two ints. It is set to the default "
+                    + "value to continue the extraction."
+                )
                 sep_dn = 3
                 sep_up = 3
 
@@ -2959,9 +3281,11 @@ class TwoDSpec:
 
             else:
 
-                self.logger.error('skywidth can only be an int or a list of ' +
-                                  'two ints. It is set to the default value ' +
-                                  'to continue the extraction.')
+                self.logger.error(
+                    "skywidth can only be an int or a list of "
+                    + "two ints. It is set to the default value "
+                    + "to continue the extraction."
+                )
                 sky_width_dn = 5
                 sky_width_up = 5
 
@@ -2972,8 +3296,10 @@ class TwoDSpec:
             count_sky = np.zeros(len_trace)
             count_err = np.zeros(len_trace)
             count = np.zeros(len_trace)
-            var = np.ones((len_trace, width_dn + width_up + 1)) *\
-                self.readnoise**2.
+            var = (
+                np.ones((len_trace, width_dn + width_up + 1))
+                * self.readnoise**2.0
+            )
             profile = np.zeros((len_trace, width_dn + width_up + 1))
             is_optimal = np.zeros(len_trace, dtype=bool)
 
@@ -2986,13 +3312,15 @@ class TwoDSpec:
                 profile_start_idx = 0
 
                 # fix width if trace is too close to the edge
-                if (itrace + width_up > self.spatial_size):
+                if itrace + width_up > self.spatial_size:
 
                     self.logger.info(
-                        'Extration is over the upper edge of the detector '
-                        'plane. Fixing indices. width_up is changed '
-                        'from {} to {}.'.format(width_up, self.spatial_size -
-                                                itrace - 1))
+                        "Extration is over the upper edge of the detector "
+                        "plane. Fixing indices. width_up is changed "
+                        "from {} to {}.".format(
+                            width_up, self.spatial_size - itrace - 1
+                        )
+                    )
                     # ending at the last pixel
                     width_up = self.spatial_size - itrace - 3
                     sep_up = 0
@@ -3000,10 +3328,12 @@ class TwoDSpec:
 
                 profile_end_idx = width_dn + width_up + 1
 
-                if (itrace - width_dn < 0):
+                if itrace - width_dn < 0:
 
-                    self.logger.info('Extration is over the lower edge of '
-                                     'the detector plane. Fixing indices.')
+                    self.logger.info(
+                        "Extration is over the lower edge of "
+                        "the detector plane. Fixing indices."
+                    )
                     offset = width_dn - itrace
                     # starting at pixel row 0
                     width_dn = itrace - 1
@@ -3013,87 +3343,107 @@ class TwoDSpec:
                     profile_end_idx = offset + width_dn + width_up + 1
 
                 # Pixels where the source spectrum and the sky regions are
-                source_pix = np.arange(itrace - width_dn,
-                                       itrace + width_up + 1)
+                source_pix = np.arange(
+                    itrace - width_dn, itrace + width_up + 1
+                )
                 extraction_pix = np.arange(
                     itrace - width_dn - sep_dn - sky_width_dn,
-                    itrace + width_up + sep_up + sky_width_up + 1)
+                    itrace + width_up + sep_up + sky_width_up + 1,
+                )
 
                 # trace +/- aperture size
                 source_slice = self.img[source_pix, i].copy()
                 if self.bad_mask is not None:
                     source_bad_mask = self.bad_mask[source_pix, i]
                 else:
-                    source_bad_mask = np.zeros_like(source_slice, dtype='bool')
+                    source_bad_mask = np.zeros_like(source_slice, dtype="bool")
 
                 # trace +/- aperture and sky region size
                 extraction_slice = self.img[extraction_pix, i].copy()
                 if self.bad_mask is not None:
                     extraction_bad_mask = self.bad_mask[extraction_pix, i]
                 else:
-                    extraction_bad_mask = np.zeros_like(extraction_slice,
-                                                        dtype='bool')
+                    extraction_bad_mask = np.zeros_like(
+                        extraction_slice, dtype="bool"
+                    )
 
-                extraction_bad_mask = (extraction_bad_mask
-                                       & ~np.isfinite(extraction_slice)
-                                       & ~np.isnan(extraction_slice))
+                extraction_bad_mask = (
+                    extraction_bad_mask
+                    & ~np.isfinite(extraction_slice)
+                    & ~np.isnan(extraction_slice)
+                )
 
                 count_sky_extraction_slice = self._fit_sky(
-                    extraction_slice, extraction_bad_mask, sky_sigma,
-                    sky_width_dn, sky_width_up, skydeg)
+                    extraction_slice,
+                    extraction_bad_mask,
+                    sky_sigma,
+                    sky_width_dn,
+                    sky_width_up,
+                    skydeg,
+                )
 
                 count_sky_source_slice = count_sky_extraction_slice[
-                    source_pix - itrace].copy()
+                    source_pix - itrace
+                ].copy()
 
-                count_sky[i] = np.nansum(
-                    count_sky_source_slice
-                ) - pix_frac * count_sky_source_slice[0] - (
-                    1 - pix_frac) * count_sky_source_slice[-1]
+                count_sky[i] = (
+                    np.nansum(count_sky_source_slice)
+                    - pix_frac * count_sky_source_slice[0]
+                    - (1 - pix_frac) * count_sky_source_slice[-1]
+                )
 
-                self.img_residual[source_pix,
-                                  i] = count_sky_source_slice.copy()
+                self.img_residual[
+                    source_pix, i
+                ] = count_sky_source_slice.copy()
 
-                self.logger.debug('count_sky at pixel {} is {}.'.format(
-                    i, count_sky[i]))
+                self.logger.debug(
+                    "count_sky at pixel {} is {}.".format(i, count_sky[i])
+                )
 
                 # if not optimal extraction or using marsh89, perform a
                 # tophat extraction
-                if not optimal or (optimal & (algorithm == 'marsh89')):
+                if not optimal or (optimal & (algorithm == "marsh89")):
 
-                    count[i], count_err[i], is_optimal[i] =\
-                        self._tophat_extraction(
-                            source_slice=source_slice,
-                            sky_source_slice=count_sky_source_slice,
-                            pix_frac=pix_frac,
-                            gain=self.gain,
-                            sky_width_dn=sky_width_dn,
-                            sky_width_up=sky_width_up,
-                            width_dn=width_dn,
-                            width_up=width_up)
+                    (
+                        count[i],
+                        count_err[i],
+                        is_optimal[i],
+                    ) = self._tophat_extraction(
+                        source_slice=source_slice,
+                        sky_source_slice=count_sky_source_slice,
+                        pix_frac=pix_frac,
+                        gain=self.gain,
+                        sky_width_dn=sky_width_dn,
+                        sky_width_up=sky_width_up,
+                        width_dn=width_dn,
+                        width_up=width_up,
+                    )
 
                 # Get the optimal signals
-                if optimal & (algorithm == 'horne86'):
+                if optimal & (algorithm == "horne86"):
 
-                    self.logger.debug('Using Horne 1986 algorithm.')
+                    self.logger.debug("Using Horne 1986 algorithm.")
 
                     # If the weights are given externally to perform forced
                     # extraction
                     if forced:
 
-                        self.logger.debug('Using forced extraction.')
+                        self.logger.debug("Using forced extraction.")
 
                         # Unit weighted
                         if np.ndim(variances) == 0:
 
                             if isinstance(variances, (int, float)):
 
-                                var_i = np.ones(width_dn + width_up +
-                                                1) * variances
+                                var_i = (
+                                    np.ones(width_dn + width_up + 1)
+                                    * variances
+                                )
 
                             else:
 
                                 var_i = np.ones(len(source_pix))
-                                self.logger.warning('Variances are set to 1.')
+                                self.logger.warning("Variances are set to 1.")
 
                         # A single LSF is given for the entire trace
                         elif np.ndim(variances) == 1:
@@ -3108,7 +3458,7 @@ class TwoDSpec:
                             else:
 
                                 var_i = np.ones(len(source_pix))
-                                self.logger.warning('Variances are set to 1.')
+                                self.logger.warning("Variances are set to 1.")
 
                         # A two dimensional LSF
                         elif np.ndim(variances) == 2:
@@ -3118,12 +3468,12 @@ class TwoDSpec:
                             # If the spectrum is outside of the frame
                             if itrace - apwidth < 0:
 
-                                var_i = var_i[apwidth - width_dn:]
+                                var_i = var_i[apwidth - width_dn :]
 
                             # If the spectrum is outside of the frame
                             elif itrace + apwidth > self.spatial_size:
 
-                                var_i = var_i[:-(apwidth - width_up + 1)]
+                                var_i = var_i[: -(apwidth - width_up + 1)]
 
                             else:
 
@@ -3132,7 +3482,7 @@ class TwoDSpec:
                         else:
 
                             var_i = np.ones(len(source_pix))
-                            self.logger.warning('Variances are set to 1.')
+                            self.logger.warning("Variances are set to 1.")
 
                     else:
 
@@ -3140,61 +3490,72 @@ class TwoDSpec:
 
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
-                    (count[i], count_err[i], is_optimal[i],
-                     profile[i][profile_start_idx:profile_end_idx],
-                     var_temp) =\
-                        self._optimal_extraction_horne86(
-                            pix=source_pix,
-                            source_slice=source_slice,
-                            sky=count_sky_source_slice,
-                            mu=pos,
-                            sigma=spec.trace_sigma[i],
-                            tol=tolerance,
-                            max_iter=max_iter,
-                            readnoise=self.readnoise,
-                            gain=self.gain,
-                            cosmicray_sigma=self.cosmicray_sigma,
-                            forced=forced,
-                            variances=var_i,
-                            model=model,
-                            lowess_frac=lowess_frac,
-                            lowess_it=lowess_it,
-                            lowess_delta=lowess_delta,
-                            bad_mask=source_bad_mask)
+                    (
+                        count[i],
+                        count_err[i],
+                        is_optimal[i],
+                        profile[i][profile_start_idx:profile_end_idx],
+                        var_temp,
+                    ) = self._optimal_extraction_horne86(
+                        pix=source_pix,
+                        source_slice=source_slice,
+                        sky=count_sky_source_slice,
+                        mu=pos,
+                        sigma=spec.trace_sigma[i],
+                        tol=tolerance,
+                        max_iter=max_iter,
+                        readnoise=self.readnoise,
+                        gain=self.gain,
+                        cosmicray_sigma=self.cosmicray_sigma,
+                        forced=forced,
+                        variances=var_i,
+                        model=model,
+                        lowess_frac=lowess_frac,
+                        lowess_it=lowess_it,
+                        lowess_delta=lowess_delta,
+                        bad_mask=source_bad_mask,
+                    )
 
                     if var_i is None:
 
-                        var[i,
-                            offset:offset + width_dn + width_up + 1] = var_temp
+                        var[
+                            i, offset : offset + width_dn + width_up + 1
+                        ] = var_temp
 
                     else:
 
                         var[i] = var_i
 
-            if optimal & (algorithm == 'marsh89'):
+            if optimal & (algorithm == "marsh89"):
 
-                self.logger.debug('Using Marsh 1989 algorithm.')
+                self.logger.debug("Using Marsh 1989 algorithm.")
 
                 if variances is None:
 
                     variances = self.variance
 
-                count, count_err, is_optimal, profile, var =\
-                    self._optimal_extraction_marsh89(
-                        frame=self.img,
-                        residual_frame=self.img_residual,
-                        variance=variances,
-                        trace=spec.trace,
-                        spectrum=count,
-                        readnoise=self.readnoise,
-                        apwidth=(width_dn, width_up),
-                        goodpixelmask=~self.bad_mask,
-                        npoly=npoly,
-                        polyspacing=polyspacing,
-                        pord=pord,
-                        cosmicray_sigma=self.cosmicray_sigma,
-                        qmode=qmode,
-                        nreject=nreject)
+                (
+                    count,
+                    count_err,
+                    is_optimal,
+                    profile,
+                    var,
+                ) = self._optimal_extraction_marsh89(
+                    frame=self.img,
+                    residual_frame=self.img_residual,
+                    variance=variances,
+                    trace=spec.trace,
+                    spectrum=count,
+                    readnoise=self.readnoise,
+                    apwidth=(width_dn, width_up),
+                    goodpixelmask=~self.bad_mask,
+                    npoly=npoly,
+                    polyspacing=polyspacing,
+                    pord=pord,
+                    cosmicray_sigma=self.cosmicray_sigma,
+                    qmode=qmode,
+                    nreject=nreject,
+                )
 
             # All the extraction methods return signal and noise in the
             # same format
@@ -3203,8 +3564,9 @@ class TwoDSpec:
             count_sky /= self.exptime
             var /= self.exptime
 
-            spec.add_aperture(width_dn, width_up, sep_dn, sep_up, sky_width_dn,
-                              sky_width_up)
+            spec.add_aperture(
+                width_dn, width_up, sep_dn, sep_up, sky_width_dn, sky_width_up
+            )
             spec.add_count(list(count), list(count_err), list(count_sky))
             spec.add_variances(var)
             spec.add_profile(profile)
@@ -3212,13 +3574,13 @@ class TwoDSpec:
             spec.optimal_pixel = is_optimal
             spec.add_spectrum_header(self.header)
 
-            self.logger.info('Spectrum extracted for spec_id: {}.'.format(j))
+            self.logger.info("Spectrum extracted for spec_id: {}.".format(j))
 
-            if optimal & (algorithm == 'horne86'):
+            if optimal & (algorithm == "horne86"):
 
                 spec.extraction_type = "OptimalHorne86"
 
-            if optimal & (algorithm == 'marsh89'):
+            if optimal & (algorithm == "marsh89"):
 
                 spec.extraction_type = "OptimalMarsh89"
 
@@ -3230,9 +3592,10 @@ class TwoDSpec:
             if np.sum(is_optimal) / len(is_optimal) < 0.333:
 
                 self.logger.warning(
-                    'Some signal extracted is likely to be suboptimal, it '
-                    'is most likely happening at the red and/or blue ends '
-                    'of the spectrum.')
+                    "Some signal extracted is likely to be suboptimal, it "
+                    "is most likely happening at the red and/or blue ends "
+                    "of the spectrum."
+                )
 
             if save_fig or display or return_jsonstring:
 
@@ -3240,211 +3603,302 @@ class TwoDSpec:
                 max_trace = int(max(spec.trace) + 0.5)
 
                 fig = go.Figure(
-                    layout=dict(autosize=False, height=height, width=width))
+                    layout=dict(autosize=False, height=height, width=width)
+                )
                 # the 3 is to show a little bit outside the extraction regions
-                img_display = np.log10(self.img[
-                    max(0, min_trace - width_dn - sep_dn - sky_width_dn -
-                        3):min(max_trace + width_up + sep_up +
-                               sky_width_up, len(self.img[0])) + 3, :])
+                img_display = np.log10(
+                    self.img[
+                        max(
+                            0, min_trace - width_dn - sep_dn - sky_width_dn - 3
+                        ) : min(
+                            max_trace + width_up + sep_up + sky_width_up,
+                            len(self.img[0]),
+                        )
+                        + 3,
+                        :,
+                    ]
+                )
 
                 # show the image on the top
                 # the 3 is the show a little bit outside the extraction regions
                 fig.add_trace(
-                    go.Heatmap(x=np.arange(len_trace),
-                               y=np.arange(
-                                   max(
-                                       0, min_trace - width_dn - sep_dn -
-                                       sky_width_dn - 3),
-                                   min(
-                                       max_trace + width_up + sep_up +
-                                       sky_width_up + 3, len(self.img[0]))),
-                               z=img_display,
-                               colorscale="Viridis",
-                               zmin=self.zmin,
-                               zmax=self.zmax,
-                               xaxis='x',
-                               yaxis='y',
-                               colorbar=dict(title='log( e- count / s )')))
+                    go.Heatmap(
+                        x=np.arange(len_trace),
+                        y=np.arange(
+                            max(
+                                0,
+                                min_trace
+                                - width_dn
+                                - sep_dn
+                                - sky_width_dn
+                                - 3,
+                            ),
+                            min(
+                                max_trace
+                                + width_up
+                                + sep_up
+                                + sky_width_up
+                                + 3,
+                                len(self.img[0]),
+                            ),
+                        ),
+                        z=img_display,
+                        colorscale="Viridis",
+                        zmin=self.zmin,
+                        zmax=self.zmax,
+                        xaxis="x",
+                        yaxis="y",
+                        colorbar=dict(title="log( e- count / s )"),
+                    )
+                )
 
                 # Middle black box on the image
                 fig.add_trace(
-                    go.Scatter(x=list(
-                        np.concatenate(
-                            (np.arange(len_trace), np.arange(len_trace)[::-1],
-                             np.zeros(1)))),
-                               y=list(
-                                   np.concatenate(
-                                       (np.array(spec.trace) - width_dn - 1,
-                                        np.array(spec.trace[::-1]) + width_up +
-                                        1, np.ones(1) *
-                                        (spec.trace[0] - width_dn - 1)))),
-                               xaxis='x',
-                               yaxis='y',
-                               mode='lines',
-                               line_color='black',
-                               showlegend=False))
+                    go.Scatter(
+                        x=list(
+                            np.concatenate(
+                                (
+                                    np.arange(len_trace),
+                                    np.arange(len_trace)[::-1],
+                                    np.zeros(1),
+                                )
+                            )
+                        ),
+                        y=list(
+                            np.concatenate(
+                                (
+                                    np.array(spec.trace) - width_dn - 1,
+                                    np.array(spec.trace[::-1]) + width_up + 1,
+                                    np.ones(1)
+                                    * (spec.trace[0] - width_dn - 1),
+                                )
+                            )
+                        ),
+                        xaxis="x",
+                        yaxis="y",
+                        mode="lines",
+                        line_color="black",
+                        showlegend=False,
+                    )
+                )
 
                 # Lower red box on the image
                 if offset == 0:
 
-                    lower_redbox_upper_bound = np.array(
-                        spec.trace) - width_dn - sep_dn - 1
-                    lower_redbox_lower_bound = np.array(
-                        spec.trace)[::-1] - width_dn - sep_dn - sky_width_dn
+                    lower_redbox_upper_bound = (
+                        np.array(spec.trace) - width_dn - sep_dn - 1
+                    )
+                    lower_redbox_lower_bound = (
+                        np.array(spec.trace)[::-1]
+                        - width_dn
+                        - sep_dn
+                        - sky_width_dn
+                    )
                     lower_redbox_lower_bound[lower_redbox_lower_bound < 0] = 1
 
                     fig.add_trace(
-                        go.Scatter(x=list(
-                            np.concatenate(
-                                (np.arange(len_trace),
-                                 np.arange(len_trace)[::-1], np.zeros(1)))),
-                                   y=list(
-                                       np.concatenate(
-                                           (lower_redbox_upper_bound,
-                                            lower_redbox_lower_bound,
-                                            np.ones(1) *
-                                            lower_redbox_upper_bound[0]))),
-                                   line_color='red',
-                                   xaxis='x',
-                                   yaxis='y',
-                                   mode='lines',
-                                   showlegend=False))
+                        go.Scatter(
+                            x=list(
+                                np.concatenate(
+                                    (
+                                        np.arange(len_trace),
+                                        np.arange(len_trace)[::-1],
+                                        np.zeros(1),
+                                    )
+                                )
+                            ),
+                            y=list(
+                                np.concatenate(
+                                    (
+                                        lower_redbox_upper_bound,
+                                        lower_redbox_lower_bound,
+                                        np.ones(1)
+                                        * lower_redbox_upper_bound[0],
+                                    )
+                                )
+                            ),
+                            line_color="red",
+                            xaxis="x",
+                            yaxis="y",
+                            mode="lines",
+                            showlegend=False,
+                        )
+                    )
 
                 # Upper red box on the image
                 if sep_up + sky_width_up > 0:
 
-                    upper_redbox_upper_bound = np.array(
-                        spec.trace) + width_up + sep_up + sky_width_up
-                    upper_redbox_lower_bound = np.array(
-                        spec.trace)[::-1] + width_up + sep_up + 1
+                    upper_redbox_upper_bound = (
+                        np.array(spec.trace) + width_up + sep_up + sky_width_up
+                    )
+                    upper_redbox_lower_bound = (
+                        np.array(spec.trace)[::-1] + width_up + sep_up + 1
+                    )
 
                     upper_redbox_upper_bound[
-                        upper_redbox_upper_bound >
-                        self.spatial_size] = self.spatial_size + 1
+                        upper_redbox_upper_bound > self.spatial_size
+                    ] = (self.spatial_size + 1)
 
                     fig.add_trace(
-                        go.Scatter(x=list(
-                            np.concatenate(
-                                (np.arange(len_trace),
-                                 np.arange(len_trace)[::-1], np.zeros(1)))),
-                                   y=list(
-                                       np.concatenate(
-                                           (upper_redbox_upper_bound,
-                                            upper_redbox_lower_bound,
-                                            np.ones(1) *
-                                            upper_redbox_upper_bound[0]))),
-                                   xaxis='x',
-                                   yaxis='y',
-                                   mode='lines',
-                                   line_color='red',
-                                   showlegend=False))
+                        go.Scatter(
+                            x=list(
+                                np.concatenate(
+                                    (
+                                        np.arange(len_trace),
+                                        np.arange(len_trace)[::-1],
+                                        np.zeros(1),
+                                    )
+                                )
+                            ),
+                            y=list(
+                                np.concatenate(
+                                    (
+                                        upper_redbox_upper_bound,
+                                        upper_redbox_lower_bound,
+                                        np.ones(1)
+                                        * upper_redbox_upper_bound[0],
+                                    )
+                                )
+                            ),
+                            xaxis="x",
+                            yaxis="y",
+                            mode="lines",
+                            line_color="red",
+                            showlegend=False,
+                        )
+                    )
 
                 # plot the SNR
                 fig.add_trace(
-                    go.Scatter(x=np.arange(len_trace),
-                               y=count / count_err,
-                               xaxis='x2',
-                               yaxis='y3',
-                               line=dict(color='slategrey'),
-                               name='Signal-to-Noise Ratio'))
+                    go.Scatter(
+                        x=np.arange(len_trace),
+                        y=count / count_err,
+                        xaxis="x2",
+                        yaxis="y3",
+                        line=dict(color="slategrey"),
+                        name="Signal-to-Noise Ratio",
+                    )
+                )
 
                 # extrated source, sky and uncertainty
                 fig.add_trace(
-                    go.Scatter(x=np.arange(len_trace),
-                               y=count_sky,
-                               xaxis='x2',
-                               yaxis='y2',
-                               line=dict(color='firebrick'),
-                               name='Sky e- count / s'))
+                    go.Scatter(
+                        x=np.arange(len_trace),
+                        y=count_sky,
+                        xaxis="x2",
+                        yaxis="y2",
+                        line=dict(color="firebrick"),
+                        name="Sky e- count / s",
+                    )
+                )
                 fig.add_trace(
-                    go.Scatter(x=np.arange(len_trace),
-                               y=count_err,
-                               xaxis='x2',
-                               yaxis='y2',
-                               line=dict(color='orange'),
-                               name='Uncertainty e- count / s'))
+                    go.Scatter(
+                        x=np.arange(len_trace),
+                        y=count_err,
+                        xaxis="x2",
+                        yaxis="y2",
+                        line=dict(color="orange"),
+                        name="Uncertainty e- count / s",
+                    )
+                )
                 fig.add_trace(
-                    go.Scatter(x=np.arange(len_trace),
-                               y=count,
-                               xaxis='x2',
-                               yaxis='y2',
-                               line=dict(color='royalblue'),
-                               name='Target e- count / s'))
+                    go.Scatter(
+                        x=np.arange(len_trace),
+                        y=count,
+                        xaxis="x2",
+                        yaxis="y2",
+                        line=dict(color="royalblue"),
+                        name="Target e- count / s",
+                    )
+                )
 
                 # Decorative stuff
                 fig.update_layout(
                     xaxis=dict(showticklabels=False),
-                    yaxis=dict(zeroline=False,
-                               domain=[0.5, 1],
-                               showgrid=False,
-                               title='Spatial Direction / pixel'),
+                    yaxis=dict(
+                        zeroline=False,
+                        domain=[0.5, 1],
+                        showgrid=False,
+                        title="Spatial Direction / pixel",
+                    ),
                     yaxis2=dict(
                         range=[
                             min(
                                 np.nanmin(
-                                    sigma_clip(count, sigma=5., masked=False)),
+                                    sigma_clip(count, sigma=5.0, masked=False)
+                                ),
                                 np.nanmin(
-                                    sigma_clip(count_err,
-                                               sigma=5.,
-                                               masked=False)),
+                                    sigma_clip(
+                                        count_err, sigma=5.0, masked=False
+                                    )
+                                ),
                                 np.nanmin(
-                                    sigma_clip(count_sky,
-                                               sigma=5.,
-                                               masked=False)), 1),
-                            max(np.nanmax(count), np.nanmax(count_sky))
+                                    sigma_clip(
+                                        count_sky, sigma=5.0, masked=False
+                                    )
+                                ),
+                                1,
+                            ),
+                            max(np.nanmax(count), np.nanmax(count_sky)),
                         ],
                         zeroline=False,
                         domain=[0, 0.5],
                         showgrid=True,
-                        title=' e- count',
+                        title=" e- count",
                     ),
-                    yaxis3=dict(title='S/N ratio',
-                                anchor="x2",
-                                overlaying="y2",
-                                side="right"),
-                    xaxis2=dict(title='Dispersion Direction / pixel',
-                                anchor="y2",
-                                matches="x"),
-                    legend=go.layout.Legend(x=0,
-                                            y=0.45,
-                                            traceorder="normal",
-                                            font=dict(family="sans-serif",
-                                                      size=12,
-                                                      color="black"),
-                                            bgcolor='rgba(0,0,0,0)'),
+                    yaxis3=dict(
+                        title="S/N ratio",
+                        anchor="x2",
+                        overlaying="y2",
+                        side="right",
+                    ),
+                    xaxis2=dict(
+                        title="Dispersion Direction / pixel",
+                        anchor="y2",
+                        matches="x",
+                    ),
+                    legend=go.layout.Legend(
+                        x=0,
+                        y=0.45,
+                        traceorder="normal",
+                        font=dict(family="sans-serif", size=12, color="black"),
+                        bgcolor="rgba(0,0,0,0)",
+                    ),
                     bargap=0,
-                    hovermode='closest',
-                    showlegend=True)
+                    hovermode="closest",
+                    showlegend=True,
+                )
 
                 if filename is None:
 
-                    filename = 'ap_extract'
+                    filename = "ap_extract"
 
                 if save_fig:
 
-                    fig_type_split = fig_type.split('+')
+                    fig_type_split = fig_type.split("+")
 
                     for t in fig_type_split:
 
-                        save_path = filename + '_' + str(j) + '.' + t
+                        save_path = filename + "_" + str(j) + "." + t
 
-                        if t == 'iframe':
+                        if t == "iframe":
 
-                            pio.write_html(fig,
-                                           save_path,
-                                           auto_open=open_iframe)
+                            pio.write_html(
+                                fig, save_path, auto_open=open_iframe
+                            )
 
-                        elif t in ['jpg', 'png', 'svg', 'pdf']:
+                        elif t in ["jpg", "png", "svg", "pdf"]:
 
                             pio.write_image(fig, save_path)
 
                         self.logger.info(
-                            'Figure is saved to {} '.format(save_path) +
-                            'for spec_id: {}.'.format(j))
+                            "Figure is saved to {} ".format(save_path)
+                            + "for spec_id: {}.".format(j)
+                        )
 
                 if display:
 
-                    if renderer == 'default':
+                    if renderer == "default":
 
                         fig.show()
 
@@ -3460,17 +3914,19 @@ class TwoDSpec:
 
             return to_return
 
-    def _tophat_extraction(self,
-                           source_slice,
-                           sky_source_slice,
-                           pix_frac,
-                           gain,
-                           sky_width_dn,
-                           sky_width_up,
-                           width_dn,
-                           width_up,
-                           source_bad_mask=None,
-                           sky_source_bad_mask=None):
+    def _tophat_extraction(
+        self,
+        source_slice,
+        sky_source_slice,
+        pix_frac,
+        gain,
+        sky_width_dn,
+        sky_width_up,
+        width_dn,
+        width_up,
+        source_bad_mask=None,
+        sky_source_bad_mask=None,
+    ):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second.
@@ -3514,14 +3970,20 @@ class TwoDSpec:
             sky_source_slice = source_slice[sky_source_bad_mask]
 
         # Get the total count
-        source_plus_sky = np.nansum(source_slice) - pix_frac * source_slice[
-            0] - (1 - pix_frac) * source_slice[-1]
+        source_plus_sky = (
+            np.nansum(source_slice)
+            - pix_frac * source_slice[0]
+            - (1 - pix_frac) * source_slice[-1]
+        )
 
         # finally, compute the error in this pixel
         # standarddev in the background data
         sigB = np.nanstd(sky_source_slice)
-        sky = np.nansum(sky_source_slice) - pix_frac * sky_source_slice[0] - (
-            1 - pix_frac) * sky_source_slice[-1]
+        sky = (
+            np.nansum(sky_source_slice)
+            - pix_frac * sky_source_slice[0]
+            - (1 - pix_frac) * sky_source_slice[-1]
+        )
 
         # number of bkgd pixels
         nB = sky_width_dn + sky_width_up - np.sum(np.isnan(sky_source_slice))
@@ -3536,31 +3998,35 @@ class TwoDSpec:
         # multiply by the exposure time when computing the
         # uncertainty
         signal = source_plus_sky - sky
-        noise = np.sqrt(signal / gain + (nA + nA**2. / nB) * (sigB**2.))
+        noise = np.sqrt(signal / gain + (nA + nA**2.0 / nB) * (sigB**2.0))
 
-        self.logger.debug('The signal and noise from the tophat extraction '
-                          'are {} and {}.'.format(signal, noise))
+        self.logger.debug(
+            "The signal and noise from the tophat extraction "
+            "are {} and {}.".format(signal, noise)
+        )
 
         return signal, noise, False
 
-    def _optimal_extraction_horne86(self,
-                                    pix,
-                                    source_slice,
-                                    sky,
-                                    mu,
-                                    sigma,
-                                    tol=1e-6,
-                                    max_iter=99,
-                                    gain=1.0,
-                                    readnoise=0.0,
-                                    cosmicray_sigma=5.0,
-                                    forced=False,
-                                    variances=None,
-                                    model='lowess',
-                                    lowess_frac=0.1,
-                                    lowess_it=3,
-                                    lowess_delta=0.0,
-                                    bad_mask=None):
+    def _optimal_extraction_horne86(
+        self,
+        pix,
+        source_slice,
+        sky,
+        mu,
+        sigma,
+        tol=1e-6,
+        max_iter=99,
+        gain=1.0,
+        readnoise=0.0,
+        cosmicray_sigma=5.0,
+        forced=False,
+        variances=None,
+        model="lowess",
+        lowess_frac=0.1,
+        lowess_it=3,
+        lowess_delta=0.0,
+        bad_mask=None,
+    ):
         """
         Make sure the counts are the number of photoelectrons or an equivalent
         detector unit, and not counts per second or ADU.
@@ -3632,22 +4098,24 @@ class TwoDSpec:
         """
 
         # step 2 - initial variance estimates
-        var1 = readnoise**2. + np.abs(source_slice) / gain
+        var1 = readnoise**2.0 + np.abs(source_slice) / gain
 
         # step 4a - extract standard spectrum
         f = source_slice - sky
-        f[f < 0] = 0.
+        f[f < 0] = 0.0
         f1 = np.nansum(f)
 
         # step 4b - variance of standard spectrum
-        v1 = 1. / np.nansum(1. / var1)
+        v1 = 1.0 / np.nansum(1.0 / var1)
 
         # step 5 - construct the spatial profile
-        if not np.in1d(model, ['gauss', 'lowess']):
+        if not np.in1d(model, ["gauss", "lowess"]):
 
-            self.logger.error('The provided model has to be gauss or lowess, '
-                              '{} is given. lowess is used.'.format(model))
-            model = 'lowess'
+            self.logger.error(
+                "The provided model has to be gauss or lowess, "
+                "{} is given. lowess is used.".format(model)
+            )
+            model = "lowess"
 
         f_diff = 1
         v_diff = 1
@@ -3656,20 +4124,22 @@ class TwoDSpec:
 
         while (f_diff > tol) | (v_diff > tol):
 
-            if model == 'gauss':
+            if model == "gauss":
 
-                P = self._gaus(pix, 1., 0., mu, sigma)
+                P = self._gaus(pix, 1.0, 0.0, mu, sigma)
 
             else:
 
-                P = lowess(f,
-                           pix,
-                           frac=lowess_frac,
-                           it=lowess_it,
-                           delta=lowess_delta,
-                           return_sorted=False)
+                P = lowess(
+                    f,
+                    pix,
+                    frac=lowess_frac,
+                    it=lowess_it,
+                    delta=lowess_delta,
+                    return_sorted=False,
+                )
 
-            P[P < 0] = 0.
+            P[P < 0] = 0.0
             P /= np.nansum(P)
 
             mask_cr = np.ones(len(P), dtype=bool)
@@ -3686,20 +4156,20 @@ class TwoDSpec:
             # var_f is the V in Horne87
             if not forced:
 
-                var_f = readnoise**2. + np.abs(P * f0 + sky) / gain
+                var_f = readnoise**2.0 + np.abs(P * f0 + sky) / gain
 
             # step 7 - cosmic ray mask, only start considering after the
             # 2nd iteration. 1 pixel is masked at a time until convergence,
             # once the pixel is masked, it will stay masked.
             if i > 1:
 
-                ratio = (cosmicray_sigma**2. * var_f) / (f - P * f0)**2.
+                ratio = (cosmicray_sigma**2.0 * var_f) / (f - P * f0) ** 2.0
 
                 if (ratio > 1).any():
 
                     mask_cr[np.argmax(ratio)] = False
 
-            denom = np.nansum((P**2. / var_f)[mask_cr])
+            denom = np.nansum((P**2.0 / var_f)[mask_cr])
 
             # step 8a - extract optimal signal
             f1 = np.nansum((P * f / var_f)[mask_cr]) / denom
@@ -3720,26 +4190,30 @@ class TwoDSpec:
         signal = f1
         noise = np.sqrt(v1)
 
-        self.logger.debug('The signal and noise from the tophat extraction '
-                          'are {} and {}.'.format(signal, noise))
+        self.logger.debug(
+            "The signal and noise from the tophat extraction "
+            "are {} and {}.".format(signal, noise)
+        )
 
         return signal, noise, is_optimal, P, var_f
 
-    def _optimal_extraction_marsh89(self,
-                                    frame,
-                                    residual_frame,
-                                    variance,
-                                    trace,
-                                    spectrum=None,
-                                    readnoise=0.0,
-                                    apwidth=7,
-                                    goodpixelmask=None,
-                                    npoly=21,
-                                    polyspacing=1,
-                                    pord=2,
-                                    cosmicray_sigma=5,
-                                    qmode='slow-nearest',
-                                    nreject=100):
+    def _optimal_extraction_marsh89(
+        self,
+        frame,
+        residual_frame,
+        variance,
+        trace,
+        spectrum=None,
+        readnoise=0.0,
+        apwidth=7,
+        goodpixelmask=None,
+        npoly=21,
+        polyspacing=1,
+        pord=2,
+        cosmicray_sigma=5,
+        qmode="slow-nearest",
+        nreject=100,
+    ):
         """
         Optimally extract curved spectra taken and updated from
         Ian Crossfield's code
@@ -3823,9 +4297,11 @@ class TwoDSpec:
 
         else:
 
-            self.logger.error('apwidth can only be an int or a list ' +
-                              'of two ints. It is set to the default ' +
-                              'value to continue the extraction.')
+            self.logger.error(
+                "apwidth can only be an int or a list "
+                + "of two ints. It is set to the default "
+                + "value to continue the extraction."
+            )
             width_dn = 7
             width_up = 7
 
@@ -3835,26 +4311,28 @@ class TwoDSpec:
         else:
             goodpixelmask = np.ones_like(frame, dtype=bool)
 
-        goodpixelmask *= (np.isfinite(frame) * np.isfinite(variance))
+        goodpixelmask *= np.isfinite(frame) * np.isfinite(variance)
 
         variance[~goodpixelmask] = frame[goodpixelmask].max() * 1e9
         spectral_size, spatial_size = frame.shape
 
         # (my 3a: mask any bad values)
         bad_residual_frame_mask = ~np.isfinite(residual_frame)
-        residual_frame[bad_residual_frame_mask] = 0.
+        residual_frame[bad_residual_frame_mask] = 0.0
         if np.any(bad_residual_frame_mask.nonzero()):
             self.logger.warning(
                 "Found bad residual_frame values at: {}".format(
-                    bad_residual_frame_mask.nonzero()))
+                    bad_residual_frame_mask.nonzero()
+                )
+            )
 
         skysubFrame = frame - residual_frame
-        '''
+        """
         # Interpolate and fix bad pixels for extraction of standard
         # spectrum -- otherwise there can be 'holes' in the spectrum from
         # ill-placed bad pixels.
         fixSkysubFrame = bfixpix(skysubFrame, ~goodpixelmask, n=8, retdat=True)
-        '''
+        """
 
         # Define new indices (in Marsh's appendix):
         N = pord + 1
@@ -3867,32 +4345,42 @@ class TwoDSpec:
 
         ii = np.arange(spatial_size)  # column (i.e., spatial direction)
         jjnorm = np.linspace(-1, 1, spectral_size)  # normalized X-coordinate
-        jjnorm_pow = jjnorm.reshape(
-            1, 1,
-            spectral_size)**(np.arange(2 * N - 1).reshape(2 * N - 1, 1, 1))
+        jjnorm_pow = jjnorm.reshape(1, 1, spectral_size) ** (
+            np.arange(2 * N - 1).reshape(2 * N - 1, 1, 1)
+        )
 
         # Marsh eq. 9, defining centers of each polynomial:
-        constant = 0.  # What is it for???
-        poly_centers = np.array(trace).reshape(
-            spectral_size, 1) + polyspacing * np.arange(
-                -npoly / 2 + 1, npoly / 2 + 1) + constant
+        constant = 0.0  # What is it for???
+        poly_centers = (
+            np.array(trace).reshape(spectral_size, 1)
+            + polyspacing * np.arange(-npoly / 2 + 1, npoly / 2 + 1)
+            + constant
+        )
 
         # Marsh eq. 11, defining Q_kij    (via nearest-neighbor interpolation)
         #    Q_kij =  max(0, min(S, (S+1)/2 - abs(x_kj - i)))
-        if qmode == 'fast-nearest':  # Array-based nearest-neighbor mode.
-            Q = np.array([
-                np.zeros((npoly, spatial_size, spectral_size)),
-                np.array([
-                    polyspacing * np.ones(
-                        (npoly, spatial_size, spectral_size)),
-                    0.5 * (polyspacing + 1) - np.abs(
-                        (poly_centers -
-                         ii.reshape(spatial_size, 1, 1)).transpose(2, 0, 1))
-                ]).min(0)
-            ]).max(0)
+        if qmode == "fast-nearest":  # Array-based nearest-neighbor mode.
+            Q = np.array(
+                [
+                    np.zeros((npoly, spatial_size, spectral_size)),
+                    np.array(
+                        [
+                            polyspacing
+                            * np.ones((npoly, spatial_size, spectral_size)),
+                            0.5 * (polyspacing + 1)
+                            - np.abs(
+                                (
+                                    poly_centers
+                                    - ii.reshape(spatial_size, 1, 1)
+                                ).transpose(2, 0, 1)
+                            ),
+                        ]
+                    ).min(0),
+                ]
+            ).max(0)
 
-        elif qmode == 'slow-linear':  # Code is a mess, but it works.
-            invs = 1. / polyspacing
+        elif qmode == "slow-linear":  # Code is a mess, but it works.
+            invs = 1.0 / polyspacing
             poly_centers_over_s = poly_centers / polyspacing
             xps_mat = poly_centers + polyspacing
             xms_mat = poly_centers - polyspacing
@@ -3910,35 +4398,45 @@ class TwoDSpec:
                         xms = xms_mat[j, k]
 
                         if (ip05 <= xms) or (im05 >= xps):
-                            qval = 0.
+                            qval = 0.0
                         elif (im05) > xkj:
                             lim1 = im05
                             lim2 = min(ip05, xps)
-                            qval = (lim2 - lim1) * (1. + xkjs - 0.5 * invs *
-                                                    (lim1 + lim2))
+                            qval = (lim2 - lim1) * (
+                                1.0 + xkjs - 0.5 * invs * (lim1 + lim2)
+                            )
                         elif (ip05) < xkj:
                             lim1 = max(im05, xms)
                             lim2 = ip05
-                            qval = (lim2 - lim1) * (1. - xkjs + 0.5 * invs *
-                                                    (lim1 + lim2))
+                            qval = (lim2 - lim1) * (
+                                1.0 - xkjs + 0.5 * invs * (lim1 + lim2)
+                            )
                         else:
                             lim1 = max(im05, xms)
                             lim2 = min(ip05, xps)
-                            qval = lim2 - lim1 + invs * (
-                                xkj * (-xkj + lim1 + lim2) - 0.5 *
-                                (lim1 * lim1 + lim2 * lim2))
+                            qval = (
+                                lim2
+                                - lim1
+                                + invs
+                                * (
+                                    xkj * (-xkj + lim1 + lim2)
+                                    - 0.5 * (lim1 * lim1 + lim2 * lim2)
+                                )
+                            )
                         Q[k, i, j] = max(0, qval)
 
         # Code is a mess, but it's faster than 'slow' mode
-        elif qmode == 'fast-linear':
-            invs = 1. / polyspacing
+        elif qmode == "fast-linear":
+            invs = 1.0 / polyspacing
             xps_mat = poly_centers + polyspacing
             Q = np.zeros((npoly, spatial_size, spectral_size))
             for j in range(spectral_size):
-                xkj_vec = np.tile(poly_centers[j, :].reshape(npoly, 1),
-                                  (1, spatial_size))
-                xps_vec = np.tile(xps_mat[j, :].reshape(npoly, 1),
-                                  (1, spatial_size))
+                xkj_vec = np.tile(
+                    poly_centers[j, :].reshape(npoly, 1), (1, spatial_size)
+                )
+                xps_vec = np.tile(
+                    xps_mat[j, :].reshape(npoly, 1), (1, spatial_size)
+                )
                 xms_vec = xps_vec - 2 * polyspacing
 
                 ip05_vec = np.tile(np.arange(spatial_size) + 0.5, (npoly, 1))
@@ -3956,32 +4454,49 @@ class TwoDSpec:
                 n_ind33 = len(ind33[0])
 
                 if n_ind11 > 0:
-                    ind11_3d = ind11 + (np.ones(n_ind11, dtype=int) * j, )
+                    ind11_3d = ind11 + (np.ones(n_ind11, dtype=int) * j,)
                     lim2_ind11 = np.array(
-                        (ip05_vec[ind11], xps_vec[ind11])).min(0)
-                    Q[ind11_3d] = ((lim2_ind11 - im05_vec[ind11]) * invs *
-                                   (polyspacing + xkj_vec[ind11] - 0.5 *
-                                    (im05_vec[ind11] + lim2_ind11)))
+                        (ip05_vec[ind11], xps_vec[ind11])
+                    ).min(0)
+                    Q[ind11_3d] = (
+                        (lim2_ind11 - im05_vec[ind11])
+                        * invs
+                        * (
+                            polyspacing
+                            + xkj_vec[ind11]
+                            - 0.5 * (im05_vec[ind11] + lim2_ind11)
+                        )
+                    )
 
                 if n_ind22 > 0:
-                    ind22_3d = ind22 + (np.ones(n_ind22, dtype=int) * j, )
+                    ind22_3d = ind22 + (np.ones(n_ind22, dtype=int) * j,)
                     lim1_ind22 = np.array(
-                        (im05_vec[ind22], xms_vec[ind22])).max(0)
-                    Q[ind22_3d] = ((ip05_vec[ind22] - lim1_ind22) * invs *
-                                   (polyspacing - xkj_vec[ind22] + 0.5 *
-                                    (ip05_vec[ind22] + lim1_ind22)))
+                        (im05_vec[ind22], xms_vec[ind22])
+                    ).max(0)
+                    Q[ind22_3d] = (
+                        (ip05_vec[ind22] - lim1_ind22)
+                        * invs
+                        * (
+                            polyspacing
+                            - xkj_vec[ind22]
+                            + 0.5 * (ip05_vec[ind22] + lim1_ind22)
+                        )
+                    )
 
                 if n_ind33 > 0:
-                    ind33_3d = ind33 + (np.ones(n_ind33, dtype=int) * j, )
+                    ind33_3d = ind33 + (np.ones(n_ind33, dtype=int) * j,)
                     lim1_ind33 = np.array(
-                        (im05_vec[ind33], xms_vec[ind33])).max(0)
+                        (im05_vec[ind33], xms_vec[ind33])
+                    ).max(0)
                     lim2_ind33 = np.array(
-                        (ip05_vec[ind33], xps_vec[ind33])).min(0)
-                    Q[ind33_3d] = (
-                        (lim2_ind33 - lim1_ind33) + invs *
-                        (xkj_vec[ind33] *
-                         (-xkj_vec[ind33] + lim1_ind33 + lim2_ind33) - 0.5 *
-                         (lim1_ind33 * lim1_ind33 + lim2_ind33 * lim2_ind33)))
+                        (ip05_vec[ind33], xps_vec[ind33])
+                    ).min(0)
+                    Q[ind33_3d] = (lim2_ind33 - lim1_ind33) + invs * (
+                        xkj_vec[ind33]
+                        * (-xkj_vec[ind33] + lim1_ind33 + lim2_ind33)
+                        - 0.5
+                        * (lim1_ind33 * lim1_ind33 + lim2_ind33 * lim2_ind33)
+                    )
 
         # 'slow' Loop-based nearest-neighbor mode: requires less memory
         else:
@@ -3992,15 +4507,18 @@ class TwoDSpec:
                         Q[k, i, j] = max(
                             0,
                             min(
-                                polyspacing, 0.5 * (polyspacing + 1) -
-                                np.abs(poly_centers[j, k] - i)))
+                                polyspacing,
+                                0.5 * (polyspacing + 1)
+                                - np.abs(poly_centers[j, k] - i),
+                            ),
+                        )
 
         # Some quick math to find out which dat columns are important, and
         # which contain no useful spectral information:
         Qmask = Q.sum(0).transpose() > 0
         Qind = Qmask.transpose().nonzero()
         Q_cols = [Qind[0].min(), Qind[0].max()]
-        Qsm = Q[:, Q_cols[0]:Q_cols[1] + 1, :]
+        Qsm = Q[:, Q_cols[0] : Q_cols[1] + 1, :]
 
         # Prepar to iteratively clip outliers
         self.logger.info("Looking for bad pixel outliers.")
@@ -4013,18 +4531,24 @@ class TwoDSpec:
             # Compute pixel fractions (Marsh Eq. 5):
             #     (Note that values outside the desired polynomial region
             #     have Q=0, and so do not contribute to the fit)
-            invEvariance = (np.array(spectrum).reshape(spectral_size, 1)**2 /
-                            variance).transpose()
-            weightedE = (skysubFrame *
-                         np.array(spectrum).reshape(spectral_size, 1) /
-                         variance).transpose()  # E / var_E
-            invEvariance_subset = invEvariance[Q_cols[0]:Q_cols[1] + 1, :]
+            invEvariance = (
+                np.array(spectrum).reshape(spectral_size, 1) ** 2 / variance
+            ).transpose()
+            weightedE = (
+                skysubFrame
+                * np.array(spectrum).reshape(spectral_size, 1)
+                / variance
+            ).transpose()  # E / var_E
+            invEvariance_subset = invEvariance[Q_cols[0] : Q_cols[1] + 1, :]
 
             # Define X vector (Marsh Eq. A3):
             X = np.zeros(N * npoly)
             for q in qq:
-                X[q] = (weightedE[Q_cols[0]:Q_cols[1] + 1, :] *
-                        Qsm[kk[q], :, :] * jjnorm_pow[nn[q]]).sum()
+                X[q] = (
+                    weightedE[Q_cols[0] : Q_cols[1] + 1, :]
+                    * Qsm[kk[q], :, :]
+                    * jjnorm_pow[nn[q]]
+                ).sum()
             """
             # The unoptimised way to compute the X vector:
             X2 = np.zeros(N * npoly)
@@ -4050,12 +4574,15 @@ class TwoDSpec:
                 qp = Qsm[ll[p], :, :]
                 for q in qq:
                     #  Check that we need to compute C:
-                    if np.abs(kk[q] - ll[p]) <= (1. / polyspacing + buffer):
+                    if np.abs(kk[q] - ll[p]) <= (1.0 / polyspacing + buffer):
                         if q >= p:
                             # Only compute over non-zero columns:
-                            C[q, p] = (Qsm[kk[q], :, :] * qp *
-                                       jjnorm_pow[nn[q] + mm[p]] *
-                                       invEvariance_subset).sum()
+                            C[q, p] = (
+                                Qsm[kk[q], :, :]
+                                * qp
+                                * jjnorm_pow[nn[q] + mm[p]]
+                                * invEvariance_subset
+                            ).sum()
                         if q > p:
                             C[p, q] = C[q, p]
 
@@ -4071,8 +4598,9 @@ class TwoDSpec:
             # (Marsh Eq. 8)
             Gsoln = np.zeros((npoly, spectral_size))
             for n in range(npoly):
-                Gsoln[n] = np.polyval(Asoln[n, ::-1],
-                                      jjnorm)  # reorder polynomial coef.
+                Gsoln[n] = np.polyval(
+                    Asoln[n, ::-1], jjnorm
+                )  # reorder polynomial coef.
 
             # Compute the profile (Marsh eq. 6) and normalize it:
             profile = np.zeros((spatial_size, spectral_size))
@@ -4081,29 +4609,33 @@ class TwoDSpec:
 
             self.logger.debug(profile)
             if profile.min() < 0:
-                profile[profile < 0] = 0.
+                profile[profile < 0] = 0.0
             profile /= np.nansum(profile, axis=0)
-            profile[~np.isfinite(profile)] = 0.
+            profile[~np.isfinite(profile)] = 0.0
 
             # Step6: Revise variance estimates
-            modelSpectrum = np.array(spectrum).reshape(
-                spectral_size, 1) * profile.transpose()
+            modelSpectrum = (
+                np.array(spectrum).reshape(spectral_size, 1)
+                * profile.transpose()
+            )
             modelData = modelSpectrum + residual_frame
             variance0 = np.abs(modelData) + readnoise**2
             variance = variance0 / (
                 goodpixelmask + 1e-9
             )  # De-weight bad pixels, avoiding infinite variance
 
-            outlierVariances = (frame - modelData)**2 / variance
+            outlierVariances = (frame - modelData) ** 2 / variance
 
             if outlierVariances.max() > cosmicray_sigma**2:
                 newBadPixels = True
                 # nreject-counting on pixels within the spectral trace
                 maxRejectedValue = max(
                     cosmicray_sigma**2,
-                    np.sort(outlierVariances[Qmask])[-nreject])
-                worstOutliers = (outlierVariances >=
-                                 maxRejectedValue).nonzero()
+                    np.sort(outlierVariances[Qmask])[-nreject],
+                )
+                worstOutliers = (
+                    outlierVariances >= maxRejectedValue
+                ).nonzero()
                 goodpixelmask[worstOutliers] = False
                 numberRejected = len(worstOutliers[0])
             else:
@@ -4111,7 +4643,8 @@ class TwoDSpec:
                 numberRejected = 0
 
             self.logger.info(
-                "Rejected {} pixels in this iteration.".format(numberRejected))
+                "Rejected {} pixels in this iteration.".format(numberRejected)
+            )
 
             # Optimal Spectral Extraction: (Horne, Step 8)
             spectrum_marsh = np.zeros(spectral_size)
@@ -4120,18 +4653,18 @@ class TwoDSpec:
 
             for i in range(spectral_size):
                 aperture = np.arange(
-                    int(trace[i]) - width_dn,
-                    int(trace[i]) + width_up + 1).astype(int)
+                    int(trace[i]) - width_dn, int(trace[i]) + width_up + 1
+                ).astype(int)
 
                 # Horne86 notation
                 P = profile[aperture, i]
                 V = variance0[i, aperture]
                 D = skysubFrame[i, aperture]
 
-                denom = np.nansum(P**2. / V)
+                denom = np.nansum(P**2.0 / V)
 
                 if denom == 0:
-                    spectrum_marsh[i] = 0.
+                    spectrum_marsh[i] = 0.0
                     spectrum_err_marsh[i] = 9e9
                 else:
                     spectrum_marsh[i] = np.nansum(P / V * D) / denom
@@ -4141,24 +4674,32 @@ class TwoDSpec:
         spectrum_marsh = spectrum_marsh
         spectrum_err_marsh = spectrum_err_marsh
 
-        self.logger.debug('The signal and noise from the tophat extraction '
-                          'are {} and {}.'.format(spectrum_marsh,
-                                                  spectrum_err_marsh))
+        self.logger.debug(
+            "The signal and noise from the tophat extraction "
+            "are {} and {}.".format(spectrum_marsh, spectrum_err_marsh)
+        )
 
-        return (spectrum_marsh, spectrum_err_marsh, is_optimal, profile,
-                variance0)
+        return (
+            spectrum_marsh,
+            spectrum_err_marsh,
+            is_optimal,
+            profile,
+            variance0,
+        )
 
-    def inspect_extracted_spectrum(self,
-                                   spec_id=None,
-                                   display=True,
-                                   renderer='default',
-                                   width=1280,
-                                   height=720,
-                                   return_jsonstring=False,
-                                   save_fig=False,
-                                   fig_type='iframe+png',
-                                   filename=None,
-                                   open_iframe=False):
+    def inspect_extracted_spectrum(
+        self,
+        spec_id=None,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
         """
         Parameters
         ----------
@@ -4196,9 +4737,10 @@ class TwoDSpec:
 
         if spec_id is not None:
 
-            assert np.in1d(spec_id,
-                           list(self.spectrum_list.keys())).all(), 'Some '
-            'spec_id provided are not in the spectrum_list.'
+            assert np.in1d(
+                spec_id, list(self.spectrum_list.keys())
+            ).all(), "Some "
+            "spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -4216,102 +4758,127 @@ class TwoDSpec:
             count_sky = np.array(spec.count_sky)
 
             fig = go.Figure(
-                layout=dict(autosize=False, height=height, width=width))
+                layout=dict(autosize=False, height=height, width=width)
+            )
 
             # plot the SNR
             fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=count / count_err,
-                           xaxis='x2',
-                           yaxis='y3',
-                           line=dict(color='slategrey'),
-                           name='Signal-to-Noise Ratio'))
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=count / count_err,
+                    xaxis="x2",
+                    yaxis="y3",
+                    line=dict(color="slategrey"),
+                    name="Signal-to-Noise Ratio",
+                )
+            )
 
             # extrated source, sky and uncertainty
             fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=count_sky,
-                           xaxis='x2',
-                           yaxis='y2',
-                           line=dict(color='firebrick'),
-                           name='Sky e- count / s'))
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=count_sky,
+                    xaxis="x2",
+                    yaxis="y2",
+                    line=dict(color="firebrick"),
+                    name="Sky e- count / s",
+                )
+            )
             fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=count_err,
-                           xaxis='x2',
-                           yaxis='y2',
-                           line=dict(color='orange'),
-                           name='Uncertainty e- count / s'))
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=count_err,
+                    xaxis="x2",
+                    yaxis="y2",
+                    line=dict(color="orange"),
+                    name="Uncertainty e- count / s",
+                )
+            )
             fig.add_trace(
-                go.Scatter(x=np.arange(len_trace),
-                           y=count,
-                           xaxis='x2',
-                           yaxis='y2',
-                           line=dict(color='royalblue'),
-                           name='Target e- count / s'))
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=count,
+                    xaxis="x2",
+                    yaxis="y2",
+                    line=dict(color="royalblue"),
+                    name="Target e- count / s",
+                )
+            )
 
             # Decorative stuff
-            fig.update_layout(yaxis2=dict(
-                range=[
-                    min(
-                        np.nanmin(sigma_clip(count, sigma=5., masked=False)),
-                        np.nanmin(sigma_clip(count_err, sigma=5.,
-                                             masked=False)),
-                        np.nanmin(sigma_clip(count_sky, sigma=5.,
-                                             masked=False)), 1),
-                    max(np.nanmax(count), np.nanmax(count_sky))
-                ],
-                zeroline=False,
-                domain=[0, 1.0],
-                showgrid=True,
-                title='Count / s',
-            ),
-                              yaxis3=dict(title='S/N ratio',
-                                          anchor="x2",
-                                          overlaying="y2",
-                                          side="right"),
-                              xaxis2=dict(title='Dispersion Direction / pixel',
-                                          anchor="y2",
-                                          matches="x"),
-                              legend=go.layout.Legend(x=0,
-                                                      y=0.45,
-                                                      traceorder="normal",
-                                                      font=dict(
-                                                          family="sans-serif",
-                                                          size=12,
-                                                          color="black"),
-                                                      bgcolor='rgba(0,0,0,0)'),
-                              bargap=0,
-                              hovermode='closest',
-                              showlegend=True)
+            fig.update_layout(
+                yaxis2=dict(
+                    range=[
+                        min(
+                            np.nanmin(
+                                sigma_clip(count, sigma=5.0, masked=False)
+                            ),
+                            np.nanmin(
+                                sigma_clip(count_err, sigma=5.0, masked=False)
+                            ),
+                            np.nanmin(
+                                sigma_clip(count_sky, sigma=5.0, masked=False)
+                            ),
+                            1,
+                        ),
+                        max(np.nanmax(count), np.nanmax(count_sky)),
+                    ],
+                    zeroline=False,
+                    domain=[0, 1.0],
+                    showgrid=True,
+                    title="Count / s",
+                ),
+                yaxis3=dict(
+                    title="S/N ratio",
+                    anchor="x2",
+                    overlaying="y2",
+                    side="right",
+                ),
+                xaxis2=dict(
+                    title="Dispersion Direction / pixel",
+                    anchor="y2",
+                    matches="x",
+                ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=0.45,
+                    traceorder="normal",
+                    font=dict(family="sans-serif", size=12, color="black"),
+                    bgcolor="rgba(0,0,0,0)",
+                ),
+                bargap=0,
+                hovermode="closest",
+                showlegend=True,
+            )
 
             if filename is None:
 
-                filename = 'extracted_spectrum'
+                filename = "extracted_spectrum"
 
             if save_fig:
 
-                fig_type_split = fig_type.split('+')
+                fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
 
-                    save_path = filename + '_' + str(j) + '.' + t
+                    save_path = filename + "_" + str(j) + "." + t
 
-                    if t == 'iframe':
+                    if t == "iframe":
 
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
-                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+                    elif t in ["jpg", "png", "svg", "pdf"]:
 
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
-                        'Figure is saved to {} '.format(save_path) +
-                        'for spec_id: {}.'.format(j))
+                        "Figure is saved to {} ".format(save_path)
+                        + "for spec_id: {}.".format(j)
+                    )
 
             if display:
 
-                if renderer == 'default':
+                if renderer == "default":
 
                     fig.show()
 
@@ -4327,18 +4894,20 @@ class TwoDSpec:
 
             return to_return
 
-    def inspect_residual(self,
-                         log=True,
-                         display=True,
-                         renderer='default',
-                         width=1280,
-                         height=720,
-                         return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
-                         filename=None,
-                         open_iframe=False):
-        '''
+    def inspect_residual(
+        self,
+        log=True,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         Display the reduced image with a supported plotly renderer or export
         as json strings.
 
@@ -4374,24 +4943,30 @@ class TwoDSpec:
         -------
         JSON strings if return_jsonstring is set to True.
 
-        '''
+        """
 
         if log:
 
-            fig = go.Figure(data=go.Heatmap(z=np.log10(self.img_residual),
-                                            colorscale="Viridis"))
+            fig = go.Figure(
+                data=go.Heatmap(
+                    z=np.log10(self.img_residual), colorscale="Viridis"
+                )
+            )
         else:
 
             fig = go.Figure(
-                data=go.Heatmap(z=self.img_residual, colorscale="Viridis"))
+                data=go.Heatmap(z=self.img_residual, colorscale="Viridis")
+            )
 
         fig.update_layout(
-            yaxis_title='Spatial Direction / pixel',
-            xaxis=dict(zeroline=False,
-                       showgrid=False,
-                       title='Spectral Direction / pixel'),
+            yaxis_title="Spatial Direction / pixel",
+            xaxis=dict(
+                zeroline=False,
+                showgrid=False,
+                title="Spectral Direction / pixel",
+            ),
             bargap=0,
-            hovermode='closest',
+            hovermode="closest",
             showlegend=False,
             autosize=False,
             height=height,
@@ -4400,27 +4975,27 @@ class TwoDSpec:
 
         if filename is None:
 
-            filename = 'residual_image'
+            filename = "residual_image"
 
         if save_fig:
 
-            fig_type_split = fig_type.split('+')
+            fig_type_split = fig_type.split("+")
 
             for t in fig_type_split:
 
-                if t == 'iframe':
+                if t == "iframe":
 
-                    pio.write_html(fig,
-                                   filename + '.' + t,
-                                   auto_open=open_iframe)
+                    pio.write_html(
+                        fig, filename + "." + t, auto_open=open_iframe
+                    )
 
-                elif t in ['jpg', 'png', 'svg', 'pdf']:
+                elif t in ["jpg", "png", "svg", "pdf"]:
 
-                    pio.write_image(fig, filename + '.' + t)
+                    pio.write_image(fig, filename + "." + t)
 
         if display:
 
-            if renderer == 'default':
+            if renderer == "default":
 
                 fig.show()
 
@@ -4432,19 +5007,21 @@ class TwoDSpec:
 
             return fig.to_json()
 
-    def extract_arc_spec(self,
-                         spec_id=None,
-                         spec_width=None,
-                         display=False,
-                         renderer='default',
-                         width=1280,
-                         height=720,
-                         return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
-                         filename=None,
-                         open_iframe=False):
-        '''
+    def extract_arc_spec(
+        self,
+        spec_id=None,
+        spec_width=None,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         This function applies the trace(s) to the arc image then take median
         average of the stripe before identifying the arc lines (peaks) with
         scipy.signal.find_peaks(), where only the distance and the prominence
@@ -4486,7 +5063,7 @@ class TwoDSpec:
         open_iframe: bool
             Open the iframe in the default browser if set to True.
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -4496,7 +5073,7 @@ class TwoDSpec:
 
             if spec_id not in list(self.spectrum_list.keys()):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4507,9 +5084,11 @@ class TwoDSpec:
 
         if self.arc is None:
 
-            error_msg = 'arc is not provided. Please provide arc by ' +\
-                'using add_arc() or with from_twodspec() before ' +\
-                'executing find_arc_lines().'
+            error_msg = (
+                "arc is not provided. Please provide arc by "
+                + "using add_arc() or with from_twodspec() before "
+                + "executing find_arc_lines()."
+            )
             self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
@@ -4523,15 +5102,18 @@ class TwoDSpec:
             trace = np.nanmean(spec.trace)
             if spec_width is None:
 
-                trace_width = np.nanmean(spec.trace_sigma) * 3.
+                trace_width = np.nanmean(spec.trace_sigma) * 3.0
 
             else:
 
                 trace_width = spec_width
 
             arc_trace = self.arc[
-                max(0, int(trace - trace_width -
-                           1)):min(int(trace + trace_width), len_trace), :]
+                max(0, int(trace - trace_width - 1)) : min(
+                    int(trace + trace_width), len_trace
+                ),
+                :,
+            ]
             arc_spec = np.nanmedian(arc_trace, axis=0)
 
             spec.add_arc_spec(list(arc_spec))
@@ -4541,53 +5123,63 @@ class TwoDSpec:
             if save_fig or display or return_jsonstring:
 
                 fig = go.Figure(
-                    layout=dict(autosize=False, height=height, width=width))
+                    layout=dict(autosize=False, height=height, width=width)
+                )
 
                 fig.add_trace(
-                    go.Scatter(x=np.arange(len_trace),
-                               y=arc_spec,
-                               mode='lines',
-                               line=dict(color='royalblue', width=1)))
+                    go.Scatter(
+                        x=np.arange(len_trace),
+                        y=arc_spec,
+                        mode="lines",
+                        line=dict(color="royalblue", width=1),
+                    )
+                )
 
-                fig.update_layout(xaxis=dict(
-                    zeroline=False,
-                    range=[0, len_trace],
-                    title='Dispersion Direction / pixel'),
-                                  yaxis=dict(zeroline=False,
-                                             range=[0, max(arc_spec)],
-                                             title='e- count / s'),
-                                  hovermode='closest',
-                                  showlegend=False)
+                fig.update_layout(
+                    xaxis=dict(
+                        zeroline=False,
+                        range=[0, len_trace],
+                        title="Dispersion Direction / pixel",
+                    ),
+                    yaxis=dict(
+                        zeroline=False,
+                        range=[0, max(arc_spec)],
+                        title="e- count / s",
+                    ),
+                    hovermode="closest",
+                    showlegend=False,
+                )
 
                 if filename is None:
 
-                    filename = 'arc_spec'
+                    filename = "arc_spec"
 
                 if save_fig:
 
-                    fig_type_split = fig_type.split('+')
+                    fig_type_split = fig_type.split("+")
 
                     for t in fig_type_split:
 
-                        save_path = filename + '_' + str(i) + '.' + t
+                        save_path = filename + "_" + str(i) + "." + t
 
-                        if t == 'iframe':
+                        if t == "iframe":
 
-                            pio.write_html(fig,
-                                           save_path,
-                                           auto_open=open_iframe)
+                            pio.write_html(
+                                fig, save_path, auto_open=open_iframe
+                            )
 
-                        elif t in ['jpg', 'png', 'svg', 'pdf']:
+                        elif t in ["jpg", "png", "svg", "pdf"]:
 
                             pio.write_image(fig, save_path)
 
                         self.logger.info(
-                            'Figure is saved to {} '.format(save_path) +
-                            'for spec_id: {}.'.format(i))
+                            "Figure is saved to {} ".format(save_path)
+                            + "for spec_id: {}.".format(i)
+                        )
 
                 if display:
 
-                    if renderer == 'default':
+                    if renderer == "default":
 
                         fig.show()
 
@@ -4604,7 +5196,7 @@ class TwoDSpec:
             return to_return
 
     def create_fits(self, output, recreate=False, empty_primary_hdu=True):
-        '''
+        """
         Parameters
         ----------
         output: String
@@ -4627,13 +5219,13 @@ class TwoDSpec:
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
 
-        '''
+        """
 
-        for i in output.split('+'):
+        for i in output.split("+"):
 
-            if i not in ['trace', 'count']:
+            if i not in ["trace", "count"]:
 
-                error_msg = '{} is not a valid output.'.format(i)
+                error_msg = "{} is not a valid output.".format(i)
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4643,16 +5235,19 @@ class TwoDSpec:
             self.spectrum_list[i].create_fits(
                 output=output,
                 recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu)
-            self.logger.info('FITS file is created for spec_id: {}.'.format(i))
+                empty_primary_hdu=empty_primary_hdu,
+            )
+            self.logger.info("FITS file is created for spec_id: {}.".format(i))
 
-    def save_fits(self,
-                  output='trace+count',
-                  filename='TwoDSpecExtracted',
-                  overwrite=False,
-                  recreate=False,
-                  empty_primary_hdu=True):
-        '''
+    def save_fits(
+        self,
+        output="trace+count",
+        filename="TwoDSpecExtracted",
+        overwrite=False,
+        recreate=False,
+        empty_primary_hdu=True,
+    ):
+        """
         Save the reduced image to disk.
 
         Parameters
@@ -4682,28 +5277,31 @@ class TwoDSpec:
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
 
-        '''
+        """
 
         filename = os.path.splitext(filename)[0]
 
-        for i in output.split('+'):
+        for i in output.split("+"):
 
-            if i not in ['trace', 'count']:
+            if i not in ["trace", "count"]:
 
-                error_msg = '{} is not a valid output.'.format(i)
+                error_msg = "{} is not a valid output.".format(i)
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file
         for i in range(len(self.spectrum_list)):
 
-            filename_i = filename + '_' + output + '_' + str(i)
+            filename_i = filename + "_" + output + "_" + str(i)
 
             self.spectrum_list[i].save_fits(
                 output=output,
                 filename=filename_i,
                 overwrite=overwrite,
                 recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu)
-            self.logger.info('FITS file is saved to {} '.format(filename_i) +
-                             'for spec_id: {}.'.format(i))
+                empty_primary_hdu=empty_primary_hdu,
+            )
+            self.logger.info(
+                "FITS file is saved to {} ".format(filename_i)
+                + "for spec_id: {}.".format(i)
+            )

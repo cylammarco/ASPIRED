@@ -34,21 +34,22 @@ def test_spectrum1D():
     spec.remove_peaks_wave()
     assert spec.peaks_wave is None
 
-    spec.add_calibrator('lalala')
-    assert spec.calibrator == 'lalala'
+    spec.add_calibrator("lalala")
+    assert spec.calibrator == "lalala"
     spec.remove_calibrator()
     assert spec.calibrator is None
 
-    spec.add_atlas_wavelength_range(min_atlas_wavelength=1000.,
-                                    max_atlas_wavelength=10000.)
-    assert spec.min_atlas_wavelength == 1000.
-    assert spec.max_atlas_wavelength == 10000.
+    spec.add_atlas_wavelength_range(
+        min_atlas_wavelength=1000.0, max_atlas_wavelength=10000.0
+    )
+    assert spec.min_atlas_wavelength == 1000.0
+    assert spec.max_atlas_wavelength == 10000.0
     spec.remove_atlas_wavelength_range()
     assert spec.min_atlas_wavelength is None
     assert spec.max_atlas_wavelength is None
 
-    spec.add_min_atlas_intensity(123456.)
-    assert spec.min_atlas_intensity == 123456.
+    spec.add_min_atlas_intensity(123456.0)
+    assert spec.min_atlas_intensity == 123456.0
     spec.remove_min_atlas_intensity()
     assert spec.min_atlas_intensity is None
 
@@ -67,8 +68,8 @@ def test_spectrum1D():
     spec.remove_readnoise()
     assert spec.readnoise is None
 
-    spec.add_exptime(3600.)
-    assert spec.exptime == 3600.
+    spec.add_exptime(3600.0)
+    assert spec.exptime == 3600.0
     spec.remove_exptime()
     assert spec.exptime is None
 
@@ -82,10 +83,10 @@ def test_spectrum1D():
     spec.remove_seeing()
     assert spec.seeing is None
 
-    spec.add_weather_condition(pressure=123456.,
-                               temperature=279.3,
-                               relative_humidity=15.1)
-    assert spec.pressure == 123456.
+    spec.add_weather_condition(
+        pressure=123456.0, temperature=279.3, relative_humidity=15.1
+    )
+    assert spec.pressure == 123456.0
     assert spec.temperature == 279.3
     assert spec.relative_humidity == 15.1
     spec.remove_weather_condition()
@@ -93,8 +94,8 @@ def test_spectrum1D():
     assert spec.temperature is None
     assert spec.relative_humidity is None
 
-    spec.add_fit_type('leg')
-    assert spec.fit_type == 'leg'
+    spec.add_fit_type("leg")
+    assert spec.fit_type == "leg"
     spec.remove_fit_type()
     assert spec.fit_type is None
 
@@ -103,34 +104,38 @@ def test_spectrum1D():
     spec.remove_fit_coeff()
     assert spec.fit_coeff is None
 
-    spec.add_calibrator_properties(num_pix=1024,
-                                   pixel_list=np.arange(1024),
-                                   plotting_library='plotly',
-                                   log_level='info')
+    spec.add_calibrator_properties(
+        num_pix=1024,
+        pixel_list=np.arange(1024),
+        plotting_library="plotly",
+        log_level="info",
+    )
     assert spec.num_pix == 1024
     assert (spec.pixel_list == np.arange(1024)).all()
-    assert spec.plotting_library == 'plotly'
-    assert spec.log_level == 'info'
+    assert spec.plotting_library == "plotly"
+    assert spec.log_level == "info"
     spec.remove_calibrator_properties()
     assert spec.num_pix is None
     assert spec.pixel_list is None
     assert spec.plotting_library is None
     assert spec.log_level is None
 
-    spec.add_hough_properties(num_slopes=1000,
-                              xbins=120,
-                              ybins=250,
-                              min_wavelength=3000.,
-                              max_wavelength=7800.,
-                              range_tolerance=369.,
-                              linearity_tolerance=135.)
+    spec.add_hough_properties(
+        num_slopes=1000,
+        xbins=120,
+        ybins=250,
+        min_wavelength=3000.0,
+        max_wavelength=7800.0,
+        range_tolerance=369.0,
+        linearity_tolerance=135.0,
+    )
     assert spec.num_slopes == 1000
     assert spec.xbins == 120
     assert spec.ybins == 250
-    assert spec.min_wavelength == 3000.
-    assert spec.max_wavelength == 7800.
-    assert spec.range_tolerance == 369.
-    assert spec.linearity_tolerance == 135.
+    assert spec.min_wavelength == 3000.0
+    assert spec.max_wavelength == 7800.0
+    assert spec.range_tolerance == 369.0
+    assert spec.linearity_tolerance == 135.0
     spec.remove_hough_properties()
     assert spec.num_slopes is None
     assert spec.xbins is None
@@ -140,25 +145,27 @@ def test_spectrum1D():
     assert spec.range_tolerance is None
     assert spec.linearity_tolerance is None
 
-    spec.add_ransac_properties(sample_size=999,
-                               top_n_candidate=7,
-                               linear=True,
-                               filter_close=True,
-                               ransac_tolerance=5.,
-                               candidate_weighted=True,
-                               hough_weight=1.3,
-                               minimum_matches=5,
-                               minimum_peak_utilisation=80.,
-                               minimum_fit_error=0.1)
+    spec.add_ransac_properties(
+        sample_size=999,
+        top_n_candidate=7,
+        linear=True,
+        filter_close=True,
+        ransac_tolerance=5.0,
+        candidate_weighted=True,
+        hough_weight=1.3,
+        minimum_matches=5,
+        minimum_peak_utilisation=80.0,
+        minimum_fit_error=0.1,
+    )
     assert spec.sample_size == 999
     assert spec.top_n_candidate == 7
     assert spec.linear
     assert spec.filter_close
-    assert spec.ransac_tolerance == 5.
+    assert spec.ransac_tolerance == 5.0
     assert spec.candidate_weighted
     assert spec.hough_weight == 1.3
     assert spec.minimum_matches == 5
-    assert spec.minimum_peak_utilisation == 80.
+    assert spec.minimum_peak_utilisation == 80.0
     assert spec.minimum_fit_error == 0.1
     spec.remove_ransac_properties()
     assert spec.sample_size is None
@@ -172,13 +179,15 @@ def test_spectrum1D():
     assert spec.minimum_peak_utilisation is None
     assert spec.minimum_fit_error is None
 
-    spec.add_fit_output_final(fit_coeff=[1, 2, 5, 7, 10],
-                              matched_peaks=[0, 1, 2, 3],
-                              matched_atlas=[10, 11, 12, 13],
-                              rms=0.123456,
-                              residual=0.56789,
-                              peak_utilisation=87.67894,
-                              atlas_utilisation=51.7643)
+    spec.add_fit_output_final(
+        fit_coeff=[1, 2, 5, 7, 10],
+        matched_peaks=[0, 1, 2, 3],
+        matched_atlas=[10, 11, 12, 13],
+        rms=0.123456,
+        residual=0.56789,
+        peak_utilisation=87.67894,
+        atlas_utilisation=51.7643,
+    )
     assert spec.fit_coeff == [1, 2, 5, 7, 10]
     assert spec.matched_peaks == [0, 1, 2, 3]
     assert spec.matched_atlas == [10, 11, 12, 13]
@@ -195,13 +204,15 @@ def test_spectrum1D():
     assert spec.peak_utilisation is None
     assert spec.atlas_utilisation is None
 
-    spec.add_fit_output_rascal(fit_coeff=[1, 2, 5, 7, 10],
-                               matched_peaks=[0, 1, 2, 3],
-                               matched_atlas=[10, 11, 12, 13],
-                               rms=0.123456,
-                               residual=0.56789,
-                               peak_utilisation=87.67894,
-                               atlas_utilisation=51.7643)
+    spec.add_fit_output_rascal(
+        fit_coeff=[1, 2, 5, 7, 10],
+        matched_peaks=[0, 1, 2, 3],
+        matched_atlas=[10, 11, 12, 13],
+        rms=0.123456,
+        residual=0.56789,
+        peak_utilisation=87.67894,
+        atlas_utilisation=51.7643,
+    )
     assert spec.fit_coeff_rascal == [1, 2, 5, 7, 10]
     assert spec.matched_peaks == [0, 1, 2, 3]
     assert spec.matched_atlas == [10, 11, 12, 13]
@@ -218,13 +229,15 @@ def test_spectrum1D():
     assert spec.peak_utilisation_rascal is None
     assert spec.atlas_utilisation_rascal is None
 
-    spec.add_fit_output_refine(fit_coeff=[1, 2, 5, 7, 10],
-                               matched_peaks=[0, 1, 2, 3],
-                               matched_atlas=[10, 11, 12, 13],
-                               rms=0.123456,
-                               residual=0.56789,
-                               peak_utilisation=87.67894,
-                               atlas_utilisation=51.7643)
+    spec.add_fit_output_refine(
+        fit_coeff=[1, 2, 5, 7, 10],
+        matched_peaks=[0, 1, 2, 3],
+        matched_atlas=[10, 11, 12, 13],
+        rms=0.123456,
+        residual=0.56789,
+        peak_utilisation=87.67894,
+        atlas_utilisation=51.7643,
+    )
     assert spec.fit_coeff_refine == [1, 2, 5, 7, 10]
     assert spec.matched_peaks_refine == [0, 1, 2, 3]
     assert spec.matched_atlas_refine == [10, 11, 12, 13]
@@ -290,8 +303,9 @@ def test_spectrum1D():
     spec.remove_sensitivity_resampled()
     assert spec.sensitivity_resampled is None
 
-    spec.add_literature_standard(wave_literature=np.arange(456),
-                                 flux_literature=np.ones(789))
+    spec.add_literature_standard(
+        wave_literature=np.arange(456), flux_literature=np.ones(789)
+    )
     assert (spec.wave_literature == np.arange(456)).all()
     assert (spec.flux_literature == np.ones(789)).all()
     spec.remove_literature_standard()

@@ -1,68 +1,19 @@
 import copy
+import os
+
 import numpy as np
+
 from aspired import spectral_reduction
 from aspired.flux_calibration import FluxCalibration
-'''
-onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-onedspec.science_spectrum_list[0].add_wavelength(wave)
-onedspec.science_spectrum_list[0].add_flux(flux_sci, None, None)
-onedspec.science_spectrum_list[0].add_flux_continuum(flux_sci_continuum)
 
-fluxcal = FluxCalibration(log_file_name=None)
-telluric_func = fluxcal.get_telluric_profile(wave,
-                                                flux_std,
-                                                flux_std_continuum,
-                                                mask_range=[[495, 551],
-                                                            [700, 753],
-                                                            [848, 960]],
-                                                return_function=True)
-fluxcal.inspect_telluric_profile()
-
-onedspec.add_telluric_function(telluric_func)
-onedspec.get_telluric_profile()
-
-
-onedspec.inspect_telluric_profile(
-    display=True)
-onedspec.apply_telluric_correction()
-
-
-
-
-
-
-std_wave = np.load('test/test_data/std_wave.npy')
-std_flux = np.load('test/test_data/std_flux.npy')
-std_flux_continuum = np.load('test/test_data/std_flux_continuum.npy')
-sci_wave = np.load('test/test_data/sci_wave.npy')
-sci_flux = np.load('test/test_data/sci_flux.npy')
-sci_flux_continuum = np.load('test/test_data/sci_flux_continuum.npy')
-
-onedspec = spectral_reduction.OneDSpec(log_file_name=None)
-onedspec.science_spectrum_list[0].add_wavelength(sci_wave)
-onedspec.science_spectrum_list[0].add_flux(sci_flux, None, None)
-onedspec.science_spectrum_list[0].add_flux_continuum(sci_flux_continuum)
-
-fluxcal = FluxCalibration(log_file_name=None)
-telluric_func = fluxcal.get_telluric_profile(std_wave,
-                                                std_flux,
-                                                std_flux_continuum,
-                                                return_function=True)
-
-onedspec.add_telluric_function(telluric_func)
-onedspec.get_telluric_profile(auto_apply=False)
-onedspec.inspect_telluric_profile(
-    display=True)
-
-
-'''
+HERE = os.path.dirname(os.path.realpath(__file__))
 
 
 def test_telluric_square_wave():
 
-    wave = np.arange(1000.)
-    flux_sci = np.ones(1000) * 5.
-    flux_std = np.ones(1000) * 100.
+    wave = np.arange(1000.0)
+    flux_sci = np.ones(1000) * 5.0
+    flux_std = np.ones(1000) * 100.0
 
     flux_sci_continuum = copy.deepcopy(flux_sci)
     flux_std_continuum = copy.deepcopy(flux_std)
@@ -77,52 +28,58 @@ def test_telluric_square_wave():
 
     # Get the telluric profile
     fluxcal = FluxCalibration(log_file_name=None)
-    telluric_func = fluxcal.get_telluric_profile(wave,
-                                                 flux_std,
-                                                 flux_std_continuum,
-                                                 mask_range=[[495, 551],
-                                                             [700, 753],
-                                                             [848, 960]],
-                                                 return_function=True)
+    telluric_func = fluxcal.get_telluric_profile(
+        wave,
+        flux_std,
+        flux_std_continuum,
+        mask_range=[[495, 551], [700, 753], [848, 960]],
+        return_function=True,
+    )
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.science_spectrum_list[0].add_wavelength(wave)
     onedspec.science_spectrum_list[0].add_flux(flux_sci, None, None)
     onedspec.science_spectrum_list[0].add_flux_continuum(flux_sci_continuum)
-    #onedspec.fluxcal.spectrum1D.add_wavelength(wave)
-    #onedspec.fluxcal.spectrum1D.add_flux(flux_std, None, None)
-    #onedspec.fluxcal.spectrum1D.add_flux_continuum(flux_std_continuum)
+    # onedspec.fluxcal.spectrum1D.add_wavelength(wave)
+    # onedspec.fluxcal.spectrum1D.add_flux(flux_std, None, None)
+    # onedspec.fluxcal.spectrum1D.add_flux_continuum(flux_std_continuum)
 
-    onedspec.add_telluric_function(telluric_func, stype='science')
+    onedspec.add_telluric_function(telluric_func, stype="science")
     onedspec.get_telluric_correction()
     onedspec.apply_telluric_correction()
 
-    assert np.isclose(np.nansum(onedspec.science_spectrum_list[0].flux),
-                      np.nansum(flux_sci_continuum),
-                      rtol=1e-2)
+    assert np.isclose(
+        np.nansum(onedspec.science_spectrum_list[0].flux),
+        np.nansum(flux_sci_continuum),
+        rtol=1e-2,
+    )
 
     onedspec.inspect_telluric_correction(
         display=False,
         return_jsonstring=True,
         save_fig=True,
-        fig_type='iframe+jpg+png+svg+pdf',
-        filename='test/test_output/test_telluric')
+        fig_type="iframe+jpg+png+svg+pdf",
+        filename=os.path.join(HERE, "test_output", "test_telluric"),
+    )
 
 
 def test_telluric_real_data():
-    std_wave = np.load('test/test_data/std_wave.npy')
-    std_flux = np.load('test/test_data/std_flux.npy')
-    std_flux_continuum = np.load('test/test_data/std_flux_continuum.npy')
-    sci_wave = np.load('test/test_data/sci_wave.npy')
-    sci_flux = np.load('test/test_data/sci_flux.npy')
-    sci_flux_continuum = np.load('test/test_data/sci_flux_continuum.npy')
+    std_wave = np.load(os.path.join(HERE, "test_data", "std_wave.npy"))
+    std_flux = np.load(os.path.join(HERE, "test_data", "std_flux.npy"))
+    std_flux_continuum = np.load(
+        os.path.join(HERE, "test_data", "std_flux_continuum.npy")
+    )
+    sci_wave = np.load(os.path.join(HERE, "test_data", "sci_wave.npy"))
+    sci_flux = np.load(os.path.join(HERE, "test_data", "sci_flux.npy"))
+    sci_flux_continuum = np.load(
+        os.path.join(HERE, "test_data", "sci_flux_continuum.npy")
+    )
 
     # Get the telluric profile
     fluxcal = FluxCalibration(log_file_name=None)
-    telluric_func = fluxcal.get_telluric_profile(std_wave,
-                                                 std_flux,
-                                                 std_flux_continuum,
-                                                 return_function=True)
+    telluric_func = fluxcal.get_telluric_profile(
+        std_wave, std_flux, std_flux_continuum, return_function=True
+    )
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
     onedspec.science_spectrum_list[0].add_wavelength(sci_wave)
@@ -135,13 +92,16 @@ def test_telluric_real_data():
     onedspec.add_telluric_function(telluric_func)
     onedspec.apply_telluric_correction()
 
-    assert np.isclose(np.nansum(onedspec.science_spectrum_list[0].flux),
-                      np.nansum(sci_flux_continuum),
-                      rtol=1e-2)
+    assert np.isclose(
+        np.nansum(onedspec.science_spectrum_list[0].flux),
+        np.nansum(sci_flux_continuum),
+        rtol=1e-2,
+    )
 
     onedspec.inspect_telluric_profile(
         display=False,
         return_jsonstring=True,
         save_fig=True,
-        fig_type='iframe+jpg+png+svg+pdf',
-        filename='test/test_output/test_telluric')
+        fig_type="iframe+jpg+png+svg+pdf",
+        filename=os.path.join(HERE, "test_output", "test_telluric"),
+    )

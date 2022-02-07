@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -49,8 +49,4 @@ jobs:
       with:
         parallel: true
         flag-name: Test with pytest
-    - name: Coveralls
-      if: startsWith(matrix.os, 'ubuntu') && endsWith(matrix.python-version, 3.8)
-      uses: AndreMiras/coveralls-python-action@develop
-      with:
         github-token: ${{ secrets.COVERALL_TOKEN }}

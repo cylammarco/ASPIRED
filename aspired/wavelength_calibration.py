@@ -11,17 +11,19 @@ from scipy import signal
 
 from .spectrum1D import Spectrum1D
 
-__all__ = ['WavelengthCalibration']
+__all__ = ["WavelengthCalibration"]
 
 
-class WavelengthCalibration():
-    def __init__(self,
-                 verbose=True,
-                 logger_name='WavelengthCalibration',
-                 log_level='INFO',
-                 log_file_folder='default',
-                 log_file_name=None):
-        '''
+class WavelengthCalibration:
+    def __init__(
+        self,
+        verbose=True,
+        logger_name="WavelengthCalibration",
+        log_level="INFO",
+        log_file_folder="default",
+        log_file_name=None,
+    ):
+        """
         This is a wrapper for using RASCAL to perform wavelength calibration,
         which can handle arc lamps containing Xe, Cu, Ar, Hg, He, Th, Fe. This
         guarantees to provide something sensible or nothing at all. It will
@@ -63,7 +65,7 @@ class WavelengthCalibration():
             File name of the log, set to None to self.logger.warning to screen
             only.
 
-        '''
+        """
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
@@ -78,30 +80,33 @@ class WavelengthCalibration():
         elif log_level == "DEBUG":
             self.logger.setLevel(logging.DEBUG)
         else:
-            raise ValueError('Unknonw logging level.')
+            raise ValueError("Unknonw logging level.")
 
         formatter = logging.Formatter(
-            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
-            '%(message)s',
-            datefmt='%a, %d %b %Y %H:%M:%S')
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
+            "%(message)s",
+            datefmt="%a, %d %b %Y %H:%M:%S",
+        )
 
         if log_file_name is None:
             # Only print log to screen
             self.handler = logging.StreamHandler()
         else:
-            if log_file_name == 'default':
-                log_file_name = '{}_{}.log'.format(
+            if log_file_name == "default":
+                log_file_name = "{}_{}.log".format(
                     logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
+                )
             # Save log to file
-            if log_file_folder == 'default':
-                log_file_folder = ''
+            if log_file_folder == "default":
+                log_file_folder = ""
 
             self.handler = logging.FileHandler(
-                os.path.join(log_file_folder, log_file_name), 'a+')
+                os.path.join(log_file_folder, log_file_name), "a+"
+            )
 
         self.handler.setFormatter(formatter)
-        if (self.logger.hasHandlers()):
+        if self.logger.hasHandlers():
             self.logger.handlers.clear()
         self.logger.addHandler(self.handler)
 
@@ -111,21 +116,23 @@ class WavelengthCalibration():
         self.log_file_folder = log_file_folder
         self.log_file_name = log_file_name
 
-        self.spectrum1D = Spectrum1D(spec_id=0,
-                                     verbose=self.verbose,
-                                     logger_name=self.logger_name,
-                                     log_level=self.log_level,
-                                     log_file_folder=self.log_file_folder,
-                                     log_file_name=self.log_file_name)
+        self.spectrum1D = Spectrum1D(
+            spec_id=0,
+            verbose=self.verbose,
+            logger_name=self.logger_name,
+            log_level=self.log_level,
+            log_file_folder=self.log_file_folder,
+            log_file_name=self.log_file_name,
+        )
 
         self.polyval = {
-            'poly': np.polynomial.polynomial.polyval,
-            'leg': np.polynomial.legendre.legval,
-            'cheb': np.polynomial.chebyshev.chebval
+            "poly": np.polynomial.polynomial.polyval,
+            "leg": np.polynomial.legendre.legval,
+            "cheb": np.polynomial.chebyshev.chebval,
         }
 
     def from_spectrum1D(self, spectrum1D, merge=False, overwrite=False):
-        '''
+        """
         This function copies all the info from the spectrum1D, because users
         may supply different level/combination of reduction, everything is
         copied from the spectrum1D even though in most cases only a None
@@ -149,7 +156,7 @@ class WavelengthCalibration():
             Use with caution, as it removes the properties set before this
             function call.
 
-        '''
+        """
 
         # This DOES NOT modify the spectrum1D outside of WavelengthCalibration
         if merge:
@@ -159,7 +166,7 @@ class WavelengthCalibration():
             self.spectrum1D = spectrum1D
 
     def add_arc_lines(self, peaks):
-        '''
+        """
         Provide the pixel locations of the arc lines.
 
         Parameters
@@ -168,20 +175,20 @@ class WavelengthCalibration():
             The pixel locations of the arc lines. Multiple traces of the arc
             can be provided as list of list or list of arrays.
 
-        '''
+        """
 
         self.spectrum1D.add_peaks_refined(peaks)
 
     def remove_arc_lines(self):
-        '''
+        """
         Remove all the refined arc lines.
 
-        '''
+        """
 
         self.spectrum1D.remove_peaks_refined()
 
     def add_arc_spec(self, arc_spec):
-        '''
+        """
         Provide the 1D spectrum of the arc image.
 
         Parameters
@@ -189,20 +196,20 @@ class WavelengthCalibration():
         arc_spec: list
             The photoelectron count of the 1D arc spectrum.
 
-        '''
+        """
 
         self.spectrum1D.add_arc_spec(arc_spec)
 
     def remove_arc_spec(self):
-        '''
+        """
         Remove the aspectrm of the arc
 
-        '''
+        """
 
         self.spectrum1D.remove_arc_spec()
 
     def add_fit_type(self, fit_type):
-        '''
+        """
         Adding the polynomial type.
 
         Parameters
@@ -211,20 +218,20 @@ class WavelengthCalibration():
             Strings starting with 'poly', 'leg' or 'cheb' for polynomial,
             legendre and chebyshev fits. Case insensitive.
 
-        '''
+        """
 
         self.spectrum1D.add_fit_type(fit_type)
 
     def remove_fit_type(self):
-        '''
+        """
         To remove the polynomial fit type.
 
-        '''
+        """
 
         self.spectrum1D.remove_fit_type()
 
     def add_fit_coeff(self, fit_coeff):
-        '''
+        """
         Adding the polynomial coefficients.
 
         Parameters
@@ -232,35 +239,37 @@ class WavelengthCalibration():
         fit_coeff: list or list of list
             Polynomial fit coefficients.
 
-        '''
+        """
 
         self.spectrum1D.add_fit_coeff(fit_coeff)
 
     def remove_fit_coeff(self):
-        '''
+        """
         To remove the polynomial fit coefficients.
 
-        '''
+        """
 
         self.spectrum1D.remove_fit_coeff()
 
-    def find_arc_lines(self,
-                       arc_spec=None,
-                       prominence=5.,
-                       top_n_peaks=None,
-                       distance=5.,
-                       refine=True,
-                       refine_window_width=5,
-                       display=False,
-                       renderer='default',
-                       width=1280,
-                       height=720,
-                       return_jsonstring=False,
-                       save_fig=False,
-                       fig_type='iframe+png',
-                       filename=None,
-                       open_iframe=False):
-        '''
+    def find_arc_lines(
+        self,
+        arc_spec=None,
+        prominence=5.0,
+        top_n_peaks=None,
+        distance=5.0,
+        refine=True,
+        refine_window_width=5,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         This function identifies the arc lines (peaks) with
         scipy.signal.find_peaks(), where only the distance and the prominence
         keywords are used. Distance is the minimum separation between peaks,
@@ -316,56 +325,61 @@ class WavelengthCalibration():
         -------
         JSON strings if return_jsonstring is set to True.
 
-        '''
+        """
 
         if arc_spec is None:
 
-            if getattr(self.spectrum1D, 'arc_spec') is None:
+            if getattr(self.spectrum1D, "arc_spec") is None:
 
-                error_msg = 'arc_spec is not provided. Either provide when ' +\
-                    'executing this function or provide a spectrum1D that ' +\
-                    'contains an arc_spec.'
+                error_msg = (
+                    "arc_spec is not provided. Either provide when "
+                    + "executing this function or provide a spectrum1D that "
+                    + "contains an arc_spec."
+                )
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         else:
 
-            if getattr(self.spectrum1D, 'arc_spec') is not None:
+            if getattr(self.spectrum1D, "arc_spec") is not None:
 
-                self.logger.warning('arc_spec is replaced with the new one.')
+                self.logger.warning("arc_spec is replaced with the new one.")
 
-            setattr(self.spectrum1D, 'arc_spec', arc_spec)
+            setattr(self.spectrum1D, "arc_spec", arc_spec)
 
-        arc_spec = getattr(self.spectrum1D, 'arc_spec')
+        arc_spec = getattr(self.spectrum1D, "arc_spec")
 
         arc_spec -= np.nanmin(arc_spec)
         arc_spec /= np.nanmax(arc_spec)
 
-        peaks, prop = signal.find_peaks(arc_spec,
-                                        distance=distance,
-                                        prominence=prominence / 100.)
-        prom = prop['prominences']
+        peaks, prop = signal.find_peaks(
+            arc_spec, distance=distance, prominence=prominence / 100.0
+        )
+        prom = prop["prominences"]
         prom_sorted_arg = np.argsort(prom)[::-1]
 
         if isinstance(top_n_peaks, (int, float)):
 
-            peaks = peaks[prom_sorted_arg][:int(top_n_peaks)]
+            peaks = peaks[prom_sorted_arg][: int(top_n_peaks)]
 
         self.spectrum1D.add_peaks(peaks)
 
         # Fine tuning
         if refine:
 
-            peaks = refine_peaks(arc_spec,
-                                 getattr(self.spectrum1D, 'peaks'),
-                                 window_width=int(refine_window_width))
+            peaks = refine_peaks(
+                arc_spec,
+                getattr(self.spectrum1D, "peaks"),
+                window_width=int(refine_window_width),
+            )
             self.spectrum1D.add_peaks(peaks)
 
         # Adjust for chip gaps
-        if getattr(self.spectrum1D, 'pixel_mapping_itp') is not None:
+        if getattr(self.spectrum1D, "pixel_mapping_itp") is not None:
 
             self.spectrum1D.add_peaks_refined(
-                getattr(self.spectrum1D, 'pixel_mapping_itp')(peaks))
+                getattr(self.spectrum1D, "pixel_mapping_itp")(peaks)
+            )
 
         else:
 
@@ -374,51 +388,62 @@ class WavelengthCalibration():
         if save_fig or display or return_jsonstring:
 
             fig = go.Figure(
-                layout=dict(autosize=False, height=height, width=width))
+                layout=dict(autosize=False, height=height, width=width)
+            )
 
             fig.add_trace(
-                go.Scatter(x=np.arange(len(arc_spec)),
-                           y=arc_spec,
-                           mode='lines',
-                           line=dict(color='royalblue', width=1)))
+                go.Scatter(
+                    x=np.arange(len(arc_spec)),
+                    y=arc_spec,
+                    mode="lines",
+                    line=dict(color="royalblue", width=1),
+                )
+            )
             fig.add_trace(
-                go.Scatter(x=peaks,
-                           y=np.array(arc_spec)[np.rint(peaks).astype('int')],
-                           mode='markers',
-                           line=dict(color='firebrick', width=1)))
+                go.Scatter(
+                    x=peaks,
+                    y=np.array(arc_spec)[np.rint(peaks).astype("int")],
+                    mode="markers",
+                    line=dict(color="firebrick", width=1),
+                )
+            )
 
-            fig.update_layout(xaxis=dict(zeroline=False,
-                                         range=[0, len(arc_spec)],
-                                         title='Spectral Direction / pixel'),
-                              yaxis=dict(zeroline=False,
-                                         range=[0, max(arc_spec)],
-                                         title='e- / s'),
-                              hovermode='closest',
-                              showlegend=False)
+            fig.update_layout(
+                xaxis=dict(
+                    zeroline=False,
+                    range=[0, len(arc_spec)],
+                    title="Spectral Direction / pixel",
+                ),
+                yaxis=dict(
+                    zeroline=False, range=[0, max(arc_spec)], title="e- / s"
+                ),
+                hovermode="closest",
+                showlegend=False,
+            )
 
             if filename is None:
 
-                filename = 'arc_lines'
+                filename = "arc_lines"
 
             if save_fig:
 
-                fig_type_split = fig_type.split('+')
+                fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
 
-                    if t == 'iframe':
+                    if t == "iframe":
 
-                        pio.write_html(fig,
-                                       filename + '.' + t,
-                                       auto_open=open_iframe)
+                        pio.write_html(
+                            fig, filename + "." + t, auto_open=open_iframe
+                        )
 
-                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+                    elif t in ["jpg", "png", "svg", "pdf"]:
 
-                        pio.write_image(fig, filename + '.' + t)
+                        pio.write_image(fig, filename + "." + t)
 
             if display:
 
-                if renderer == 'default':
+                if renderer == "default":
 
                     fig.show()
 
@@ -431,7 +456,7 @@ class WavelengthCalibration():
                 return fig.to_json()
 
     def initialise_calibrator(self, peaks=None, arc_spec=None):
-        '''
+        """
         Initialise a RASCAL calibrator.
 
         Parameters
@@ -441,65 +466,73 @@ class WavelengthCalibration():
         arc_spec: list
             The spectral intensity as a function of pixel.
 
-        '''
+        """
 
         if peaks is None:
 
-            if getattr(self.spectrum1D, 'peaks_refined') is not None:
+            if getattr(self.spectrum1D, "peaks_refined") is not None:
 
-                peaks = getattr(self.spectrum1D, 'peaks_refined')
+                peaks = getattr(self.spectrum1D, "peaks_refined")
 
-            elif getattr(self.spectrum1D, 'peaks') is not None:
+            elif getattr(self.spectrum1D, "peaks") is not None:
 
-                peaks = getattr(self.spectrum1D, 'peaks')
+                peaks = getattr(self.spectrum1D, "peaks")
 
             else:
 
-                error_msg = 'arc_spec is not provided. Either provide when ' +\
-                    'executing this function or provide a spectrum1D that ' +\
-                    'contains a peaks_refined.'
+                error_msg = (
+                    "arc_spec is not provided. Either provide when "
+                    + "executing this function or provide a spectrum1D that "
+                    + "contains a peaks_refined."
+                )
                 self.logger.warning(error_msg)
 
         else:
 
-            if getattr(self.spectrum1D, 'peaks_refined') is not None:
+            if getattr(self.spectrum1D, "peaks_refined") is not None:
 
                 self.logger.warning(
-                    'peaks_refined is replaced with the new one.')
+                    "peaks_refined is replaced with the new one."
+                )
 
             self.spectrum1D.add_peaks_refined(peaks)
 
         if arc_spec is None:
 
-            if getattr(self.spectrum1D, 'arc_spec') is not None:
+            if getattr(self.spectrum1D, "arc_spec") is not None:
 
-                arc_spec = getattr(self.spectrum1D, 'arc_spec')
+                arc_spec = getattr(self.spectrum1D, "arc_spec")
 
             else:
 
-                error_msg = 'arc_spec is not provided. Either provide when ' +\
-                    'executing this function or provide a spectrum1D that ' +\
-                    'contains an arc_spec.'
+                error_msg = (
+                    "arc_spec is not provided. Either provide when "
+                    + "executing this function or provide a spectrum1D that "
+                    + "contains an arc_spec."
+                )
                 self.logger.warning(error_msg)
 
         else:
 
-            if getattr(self.spectrum1D, 'arc_spec') is not None:
+            if getattr(self.spectrum1D, "arc_spec") is not None:
 
-                self.logger.warning('arc_spec is replaced with the new one.')
+                self.logger.warning("arc_spec is replaced with the new one.")
 
             self.spectrum1D.add_arc_spec(arc_spec)
 
         self.spectrum1D.add_calibrator(
-            Calibrator(peaks=peaks, spectrum=arc_spec))
+            Calibrator(peaks=peaks, spectrum=arc_spec)
+        )
 
-    def set_calibrator_properties(self,
-                                  num_pix=None,
-                                  pixel_list=None,
-                                  plotting_library='plotly',
-                                  logger_name='Calibrator',
-                                  log_level='info'):
-        '''
+    def set_calibrator_properties(
+        self,
+        num_pix=None,
+        pixel_list=None,
+        plotting_library="plotly",
+        logger_name="Calibrator",
+        log_level="info",
+    ):
+        """
         Set the properties of the calibrator.
 
         Parameters
@@ -517,30 +550,34 @@ class WavelengthCalibration():
         log_level : string (Default: 'info')
             Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.set_calibrator_properties(
             num_pix=num_pix,
             pixel_list=pixel_list,
             plotting_library=plotting_library,
             logger_name=logger_name,
-            log_level=log_level)
+            log_level=log_level,
+        )
 
         self.spectrum1D.add_calibrator_properties(
             self.spectrum1D.calibrator.num_pix,
             self.spectrum1D.calibrator.pixel_list,
             self.spectrum1D.calibrator.plotting_library,
-            self.spectrum1D.calibrator.log_level)
+            self.spectrum1D.calibrator.log_level,
+        )
 
-    def set_hough_properties(self,
-                             num_slopes=5000,
-                             xbins=500,
-                             ybins=500,
-                             min_wavelength=3000,
-                             max_wavelength=9000,
-                             range_tolerance=500,
-                             linearity_tolerance=50):
-        '''
+    def set_hough_properties(
+        self,
+        num_slopes=5000,
+        xbins=500,
+        ybins=500,
+        min_wavelength=3000,
+        max_wavelength=9000,
+        range_tolerance=500,
+        linearity_tolerance=50,
+    ):
+        """
         Set the properties of the hough transform.
 
         Parameters
@@ -564,7 +601,7 @@ class WavelengthCalibration():
             range tolerance to allow for non-linearity. This should be the
             maximum expected excursion from linearity.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.set_hough_properties(
             num_slopes=num_slopes,
@@ -573,25 +610,33 @@ class WavelengthCalibration():
             min_wavelength=min_wavelength,
             max_wavelength=max_wavelength,
             range_tolerance=range_tolerance,
-            linearity_tolerance=linearity_tolerance)
+            linearity_tolerance=linearity_tolerance,
+        )
 
-        self.spectrum1D.add_hough_properties(num_slopes, xbins, ybins,
-                                             min_wavelength, max_wavelength,
-                                             range_tolerance,
-                                             linearity_tolerance)
+        self.spectrum1D.add_hough_properties(
+            num_slopes,
+            xbins,
+            ybins,
+            min_wavelength,
+            max_wavelength,
+            range_tolerance,
+            linearity_tolerance,
+        )
 
-    def set_ransac_properties(self,
-                              sample_size=5,
-                              top_n_candidate=5,
-                              linear=True,
-                              filter_close=False,
-                              ransac_tolerance=5,
-                              candidate_weighted=True,
-                              hough_weight=1.0,
-                              minimum_matches=3,
-                              minimum_peak_utilisation=0.,
-                              minimum_fit_error=1e-4):
-        '''
+    def set_ransac_properties(
+        self,
+        sample_size=5,
+        top_n_candidate=5,
+        linear=True,
+        filter_close=False,
+        ransac_tolerance=5,
+        candidate_weighted=True,
+        hough_weight=1.0,
+        minimum_matches=3,
+        minimum_peak_utilisation=0.0,
+        minimum_fit_error=1e-4,
+    ):
+        """
         Set the properties of the RANSAC process.
 
         Parameters
@@ -625,7 +670,7 @@ class WavelengthCalibration():
         minimum_fit_error: float (Default 1e-4)
             Set to remove overfitted/unrealistic fits.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.set_ransac_properties(
             sample_size=sample_size,
@@ -637,7 +682,8 @@ class WavelengthCalibration():
             hough_weight=hough_weight,
             minimum_matches=minimum_matches,
             minimum_peak_utilisation=minimum_peak_utilisation,
-            minimum_fit_error=minimum_fit_error)
+            minimum_fit_error=minimum_fit_error,
+        )
 
         self.spectrum1D.add_ransac_properties(
             sample_size=sample_size,
@@ -649,10 +695,11 @@ class WavelengthCalibration():
             hough_weight=hough_weight,
             minimum_matches=minimum_matches,
             minimum_peak_utilisation=minimum_peak_utilisation,
-            minimum_fit_error=minimum_fit_error)
+            minimum_fit_error=minimum_fit_error,
+        )
 
     def set_known_pairs(self, pix=None, wave=None):
-        '''
+        """
         Provide manual pixel-wavelength pair(s), they will be appended to the
         list of pixel-wavelength pairs after the random sample being drawn from
         the RANSAC step, i.e. they are ALWAYS PRESENT in the fitting step. Use
@@ -670,21 +717,23 @@ class WavelengthCalibration():
         wave : numeric value, list or numpy 1D array (N) (Default: None)
             The matching wavelength for each of the pix.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.set_known_pairs(pix=pix, wave=wave)
 
-    def add_user_atlas(self,
-                       elements,
-                       wavelengths,
-                       intensities=None,
-                       candidate_tolerance=10.,
-                       constrain_poly=False,
-                       vacuum=False,
-                       pressure=101325.,
-                       temperature=273.15,
-                       relative_humidity=0.):
-        '''
+    def add_user_atlas(
+        self,
+        elements,
+        wavelengths,
+        intensities=None,
+        candidate_tolerance=10.0,
+        constrain_poly=False,
+        vacuum=False,
+        pressure=101325.0,
+        temperature=273.15,
+        relative_humidity=0.0,
+    ):
+        """
         Append the user supplied arc lines to the calibrator.
 
         The vacuum to air wavelength conversion is deafult to False because
@@ -720,7 +769,7 @@ class WavelengthCalibration():
         relative_humidity: float (Default: 0.)
             In percentage.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.add_user_atlas(
             elements=elements,
@@ -731,24 +780,28 @@ class WavelengthCalibration():
             vacuum=vacuum,
             pressure=pressure,
             temperature=temperature,
-            relative_humidity=relative_humidity)
+            relative_humidity=relative_humidity,
+        )
 
-        self.spectrum1D.add_weather_condition(pressure, temperature,
-                                              relative_humidity)
+        self.spectrum1D.add_weather_condition(
+            pressure, temperature, relative_humidity
+        )
 
-    def add_atlas(self,
-                  elements,
-                  min_atlas_wavelength=1000.,
-                  max_atlas_wavelength=30000.,
-                  min_intensity=10.,
-                  min_distance=10.,
-                  candidate_tolerance=10.,
-                  constrain_poly=False,
-                  vacuum=False,
-                  pressure=101325.,
-                  temperature=273.15,
-                  relative_humidity=0.):
-        '''
+    def add_atlas(
+        self,
+        elements,
+        min_atlas_wavelength=1000.0,
+        max_atlas_wavelength=30000.0,
+        min_intensity=10.0,
+        min_distance=10.0,
+        candidate_tolerance=10.0,
+        constrain_poly=False,
+        vacuum=False,
+        pressure=101325.0,
+        temperature=273.15,
+        relative_humidity=0.0,
+    ):
+        """
         Adds an atlas of arc lines to the calibrator, given an element.
 
         Arc lines are taken from a general list of NIST lines and can be
@@ -796,7 +849,7 @@ class WavelengthCalibration():
         relative_humidity: float (Default: 0.)
             In percentage.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.add_atlas(
             elements=elements,
@@ -809,20 +862,23 @@ class WavelengthCalibration():
             vacuum=vacuum,
             pressure=pressure,
             temperature=temperature,
-            relative_humidity=relative_humidity)
+            relative_humidity=relative_humidity,
+        )
 
-        self.spectrum1D.add_atlas_wavelength_range(min_atlas_wavelength,
-                                                   max_atlas_wavelength)
+        self.spectrum1D.add_atlas_wavelength_range(
+            min_atlas_wavelength, max_atlas_wavelength
+        )
 
         self.spectrum1D.add_min_atlas_intensity(min_intensity)
 
         self.spectrum1D.add_min_atlas_distance(min_distance)
 
-        self.spectrum1D.add_weather_condition(pressure, temperature,
-                                              relative_humidity)
+        self.spectrum1D.add_weather_condition(
+            pressure, temperature, relative_humidity
+        )
 
-    def remove_atlas_lines_range(self, wavelength, tolerance=10.):
-        '''
+    def remove_atlas_lines_range(self, wavelength, tolerance=10.0):
+        """
         Remove arc lines within the given wavelength range (tolerance).
 
         Parameters
@@ -832,29 +888,30 @@ class WavelengthCalibration():
         tolerance: float
             Tolerance around this wavelength where atlas lines will be removed
 
-        '''
+        """
 
         self.spectrum1D.calibrator.remove_atlas_lines_range(
-            wavelength, tolerance=tolerance)
+            wavelength, tolerance=tolerance
+        )
 
     def list_atlas(self):
-        '''
+        """
         List all the lines loaded to the Calibrator.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.list_atlas()
 
     def clear_atlas(self):
-        '''
+        """
         Remove all the lines loaded to the Calibrator.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.clear_atlas()
 
     def do_hough_transform(self, brute_force=False):
-        '''
+        """
         ** brute_force is EXPERIMENTAL as of 1 Sept 2021 **
         The brute force method is supposed to provide all the possible
         solution, hence given a sufficiently large max_tries, the solution
@@ -871,21 +928,23 @@ class WavelengthCalibration():
             Set to true to compute the gradient and intercept between
             every two data points
 
-        '''
+        """
 
         self.spectrum1D.calibrator.do_hough_transform(brute_force=brute_force)
 
-    def plot_search_space(self,
-                          fit_coeff=None,
-                          top_n_candidate=3,
-                          weighted=True,
-                          save_fig=False,
-                          fig_type='iframe+png',
-                          filename=None,
-                          return_jsonstring=False,
-                          renderer='default',
-                          display=False):
-        '''
+    def plot_search_space(
+        self,
+        fit_coeff=None,
+        top_n_candidate=3,
+        weighted=True,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        return_jsonstring=False,
+        renderer="default",
+        display=False,
+    ):
+        """
         A wrapper function to plot the search space in the Hough space.
 
         If fit fit_coefficients are provided, the model solution will be
@@ -921,7 +980,7 @@ class WavelengthCalibration():
         ------
         json object if json is True.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.plot_search_space(
             fit_coeff=fit_coeff,
@@ -932,25 +991,28 @@ class WavelengthCalibration():
             filename=filename,
             return_jsonstring=return_jsonstring,
             renderer=renderer,
-            display=display)
+            display=display,
+        )
 
-    def fit(self,
-            max_tries=5000,
-            fit_deg=4,
-            fit_coeff=None,
-            fit_tolerance=10.,
-            fit_type='poly',
-            candidate_tolerance=2.,
-            brute_force=False,
-            progress=True,
-            return_jsonstring=False,
-            display=False,
-            renderer='default',
-            save_fig=False,
-            fig_type='iframe+png',
-            filename=None,
-            return_solution=True):
-        '''
+    def fit(
+        self,
+        max_tries=5000,
+        fit_deg=4,
+        fit_coeff=None,
+        fit_tolerance=10.0,
+        fit_type="poly",
+        candidate_tolerance=2.0,
+        brute_force=False,
+        progress=True,
+        return_jsonstring=False,
+        display=False,
+        renderer="default",
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        return_solution=True,
+    ):
+        """
         A wrapper function to perform wavelength calibration with RASCAL. As of
         14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
         `NIST <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
@@ -992,37 +1054,50 @@ class WavelengthCalibration():
             Filename for the output, all of them will share the same name but
             will have different extension.
 
-        '''
+        """
 
-        (fit_coeff, matched_peaks, matched_atlas, rms, residual,
-         peak_utilisation, atlas_utilisation) = self.spectrum1D.calibrator.fit(
-             max_tries=max_tries,
-             fit_deg=fit_deg,
-             fit_coeff=fit_coeff,
-             fit_tolerance=fit_tolerance,
-             fit_type=fit_type,
-             candidate_tolerance=candidate_tolerance,
-             brute_force=brute_force,
-             progress=progress)
+        (
+            fit_coeff,
+            matched_peaks,
+            matched_atlas,
+            rms,
+            residual,
+            peak_utilisation,
+            atlas_utilisation,
+        ) = self.spectrum1D.calibrator.fit(
+            max_tries=max_tries,
+            fit_deg=fit_deg,
+            fit_coeff=fit_coeff,
+            fit_tolerance=fit_tolerance,
+            fit_type=fit_type,
+            candidate_tolerance=candidate_tolerance,
+            brute_force=brute_force,
+            progress=progress,
+        )
 
-        if fit_type == 'poly':
+        if fit_type == "poly":
 
-            fit_type_rascal = 'poly'
+            fit_type_rascal = "poly"
 
-        if fit_type == 'legendre':
+        if fit_type == "legendre":
 
-            fit_type_rascal = 'leg'
+            fit_type_rascal = "leg"
 
-        if fit_type == 'chebyshev':
+        if fit_type == "chebyshev":
 
-            fit_type_rascal = 'cheb'
+            fit_type_rascal = "cheb"
 
         self.spectrum1D.add_fit_type(fit_type_rascal)
 
-        self.spectrum1D.add_fit_output_rascal(fit_coeff, matched_peaks,
-                                              matched_atlas, rms, residual,
-                                              peak_utilisation,
-                                              atlas_utilisation)
+        self.spectrum1D.add_fit_output_rascal(
+            fit_coeff,
+            matched_peaks,
+            matched_atlas,
+            rms,
+            residual,
+            peak_utilisation,
+            atlas_utilisation,
+        )
 
         if display or return_jsonstring or save_fig:
 
@@ -1036,30 +1111,40 @@ class WavelengthCalibration():
                 return_jsonstring=return_jsonstring,
                 renderer=renderer,
                 save_fig=save_fig,
-                fig_type=fig_type)
+                fig_type=fig_type,
+            )
 
         if return_solution:
 
-            return (fit_coeff, matched_peaks, matched_atlas, rms, residual,
-                    peak_utilisation, atlas_utilisation)
+            return (
+                fit_coeff,
+                matched_peaks,
+                matched_atlas,
+                rms,
+                residual,
+                peak_utilisation,
+                atlas_utilisation,
+            )
 
-    def robust_refit(self,
-                     fit_coeff,
-                     n_delta=None,
-                     refine=False,
-                     tolerance=10.,
-                     method='Nelder-Mead',
-                     convergence=1e-6,
-                     robust_refit=True,
-                     fit_deg=None,
-                     display=False,
-                     renderer='default',
-                     filename=None,
-                     return_jsonstring=False,
-                     save_fig=False,
-                     fig_type='iframe+png',
-                     return_solution=True):
-        '''
+    def robust_refit(
+        self,
+        fit_coeff,
+        n_delta=None,
+        refine=False,
+        tolerance=10.0,
+        method="Nelder-Mead",
+        convergence=1e-6,
+        robust_refit=True,
+        fit_deg=None,
+        display=False,
+        renderer="default",
+        filename=None,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        return_solution=True,
+    ):
+        """
         ** refine option is EXPERIMENTAL, as of 17 Jan 2021 **
         A wrapper function to robustly refit the wavelength solution with
         RASCAL when there is already a set of good coefficienes.
@@ -1114,7 +1199,7 @@ class WavelengthCalibration():
         return_solution: bool (Default: True)
             Set to True to return the best fit polynomial coefficients.
 
-        '''
+        """
 
         if fit_deg is None:
 
@@ -1124,19 +1209,26 @@ class WavelengthCalibration():
 
             n_delta = len(fit_coeff) - 1
 
-        (fit_coeff, matched_peaks, matched_atlas, rms, residual,
-         peak_utilisation,
-         atlas_utilisation) = self.spectrum1D.calibrator.match_peaks(
-             fit_coeff,
-             n_delta=n_delta,
-             refine=refine,
-             tolerance=tolerance,
-             method=method,
-             convergence=convergence,
-             robust_refit=robust_refit,
-             fit_deg=fit_deg)
+        (
+            fit_coeff,
+            matched_peaks,
+            matched_atlas,
+            rms,
+            residual,
+            peak_utilisation,
+            atlas_utilisation,
+        ) = self.spectrum1D.calibrator.match_peaks(
+            fit_coeff,
+            n_delta=n_delta,
+            refine=refine,
+            tolerance=tolerance,
+            method=method,
+            convergence=convergence,
+            robust_refit=robust_refit,
+            fit_deg=fit_deg,
+        )
 
-        rms = np.sqrt(np.nanmean(residual**2.))
+        rms = np.sqrt(np.nanmean(residual**2.0))
 
         if display:
 
@@ -1150,20 +1242,33 @@ class WavelengthCalibration():
                 renderer=renderer,
                 save_fig=save_fig,
                 fig_type=fig_type,
-                filename=filename)
+                filename=filename,
+            )
 
-        self.spectrum1D.add_fit_output_refine(fit_coeff, matched_peaks,
-                                              matched_atlas, rms, residual,
-                                              peak_utilisation,
-                                              atlas_utilisation)
+        self.spectrum1D.add_fit_output_refine(
+            fit_coeff,
+            matched_peaks,
+            matched_atlas,
+            rms,
+            residual,
+            peak_utilisation,
+            atlas_utilisation,
+        )
 
         if return_solution:
 
-            return (fit_coeff, matched_peaks, matched_atlas, rms, residual,
-                    peak_utilisation, atlas_utilisation)
+            return (
+                fit_coeff,
+                matched_peaks,
+                matched_atlas,
+                rms,
+                residual,
+                peak_utilisation,
+                atlas_utilisation,
+            )
 
     def get_pix_wave_pairs(self):
-        '''
+        """
         Return the list of matched_peaks and matched_atlas with their
         position in the array.
 
@@ -1173,14 +1278,14 @@ class WavelengthCalibration():
             List of tuples each containing the array position, peak (pixel)
             and atlas (wavelength).
 
-        '''
+        """
 
         pw_pairs = self.spectrum1D.calibrator.get_pix_wave_pairs()
 
         return pw_pairs
 
     def add_pix_wave_pair(self, pix, wave):
-        '''
+        """
         Adding extra pixel-wavelength pair to the Calibrator for refitting.
         This DOES NOT work before the Calibrator having fit for a solution
         yet: use set_known_pairs() for that purpose.
@@ -1192,12 +1297,12 @@ class WavelengthCalibration():
         wave: float
             wavelength
 
-        '''
+        """
 
         self.spectrum1D.calibrator.add_pix_wave_pair(pix, wave)
 
     def remove_pix_wave_pair(self, arg):
-        '''
+        """
         Remove fitted pixel-wavelength pair from the Calibrator for refitting.
         The positions can be found from get_pix_wave_pairs(). One at a time.
 
@@ -1206,17 +1311,19 @@ class WavelengthCalibration():
         arg: int
             The position of the pairs in the arrays.
 
-        '''
+        """
 
         self.spectrum1D.calibrator.remove_pix_wave_pair(arg)
 
-    def manual_refit(self,
-                     matched_peaks=None,
-                     matched_atlas=None,
-                     degree=None,
-                     x0=None,
-                     return_solution=True):
-        '''
+    def manual_refit(
+        self,
+        matched_peaks=None,
+        matched_atlas=None,
+        degree=None,
+        x0=None,
+        return_solution=True,
+    ):
+        """
         Perform a refinement of the matched peaks and atlas lines.
 
         This function takes lists of matched peaks and atlases, along with
@@ -1247,40 +1354,53 @@ class WavelengthCalibration():
         return_solution: bool (Default: True)
             Set to True to return the best fit polynomial coefficients.
 
-        '''
+        """
 
-        (self.fit_coeff, self.matched_peaks, self.matched_atlas, self.rms,
-         self.residuals) = self.spectrum1D.calibrator.manual_refit(
-             matched_peaks, matched_atlas, degree, x0)
+        (
+            self.fit_coeff,
+            self.matched_peaks,
+            self.matched_atlas,
+            self.rms,
+            self.residuals,
+        ) = self.spectrum1D.calibrator.manual_refit(
+            matched_peaks, matched_atlas, degree, x0
+        )
 
         if return_solution:
 
-            return (self.fit_coeff, self.matched_peaks, self.matched_atlas,
-                    self.rms, self.residuals)
+            return (
+                self.fit_coeff,
+                self.matched_peaks,
+                self.matched_atlas,
+                self.rms,
+                self.residuals,
+            )
 
     def get_calibrator(self):
-        '''
+        """
         Get the calibrator object.
 
-        '''
+        """
 
-        return getattr(self.spectrum1D, 'calibrator')
+        return getattr(self.spectrum1D, "calibrator")
 
     def get_spectrum1D(self):
-        '''
+        """
         Get the spectrum1D object.
 
-        '''
+        """
 
         return self.spectrum1D
 
-    def save_fits(self,
-                  output='wavecal',
-                  filename='wavecal',
-                  overwrite=False,
-                  recreate=False,
-                  empty_primary_hdu=True):
-        '''
+    def save_fits(
+        self,
+        output="wavecal",
+        filename="wavecal",
+        overwrite=False,
+        recreate=False,
+        empty_primary_hdu=True,
+    ):
+        """
         Save the reduced data to disk, with a choice of any combination of the
         data that are already present in the Spectrum1D. Because a
         WavelengthCalibration only requires a subset of all the data, only
@@ -1305,20 +1425,24 @@ class WavelengthCalibration():
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
 
-        '''
+        """
 
-        self.spectrum1D.save_fits(output=output,
-                                  filename=filename,
-                                  overwrite=overwrite,
-                                  recreate=recreate,
-                                  empty_primary_hdu=empty_primary_hdu)
+        self.spectrum1D.save_fits(
+            output=output,
+            filename=filename,
+            overwrite=overwrite,
+            recreate=recreate,
+            empty_primary_hdu=empty_primary_hdu,
+        )
 
-    def save_csv(self,
-                 output='wavecal',
-                 filename='wavecal',
-                 overwrite=False,
-                 recreate=False):
-        '''
+    def save_csv(
+        self,
+        output="wavecal",
+        filename="wavecal",
+        overwrite=False,
+        recreate=False,
+    ):
+        """
         Save the reduced data to disk, with a choice of any combination of the
         data that are already present in the Spectrum1D. Because a
         WavelengthCalibration only requires a subset of all the data, only
@@ -1341,9 +1465,11 @@ class WavelengthCalibration():
         recreate: bool (Default: False)
             Set to True to overwrite the FITS data and header.
 
-        '''
+        """
 
-        self.spectrum1D.save_csv(output=output,
-                                 filename=filename,
-                                 overwrite=overwrite,
-                                 recreate=recreate)
+        self.spectrum1D.save_csv(
+            output=output,
+            filename=filename,
+            overwrite=overwrite,
+            recreate=recreate,
+        )

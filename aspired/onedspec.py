@@ -16,17 +16,19 @@ from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
 from .spectrum1D import Spectrum1D
 
-__all__ = ['OneDSpec']
+__all__ = ["OneDSpec"]
 
 
-class OneDSpec():
-    def __init__(self,
-                 verbose=True,
-                 logger_name='OneDSpec',
-                 log_level='INFO',
-                 log_file_folder='default',
-                 log_file_name=None):
-        '''
+class OneDSpec:
+    def __init__(
+        self,
+        verbose=True,
+        logger_name="OneDSpec",
+        log_level="INFO",
+        log_file_folder="default",
+        log_file_name=None,
+    ):
+        """
         This class applies the wavelength calibrations and compute & apply the
         flux calibration to the extracted 1D spectra. The standard TwoDSpec
         object is not required for data reduction, but the flux calibrated
@@ -58,7 +60,7 @@ class OneDSpec():
         log_file_name: None or str (Default: None)
             File name of the log, set to None to print to screen only.
 
-        '''
+        """
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
@@ -73,30 +75,33 @@ class OneDSpec():
         elif log_level == "DEBUG":
             self.logger.setLevel(logging.DEBUG)
         else:
-            raise ValueError('Unknonw logging level.')
+            raise ValueError("Unknonw logging level.")
 
         formatter = logging.Formatter(
-            '[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] '
-            '%(message)s',
-            datefmt='%a, %d %b %Y %H:%M:%S')
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
+            "%(message)s",
+            datefmt="%a, %d %b %Y %H:%M:%S",
+        )
 
         if log_file_name is None:
             # Only print log to screen
             self.handler = logging.StreamHandler()
         else:
-            if log_file_name == 'default':
-                log_file_name = '{}_{}.log'.format(
+            if log_file_name == "default":
+                log_file_name = "{}_{}.log".format(
                     logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
+                )
             # Save log to file
-            if log_file_folder == 'default':
-                log_file_folder = ''
+            if log_file_folder == "default":
+                log_file_folder = ""
 
             self.handler = logging.FileHandler(
-                os.path.join(log_file_folder, log_file_name), 'a+')
+                os.path.join(log_file_folder, log_file_name), "a+"
+            )
 
         self.handler.setFormatter(formatter)
-        if (self.logger.hasHandlers()):
+        if self.logger.hasHandlers():
             self.logger.handlers.clear()
         self.logger.addHandler(self.handler)
 
@@ -113,23 +118,27 @@ class OneDSpec():
             logger_name=self.logger_name,
             log_level=self.log_level,
             log_file_folder=self.log_file_folder,
-            log_file_name=self.log_file_name)
-        self.fluxcal = FluxCalibration(verbose=self.verbose,
-                                       logger_name=self.logger_name,
-                                       log_level=self.log_level,
-                                       log_file_folder=self.log_file_folder,
-                                       log_file_name=self.log_file_name)
+            log_file_name=self.log_file_name,
+        )
+        self.fluxcal = FluxCalibration(
+            verbose=self.verbose,
+            logger_name=self.logger_name,
+            log_level=self.log_level,
+            log_file_folder=self.log_file_folder,
+            log_file_name=self.log_file_name,
+        )
 
         # Create empty dictionary
         self.science_spectrum_list = {}
         self.standard_spectrum_list = {
-            0:
-            Spectrum1D(spec_id=0,
-                       verbose=self.verbose,
-                       logger_name=self.logger_name,
-                       log_level=self.log_level,
-                       log_file_folder=self.log_file_folder,
-                       log_file_name=self.log_file_name)
+            0: Spectrum1D(
+                spec_id=0,
+                verbose=self.verbose,
+                logger_name=self.logger_name,
+                log_level=self.log_level,
+                log_file_folder=self.log_file_folder,
+                log_file_name=self.log_file_name,
+            )
         }
 
         self.add_science_spectrum1D(0)
@@ -182,7 +191,7 @@ class OneDSpec():
         self.standard_flux_calibrated = False
 
     def add_science_spectrum1D(self, spec_id):
-        '''
+        """
         Add a new Spectrum1D with the ID spec_id. This overwrite the existing
         Spectrum1D object if it already exists.
 
@@ -191,38 +200,46 @@ class OneDSpec():
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
 
-        '''
+        """
 
         # Create the wavelength calibration object for the given spec_id
-        self.science_wavecal.update({
-            spec_id:
-            WavelengthCalibration(verbose=self.verbose,
-                                  logger_name=self.logger_name,
-                                  log_level=self.log_level,
-                                  log_file_folder=self.log_file_folder,
-                                  log_file_name=self.log_file_name)
-        })
+        self.science_wavecal.update(
+            {
+                spec_id: WavelengthCalibration(
+                    verbose=self.verbose,
+                    logger_name=self.logger_name,
+                    log_level=self.log_level,
+                    log_file_folder=self.log_file_folder,
+                    log_file_name=self.log_file_name,
+                )
+            }
+        )
 
         # Create the Spectrum1D object for the given spec_id
-        self.science_spectrum_list.update({
-            spec_id:
-            Spectrum1D(spec_id=spec_id,
-                       verbose=self.verbose,
-                       logger_name=self.logger_name,
-                       log_level=self.log_level,
-                       log_file_folder=self.log_file_folder,
-                       log_file_name=self.log_file_name)
-        })
+        self.science_spectrum_list.update(
+            {
+                spec_id: Spectrum1D(
+                    spec_id=spec_id,
+                    verbose=self.verbose,
+                    logger_name=self.logger_name,
+                    log_level=self.log_level,
+                    log_file_folder=self.log_file_folder,
+                    log_file_name=self.log_file_name,
+                )
+            }
+        )
 
         # Reference the wavecal to the Spectrum1D object just created
         self.science_wavecal[spec_id].from_spectrum1D(
-            self.science_spectrum_list[spec_id])
+            self.science_spectrum_list[spec_id]
+        )
 
         self.logger.info(
-            'spectrm1D object is added to spec_id: {}'.format(spec_id))
+            "spectrm1D object is added to spec_id: {}".format(spec_id)
+        )
 
     def add_fluxcalibration(self, fluxcal):
-        '''
+        """
         Provide the pre-calibrated FluxCalibration object.
 
         Parameters
@@ -230,24 +247,23 @@ class OneDSpec():
         fluxcal: FluxCalibration object
             The true mag/flux values.
 
-        '''
+        """
 
         if type(fluxcal) == FluxCalibration:
 
             self.fluxcal = fluxcal
-            self.logger.info('fluxcal object is added')
+            self.logger.info("fluxcal object is added")
 
         else:
 
-            err_msg = 'Please provide a valid FluxCalibration object'
+            err_msg = "Please provide a valid FluxCalibration object"
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-    def add_wavelengthcalibration(self,
-                                  wavecal,
-                                  spec_id=None,
-                                  stype='science+standard'):
-        '''
+    def add_wavelengthcalibration(
+        self, wavecal, spec_id=None, stype="science+standard"
+    ):
+        """
         Provide the pre-calibrated WavelengthCalibration object.
 
         Parameters
@@ -260,7 +276,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(wavecal) == WavelengthCalibration:
 
@@ -272,14 +288,16 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a WavelengthCalibration object or ' +\
-                'a list of them.'
+            err_msg = (
+                "Please provide a WavelengthCalibration object or "
+                + "a list of them."
+            )
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -288,9 +306,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -311,8 +330,9 @@ class OneDSpec():
 
             else:
 
-                error_msg = 'wavecal must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = (
+                    "wavecal must be the same length of shape " + "as spec_id."
+                )
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -322,33 +342,39 @@ class OneDSpec():
 
                     self.science_wavecal[i] = wavecal[i]
                     self.logger.info(
-                        'Added WavelengthCalibration to the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Added WavelengthCalibration to the "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
                 else:
 
-                    err_msg = 'Please provide a valid ' +\
-                        'WavelengthCalibration object.'
+                    err_msg = (
+                        "Please provide a valid "
+                        + "WavelengthCalibration object."
+                    )
                     self.logger.critical(err_msg)
                     raise TypeError(err_msg)
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if type(wavecal[0]) == WavelengthCalibration:
 
                 self.standard_wavecal = wavecal[0]
-                self.logger.info('Added WavelengthCalibration to '
-                                 'the standard spectrum_list.')
+                self.logger.info(
+                    "Added WavelengthCalibration to "
+                    "the standard spectrum_list."
+                )
 
             else:
 
-                err_msg = 'Please provide a valid ' +\
-                    'WavelengthCalibration object'
+                err_msg = (
+                    "Please provide a valid " + "WavelengthCalibration object"
+                )
                 self.logger.critical(err_msg)
                 raise TypeError(err_msg)
 
-    def add_wavelength(self, wave, spec_id=None, stype='science+standard'):
-        '''
+    def add_wavelength(self, wave, spec_id=None, stype="science+standard"):
+        """
         Three combinations of wave and spec_id shapes are accepted.
 
         +-----------+-----------------+
@@ -368,7 +394,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(wave) == np.ndarray:
 
@@ -380,13 +406,13 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_data_available:
 
@@ -397,9 +423,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -420,26 +447,33 @@ class OneDSpec():
 
                 else:
 
-                    error_msg = 'wave must be the same length of shape ' +\
-                        'as spec_id.'
+                    error_msg = (
+                        "wave must be the same length of shape "
+                        + "as spec_id."
+                    )
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
 
                     if len(wave[i]) == len(
-                            self.science_spectrum_list[i].count):
+                        self.science_spectrum_list[i].count
+                    ):
 
                         self.science_spectrum_list[i].add_wavelength(
-                            wave=wave[i])
+                            wave=wave[i]
+                        )
                         self.logger.info(
-                            'Added wavelength list to the '
-                            'science_spectrum_list for spec_id: {}.'.format(i))
+                            "Added wavelength list to the "
+                            "science_spectrum_list for spec_id: {}.".format(i)
+                        )
 
                     else:
 
-                        err_msg = 'The wavelength provided has a different ' +\
-                            'size to that of the extracted science spectrum.'
+                        err_msg = (
+                            "The wavelength provided has a different "
+                            + "size to that of the extracted science spectrum."
+                        )
                         self.logger.critical(err_msg)
                         raise RuntimeError(err_msg)
 
@@ -447,12 +481,14 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'science data is not available, wavelength ' +\
-                    'cannot be added.'
+                err_msg = (
+                    "science data is not available, wavelength "
+                    + "cannot be added."
+                )
                 self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_data_available:
 
@@ -462,8 +498,10 @@ class OneDSpec():
 
                 else:
 
-                    err_msg = 'The wavelength provided is of a different ' +\
-                        'size to that of the extracted standard spectrum.'
+                    err_msg = (
+                        "The wavelength provided is of a different "
+                        + "size to that of the extracted standard spectrum."
+                    )
                     self.logger.critical(err_msg)
                     raise RuntimeError(err_msg)
 
@@ -471,16 +509,17 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'standard data is not available, wavelength ' +\
-                    'cannot be added.'
+                err_msg = (
+                    "standard data is not available, wavelength "
+                    + "cannot be added."
+                )
                 self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
-    def add_wavelength_resampled(self,
-                                 wave_resampled,
-                                 spec_id=None,
-                                 stype='science+standard'):
-        '''
+    def add_wavelength_resampled(
+        self, wave_resampled, spec_id=None, stype="science+standard"
+    ):
+        """
         Three combinations of wave and spec_id shapes are accepted.
 
         +-----------+-----------------+
@@ -500,7 +539,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(wave_resampled) == np.ndarray:
 
@@ -512,13 +551,13 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_data_available:
 
@@ -529,9 +568,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -558,27 +598,34 @@ class OneDSpec():
 
                 else:
 
-                    error_msg = 'wave must be the same length of shape ' +\
-                        'as spec_id.'
+                    error_msg = (
+                        "wave must be the same length of shape "
+                        + "as spec_id."
+                    )
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
 
                     if len(wave_resampled[i]) == len(
-                            self.science_spectrum_list[i].count):
+                        self.science_spectrum_list[i].count
+                    ):
 
                         self.science_spectrum_list[i].add_wavelength_resampled(
-                            wave_resampled=wave_resampled[i])
+                            wave_resampled=wave_resampled[i]
+                        )
                         self.logger.info(
-                            'Added wavelength_resampled list to '
-                            'the science_spectrum_list for spec_id: '
-                            '{}.'.format(i))
+                            "Added wavelength_resampled list to "
+                            "the science_spectrum_list for spec_id: "
+                            "{}.".format(i)
+                        )
 
                     else:
 
-                        err_msg = 'The wavelength provided has a different ' +\
-                            'size to that of the extracted science spectrum.'
+                        err_msg = (
+                            "The wavelength provided has a different "
+                            + "size to that of the extracted science spectrum."
+                        )
                         self.logger.critical(err_msg)
                         raise RuntimeError(err_msg)
 
@@ -586,27 +633,35 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'science data is not available, ' +\
-                    'wavelength_resampled cannot be added.'
+                err_msg = (
+                    "science data is not available, "
+                    + "wavelength_resampled cannot be added."
+                )
                 self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_data_available:
 
                 if len(wave_resampled[0]) == len(
-                        self.standard_spectrum_list[0].count):
+                    self.standard_spectrum_list[0].count
+                ):
 
                     self.standard_spectrum_list[0].add_wavelength_resampled(
-                        wave_resampled=wave_resampled[0])
-                    self.logger.info('Added wavelength list to the '
-                                     'standard_spectrum_list.')
+                        wave_resampled=wave_resampled[0]
+                    )
+                    self.logger.info(
+                        "Added wavelength list to the "
+                        "standard_spectrum_list."
+                    )
 
                 else:
 
-                    err_msg = 'The wavelength provided is of a different ' +\
-                        'size to that of the extracted standard spectrum.'
+                    err_msg = (
+                        "The wavelength provided is of a different "
+                        + "size to that of the extracted standard spectrum."
+                    )
                     self.logger.critical(err_msg)
                     raise RuntimeError(err_msg)
 
@@ -614,18 +669,22 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'standard data is not available, ' +\
-                    'wavelength_resampled cannot be added.'
+                err_msg = (
+                    "standard data is not available, "
+                    + "wavelength_resampled cannot be added."
+                )
                 self.logger.critical(err_msg)
                 raise RuntimeError(err_msg)
 
-    def add_spec(self,
-                 count,
-                 spec_id=None,
-                 count_err=None,
-                 count_sky=None,
-                 stype='science+standard'):
-        '''
+    def add_spec(
+        self,
+        count,
+        spec_id=None,
+        count_err=None,
+        count_sky=None,
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         count: 1-d array
@@ -640,7 +699,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(count) == np.ndarray:
 
@@ -652,7 +711,7 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
@@ -668,7 +727,7 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'Please provide a numpy array or a list of them.'
+                err_msg = "Please provide a numpy array or a list of them."
                 self.logger.critical(err_msg)
                 raise TypeError(err_msg)
 
@@ -688,7 +747,7 @@ class OneDSpec():
 
             else:
 
-                err_msg = 'Please provide a numpy array or a list of them.'
+                err_msg = "Please provide a numpy array or a list of them."
                 self.logger.critical(err_msg)
                 raise TypeError(err_msg)
 
@@ -696,9 +755,9 @@ class OneDSpec():
 
             count_sky = [None]
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -707,7 +766,8 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
                     for i in spec_id:
 
@@ -716,10 +776,12 @@ class OneDSpec():
                             self.add_science_spectrum1D(i)
 
                             self.logger.warning(
-                                'The given spec_id, {}, does not exist. A new '
-                                'spectrum1D is created. Please check you are '
-                                'providing the correct spec_id.'.format(
-                                    spec_id))
+                                "The given spec_id, {}, does not exist. A new "
+                                "spectrum1D is created. Please check you are "
+                                "providing the correct spec_id.".format(
+                                    spec_id
+                                )
+                            )
 
                         else:
 
@@ -742,8 +804,10 @@ class OneDSpec():
 
             else:
 
-                error_msg = 'count must be the same length of shape ' +\
-                    'as spec_id, or of size 1.'
+                error_msg = (
+                    "count must be the same length of shape "
+                    + "as spec_id, or of size 1."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
@@ -756,21 +820,21 @@ class OneDSpec():
             elif len(count_sky) == len(spec_id):
 
                 count_sky = {
-                    spec_id[i]: count_sky[i]
-                    for i in range(len(spec_id))
+                    spec_id[i]: count_sky[i] for i in range(len(spec_id))
                 }
 
             elif len(count_sky) == 1:
 
                 count_sky = {
-                    spec_id[i]: count_sky[0]
-                    for i in range(len(spec_id))
+                    spec_id[i]: count_sky[0] for i in range(len(spec_id))
                 }
 
             else:
 
-                error_msg = 'count_sky must be the same length of shape ' +\
-                    'as spec_id, or of size 1.'
+                error_msg = (
+                    "count_sky must be the same length of shape "
+                    + "as spec_id, or of size 1."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
@@ -783,47 +847,52 @@ class OneDSpec():
             elif len(count_err) == len(spec_id):
 
                 count_err = {
-                    spec_id[i]: count_err[i]
-                    for i in range(len(spec_id))
+                    spec_id[i]: count_err[i] for i in range(len(spec_id))
                 }
 
             elif len(count_err) == 1:
 
                 count_err = {
-                    spec_id[i]: count_err[0]
-                    for i in range(len(spec_id))
+                    spec_id[i]: count_err[0] for i in range(len(spec_id))
                 }
 
             else:
 
-                error_msg = 'count_err must be the same length of shape ' +\
-                    'as spec_id, or of size 1.'
+                error_msg = (
+                    "count_err must be the same length of shape "
+                    + "as spec_id, or of size 1."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
             for i in spec_id:
 
-                self.science_spectrum_list[i].add_count(count=count[i],
-                                                        count_err=count_err[i],
-                                                        count_sky=count_sky[i])
+                self.science_spectrum_list[i].add_count(
+                    count=count[i],
+                    count_err=count_err[i],
+                    count_sky=count_sky[i],
+                )
                 self.logger.info(
-                    'Added count, count_err, and count_sky to'
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Added count, count_err, and count_sky to"
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
             self.science_data_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
-            self.standard_spectrum_list[0].add_count(count=count[0],
-                                                     count_err=count_err[0],
-                                                     count_sky=count_sky[0])
-            self.logger.info('Added count, count_err, and count_sky to '
-                             'standard_spectrum_list.')
+            self.standard_spectrum_list[0].add_count(
+                count=count[0], count_err=count_err[0], count_sky=count_sky[0]
+            )
+            self.logger.info(
+                "Added count, count_err, and count_sky to "
+                "standard_spectrum_list."
+            )
 
             self.standard_data_available = True
 
-    def add_arc_spec(self, arc_spec, spec_id=None, stype='science+standard'):
-        '''
+    def add_arc_spec(self, arc_spec, spec_id=None, stype="science+standard"):
+        """
         Parameters
         ----------
         arc_spec: 1-d array
@@ -833,7 +902,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(arc_spec) == np.ndarray:
 
@@ -845,13 +914,13 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_data_available:
 
@@ -862,20 +931,23 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
                         for i in spec_id:
 
                             if i not in list(
-                                    self.science_spectrum_list.keys()):
+                                self.science_spectrum_list.keys()
+                            ):
 
                                 self.add_science_spectrum1D(i)
 
                                 self.logger.warning(
-                                    'The given spec_id, {}, does not '
-                                    'exist. A new spectrum1D is created. '
-                                    'Please check you are providing the '
-                                    'correct spec_id.'.format(spec_id))
+                                    "The given spec_id, {}, does not "
+                                    "exist. A new spectrum1D is created. "
+                                    "Please check you are providing the "
+                                    "correct spec_id.".format(spec_id)
+                                )
 
                             else:
 
@@ -895,46 +967,49 @@ class OneDSpec():
                 if len(arc_spec) == len(spec_id):
 
                     arc_spec = {
-                        spec_id[i]: arc_spec[i]
-                        for i in range(len(spec_id))
+                        spec_id[i]: arc_spec[i] for i in range(len(spec_id))
                     }
 
                 elif len(arc_spec) == 1:
 
                     arc_spec = {
-                        spec_id[i]: arc_spec[0]
-                        for i in range(len(spec_id))
+                        spec_id[i]: arc_spec[0] for i in range(len(spec_id))
                     }
 
                 else:
 
-                    error_msg = 'arc_spec must be the same length of shape ' +\
-                        'as spec_id.'
+                    error_msg = (
+                        "arc_spec must be the same length of shape "
+                        + "as spec_id."
+                    )
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
 
                     self.science_spectrum_list[i].add_arc_spec(
-                        arc_spec=arc_spec[i])
+                        arc_spec=arc_spec[i]
+                    )
                     self.logger.info(
-                        'Added arc_spec to'
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Added arc_spec to"
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
                 self.science_arc_spec_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_arc_spec(
-                    arc_spec=arc_spec[0])
-                self.logger.info('Added arc_spec to' 'standard_spectrum_list.')
+                    arc_spec=arc_spec[0]
+                )
+                self.logger.info("Added arc_spec to" "standard_spectrum_list.")
 
                 self.standard_arc_spec_available = True
 
-    def add_arc_lines(self, peaks, spec_id=None, stype='science+standard'):
-        '''
+    def add_arc_lines(self, peaks, spec_id=None, stype="science+standard"):
+        """
         Parameters
         ----------
         peaks: list of list or list of arrays
@@ -945,7 +1020,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(peaks) == np.ndarray:
 
@@ -957,13 +1032,13 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -972,7 +1047,8 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
                     for i in spec_id:
 
@@ -981,10 +1057,11 @@ class OneDSpec():
                             self.add_science_spectrum1D(i)
 
                             self.logger.warning(
-                                'The given spec_id, {}, does not '
-                                'exist. A new spectrum1D is created. '
-                                'Please check you are providing the '
-                                'correct spec_id.'.format(spec_id))
+                                "The given spec_id, {}, does not "
+                                "exist. A new spectrum1D is created. "
+                                "Please check you are providing the "
+                                "correct spec_id.".format(spec_id)
+                            )
 
             else:
 
@@ -1003,8 +1080,9 @@ class OneDSpec():
 
             else:
 
-                error_msg = 'peaks must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = (
+                    "peaks must be the same length of shape " + "as spec_id."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
@@ -1012,25 +1090,28 @@ class OneDSpec():
 
                 self.science_spectrum_list[i].add_peaks(peaks=peaks[i])
                 self.logger.info(
-                    'Added peaks to'
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Added peaks to"
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
             self.science_arc_lines_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].add_peaks(peaks=peaks[0])
-            self.logger.info('Added peaks to standard_spectrum_list.')
+            self.logger.info("Added peaks to standard_spectrum_list.")
 
             self.standard_arc_lines_available = True
 
-    def add_trace(self,
-                  trace,
-                  trace_sigma,
-                  spec_id=None,
-                  pixel_list=None,
-                  stype='science+standard'):
-        '''
+    def add_trace(
+        self,
+        trace,
+        trace_sigma,
+        spec_id=None,
+        pixel_list=None,
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         trace: list or numpy.ndarray (N)
@@ -1049,7 +1130,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(trace) == np.ndarray:
 
@@ -1061,7 +1142,7 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
@@ -1075,13 +1156,13 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1090,7 +1171,8 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
                     for i in spec_id:
 
@@ -1099,10 +1181,11 @@ class OneDSpec():
                             self.add_science_spectrum1D(i)
 
                             self.logger.warning(
-                                'The given spec_id, {}, does not '
-                                'exist. A new spectrum1D is created. '
-                                'Please check you are providing the '
-                                'correct spec_id.'.format(spec_id))
+                                "The given spec_id, {}, does not "
+                                "exist. A new spectrum1D is created. "
+                                "Please check you are providing the "
+                                "correct spec_id.".format(spec_id)
+                            )
 
             else:
 
@@ -1121,8 +1204,9 @@ class OneDSpec():
 
             else:
 
-                error_msg = 'trace must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = (
+                    "trace must be the same length of shape " + "as spec_id."
+                )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
 
@@ -1131,21 +1215,20 @@ class OneDSpec():
             if len(trace_sigma) == len(spec_id):
 
                 trace_sigma = {
-                    spec_id[i]: trace_sigma[i]
-                    for i in range(len(spec_id))
+                    spec_id[i]: trace_sigma[i] for i in range(len(spec_id))
                 }
 
             elif len(trace_sigma) == 1:
 
                 trace_sigma = {
-                    spec_id[i]: trace_sigma[0]
-                    for i in range(len(spec_id))
+                    spec_id[i]: trace_sigma[0] for i in range(len(spec_id))
                 }
 
             else:
 
-                error_msg = 'wave must be the same length of shape ' +\
-                    'as spec_id.'
+                error_msg = (
+                    "wave must be the same length of shape " + "as spec_id."
+                )
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -1154,30 +1237,37 @@ class OneDSpec():
                 self.science_spectrum_list[i].add_trace(
                     trace=trace[i],
                     trace_sigma=trace_sigma[i],
-                    pixel_list=pixel_list)
+                    pixel_list=pixel_list,
+                )
                 self.logger.info(
-                    'Added trace, trace_sigma, and pixel_list to'
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Added trace, trace_sigma, and pixel_list to"
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
             self.science_trace_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].add_trace(
                 trace=trace[0],
                 trace_sigma=trace_sigma[0],
-                pixel_list=pixel_list)
-            self.logger.info('Added trace, trace_sigma, and pixel_list to'
-                             'standard_spectrum_list')
+                pixel_list=pixel_list,
+            )
+            self.logger.info(
+                "Added trace, trace_sigma, and pixel_list to"
+                "standard_spectrum_list"
+            )
 
             self.standard_trace_available = True
 
-    def add_fit_coeff(self,
-                      fit_coeff,
-                      fit_type='poly',
-                      spec_id=None,
-                      stype='science+standard'):
-        '''
+    def add_fit_coeff(
+        self,
+        fit_coeff,
+        fit_type="poly",
+        spec_id=None,
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         fit_coeff: list or numpy array, or a list of them
@@ -1190,7 +1280,7 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if type(fit_coeff) == np.ndarray:
 
@@ -1220,7 +1310,7 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
@@ -1238,13 +1328,13 @@ class OneDSpec():
 
         else:
 
-            err_msg = 'Please provide a numpy array or a list of them.'
+            err_msg = "Please provide a numpy array or a list of them."
             self.logger.critical(err_msg)
             raise TypeError(err_msg)
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_data_available:
 
@@ -1255,9 +1345,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -1271,21 +1362,21 @@ class OneDSpec():
                 if len(fit_coeff) == len(spec_id):
 
                     fit_coeff = {
-                        spec_id[i]: fit_coeff[i]
-                        for i in range(len(spec_id))
+                        spec_id[i]: fit_coeff[i] for i in range(len(spec_id))
                     }
 
                 elif len(fit_coeff) == 1:
 
                     fit_coeff = {
-                        spec_id[i]: fit_coeff[0]
-                        for i in range(len(spec_id))
+                        spec_id[i]: fit_coeff[0] for i in range(len(spec_id))
                     }
 
                 else:
 
-                    error_msg = 'fit_coeff must be the same length of ' +\
-                        'shape as spec_id.'
+                    error_msg = (
+                        "fit_coeff must be the same length of "
+                        + "shape as spec_id."
+                    )
                     self.logger.critical(error_msg)
                     raise RuntimeError(error_msg)
 
@@ -1294,51 +1385,57 @@ class OneDSpec():
                 if len(fit_type) == len(spec_id):
 
                     fit_type = {
-                        spec_id[i]: fit_type[i]
-                        for i in range(len(spec_id))
+                        spec_id[i]: fit_type[i] for i in range(len(spec_id))
                     }
 
                 elif len(fit_type) == 1:
 
                     fit_type = {
-                        spec_id[i]: fit_type[0]
-                        for i in range(len(spec_id))
+                        spec_id[i]: fit_type[0] for i in range(len(spec_id))
                     }
 
                 else:
 
-                    error_msg = 'wave must be the same length of shape ' +\
-                        'as spec_id.'
+                    error_msg = (
+                        "wave must be the same length of shape "
+                        + "as spec_id."
+                    )
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
                 for i in spec_id:
 
                     self.science_spectrum_list[i].add_fit_coeff(
-                        fit_coeff=fit_coeff[i])
+                        fit_coeff=fit_coeff[i]
+                    )
                     self.science_spectrum_list[i].add_fit_type(
-                        fit_type=fit_type[i])
+                        fit_type=fit_type[i]
+                    )
                     self.logger.info(
-                        'Added fit_coeff and fit_type to'
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Added fit_coeff and fit_type to"
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
             self.science_wavecal_polynomial_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_data_available:
 
                 self.standard_spectrum_list[0].add_fit_coeff(
-                    fit_coeff=fit_coeff[0])
+                    fit_coeff=fit_coeff[0]
+                )
                 self.standard_spectrum_list[0].add_fit_type(
-                    fit_type=fit_type[0])
-                self.logger.info('Added fit_coeff and fit_type to'
-                                 'standard_spectrum_list.')
+                    fit_type=fit_type[0]
+                )
+                self.logger.info(
+                    "Added fit_coeff and fit_type to" "standard_spectrum_list."
+                )
 
             self.standard_wavecal_polynomial_available = True
 
-    def from_twodspec(self, twodspec, spec_id=None, stype='science+standard'):
-        '''
+    def from_twodspec(self, twodspec, spec_id=None, stype="science+standard"):
+        """
         To add a TwoDSpec object or numpy array to provide the traces, line
         spread function of the traces, optionally the pixel values
         correcponding to the traces. If the arc is provided, the saxis and flip
@@ -1356,11 +1453,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1369,9 +1466,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(twodspec.spectrum_list.keys())):
+                    list(twodspec.spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -1389,24 +1487,28 @@ class OneDSpec():
                     logger_name=self.logger_name,
                     log_level=self.log_level,
                     log_file_folder=self.log_file_folder,
-                    log_file_name=self.log_file_name)
+                    log_file_name=self.log_file_name,
+                )
 
                 # By reference
                 self.science_wavecal[i].from_spectrum1D(
-                    twodspec.spectrum_list[i])
-                self.science_spectrum_list[i] =\
-                    self.science_wavecal[i].spectrum1D
+                    twodspec.spectrum_list[i]
+                )
+                self.science_spectrum_list[i] = self.science_wavecal[
+                    i
+                ].spectrum1D
 
                 self.logger.info(
-                    'Referenced Spectrum1D of the'
-                    'science_spectrum_list for spec_id: {}.'.format(i) +
-                    'to the corresponding science_wavecal.')
+                    "Referenced Spectrum1D of the"
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                    + "to the corresponding science_wavecal."
+                )
 
             self.science_data_available = True
             self.science_arc_available = True
             self.science_arc_spec_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             # By reference
             self.standard_wavecal = WavelengthCalibration(
@@ -1414,36 +1516,41 @@ class OneDSpec():
                 logger_name=self.logger_name,
                 log_level=self.log_level,
                 log_file_folder=self.log_file_folder,
-                log_file_name=self.log_file_name)
+                log_file_name=self.log_file_name,
+            )
             self.standard_wavecal.from_spectrum1D(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum1D(twodspec.spectrum_list[0])
             self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
 
-            self.logger.info('Referenced Spectrum1D of the'
-                             'standard_spectrum_list to the standard_wavecal.')
+            self.logger.info(
+                "Referenced Spectrum1D of the"
+                "standard_spectrum_list to the standard_wavecal."
+            )
 
             self.standard_data_available = True
             self.standard_arc_available = True
             self.standard_arc_spec_available = True
 
-    def find_arc_lines(self,
-                       spec_id=None,
-                       prominence=5.,
-                       top_n_peaks=None,
-                       distance=5.,
-                       refine=False,
-                       refine_window_width=5,
-                       display=False,
-                       width=1280,
-                       height=720,
-                       return_jsonstring=False,
-                       renderer='default',
-                       save_fig=False,
-                       fig_type='iframe+png',
-                       filename=None,
-                       open_iframe=False,
-                       stype='science+standard'):
-        '''
+    def find_arc_lines(
+        self,
+        spec_id=None,
+        prominence=5.0,
+        top_n_peaks=None,
+        distance=5.0,
+        refine=False,
+        refine_window_width=5,
+        display=False,
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        renderer="default",
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         spec_id: int or None (Default: None)
@@ -1496,11 +1603,11 @@ class OneDSpec():
         -------
         JSON strings if return_jsonstring is set to True
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_arc_spec_available:
 
@@ -1512,9 +1619,10 @@ class OneDSpec():
 
                     print(list(self.science_spectrum_list.keys()))
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -1539,20 +1647,22 @@ class OneDSpec():
                         save_fig=save_fig,
                         fig_type=fig_type,
                         filename=filename,
-                        open_iframe=open_iframe)
+                        open_iframe=open_iframe,
+                    )
 
                     n_peaks = len(self.science_spectrum_list[i].peaks)
                     self.logger.info(
-                        '{} arc lines are found in '.format(n_peaks) +
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "{} arc lines are found in ".format(n_peaks)
+                        + "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
                 self.science_arc_lines_available = True
 
             else:
 
-                self.logger.warning('Science arc spectrum/a are not imported.')
+                self.logger.warning("Science arc spectrum/a are not imported.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_arc_spec_available:
 
@@ -1570,25 +1680,27 @@ class OneDSpec():
                     save_fig=save_fig,
                     fig_type=fig_type,
                     filename=filename,
-                    open_iframe=open_iframe)
+                    open_iframe=open_iframe,
+                )
 
                 n_peaks = len(self.standard_spectrum_list[0].peaks)
-                self.logger.info('{} arc lines are found in '.format(n_peaks) +
-                                 'standard_spectrum_list.')
+                self.logger.info(
+                    "{} arc lines are found in ".format(n_peaks)
+                    + "standard_spectrum_list."
+                )
 
                 self.standard_arc_lines_available = True
 
             else:
 
                 self.logger.warning(
-                    'Standard arc spectrum/a are not imported.')
+                    "Standard arc spectrum/a are not imported."
+                )
 
-    def initialise_calibrator(self,
-                              spec_id=None,
-                              peaks=None,
-                              arc_spec=None,
-                              stype='science+standard'):
-        '''
+    def initialise_calibrator(
+        self, spec_id=None, peaks=None, arc_spec=None, stype="science+standard"
+    ):
+        """
         If the peaks were found with find_arc_lines(), peaks and spectrum can
         be None.
 
@@ -1603,11 +1715,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1616,7 +1728,8 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
                     for i in spec_id:
 
@@ -1625,10 +1738,11 @@ class OneDSpec():
                             self.add_science_spectrum1D(i)
 
                             self.logger.warning(
-                                'The given spec_id, {}, does not '
-                                'exist. A new spectrum1D is created. '
-                                'Please check you are providing the '
-                                'correct spec_id.'.format(spec_id))
+                                "The given spec_id, {}, does not "
+                                "exist. A new spectrum1D is created. "
+                                "Please check you are providing the "
+                                "correct spec_id.".format(spec_id)
+                            )
 
                         else:
 
@@ -1642,39 +1756,47 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_wavecal[i].from_spectrum1D(
-                    self.science_spectrum_list[i])
+                    self.science_spectrum_list[i]
+                )
                 self.science_wavecal[i].initialise_calibrator(
-                    peaks=peaks, arc_spec=arc_spec)
+                    peaks=peaks, arc_spec=arc_spec
+                )
                 self.science_wavecal[i].set_calibrator_properties()
                 self.science_wavecal[i].set_hough_properties()
                 self.science_wavecal[i].set_ransac_properties()
 
                 self.logger.info(
-                    'Calibrator is initialised for '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Calibrator is initialised for "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.from_spectrum1D(
-                self.standard_spectrum_list[0])
-            self.standard_wavecal.initialise_calibrator(peaks=peaks,
-                                                        arc_spec=arc_spec)
+                self.standard_spectrum_list[0]
+            )
+            self.standard_wavecal.initialise_calibrator(
+                peaks=peaks, arc_spec=arc_spec
+            )
             self.standard_wavecal.set_calibrator_properties()
             self.standard_wavecal.set_hough_properties()
             self.standard_wavecal.set_ransac_properties()
 
-            self.logger.info('Calibrator is initialised for the '
-                             'standard_spectrum_list.')
+            self.logger.info(
+                "Calibrator is initialised for the " "standard_spectrum_list."
+            )
 
-    def set_calibrator_properties(self,
-                                  spec_id=None,
-                                  num_pix=None,
-                                  pixel_list=None,
-                                  plotting_library='plotly',
-                                  logger_name='Calibrator',
-                                  log_level='info',
-                                  stype='science+standard'):
-        '''
+    def set_calibrator_properties(
+        self,
+        spec_id=None,
+        num_pix=None,
+        pixel_list=None,
+        plotting_library="plotly",
+        logger_name="Calibrator",
+        log_level="info",
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         spec_id: int or None (Default: None)
@@ -1699,11 +1821,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1712,9 +1834,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -1730,33 +1853,40 @@ class OneDSpec():
                     pixel_list=pixel_list,
                     plotting_library=plotting_library,
                     logger_name=logger_name,
-                    log_level=log_level)
+                    log_level=log_level,
+                )
                 self.logger.info(
-                    'Calibrator properties are set for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Calibrator properties are set for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.set_calibrator_properties(
                 num_pix=num_pix,
                 pixel_list=pixel_list,
                 plotting_library=plotting_library,
                 logger_name=logger_name,
-                log_level=log_level)
-            self.logger.info('Calibrator properties are set for the '
-                             'standard_spectrum_list.')
+                log_level=log_level,
+            )
+            self.logger.info(
+                "Calibrator properties are set for the "
+                "standard_spectrum_list."
+            )
 
-    def set_hough_properties(self,
-                             spec_id=None,
-                             num_slopes=5000,
-                             xbins=200,
-                             ybins=200,
-                             min_wavelength=3000.,
-                             max_wavelength=10000.,
-                             range_tolerance=500,
-                             linearity_tolerance=100,
-                             stype='science+standard'):
-        '''
+    def set_hough_properties(
+        self,
+        spec_id=None,
+        num_slopes=5000,
+        xbins=200,
+        ybins=200,
+        min_wavelength=3000.0,
+        max_wavelength=10000.0,
+        range_tolerance=500,
+        linearity_tolerance=100,
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         spec_id: int (Default: None)
@@ -1782,11 +1912,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1795,9 +1925,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -1815,12 +1946,14 @@ class OneDSpec():
                     min_wavelength=min_wavelength,
                     max_wavelength=max_wavelength,
                     range_tolerance=range_tolerance,
-                    linearity_tolerance=linearity_tolerance)
+                    linearity_tolerance=linearity_tolerance,
+                )
                 self.logger.info(
-                    'Hough properties are set for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Hough properties are set for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.set_hough_properties(
                 num_slopes=num_slopes,
@@ -1829,24 +1962,28 @@ class OneDSpec():
                 min_wavelength=min_wavelength,
                 max_wavelength=max_wavelength,
                 range_tolerance=range_tolerance,
-                linearity_tolerance=linearity_tolerance)
-            self.logger.info('Hough properties are set for the '
-                             'standard_spectrum_list.')
+                linearity_tolerance=linearity_tolerance,
+            )
+            self.logger.info(
+                "Hough properties are set for the " "standard_spectrum_list."
+            )
 
-    def set_ransac_properties(self,
-                              spec_id=None,
-                              sample_size=5,
-                              top_n_candidate=5,
-                              linear=True,
-                              filter_close=False,
-                              ransac_tolerance=5,
-                              candidate_weighted=True,
-                              hough_weight=1.0,
-                              minimum_matches=3,
-                              minimum_peak_utilisation=0.,
-                              minimum_fit_error=1e-4,
-                              stype='science+standard'):
-        '''
+    def set_ransac_properties(
+        self,
+        spec_id=None,
+        sample_size=5,
+        top_n_candidate=5,
+        linear=True,
+        filter_close=False,
+        ransac_tolerance=5,
+        candidate_weighted=True,
+        hough_weight=1.0,
+        minimum_matches=3,
+        minimum_peak_utilisation=0.0,
+        minimum_fit_error=1e-4,
+        stype="science+standard",
+    ):
+        """
         Configure the Calibrator. This may require some manual twiddling before
         the calibrator can work efficiently. However, in theory, a large
         max_tries in fit() should provide a good solution in the expense of
@@ -1887,11 +2024,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1900,9 +2037,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -1923,12 +2061,14 @@ class OneDSpec():
                     hough_weight=hough_weight,
                     minimum_matches=minimum_matches,
                     minimum_peak_utilisation=minimum_peak_utilisation,
-                    minimum_fit_error=minimum_fit_error)
+                    minimum_fit_error=minimum_fit_error,
+                )
                 self.logger.info(
-                    'Ransac properties are set for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Ransac properties are set for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.set_ransac_properties(
                 sample_size=sample_size,
@@ -1940,16 +2080,16 @@ class OneDSpec():
                 hough_weight=hough_weight,
                 minimum_matches=minimum_matches,
                 minimum_peak_utilisation=minimum_peak_utilisation,
-                minimum_fit_error=minimum_fit_error)
-            self.logger.info('Ransac properties are set for the '
-                             'standard_spectrum_list.')
+                minimum_fit_error=minimum_fit_error,
+            )
+            self.logger.info(
+                "Ransac properties are set for the " "standard_spectrum_list."
+            )
 
-    def set_known_pairs(self,
-                        pix=None,
-                        wave=None,
-                        spec_id=None,
-                        stype='science+standard'):
-        '''
+    def set_known_pairs(
+        self, pix=None, wave=None, spec_id=None, stype="science+standard"
+    ):
+        """
         Parameters
         ----------
         pix : numeric value, list or numpy 1D array (N) (Default: None)
@@ -1962,11 +2102,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -1975,9 +2115,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -1990,28 +2131,33 @@ class OneDSpec():
 
                 self.science_wavecal[i].set_known_pairs(pix=pix, wave=wave)
                 self.logger.info(
-                    'Known pixel-wavelength pairs are added to '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Known pixel-wavelength pairs are added to "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
-            self.logger.info('Known pixel-wavelength pairs are added to '
-                             'standard_spectrum_list.')
+            self.logger.info(
+                "Known pixel-wavelength pairs are added to "
+                "standard_spectrum_list."
+            )
 
-    def add_user_atlas(self,
-                       elements,
-                       wavelengths,
-                       spec_id=None,
-                       intensities=None,
-                       candidate_tolerance=10.,
-                       constrain_poly=False,
-                       vacuum=False,
-                       pressure=101325.,
-                       temperature=273.15,
-                       relative_humidity=0.,
-                       stype='science+standard'):
-        '''
+    def add_user_atlas(
+        self,
+        elements,
+        wavelengths,
+        spec_id=None,
+        intensities=None,
+        candidate_tolerance=10.0,
+        constrain_poly=False,
+        vacuum=False,
+        pressure=101325.0,
+        temperature=273.15,
+        relative_humidity=0.0,
+        stype="science+standard",
+    ):
+        """
         Append the user supplied arc lines to the calibrator.
 
         The vacuum to air wavelength conversion is deafult to False because
@@ -2050,27 +2196,30 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         if pressure is None:
             pressure = 101325.0
-            self.logger.warning('Pressure is not provided, set to 1 unit of '
-                                'standard atmosphere.')
+            self.logger.warning(
+                "Pressure is not provided, set to 1 unit of "
+                "standard atmosphere."
+            )
 
         if temperature is None:
             temperature = 273.15
             self.logger.warning(
-                'Temperature is not provided, set to 0 degrees '
-                'Celsius.')
+                "Temperature is not provided, set to 0 degrees " "Celsius."
+            )
 
         if relative_humidity is None:
-            relative_humidity = 0.
+            relative_humidity = 0.0
             self.logger.warning(
-                'Relative humidity is not provided, set to 0%.')
+                "Relative humidity is not provided, set to 0%."
+            )
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -2079,9 +2228,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -2101,14 +2251,16 @@ class OneDSpec():
                     vacuum=vacuum,
                     pressure=pressure,
                     temperature=temperature,
-                    relative_humidity=relative_humidity)
+                    relative_humidity=relative_humidity,
+                )
                 self.logger.info(
-                    'Added user supplied atlas to '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Added user supplied atlas to "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
             self.science_atlas_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.add_user_atlas(
                 elements=elements,
@@ -2119,27 +2271,31 @@ class OneDSpec():
                 vacuum=vacuum,
                 pressure=pressure,
                 temperature=temperature,
-                relative_humidity=relative_humidity)
-            self.logger.info('Added user supplied atlas to '
-                             'standard_spectrum_list.')
+                relative_humidity=relative_humidity,
+            )
+            self.logger.info(
+                "Added user supplied atlas to " "standard_spectrum_list."
+            )
 
             self.standard_atlas_available = True
 
-    def add_atlas(self,
-                  elements,
-                  spec_id=None,
-                  min_atlas_wavelength=3000.,
-                  max_atlas_wavelength=10000.,
-                  min_intensity=10.,
-                  min_distance=10.,
-                  candidate_tolerance=10.,
-                  constrain_poly=False,
-                  vacuum=False,
-                  pressure=101325.,
-                  temperature=273.15,
-                  relative_humidity=0,
-                  stype='science+standard'):
-        '''
+    def add_atlas(
+        self,
+        elements,
+        spec_id=None,
+        min_atlas_wavelength=3000.0,
+        max_atlas_wavelength=10000.0,
+        min_intensity=10.0,
+        min_distance=10.0,
+        candidate_tolerance=10.0,
+        constrain_poly=False,
+        vacuum=False,
+        pressure=101325.0,
+        temperature=273.15,
+        relative_humidity=0,
+        stype="science+standard",
+    ):
+        """
         Parameters
         ----------
         elements: str or list of strings
@@ -2175,11 +2331,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -2188,9 +2344,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -2212,14 +2369,16 @@ class OneDSpec():
                     vacuum=vacuum,
                     pressure=pressure,
                     temperature=temperature,
-                    relative_humidity=relative_humidity)
+                    relative_humidity=relative_humidity,
+                )
                 self.logger.info(
-                    'Added atlas to '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Added atlas to "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
             self.science_atlas_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.add_atlas(
                 elements=elements,
@@ -2232,19 +2391,23 @@ class OneDSpec():
                 vacuum=vacuum,
                 pressure=pressure,
                 temperature=temperature,
-                relative_humidity=relative_humidity)
+                relative_humidity=relative_humidity,
+            )
             self.logger.info(
-                'Added atlas to '
-                'science_spectrum_list for spec_id: {}.'.format(i))
+                "Added atlas to "
+                "standard_spectrum_list for spec_id: {}.".format(i)
+            )
 
             self.standard_atlas_available = True
 
-    def remove_atlas_lines_range(self,
-                                 wavelength,
-                                 tolerance=10.,
-                                 spec_id=None,
-                                 stype='science+standard'):
-        '''
+    def remove_atlas_lines_range(
+        self,
+        wavelength,
+        tolerance=10.0,
+        spec_id=None,
+        stype="science+standard",
+    ):
+        """
         Remove arc lines within a certain wavelength range.
 
         Parameters
@@ -2258,11 +2421,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_atlas_available:
 
@@ -2273,9 +2436,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -2287,32 +2451,37 @@ class OneDSpec():
                 for i in spec_id:
 
                     self.science_wavecal[i].remove_atlas_lines_range(
-                        wavelength, tolerance)
+                        wavelength, tolerance
+                    )
                     self.logger.info(
-                        'Remove atlas in the range of '
-                        '{} +/- {}'.format(wavelength, tolerance) +
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Remove atlas in the range of "
+                        "{} +/- {}".format(wavelength, tolerance)
+                        + "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
             else:
 
-                self.logger.warning('Science atlas is not available.')
+                self.logger.warning("Science atlas is not available.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_atlas_available:
 
                 self.standard_wavecal.remove_atlas_lines_range(
-                    wavelength, tolerance)
-                self.logger.info('Remove atlas in the range of '
-                                 '{} +/- {}'.format(wavelength, tolerance) +
-                                 'standard_spectrum_list.')
+                    wavelength, tolerance
+                )
+                self.logger.info(
+                    "Remove atlas in the range of "
+                    "{} +/- {}".format(wavelength, tolerance)
+                    + "standard_spectrum_list."
+                )
 
             else:
 
-                self.logger.warning('Standard atlas is not available.')
+                self.logger.warning("Standard atlas is not available.")
 
-    def clear_atlas(self, spec_id=None, stype='science+standard'):
-        '''
+    def clear_atlas(self, spec_id=None, stype="science+standard"):
+        """
         Remove all the atlas lines from the calibrator.
 
         Parameters
@@ -2322,11 +2491,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_atlas_available:
 
@@ -2337,9 +2506,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -2352,31 +2522,33 @@ class OneDSpec():
 
                     self.science_wavecal[i].clear_atlas()
                     self.logger.info(
-                        'Atlas is removed from '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Atlas is removed from "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
                 self.science_atlas_available = False
 
             else:
 
-                self.logger.warning('Science atlas is not available.')
+                self.logger.warning("Science atlas is not available.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_atlas_available:
 
                 self.standard_wavecal.clear_atlas()
                 self.logger.info(
-                    'Atlas is removed from standard_spectrum_list.')
+                    "Atlas is removed from standard_spectrum_list."
+                )
 
                 self.standard_atlas_available = False
 
             else:
 
-                self.logger.warning('Standard atlas is not available.')
+                self.logger.warning("Standard atlas is not available.")
 
-    def list_atlas(self, spec_id=None, stype='science+standard'):
-        '''
+    def list_atlas(self, spec_id=None, stype="science+standard"):
+        """
         Remove all the atlas lines from the calibrator.
 
         Parameters
@@ -2386,11 +2558,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_atlas_available:
 
@@ -2401,9 +2573,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -2416,30 +2589,31 @@ class OneDSpec():
 
                     self.science_wavecal[i].list_atlas()
                     self.logger.info(
-                        'Listing the atlas of '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Listing the atlas of "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
             else:
 
-                self.logger.warning('Science atlas is not available.')
+                self.logger.warning("Science atlas is not available.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_atlas_available:
 
                 self.standard_wavecal.list_atlas()
-                self.logger.info('Listing the atlas of '
-                                 'standard_spectrum_list.')
+                self.logger.info(
+                    "Listing the atlas of " "standard_spectrum_list."
+                )
 
             else:
 
-                self.logger.warning('Standard atlas is not available.')
+                self.logger.warning("Standard atlas is not available.")
 
-    def do_hough_transform(self,
-                           spec_id=None,
-                           brute_force=False,
-                           stype='science+standard'):
-        '''
+    def do_hough_transform(
+        self, spec_id=None, brute_force=False, stype="science+standard"
+    ):
+        """
         ** brute_force is EXPERIMENTAL as of 1 Oct 2021 **
         The brute force method is supposed to provide all the possible
         solution, hence given a sufficiently large max_tries, the solution
@@ -2457,11 +2631,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -2470,9 +2644,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -2484,34 +2659,39 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_wavecal[i].do_hough_transform(
-                    brute_force=brute_force)
+                    brute_force=brute_force
+                )
                 self.logger.info(
-                    'Hough Transform is performed on '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Hough Transform is performed on "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
             self.science_hough_pairs_available = True
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_wavecal.do_hough_transform(brute_force=brute_force)
-            self.logger.info('Hough Transform is performed on '
-                             'standard_spectrum_list.')
+            self.logger.info(
+                "Hough Transform is performed on " "standard_spectrum_list."
+            )
 
             self.standard_hough_pairs_available = True
 
-    def plot_search_space(self,
-                          spec_id=None,
-                          fit_coeff=None,
-                          top_n_candidate=3,
-                          weighted=True,
-                          save_fig=False,
-                          fig_type='iframe+png',
-                          filename=None,
-                          return_jsonstring=False,
-                          renderer='default',
-                          display=False,
-                          stype='science+standard'):
-        '''
+    def plot_search_space(
+        self,
+        spec_id=None,
+        fit_coeff=None,
+        top_n_candidate=3,
+        weighted=True,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        return_jsonstring=False,
+        renderer="default",
+        display=False,
+        stype="science+standard",
+    ):
+        """
         A wrapper function to plot the search space in the Hough space.
 
         If fit fit_coefficients are provided, the model solution will be
@@ -2524,11 +2704,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_hough_pairs_available:
 
@@ -2539,9 +2719,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -2561,16 +2742,18 @@ class OneDSpec():
                         filename=filename,
                         return_jsonstring=return_jsonstring,
                         renderer=renderer,
-                        display=display)
+                        display=display,
+                    )
                     self.logger.info(
-                        'Search area of the Hough space is plotted for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Search area of the Hough space is plotted for the "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
             else:
 
-                self.logger.warning('Science atlas is not available.')
+                self.logger.warning("Science atlas is not available.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_hough_pairs_available:
 
@@ -2583,33 +2766,37 @@ class OneDSpec():
                     filename=filename,
                     return_jsonstring=return_jsonstring,
                     renderer=renderer,
-                    display=display)
+                    display=display,
+                )
                 self.logger.info(
-                    'Search area of the Hough space is plotted for the '
-                    'standard_spectrum_list.')
+                    "Search area of the Hough space is plotted for the "
+                    "standard_spectrum_list."
+                )
 
             else:
 
-                self.logger.warning('Standard atlas is not available.')
+                self.logger.warning("Standard atlas is not available.")
 
-    def fit(self,
-            spec_id=None,
-            max_tries=5000,
-            fit_deg=4,
-            fit_coeff=None,
-            fit_tolerance=10.,
-            fit_type='poly',
-            candidate_tolerance=2.,
-            brute_force=False,
-            progress=True,
-            return_solution=False,
-            display=False,
-            renderer='default',
-            save_fig=False,
-            fig_type='iframe+png',
-            filename=None,
-            stype='science+standard'):
-        '''
+    def fit(
+        self,
+        spec_id=None,
+        max_tries=5000,
+        fit_deg=4,
+        fit_coeff=None,
+        fit_tolerance=10.0,
+        fit_type="poly",
+        candidate_tolerance=2.0,
+        brute_force=False,
+        progress=True,
+        return_solution=False,
+        display=False,
+        renderer="default",
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        stype="science+standard",
+    ):
+        """
         A wrapper function to perform wavelength calibration with RASCAL. As of
         14 January 2020, it supports He, Ne, Ar, Cu, Kr, Cd, Xe, Hg and Th from
         `NIST <https://physics.nist.gov/PhysRefData/ASD/lines_form.html>`_.
@@ -2653,13 +2840,13 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
         solution = {}
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_hough_pairs_available:
 
@@ -2670,9 +2857,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -2685,38 +2873,42 @@ class OneDSpec():
 
                 for i in spec_id:
 
-                    solution_science.append(self.science_wavecal[i].fit(
-                        max_tries=max_tries,
-                        fit_deg=fit_deg,
-                        fit_coeff=fit_coeff,
-                        fit_tolerance=fit_tolerance,
-                        fit_type=fit_type,
-                        candidate_tolerance=candidate_tolerance,
-                        brute_force=brute_force,
-                        progress=progress,
-                        display=display,
-                        renderer=renderer,
-                        save_fig=save_fig,
-                        fig_type=fig_type,
-                        filename=filename,
-                        return_solution=return_solution))
+                    solution_science.append(
+                        self.science_wavecal[i].fit(
+                            max_tries=max_tries,
+                            fit_deg=fit_deg,
+                            fit_coeff=fit_coeff,
+                            fit_tolerance=fit_tolerance,
+                            fit_type=fit_type,
+                            candidate_tolerance=candidate_tolerance,
+                            brute_force=brute_force,
+                            progress=progress,
+                            display=display,
+                            renderer=renderer,
+                            save_fig=save_fig,
+                            fig_type=fig_type,
+                            filename=filename,
+                            return_solution=return_solution,
+                        )
+                    )
 
                     self.logger.info(
-                        'Wavelength solution is fitted for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Wavelength solution is fitted for the "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
                 self.science_wavecal_polynomial_available = True
-                solution['science'] = solution_science
+                solution["science"] = solution_science
 
             else:
 
-                self.logger.warning('Science hough pairs are not available.')
+                self.logger.warning("Science hough pairs are not available.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_hough_pairs_available:
 
-                solution['standard'] = self.standard_wavecal.fit(
+                solution["standard"] = self.standard_wavecal.fit(
                     max_tries=max_tries,
                     fit_deg=fit_deg,
                     fit_coeff=fit_coeff,
@@ -2730,37 +2922,42 @@ class OneDSpec():
                     save_fig=save_fig,
                     fig_type=fig_type,
                     filename=filename,
-                    return_solution=return_solution)
-                self.logger.info('Wavelength solution is fitted for the '
-                                 'standard_spectrum_list.')
+                    return_solution=return_solution,
+                )
+                self.logger.info(
+                    "Wavelength solution is fitted for the "
+                    "standard_spectrum_list."
+                )
 
                 self.standard_wavecal_polynomial_available = True
 
             else:
 
-                self.logger.warning('Standard spectrum/a are not imported.')
+                self.logger.warning("Standard spectrum/a are not imported.")
 
         if return_solution:
 
             return solution
 
-    def robust_refit(self,
-                     spec_id=None,
-                     fit_coeff=None,
-                     n_delta=None,
-                     refine=False,
-                     tolerance=10.,
-                     method='Nelder-Mead',
-                     convergence=1e-6,
-                     robust_refit=True,
-                     fit_deg=None,
-                     return_solution=False,
-                     display=False,
-                     renderer='default',
-                     save_fig=False,
-                     filename=None,
-                     stype='science+standard'):
-        '''
+    def robust_refit(
+        self,
+        spec_id=None,
+        fit_coeff=None,
+        n_delta=None,
+        refine=False,
+        tolerance=10.0,
+        method="Nelder-Mead",
+        convergence=1e-6,
+        robust_refit=True,
+        fit_deg=None,
+        return_solution=False,
+        display=False,
+        renderer="default",
+        save_fig=False,
+        filename=None,
+        stype="science+standard",
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
         Refine the fitted solution with a minimisation method as provided by
         scipy.optimize.minimize().
@@ -2800,13 +2997,13 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
         solution = {}
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_wavecal_polynomial_available:
 
@@ -2817,9 +3014,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
                 else:
@@ -2834,7 +3032,8 @@ class OneDSpec():
                     if fit_coeff is None:
 
                         fit_coeff = self.science_wavecal[
-                            i].spectrum1D.calibrator.fit_coeff
+                            i
+                        ].spectrum1D.calibrator.fit_coeff
 
                     solution_science.append(
                         self.science_wavecal[i].robust_refit(
@@ -2850,27 +3049,31 @@ class OneDSpec():
                             renderer=renderer,
                             save_fig=save_fig,
                             filename=filename,
-                            return_solution=return_solution))
+                            return_solution=return_solution,
+                        )
+                    )
                     self.logger.info(
-                        'Wavelength solution is refined for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Wavelength solution is refined for the "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
-                solution['science'] = solution_science
+                solution["science"] = solution_science
 
             else:
 
-                self.logger.warning('Science spectrum/a are not imported.')
+                self.logger.warning("Science spectrum/a are not imported.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
                 if fit_coeff is None:
 
                     fit_coeff = self.standard_wavecal[
-                        0].spectrum1D.calibrator.fit_coeff
+                        0
+                    ].spectrum1D.calibrator.fit_coeff
 
-                solution['standard'] = self.standard_wavecal.robust_refit(
+                solution["standard"] = self.standard_wavecal.robust_refit(
                     fit_coeff=fit_coeff,
                     n_delta=n_delta,
                     refine=refine,
@@ -2883,20 +3086,23 @@ class OneDSpec():
                     renderer=renderer,
                     save_fig=save_fig,
                     filename=filename,
-                    return_solution=return_solution)
-                self.logger.info('Wavelength solution is refined for the '
-                                 'standard_spectrum_list.')
+                    return_solution=return_solution,
+                )
+                self.logger.info(
+                    "Wavelength solution is refined for the "
+                    "standard_spectrum_list."
+                )
 
             else:
 
-                self.logger.warning('Standard spectrum/a are not imported.')
+                self.logger.warning("Standard spectrum/a are not imported.")
 
         if return_solution:
 
             return solution
 
-    def get_pix_wave_pairs(self, spec_id=None, stype='science+standard'):
-        '''
+    def get_pix_wave_pairs(self, spec_id=None, stype="science+standard"):
+        """
         Return the list of matched_peaks and matched_atlas with their
         position in the array.
 
@@ -2914,13 +3120,13 @@ class OneDSpec():
             lists of tuples each containing the array position, peak (pixel)
             and atlas (wavelength) in the order of the given spec_id.
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
         pw_pairs = {}
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_wavecal_polynomial_available:
 
@@ -2931,9 +3137,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
                 else:
@@ -2946,27 +3153,27 @@ class OneDSpec():
                 for i in spec_id:
 
                     pw_pairs_science.append(
-                        self.science_wavecal[i].get_pix_wave_pairs())
+                        self.science_wavecal[i].get_pix_wave_pairs()
+                    )
 
-                pw_pairs['science'] = pw_pairs_science
+                pw_pairs["science"] = pw_pairs_science
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
                 pw_pairs_standard = self.standard_wavecal[
-                    0].get_pix_wave_pairs()
+                    0
+                ].get_pix_wave_pairs()
 
-                pw_pairs['standard'] = pw_pairs_standard
+                pw_pairs["standard"] = pw_pairs_standard
 
         return pw_pairs
 
-    def add_pix_wave_pair(self,
-                          pix,
-                          wave,
-                          spec_id=None,
-                          stype='science+standard'):
-        '''
+    def add_pix_wave_pair(
+        self, pix, wave, spec_id=None, stype="science+standard"
+    ):
+        """
         Adding extra pixel-wavelength pair to the Calibrator for refitting.
         This DOES NOT work before the Calibrator having fit for a solution
         yet: use set_known_pairs() for that purpose.
@@ -2982,11 +3189,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_wavecal_polynomial_available:
 
@@ -2997,9 +3204,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
                 else:
@@ -3011,17 +3219,16 @@ class OneDSpec():
 
                     self.science_wavecal[i].add_pix_wave_pair(pix, wave)
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
                 self.standard_wavecal.add_pix_wave_pair(pix, wave)
 
-    def remove_pix_wave_pair(self,
-                             arg,
-                             spec_id=None,
-                             stype='science+standard'):
-        '''
+    def remove_pix_wave_pair(
+        self, arg, spec_id=None, stype="science+standard"
+    ):
+        """
         Remove fitted pixel-wavelength pair from the Calibrator for refitting.
         The positions can be found from get_pix_wave_pairs(). One at a time.
 
@@ -3034,11 +3241,11 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_wavecal_polynomial_available:
 
@@ -3049,9 +3256,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
                 else:
@@ -3063,21 +3271,23 @@ class OneDSpec():
 
                     self.science_wavecal[i].remove_pix_wave_pair(arg)
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
                 self.standard_wavecal.remove_pix_wave_pair(arg)
 
-    def manual_refit(self,
-                     matched_peaks=None,
-                     matched_atlas=None,
-                     degree=None,
-                     x0=None,
-                     return_solution=False,
-                     spec_id=None,
-                     stype='science+standard'):
-        '''
+    def manual_refit(
+        self,
+        matched_peaks=None,
+        matched_atlas=None,
+        degree=None,
+        x0=None,
+        return_solution=False,
+        spec_id=None,
+        stype="science+standard",
+    ):
+        """
         Perform a refinement of the matched peaks and atlas lines.
 
         This function takes lists of matched peaks and atlases, along with
@@ -3112,12 +3322,12 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
-        stype_split = stype.split('+')
+        """
+        stype_split = stype.split("+")
 
         solution = {}
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_wavecal_polynomial_available:
 
@@ -3128,9 +3338,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
                 else:
@@ -3148,32 +3359,35 @@ class OneDSpec():
                             matched_atlas=matched_atlas,
                             degree=degree,
                             x0=x0,
-                            return_solution=return_solution))
+                            return_solution=return_solution,
+                        )
+                    )
 
-                solution['science'] = solution_science
+                solution["science"] = solution_science
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
-                solution['standard'] = self.standard_wavecal.manual_refit(
+                solution["standard"] = self.standard_wavecal.manual_refit(
                     matched_peaks=matched_peaks,
                     matched_atlas=matched_atlas,
                     degree=degree,
                     x0=x0,
-                    return_solution=return_solution)
+                    return_solution=return_solution,
+                )
 
         if return_solution:
 
             return solution
 
-    def get_calibrator(self, spec_id=None, stype='science+standard'):
+    def get_calibrator(self, spec_id=None, stype="science+standard"):
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
         calibrators = {}
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -3182,9 +3396,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
             else:
@@ -3197,24 +3412,28 @@ class OneDSpec():
             for i in spec_id:
 
                 calibrator_science.append(
-                    getattr(self.science_wavecal[i].spectrum1D, 'calibrator'))
+                    getattr(self.science_wavecal[i].spectrum1D, "calibrator")
+                )
 
-            calibrators['science'] = calibrator_science
+            calibrators["science"] = calibrator_science
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
-            calibrators['standard'] = getattr(
-                self.standard_wavecal[0].spectrum1D, 'calibrator')
+            calibrators["standard"] = getattr(
+                self.standard_wavecal[0].spectrum1D, "calibrator"
+            )
 
         return calibrators
 
-    def apply_wavelength_calibration(self,
-                                     spec_id=None,
-                                     wave_start=None,
-                                     wave_end=None,
-                                     wave_bin=None,
-                                     stype='science+standard'):
-        '''
+    def apply_wavelength_calibration(
+        self,
+        spec_id=None,
+        wave_start=None,
+        wave_end=None,
+        wave_bin=None,
+        stype="science+standard",
+    ):
+        """
         Apply the wavelength calibration. Because the polynomial fit can run
         away at the two ends, the default minimum and maximum are limited to
         1,000 and 12,000 A, respectively. This can be overridden by providing
@@ -3233,11 +3452,11 @@ class OneDSpec():
         stype: str or None (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if self.science_wavecal_polynomial_available:
 
@@ -3248,9 +3467,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -3265,8 +3485,13 @@ class OneDSpec():
                     spec = self.science_spectrum_list[i]
 
                     # Adjust for pixel shift due to chip gaps
-                    wave = self.science_wavecal[i].polyval[spec.fit_type](
-                        np.array(spec.pixel_list), spec.fit_coeff).reshape(-1)
+                    wave = (
+                        self.science_wavecal[i]
+                        .polyval[spec.fit_type](
+                            np.array(spec.pixel_list), spec.fit_coeff
+                        )
+                        .reshape(-1)
+                    )
 
                     # compute the new equally-spaced wavelength array
                     if wave_bin is None:
@@ -3287,7 +3512,8 @@ class OneDSpec():
                         np.array(wave_resampled).reshape(-1),
                         np.array(wave).reshape(-1),
                         np.array(spec.count).reshape(-1),
-                        verbose=True)
+                        verbose=True,
+                    )
 
                     if spec.count_err is not None:
 
@@ -3295,7 +3521,8 @@ class OneDSpec():
                             np.array(wave_resampled).reshape(-1),
                             np.array(wave).reshape(-1),
                             np.array(spec.count_err).reshape(-1),
-                            verbose=True)
+                            verbose=True,
+                        )
 
                     if spec.count_sky is not None:
 
@@ -3303,33 +3530,38 @@ class OneDSpec():
                             np.array(wave_resampled).reshape(-1),
                             np.array(wave).reshape(-1),
                             np.array(spec.count_sky).reshape(-1),
-                            verbose=True)
+                            verbose=True,
+                        )
 
                     spec.add_wavelength(wave)
                     spec.add_wavelength_resampled(wave_resampled)
-                    spec.add_count_resampled(count_resampled,
-                                             count_err_resampled,
-                                             count_sky_resampled)
+                    spec.add_count_resampled(
+                        count_resampled,
+                        count_err_resampled,
+                        count_sky_resampled,
+                    )
 
                 self.logger.info(
-                    'Wavelength calibration is applied for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "Wavelength calibration is applied for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
                 self.science_wavelength_calibrated = True
                 self.science_wavelength_resampled = True
 
             else:
 
-                self.logger.warning('Science spectrum/a are not imported.')
+                self.logger.warning("Science spectrum/a are not imported.")
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             if self.standard_wavecal_polynomial_available:
 
                 spec = self.standard_spectrum_list[0]
 
                 # Adjust for pixel shift due to chip gaps
-                wave = self.standard_wavecal.polyval[spec.fit_type](np.array(
-                    spec.pixel_list), spec.fit_coeff).reshape(-1)
+                wave = self.standard_wavecal.polyval[spec.fit_type](
+                    np.array(spec.pixel_list), spec.fit_coeff
+                ).reshape(-1)
 
                 # compute the new equally-spaced wavelength array
                 if wave_bin is None:
@@ -3351,7 +3583,8 @@ class OneDSpec():
                     np.array(wave_resampled).reshape(-1),
                     np.array(wave).reshape(-1),
                     np.array(spec.count).reshape(-1),
-                    verbose=True)
+                    verbose=True,
+                )
 
                 if spec.count_err is not None:
 
@@ -3359,7 +3592,8 @@ class OneDSpec():
                         np.array(wave_resampled).reshape(-1),
                         np.array(wave).reshape(-1),
                         np.array(spec.count_err).reshape(-1),
-                        verbose=True)
+                        verbose=True,
+                    )
 
                 if spec.count_sky is not None:
 
@@ -3367,26 +3601,30 @@ class OneDSpec():
                         np.array(wave_resampled).reshape(-1),
                         np.array(wave).reshape(-1),
                         np.array(spec.count_sky).reshape(-1),
-                        verbose=True)
+                        verbose=True,
+                    )
 
                 spec.add_wavelength(wave)
                 spec.add_wavelength_resampled(wave_resampled)
-                spec.add_count_resampled(count_resampled, count_err_resampled,
-                                         count_sky_resampled)
+                spec.add_count_resampled(
+                    count_resampled, count_err_resampled, count_sky_resampled
+                )
 
-                self.logger.info('Wavelength calibration is applied for the '
-                                 'standard_spectrum_list.')
+                self.logger.info(
+                    "Wavelength calibration is applied for the "
+                    "standard_spectrum_list."
+                )
                 self.standard_wavelength_calibrated = True
                 self.standard_wavelength_resampled = True
 
             else:
 
-                self.logger.warning('Standard spectrum is not imported.')
+                self.logger.warning("Standard spectrum is not imported.")
 
             self.standard_wavelength_calibrated = True
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
-        '''
+        """
         Parameters
         ----------
         target: str
@@ -3394,12 +3632,12 @@ class OneDSpec():
         cutoff: float (Default: 0.4)
             The similarity tolerance [0=completely different, 1=identical]
 
-        '''
+        """
 
         self.fluxcal.lookup_standard_libraries(target=target, cutoff=cutoff)
 
-    def load_standard(self, target, library=None, ftype='flux', cutoff=0.4):
-        '''
+    def load_standard(self, target, library=None, ftype="flux", cutoff=0.4):
+        """
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag. The units of the data are always in
 
@@ -3418,25 +3656,26 @@ class OneDSpec():
         cutoff: float (Default: 0.4)
             The toleranceold for the word similarity in the range of [0, 1].
 
-        '''
+        """
 
-        self.fluxcal.load_standard(target=target,
-                                   library=library,
-                                   ftype=ftype,
-                                   cutoff=cutoff)
-        self.logger.info('Loaded standard: {} from {}'.format(target, library))
+        self.fluxcal.load_standard(
+            target=target, library=library, ftype=ftype, cutoff=cutoff
+        )
+        self.logger.info("Loaded standard: {} from {}".format(target, library))
 
-    def inspect_standard(self,
-                         display=True,
-                         renderer='default',
-                         width=1280,
-                         height=720,
-                         return_jsonstring=False,
-                         save_fig=False,
-                         fig_type='iframe+png',
-                         filename=None,
-                         open_iframe=False):
-        '''
+    def inspect_standard(
+        self,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         Parameters
         ----------
         display: bool (Default: True)
@@ -3467,36 +3706,40 @@ class OneDSpec():
         -------
         JSON strings if return_jsonstring is set to True.
 
-        '''
+        """
 
-        self.fluxcal.inspect_standard(renderer=renderer,
-                                      return_jsonstring=return_jsonstring,
-                                      display=display,
-                                      height=height,
-                                      width=width,
-                                      save_fig=save_fig,
-                                      fig_type=fig_type,
-                                      filename=filename,
-                                      open_iframe=open_iframe)
-        self.logger.info('Inspect standard.')
+        self.fluxcal.inspect_standard(
+            renderer=renderer,
+            return_jsonstring=return_jsonstring,
+            display=display,
+            height=height,
+            width=width,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            open_iframe=open_iframe,
+        )
+        self.logger.info("Inspect standard.")
 
         if return_jsonstring:
 
             return return_jsonstring
 
-    def get_sensitivity(self,
-                        k=3,
-                        method='interpolate',
-                        mask_range=[[6850, 6960], [7580, 7700]],
-                        mask_fit_order=1,
-                        mask_fit_size=5,
-                        smooth=False,
-                        slength=5,
-                        sorder=3,
-                        return_function=False,
-                        sens_deg=7,
-                        **kwargs):
-        '''
+    def get_sensitivity(
+        self,
+        k=3,
+        method="interpolate",
+        mask_range=[[6850, 6960], [7580, 7700]],
+        mask_fit_order=1,
+        mask_fit_size=5,
+        smooth=False,
+        slength=5,
+        sorder=3,
+        return_function=False,
+        sens_deg=7,
+        **kwargs
+    ):
+        """
         Parameters
         ----------
         k: integer [1,2,3,4,5 only]
@@ -3531,33 +3774,37 @@ class OneDSpec():
             keyword arguments for passing to the LOWESS function, see
             `statsmodels.nonparametric.smoothers_lowess.lowess()`
 
-        '''
+        """
 
         if self.standard_wavelength_calibrated:
 
-            self.fluxcal.get_sensitivity(k=k,
-                                         method=method,
-                                         mask_range=mask_range,
-                                         mask_fit_order=mask_fit_order,
-                                         mask_fit_size=mask_fit_size,
-                                         smooth=smooth,
-                                         slength=slength,
-                                         sorder=sorder,
-                                         return_function=return_function,
-                                         sens_deg=sens_deg,
-                                         **kwargs)
-            self.logger.info('Sensitivity curve computed.')
+            self.fluxcal.get_sensitivity(
+                k=k,
+                method=method,
+                mask_range=mask_range,
+                mask_fit_order=mask_fit_order,
+                mask_fit_size=mask_fit_size,
+                smooth=smooth,
+                slength=slength,
+                sorder=sorder,
+                return_function=return_function,
+                sens_deg=sens_deg,
+                **kwargs
+            )
+            self.logger.info("Sensitivity curve computed.")
             self.sensitivity_curve_available = True
 
         else:
 
-            error_msg = "Standard star is not wavelength calibrated, " +\
-                "sensitivity curve cannot be computed."
+            error_msg = (
+                "Standard star is not wavelength calibrated, "
+                + "sensitivity curve cannot be computed."
+            )
             self.logger.critical(error_msg)
             raise RuntimeError(error_msg)
 
-    def save_sensitivity_func(self, filename='sensitivity_func.npy'):
-        '''
+    def save_sensitivity_func(self, filename="sensitivity_func.npy"):
+        """
         Not-implemented wrapper.
 
         Parameters
@@ -3565,13 +3812,13 @@ class OneDSpec():
         filename: str
             Filename for the output interpolated sensivity curve.
 
-        '''
+        """
 
         self.fluxcal.save_sensitivity_func(filename=filename)
-        self.logger.info('Sensitivity curve saved at {}.'.format(filename))
+        self.logger.info("Sensitivity curve saved at {}.".format(filename))
 
     def add_sensitivity_func(self, sensitivity_func):
-        '''
+        """
         Provide a callable function of the detector sensitivity response.
 
         Parameters
@@ -3581,23 +3828,25 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
         self.fluxcal.add_sensitivity_func(sensitivity_func=sensitivity_func)
-        self.logger.info('User supplied sensitivity curve added.')
+        self.logger.info("User supplied sensitivity curve added.")
         self.sensitivity_curve_available = True
 
-    def inspect_sensitivity(self,
-                            display=True,
-                            renderer='default',
-                            width=1280,
-                            height=720,
-                            return_jsonstring=False,
-                            save_fig=False,
-                            fig_type='iframe+png',
-                            filename=None,
-                            open_iframe=False):
-        '''
+    def inspect_sensitivity(
+        self,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         Parameters
         ----------
         display: bool (Default: True)
@@ -3624,7 +3873,7 @@ class OneDSpec():
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
 
-        '''
+        """
 
         if self.sensitivity_curve_available:
 
@@ -3637,30 +3886,35 @@ class OneDSpec():
                 save_fig=save_fig,
                 fig_type=fig_type,
                 filename=filename,
-                open_iframe=open_iframe)
-            self.logger.info('Inspect sensitivity function.')
+                open_iframe=open_iframe,
+            )
+            self.logger.info("Inspect sensitivity function.")
 
         else:
 
-            self.logger.warning('Sensitivity function not available, it '
-                                'cannot be inspected.')
+            self.logger.warning(
+                "Sensitivity function not available, it "
+                "cannot be inspected."
+            )
 
-    def apply_flux_calibration(self,
-                               spec_id=None,
-                               inspect=False,
-                               wave_min=3500.,
-                               wave_max=8500.,
-                               display=False,
-                               renderer='default',
-                               width=1280,
-                               height=720,
-                               return_jsonstring=False,
-                               save_fig=False,
-                               fig_type='iframe+png',
-                               filename=None,
-                               open_iframe=False,
-                               stype='science+standard'):
-        '''
+    def apply_flux_calibration(
+        self,
+        spec_id=None,
+        inspect=False,
+        wave_min=3500.0,
+        wave_max=8500.0,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+        stype="science+standard",
+    ):
+        """
         Apply the computed sensitivity curve. And resample the spectra to
         match the highest resolution (the smallest wavelength bin) part of the
         spectrum.
@@ -3703,13 +3957,13 @@ class OneDSpec():
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
         if self.sensitivity_curve_available:
 
-            if 'science' in stype_split:
+            if "science" in stype_split:
 
                 if isinstance(spec_id, int):
 
@@ -3718,9 +3972,10 @@ class OneDSpec():
                 if spec_id is not None:
 
                     if not set(spec_id).issubset(
-                            list(self.science_spectrum_list.keys())):
+                        list(self.science_spectrum_list.keys())
+                    ):
 
-                        error_msg = 'The given spec_id does not exist.'
+                        error_msg = "The given spec_id does not exist."
                         self.logger.critical(error_msg)
                         raise ValueError(error_msg)
 
@@ -3745,16 +4000,19 @@ class OneDSpec():
                         save_fig=save_fig,
                         fig_type=fig_type,
                         filename=filename,
-                        open_iframe=open_iframe)
+                        open_iframe=open_iframe,
+                    )
                     self.science_spectrum_list[i].add_standard_header(
-                        self.standard_spectrum_list[0].spectrum_header)
+                        self.standard_spectrum_list[0].spectrum_header
+                    )
                     self.logger.info(
-                        'Flux calibration is applied for the '
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Flux calibration is applied for the "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
                 self.science_flux_calibrated = True
 
-            if 'standard' in stype_split:
+            if "standard" in stype_split:
 
                 self.fluxcal.apply_flux_calibration(
                     target_spectrum1D=self.standard_spectrum_list[0],
@@ -3769,21 +4027,27 @@ class OneDSpec():
                     save_fig=save_fig,
                     fig_type=fig_type,
                     filename=filename,
-                    open_iframe=open_iframe)
+                    open_iframe=open_iframe,
+                )
                 self.standard_spectrum_list[0].add_standard_header(
-                    self.standard_spectrum_list[0].spectrum_header)
-                self.logger.info('Flux calibration is applied for the '
-                                 'standard_spectrum_list.')
+                    self.standard_spectrum_list[0].spectrum_header
+                )
+                self.logger.info(
+                    "Flux calibration is applied for the "
+                    "standard_spectrum_list."
+                )
 
                 self.standard_flux_calibrated = True
 
         else:
 
-            self.logger.warning('Sensitivity function is not available, '
-                                'flux calibration is not possible.')
+            self.logger.warning(
+                "Sensitivity function is not available, "
+                "flux calibration is not possible."
+            )
 
     def _min_std(self, factor, flux, telluric_profile, continuum, sigma=2.0):
-        '''
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Minimisation function to get the best mutiplier for the strength
@@ -3803,7 +4067,7 @@ class OneDSpec():
         sigma: float (default: 3.5)
             Level of sigma clipping.
 
-        '''
+        """
 
         if factor < 0:
 
@@ -3815,11 +4079,10 @@ class OneDSpec():
 
         return nansum
 
-    def add_telluric_function(self,
-                              telluric,
-                              spec_id=None,
-                              stype='science+standard'):
-        '''
+    def add_telluric_function(
+        self, telluric, spec_id=None, stype="science+standard"
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Provide a callable function that gives the Telluric profile.
@@ -3832,11 +4095,11 @@ class OneDSpec():
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -3845,9 +4108,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -3866,20 +4130,22 @@ class OneDSpec():
                 if isinstance(telluric, (np.ndarray, list)):
 
                     science_spec.add_telluric_func(
-                        interp1d(telluric[0], telluric[1]))
+                        interp1d(telluric[0], telluric[1])
+                    )
 
                 if science_spec.wave is not None:
 
                     science_spec.add_telluric_profile(
-                        science_spec.telluric_func(science_spec.wave))
+                        science_spec.telluric_func(science_spec.wave)
+                    )
 
                 if science_spec.wave_resampled is not None:
 
                     science_spec.add_telluric_profile_resampled(
-                        science_spec.telluric_func(
-                            science_spec.wave_resampled))
+                        science_spec.telluric_func(science_spec.wave_resampled)
+                    )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             # Add to the standard spectrum
             standard_spec = self.standard_spectrum_list[0]
@@ -3891,20 +4157,23 @@ class OneDSpec():
             if isinstance(telluric, (np.ndarray, list)):
 
                 standard_spec.add_telluric_func(
-                    interp1d(telluric[0], telluric[1]))
+                    interp1d(telluric[0], telluric[1])
+                )
 
             if standard_spec.wave is not None:
 
                 standard_spec.add_telluric_profile(
-                    standard_spec.telluric_func(standard_spec.wave))
+                    standard_spec.telluric_func(standard_spec.wave)
+                )
 
             if standard_spec.wave_resampled is not None:
 
                 standard_spec.add_telluric_profile_resampled(
-                    standard_spec.telluric_func(standard_spec.wave_resampled))
+                    standard_spec.telluric_func(standard_spec.wave_resampled)
+                )
 
     def get_continuum(self, spec_id=None, **kwargs):
-        '''
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Get the continnum from the wave, count and flux.
@@ -3917,7 +4186,7 @@ class OneDSpec():
             The keyword arguments to be passed to the lowess function
             for generating the continuum.
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -3926,9 +4195,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -3946,15 +4216,17 @@ class OneDSpec():
             flux = science_spec.flux
 
             science_spec.add_count_continuum(
-                get_continuum(wave, count, **kwargs))
+                get_continuum(wave, count, **kwargs)
+            )
 
             if flux is not None:
 
                 science_spec.add_flux_continuum(
-                    get_continuum(wave, flux, **kwargs))
+                    get_continuum(wave, flux, **kwargs)
+                )
 
     def get_resampled_continuum(self, spec_id=None, **kwargs):
-        '''
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Get the continnum from the resampled wave, count and flux.
@@ -3967,7 +4239,7 @@ class OneDSpec():
             The keyword arguments to be passed to the lowess function
             for generating the continuum.
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -3976,9 +4248,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -3996,15 +4269,19 @@ class OneDSpec():
             flux_resampled = science_spec.flux_resampled
 
             science_spec.add_flux_resampled_continuum(
-                get_continuum(wave_resampled, flux_resampled, **kwargs))
+                get_continuum(wave_resampled, flux_resampled, **kwargs)
+            )
             science_spec.add_count_resampled_continuum(
-                get_continuum(wave_resampled, count_resampled, **kwargs))
+                get_continuum(wave_resampled, count_resampled, **kwargs)
+            )
 
-    def get_telluric_profile(self,
-                             spec_id=None,
-                             mask_range=[[6850, 6960], [7580, 7700]],
-                             return_function=False):
-        '''
+    def get_telluric_profile(
+        self,
+        spec_id=None,
+        mask_range=[[6850, 6960], [7580, 7700]],
+        return_function=False,
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Getting the Telluric absorption profile from the continuum of the
@@ -4021,17 +4298,20 @@ class OneDSpec():
             Set to True to explicitly return the interpolated function of
             the Telluric profile.
 
-        '''
+        """
 
         telluric_func = self.fluxcal.get_telluric_profile(
             wave=self.standard_spectrum_list[0].wave,
             flux=self.standard_spectrum_list[0].flux,
             continuum=self.standard_spectrum_list[0].flux_continuum,
             mask_range=mask_range,
-            return_function=return_function)
+            return_function=return_function,
+        )
 
-        self.logger.info('Copying the telluric absorption profile to '
-                         'the science spectrum1D(s).')
+        self.logger.info(
+            "Copying the telluric absorption profile to "
+            "the science spectrum1D(s)."
+        )
 
         if isinstance(spec_id, int):
 
@@ -4040,9 +4320,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4056,18 +4337,17 @@ class OneDSpec():
             science_spec = self.science_spectrum_list[i]
 
             science_spec.add_telluric_profile(
-                self.fluxcal.spectrum1D.telluric_profile)
+                self.fluxcal.spectrum1D.telluric_profile
+            )
 
         if return_function:
 
             return telluric_func
 
-    def get_telluric_correction(self,
-                                spec_id=None,
-                                factor=1.0,
-                                auto_apply=False,
-                                **kwargs):
-        '''
+    def get_telluric_correction(
+        self, spec_id=None, factor=1.0, auto_apply=False, **kwargs
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Get the telluric absorption profile from the standard star based on
@@ -4090,7 +4370,7 @@ class OneDSpec():
             automatically, which is currently an irresversible process through
             the public API.
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -4099,9 +4379,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4120,21 +4401,25 @@ class OneDSpec():
 
                 if self.standard_spectrum_list[0].telluric_func is None:
 
-                    err_msg = 'Telluric profile is not available, please ' +\
-                        'compute from the standard star, or manually ' +\
-                        'supply one.'
+                    err_msg = (
+                        "Telluric profile is not available, please "
+                        + "compute from the standard star, or manually "
+                        + "supply one."
+                    )
                     self.logger.error(err_msg)
 
                 else:
 
                     science_spec.add_telluric_func(
-                        self.standard_spectrum_list[0].telluric_func)
+                        self.standard_spectrum_list[0].telluric_func
+                    )
 
             wave = science_spec.wave
             flux = science_spec.flux
 
-            if ((science_spec.flux_continuum is None)
-                    or (len(kwargs.keys()) > 0)):
+            if (science_spec.flux_continuum is None) or (
+                len(kwargs.keys()) > 0
+            ):
 
                 self.get_continuum(i, **kwargs)
 
@@ -4143,19 +4428,19 @@ class OneDSpec():
             if science_spec.telluric_profile is None:
 
                 science_spec.add_telluric_profile(
-                    science_spec.telluric_func(wave))
+                    science_spec.telluric_func(wave)
+                )
 
             telluric_factor = optimize.minimize(
                 self._min_std,
                 np.nanmedian(flux),
                 args=(flux, science_spec.telluric_profile, flux_continuum),
                 tol=1e-20,
-                options={
-                    'maxiter': 10000
-                }).x
+                options={"maxiter": 10000},
+            ).x
 
             science_spec.add_telluric_factor(telluric_factor)
-            self.logger.info('telluric_factor is {}.'.format(telluric_factor))
+            self.logger.info("telluric_factor is {}.".format(telluric_factor))
 
             if self.science_wavelength_resampled:
 
@@ -4166,50 +4451,60 @@ class OneDSpec():
 
                     self.get_resampled_continuum(i, **kwargs)
 
-                flux_resampled_continuum =\
+                flux_resampled_continuum = (
                     science_spec.flux_resampled_continuum
+                )
 
-                if ((science_spec.telluric_profile_resampled is None)
-                        or (len(kwargs.keys()) > 0)):
+                if (science_spec.telluric_profile_resampled is None) or (
+                    len(kwargs.keys()) > 0
+                ):
 
                     science_spec.add_telluric_profile_resampled(
-                        science_spec.telluric_func(wave_resampled))
+                        science_spec.telluric_func(wave_resampled)
+                    )
 
                 telluric_factor_resampled = optimize.minimize(
                     self._min_std,
                     np.nanmedian(flux_resampled),
-                    args=(flux_resampled,
-                          science_spec.telluric_profile_resampled,
-                          flux_resampled_continuum),
-                    options={
-                        'maxiter': 10000
-                    }).x
+                    args=(
+                        flux_resampled,
+                        science_spec.telluric_profile_resampled,
+                        flux_resampled_continuum,
+                    ),
+                    options={"maxiter": 10000},
+                ).x
 
-                self.logger.info('telluric_factor_resampled is {}.'.format(
-                    telluric_factor_resampled))
+                self.logger.info(
+                    "telluric_factor_resampled is {}.".format(
+                        telluric_factor_resampled
+                    )
+                )
 
                 science_spec.add_telluric_factor_resampled(
-                    telluric_factor_resampled)
+                    telluric_factor_resampled
+                )
 
-            self.logger.info('telluric_factor is {}.'.format(telluric_factor))
+            self.logger.info("telluric_factor is {}.".format(telluric_factor))
 
         if auto_apply:
 
             self.apply_telluric_correction(factor=factor, spec_id=spec_id)
 
-    def inspect_telluric_profile(self,
-                                 display=True,
-                                 renderer='default',
-                                 width=1280,
-                                 height=720,
-                                 return_jsonstring=False,
-                                 save_fig=False,
-                                 fig_type='iframe+png',
-                                 filename=None,
-                                 open_iframe=False):
-        '''
+    def inspect_telluric_profile(
+        self,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
- 
+
         Display the Telluric profile.
 
         Parameters
@@ -4242,7 +4537,7 @@ class OneDSpec():
         -------
         JSON strings if return_jsonstring is set to True.
 
-        '''
+        """
 
         self.fluxcal.inspect_telluric_profile(
             display=display,
@@ -4253,22 +4548,25 @@ class OneDSpec():
             save_fig=save_fig,
             fig_type=fig_type,
             filename=filename,
-            open_iframe=open_iframe)
-        self.logger.info('Inspecting the telluric absorption profile.')
+            open_iframe=open_iframe,
+        )
+        self.logger.info("Inspecting the telluric absorption profile.")
 
-    def inspect_telluric_correction(self,
-                                    factor=1.0,
-                                    spec_id=None,
-                                    display=True,
-                                    renderer='default',
-                                    width=1280,
-                                    height=720,
-                                    return_jsonstring=False,
-                                    save_fig=False,
-                                    fig_type='iframe+png',
-                                    filename=None,
-                                    open_iframe=False):
-        '''
+    def inspect_telluric_correction(
+        self,
+        factor=1.0,
+        spec_id=None,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Inspect the Telluric absorption correction on top of pre-corrected
@@ -4309,7 +4607,7 @@ class OneDSpec():
         -------
         JSON strings if return_jsonstring is set to True.
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -4318,9 +4616,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4340,24 +4639,29 @@ class OneDSpec():
             wave = spec.wave
 
             fluxcount = spec.flux
-            fluxcount_name = 'Flux'
+            fluxcount_name = "Flux"
             fluxcount_continuum = spec.flux_continuum
             telluric_factor = spec.telluric_factor
             telluric_profile = spec.telluric_profile
 
-            flux_low = np.nanpercentile(np.array(fluxcount).reshape(-1),
-                                        5) / 1.5
-            flux_high = np.nanpercentile(np.array(fluxcount).reshape(-1),
-                                         95) * 1.5
-            flux_mask = ((np.array(fluxcount).reshape(-1) > flux_low)
-                         & (np.array(fluxcount).reshape(-1) < flux_high))
+            flux_low = (
+                np.nanpercentile(np.array(fluxcount).reshape(-1), 5) / 1.5
+            )
+            flux_high = (
+                np.nanpercentile(np.array(fluxcount).reshape(-1), 95) * 1.5
+            )
+            flux_mask = (np.array(fluxcount).reshape(-1) > flux_low) & (
+                np.array(fluxcount).reshape(-1) < flux_high
+            )
 
             if np.sum(flux_mask) > 0:
 
                 flux_min = np.nanmin(
-                    np.array(fluxcount).reshape(-1)[flux_mask])
+                    np.array(fluxcount).reshape(-1)[flux_mask]
+                )
                 flux_max = np.nanmax(
-                    np.array(fluxcount).reshape(-1)[flux_mask])
+                    np.array(fluxcount).reshape(-1)[flux_mask]
+                )
 
             else:
 
@@ -4365,78 +4669,103 @@ class OneDSpec():
                 flux_max = np.nanmax(np.array(fluxcount).reshape(-1))
 
             fig_sci = go.Figure(
-                layout=dict(autosize=False,
-                            height=height,
-                            width=width,
-                            updatemenus=list([
-                                dict(
-                                    active=0,
-                                    buttons=list([
-                                        dict(label='Log Scale',
-                                             method='update',
-                                             args=[{
-                                                 'visible': [True, True]
-                                             }, {
-                                                 'title': 'Log scale',
-                                                 'yaxis': {
-                                                     'type': 'log'
-                                                 }
-                                             }]),
-                                        dict(label='Linear Scale',
-                                             method='update',
-                                             args=[{
-                                                 'visible': [True, False]
-                                             }, {
-                                                 'title': 'Linear scale',
-                                                 'yaxis': {
-                                                     'type': 'linear'
-                                                 }
-                                             }])
-                                    ]),
-                                )
-                            ]),
-                            title='Log scale'))
+                layout=dict(
+                    autosize=False,
+                    height=height,
+                    width=width,
+                    updatemenus=list(
+                        [
+                            dict(
+                                active=0,
+                                buttons=list(
+                                    [
+                                        dict(
+                                            label="Log Scale",
+                                            method="update",
+                                            args=[
+                                                {"visible": [True, True]},
+                                                {
+                                                    "title": "Log scale",
+                                                    "yaxis": {"type": "log"},
+                                                },
+                                            ],
+                                        ),
+                                        dict(
+                                            label="Linear Scale",
+                                            method="update",
+                                            args=[
+                                                {"visible": [True, False]},
+                                                {
+                                                    "title": "Linear scale",
+                                                    "yaxis": {
+                                                        "type": "linear"
+                                                    },
+                                                },
+                                            ],
+                                        ),
+                                    ]
+                                ),
+                            )
+                        ]
+                    ),
+                    title="Log scale",
+                )
+            )
 
             # show the image on the top
             fig_sci.add_trace(
-                go.Scatter(x=wave,
-                           y=fluxcount,
-                           line=dict(color='royalblue'),
-                           name=fluxcount_name))
+                go.Scatter(
+                    x=wave,
+                    y=fluxcount,
+                    line=dict(color="royalblue"),
+                    name=fluxcount_name,
+                )
+            )
 
             fig_sci.add_trace(
-                go.Scatter(x=wave,
-                           y=fluxcount_continuum,
-                           line=dict(color='firebrick'),
-                           name="Continuum Flux"))
+                go.Scatter(
+                    x=wave,
+                    y=fluxcount_continuum,
+                    line=dict(color="firebrick"),
+                    name="Continuum Flux",
+                )
+            )
 
             fig_sci.add_trace(
-                go.Scatter(x=wave,
-                           y=(fluxcount +
-                              telluric_profile * telluric_factor * factor),
-                           line=dict(color='orange'),
-                           name="Telluric Corrected Spectrum"))
+                go.Scatter(
+                    x=wave,
+                    y=(
+                        fluxcount + telluric_profile * telluric_factor * factor
+                    ),
+                    line=dict(color="orange"),
+                    name="Telluric Corrected Spectrum",
+                )
+            )
 
             fig_sci.add_trace(
-                go.Scatter(x=wave,
-                           y=(telluric_profile * telluric_factor * factor),
-                           line=dict(color='grey'),
-                           name="Telluric Profile"))
+                go.Scatter(
+                    x=wave,
+                    y=(telluric_profile * telluric_factor * factor),
+                    line=dict(color="grey"),
+                    name="Telluric Profile",
+                )
+            )
 
-            fig_sci.update_layout(hovermode='closest',
-                                  showlegend=True,
-                                  xaxis=dict(title='Wavelength / A'),
-                                  yaxis=dict(title='Flux',
-                                             range=[flux_min, flux_max],
-                                             type='linear'),
-                                  legend=go.layout.Legend(
-                                      x=0,
-                                      y=1,
-                                      traceorder="normal",
-                                      font=dict(family="sans-serif",
-                                                size=12,
-                                                color="black"),
-                                      bgcolor='rgba(0,0,0,0)'))
+            fig_sci.update_layout(
+                hovermode="closest",
+                showlegend=True,
+                xaxis=dict(title="Wavelength / A"),
+                yaxis=dict(
+                    title="Flux", range=[flux_min, flux_max], type="linear"
+                ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=1,
+                    traceorder="normal",
+                    font=dict(family="sans-serif", size=12, color="black"),
+                    bgcolor="rgba(0,0,0,0)",
+                ),
+            )
 
             if filename is None:
 
@@ -4444,29 +4773,30 @@ class OneDSpec():
 
             if save_fig:
 
-                fig_type_split = fig_type.split('+')
+                fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
 
-                    save_path = filename + '_' + str(i) + '.' + t
+                    save_path = filename + "_" + str(i) + "." + t
 
-                    if t == 'iframe':
+                    if t == "iframe":
 
-                        pio.write_html(fig_sci,
-                                       save_path,
-                                       auto_open=open_iframe)
+                        pio.write_html(
+                            fig_sci, save_path, auto_open=open_iframe
+                        )
 
-                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+                    elif t in ["jpg", "png", "svg", "pdf"]:
 
                         pio.write_image(fig_sci, save_path)
 
                     self.logger.info(
-                        'Figure is saved to {} for the '.format(save_path) +
-                        'science_spectrum_list for spec_id: {}.'.format(i))
+                        "Figure is saved to {} for the ".format(save_path)
+                        + "science_spectrum_list for spec_id: {}.".format(i)
+                    )
 
             if display:
 
-                if renderer == 'default':
+                if renderer == "default":
 
                     fig_sci.show()
 
@@ -4483,7 +4813,7 @@ class OneDSpec():
             return to_return
 
     def apply_telluric_correction(self, factor=1.0, spec_id=None):
-        '''
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         Apply the telluric correction with the extra multiplier 'factor'.
@@ -4503,7 +4833,7 @@ class OneDSpec():
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -4512,9 +4842,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4532,38 +4863,47 @@ class OneDSpec():
             if science_spec.telluric_profile is None:
 
                 self.logger.warning(
-                    'Telluric profile is not available, please '
-                    'construct a profile with get_telluric_profile().')
+                    "Telluric profile is not available, please "
+                    "construct a profile with get_telluric_profile()."
+                )
 
             else:
 
-                science_spec.flux = (science_spec.flux +
-                                     science_spec.telluric_profile *
-                                     science_spec.telluric_factor * factor)
+                science_spec.flux = (
+                    science_spec.flux
+                    + science_spec.telluric_profile
+                    * science_spec.telluric_factor
+                    * factor
+                )
 
             if self.science_wavelength_resampled:
 
                 if science_spec.telluric_profile_resampled is None:
 
                     self.logger.warning(
-                        'A resampled telluric profile is not available, '
-                        'please construct a profile with '
-                        'get_telluric_profile().')
+                        "A resampled telluric profile is not available, "
+                        "please construct a profile with "
+                        "get_telluric_profile()."
+                    )
 
                 else:
 
                     science_spec.flux_resampled = (
-                        science_spec.flux_resampled +
-                        science_spec.telluric_profile_resampled *
-                        science_spec.telluric_factor * factor)
+                        science_spec.flux_resampled
+                        + science_spec.telluric_profile_resampled
+                        * science_spec.telluric_factor
+                        * factor
+                    )
 
-    def set_atmospheric_extinction(self,
-                                   location='orm',
-                                   extinction_func=None,
-                                   kind='cubic',
-                                   fill_value='extrapolate',
-                                   **kwargs):
-        '''
+    def set_atmospheric_extinction(
+        self,
+        location="orm",
+        extinction_func=None,
+        kind="cubic",
+        fill_value="extrapolate",
+        **kwargs
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         The ORM atmospheric extinction correction table is taken from
@@ -4592,35 +4932,38 @@ class OneDSpec():
             Input wavelength in Angstrom, output magnitude of extinction per
             airmass. It will override the 'location'.
 
-        '''
+        """
 
         if (extinction_func is not None) and (callable(extinction_func)):
 
             self.extinction_func = extinction_func
             self.logger.info(
-                'Manual extinction correction function is loaded.')
+                "Manual extinction correction function is loaded."
+            )
 
         else:
 
             filename = pkg_resources.resource_filename(
-                'aspired', 'extinction/{}_atm_extinct.txt'.format(location))
-            extinction_table = np.loadtxt(filename, delimiter=',')
-            self.extinction_func = interp1d(extinction_table[:, 0],
-                                            extinction_table[:, 1],
-                                            kind=kind,
-                                            fill_value=fill_value,
-                                            **kwargs)
+                "aspired", "extinction/{}_atm_extinct.txt".format(location)
+            )
+            extinction_table = np.loadtxt(filename, delimiter=",")
+            self.extinction_func = interp1d(
+                extinction_table[:, 0],
+                extinction_table[:, 1],
+                kind=kind,
+                fill_value=fill_value,
+                **kwargs
+            )
             self.logger.info(
-                '{} extinction correction function is loaded.'.format(
-                    location))
+                "{} extinction correction function is loaded.".format(location)
+            )
 
         self.atmospheric_extinction_correction_available = True
 
-    def apply_atmospheric_extinction_correction(self,
-                                                science_airmass=None,
-                                                standard_airmass=None,
-                                                spec_id=None):
-        '''
+    def apply_atmospheric_extinction_correction(
+        self, science_airmass=None, standard_airmass=None, spec_id=None
+    ):
+        """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
         This is the first step in allowing atmospheric extinction correction
@@ -4646,7 +4989,7 @@ class OneDSpec():
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
 
-        '''
+        """
 
         if isinstance(spec_id, int):
 
@@ -4655,9 +4998,10 @@ class OneDSpec():
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4671,7 +5015,8 @@ class OneDSpec():
 
             self.logger.warning(
                 "Atmospheric extinction correction is not configured, "
-                "The default ORM extinction curve is used.")
+                "The default ORM extinction curve is used."
+            )
 
             self.set_atmospheric_extinction()
 
@@ -4683,14 +5028,16 @@ class OneDSpec():
 
                 standard_am = standard_airmass
                 self.logger.info(
-                    'Airmass is set to be {}.'.format(standard_am))
+                    "Airmass is set to be {}.".format(standard_am)
+                )
 
             if isinstance(standard_airmass, str):
 
                 try:
 
                     standard_am = standard_spec.spectrum_header[
-                        standard_airmass]
+                        standard_airmass
+                    ]
 
                 except Exception as e:
 
@@ -4698,15 +5045,16 @@ class OneDSpec():
 
                     standard_am = 1.0
                     self.logger.warning(
-                        'Keyword for airmass: {} cannot be found '
-                        'in header.'.format(standard_airmass))
-                    self.logger.warning('Airmass is set to be 1.0')
+                        "Keyword for airmass: {} cannot be found "
+                        "in header.".format(standard_airmass)
+                    )
+                    self.logger.warning("Airmass is set to be 1.0")
 
         else:
 
             try:
 
-                standard_am = standard_spec.spectrum_header['AIRMASS']
+                standard_am = standard_spec.spectrum_header["AIRMASS"]
 
             except Exception as e:
 
@@ -4714,16 +5062,18 @@ class OneDSpec():
 
                 standard_am = 1.0
                 self.logger.warning(
-                    'Keyword for airmass: AIRMASS cannot be found '
-                    'in header.')
-                self.logger.warning('Airmass is set to be 1.0')
+                    "Keyword for airmass: AIRMASS cannot be found "
+                    "in header."
+                )
+                self.logger.warning("Airmass is set to be 1.0")
 
         if spec_id is not None:
 
             if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())):
+                list(self.science_spectrum_list.keys())
+            ):
 
-                error_msg = 'The given spec_id does not exist.'
+                error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
@@ -4752,7 +5102,8 @@ class OneDSpec():
                     try:
 
                         science_am = science_spec.spectrum_header[
-                            science_airmass]
+                            science_airmass
+                        ]
 
                     except Exception as e:
 
@@ -4765,8 +5116,7 @@ class OneDSpec():
 
                     try:
 
-                        science_am =\
-                            science_spec.spectrum_header['AIRMASS']
+                        science_am = science_spec.spectrum_header["AIRMASS"]
 
                     except Exception as e:
 
@@ -4777,45 +5127,60 @@ class OneDSpec():
 
                 science_am = 1.0
 
-            self.logger.info('Standard airmass is {}.'.format(standard_am))
-            self.logger.info('Science airmass is {}.'.format(science_am))
+            self.logger.info("Standard airmass is {}.".format(standard_am))
+            self.logger.info("Science airmass is {}.".format(science_am))
 
             # Get the atmospheric extinction correction factor
-            science_flux_extinction_factor = 10.**(
-                -(self.extinction_func(science_spec.wave) * science_am) / 2.5)
-            standard_flux_extinction_factor = 10.**(
-                -(self.extinction_func(science_spec.wave) * standard_am) / 2.5)
-            science_spec.flux /= (science_flux_extinction_factor /
-                                  standard_flux_extinction_factor)
+            science_flux_extinction_factor = 10.0 ** (
+                -(self.extinction_func(science_spec.wave) * science_am) / 2.5
+            )
+            standard_flux_extinction_factor = 10.0 ** (
+                -(self.extinction_func(science_spec.wave) * standard_am) / 2.5
+            )
+            science_spec.flux /= (
+                science_flux_extinction_factor
+                / standard_flux_extinction_factor
+            )
 
-            science_flux_resampled_extinction_factor = 10.**(
-                -(self.extinction_func(science_spec.wave_resampled) *
-                  science_am) / 2.5)
-            standard_flux_resampled_extinction_factor = 10.**(
-                -(self.extinction_func(science_spec.wave_resampled) *
-                  standard_am) / 2.5)
+            science_flux_resampled_extinction_factor = 10.0 ** (
+                -(
+                    self.extinction_func(science_spec.wave_resampled)
+                    * science_am
+                )
+                / 2.5
+            )
+            standard_flux_resampled_extinction_factor = 10.0 ** (
+                -(
+                    self.extinction_func(science_spec.wave_resampled)
+                    * standard_am
+                )
+                / 2.5
+            )
             science_spec.flux_resampled /= (
-                science_flux_resampled_extinction_factor /
-                standard_flux_resampled_extinction_factor)
+                science_flux_resampled_extinction_factor
+                / standard_flux_resampled_extinction_factor
+            )
 
         self.atmospheric_extinction_corrected = True
-        self.logger.info('Atmospheric extinction is corrected.')
+        self.logger.info("Atmospheric extinction is corrected.")
 
-    def inspect_reduced_spectrum(self,
-                                 spec_id=None,
-                                 stype='science+standard',
-                                 wave_min=3500.,
-                                 wave_max=8500.,
-                                 display=True,
-                                 renderer='default',
-                                 width=1280,
-                                 height=720,
-                                 save_fig=False,
-                                 fig_type='iframe+png',
-                                 filename=None,
-                                 open_iframe=False,
-                                 return_jsonstring=False):
-        '''
+    def inspect_reduced_spectrum(
+        self,
+        spec_id=None,
+        stype="science+standard",
+        wave_min=3500.0,
+        wave_max=8500.0,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+        return_jsonstring=False,
+    ):
+        """
         Parameters
         ----------
         spec_id: int or None (Default: None)
@@ -4850,12 +5215,12 @@ class OneDSpec():
             set to True to return JSON-string that can be rendered by Plotly
             in any support language.
 
-        '''
+        """
 
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
         to_return = []
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -4864,9 +5229,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -4888,9 +5254,9 @@ class OneDSpec():
                         fluxcount = spec.flux_resampled
                         fluxcount_sky = spec.flux_sky_resampled
                         fluxcount_err = spec.flux_err_resampled
-                        fluxcount_name = 'Flux'
-                        fluxcount_sky_name = 'Sky Flux'
-                        fluxcount_err_name = 'Flux Uncertainty'
+                        fluxcount_name = "Flux"
+                        fluxcount_sky_name = "Sky Flux"
+                        fluxcount_err_name = "Flux Uncertainty"
                         telluric = spec.telluric_profile_resampled
                         telluric_factor = spec.telluric_factor_resampled
                         fluxcount_continuum = spec.flux_resampled_continuum
@@ -4898,9 +5264,9 @@ class OneDSpec():
                         fluxcount = spec.count_resampled
                         fluxcount_sky = spec.count_sky_resampled
                         fluxcount_err = spec.count_err_resampled
-                        fluxcount_name = 'Count / (e- / s)'
-                        fluxcount_sky_name = 'Sky Count / (e- / s)'
-                        fluxcount_err_name = 'Count Uncertainty / (e- / s)'
+                        fluxcount_name = "Count / (e- / s)"
+                        fluxcount_sky_name = "Sky Count / (e- / s)"
+                        fluxcount_err_name = "Count Uncertainty / (e- / s)"
                         fluxcount_continuum = spec.count_resampled_continuum
 
                 elif self.science_wavelength_calibrated:
@@ -4911,42 +5277,56 @@ class OneDSpec():
                         fluxcount = spec.flux
                         fluxcount_sky = spec.flux_sky
                         fluxcount_err = spec.flux_err
-                        fluxcount_name = 'Flux'
-                        fluxcount_sky_name = 'Sky Flux'
-                        fluxcount_err_name = 'Flux Uncertainty'
+                        fluxcount_name = "Flux"
+                        fluxcount_sky_name = "Sky Flux"
+                        fluxcount_err_name = "Flux Uncertainty"
                         telluric = spec.telluric_profile
                         fluxcount_continuum = spec.flux_continuum
                     else:
                         fluxcount = spec.count
                         fluxcount_sky = spec.count_sky
                         fluxcount_err = spec.count_err
-                        fluxcount_name = 'Count / (e- / s)'
-                        fluxcount_sky_name = 'Sky Count / (e- / s)'
-                        fluxcount_err_name = 'Count Uncertainty / (e- / s)'
+                        fluxcount_name = "Count / (e- / s)"
+                        fluxcount_sky_name = "Sky Count / (e- / s)"
+                        fluxcount_err_name = "Count Uncertainty / (e- / s)"
                         fluxcount_continuum = spec.count_continuum
 
                 else:
 
-                    self.logger.warning('Spectrum is not wavelength '
-                                        'calibrated, it cannot be plotted.')
+                    self.logger.warning(
+                        "Spectrum is not wavelength "
+                        "calibrated, it cannot be plotted."
+                    )
                     continue
 
-                wave_mask = ((np.array(wave).reshape(-1) > wave_min)
-                             & (np.array(wave).reshape(-1) < wave_max))
+                wave_mask = (np.array(wave).reshape(-1) > wave_min) & (
+                    np.array(wave).reshape(-1) < wave_max
+                )
 
-                flux_low = np.nanpercentile(
-                    np.array(fluxcount).reshape(-1)[wave_mask], 10) / 1.5
-                flux_high = np.nanpercentile(
-                    np.array(fluxcount).reshape(-1)[wave_mask], 90) * 1.5
-                flux_mask = ((np.array(fluxcount).reshape(-1) > flux_low)
-                             & (np.array(fluxcount).reshape(-1) < flux_high))
+                flux_low = (
+                    np.nanpercentile(
+                        np.array(fluxcount).reshape(-1)[wave_mask], 10
+                    )
+                    / 1.5
+                )
+                flux_high = (
+                    np.nanpercentile(
+                        np.array(fluxcount).reshape(-1)[wave_mask], 90
+                    )
+                    * 1.5
+                )
+                flux_mask = (np.array(fluxcount).reshape(-1) > flux_low) & (
+                    np.array(fluxcount).reshape(-1) < flux_high
+                )
 
                 if np.sum(flux_mask) > 0:
 
                     flux_min = np.nanmin(
-                        np.array(fluxcount).reshape(-1)[flux_mask])
+                        np.array(fluxcount).reshape(-1)[flux_mask]
+                    )
                     flux_max = np.nanmax(
-                        np.array(fluxcount).reshape(-1)[flux_mask])
+                        np.array(fluxcount).reshape(-1)[flux_mask]
+                    )
 
                 else:
 
@@ -4954,92 +5334,122 @@ class OneDSpec():
                     flux_max = np.nanmax(np.array(fluxcount).reshape(-1))
 
                 fig_sci = go.Figure(
-                    layout=dict(autosize=False,
-                                height=height,
-                                width=width,
-                                updatemenus=list([
-                                    dict(
-                                        active=0,
-                                        buttons=list([
-                                            dict(label='Log Scale',
-                                                 method='update',
-                                                 args=[{
-                                                     'visible': [True, True]
-                                                 }, {
-                                                     'title': 'Log scale',
-                                                     'yaxis': {
-                                                         'type': 'log'
-                                                     }
-                                                 }]),
-                                            dict(label='Linear Scale',
-                                                 method='update',
-                                                 args=[{
-                                                     'visible': [True, False]
-                                                 }, {
-                                                     'title': 'Linear scale',
-                                                     'yaxis': {
-                                                         'type': 'linear'
-                                                     }
-                                                 }])
-                                        ]),
-                                    )
-                                ]),
-                                title='Science Spectrum'))
+                    layout=dict(
+                        autosize=False,
+                        height=height,
+                        width=width,
+                        updatemenus=list(
+                            [
+                                dict(
+                                    active=0,
+                                    buttons=list(
+                                        [
+                                            dict(
+                                                label="Log Scale",
+                                                method="update",
+                                                args=[
+                                                    {"visible": [True, True]},
+                                                    {
+                                                        "title": "Log scale",
+                                                        "yaxis": {
+                                                            "type": "log"
+                                                        },
+                                                    },
+                                                ],
+                                            ),
+                                            dict(
+                                                label="Linear Scale",
+                                                method="update",
+                                                args=[
+                                                    {"visible": [True, False]},
+                                                    {
+                                                        "title": "Linear scale",
+                                                        "yaxis": {
+                                                            "type": "linear"
+                                                        },
+                                                    },
+                                                ],
+                                            ),
+                                        ]
+                                    ),
+                                )
+                            ]
+                        ),
+                        title="Science Spectrum",
+                    )
+                )
 
                 # show the image on the top
                 fig_sci.add_trace(
-                    go.Scatter(x=wave,
-                               y=fluxcount,
-                               line=dict(color='royalblue'),
-                               name=fluxcount_name))
+                    go.Scatter(
+                        x=wave,
+                        y=fluxcount,
+                        line=dict(color="royalblue"),
+                        name=fluxcount_name,
+                    )
+                )
 
                 if fluxcount_err is not None:
 
                     fig_sci.add_trace(
-                        go.Scatter(x=wave,
-                                   y=fluxcount_err,
-                                   line=dict(color='firebrick'),
-                                   name=fluxcount_err_name))
+                        go.Scatter(
+                            x=wave,
+                            y=fluxcount_err,
+                            line=dict(color="firebrick"),
+                            name=fluxcount_err_name,
+                        )
+                    )
 
                 if fluxcount_sky is not None:
 
                     fig_sci.add_trace(
-                        go.Scatter(x=wave,
-                                   y=fluxcount_sky,
-                                   line=dict(color='orange'),
-                                   name=fluxcount_sky_name))
+                        go.Scatter(
+                            x=wave,
+                            y=fluxcount_sky,
+                            line=dict(color="orange"),
+                            name=fluxcount_sky_name,
+                        )
+                    )
 
                 if telluric is not None:
 
                     fig_sci.add_trace(
-                        go.Scatter(x=wave,
-                                   y=telluric * telluric_factor,
-                                   line=dict(color='grey'),
-                                   name="Telluric Correction"))
+                        go.Scatter(
+                            x=wave,
+                            y=telluric * telluric_factor,
+                            line=dict(color="grey"),
+                            name="Telluric Correction",
+                        )
+                    )
 
                 if fluxcount_continuum is not None:
 
                     fig_sci.add_trace(
-                        go.Scatter(x=wave,
-                                   y=fluxcount_continuum,
-                                   line=dict(color='black'),
-                                   name="Continuum"))
+                        go.Scatter(
+                            x=wave,
+                            y=fluxcount_continuum,
+                            line=dict(color="black"),
+                            name="Continuum",
+                        )
+                    )
 
-                fig_sci.update_layout(hovermode='closest',
-                                      showlegend=True,
-                                      xaxis=dict(title='Wavelength / A',
-                                                 range=[wave_min, wave_max]),
-                                      yaxis=dict(title='Flux',
-                                                 range=[flux_min, flux_max],
-                                                 type='linear'),
-                                      legend=go.layout.Legend(
-                                          x=0,
-                                          y=1,
-                                          traceorder="normal",
-                                          font=dict(family="sans-serif",
-                                                    size=12,
-                                                    color="black"),
-                                          bgcolor='rgba(0,0,0,0)'))
+                fig_sci.update_layout(
+                    hovermode="closest",
+                    showlegend=True,
+                    xaxis=dict(
+                        title="Wavelength / A", range=[wave_min, wave_max]
+                    ),
+                    yaxis=dict(
+                        title="Flux", range=[flux_min, flux_max], type="linear"
+                    ),
+                    legend=go.layout.Legend(
+                        x=0,
+                        y=1,
+                        traceorder="normal",
+                        font=dict(family="sans-serif", size=12, color="black"),
+                        bgcolor="rgba(0,0,0,0)",
+                    ),
+                )
 
                 if filename is None:
 
@@ -5047,30 +5457,32 @@ class OneDSpec():
 
                 if save_fig:
 
-                    fig_type_split = fig_type.split('+')
+                    fig_type_split = fig_type.split("+")
 
                     for t in fig_type_split:
 
-                        save_path = filename + '_' + str(i) + '.' + t
+                        save_path = filename + "_" + str(i) + "." + t
 
-                        if t == 'iframe':
+                        if t == "iframe":
 
-                            pio.write_html(fig_sci,
-                                           save_path,
-                                           auto_open=open_iframe)
+                            pio.write_html(
+                                fig_sci, save_path, auto_open=open_iframe
+                            )
 
-                        elif t in ['jpg', 'png', 'svg', 'pdf']:
+                        elif t in ["jpg", "png", "svg", "pdf"]:
 
                             pio.write_image(fig_sci, save_path)
 
                         self.logger.info(
-                            'Figure is saved to {} for the '.format(
-                                save_path) +
-                            'science_spectrum_list for spec_id: {}.'.format(i))
+                            "Figure is saved to {} for the ".format(save_path)
+                            + "science_spectrum_list for spec_id: {}.".format(
+                                i
+                            )
+                        )
 
                 if display:
 
-                    if renderer == 'default':
+                    if renderer == "default":
 
                         fig_sci.show()
 
@@ -5082,7 +5494,7 @@ class OneDSpec():
 
                     to_return.append(fig_sci.to_json())
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             spec = self.standard_spectrum_list[0]
 
@@ -5094,18 +5506,19 @@ class OneDSpec():
                     standard_fluxcount = spec.flux
                     standard_fluxcount_sky = spec.flux_sky
                     standard_fluxcount_err = spec.flux_err
-                    standard_fluxcount_name = 'Flux'
-                    standard_fluxcount_sky_name = 'Sky Flux'
-                    standard_fluxcount_err_name = 'Flux Uncertainty'
+                    standard_fluxcount_name = "Flux"
+                    standard_fluxcount_sky_name = "Sky Flux"
+                    standard_fluxcount_err_name = "Flux Uncertainty"
                     standard_fluxcount_continuum = spec.flux_continuum
                 else:
                     standard_fluxcount = spec.count
                     standard_fluxcount_sky = spec.count_sky
                     standard_fluxcount_err = spec.count_err
-                    standard_fluxcount_name = 'Count / (e- / s)'
-                    standard_fluxcount_sky_name = 'Sky Count / (e- / s)'
-                    standard_fluxcount_err_name =\
-                        'Count Uncertainty / (e- / s)'
+                    standard_fluxcount_name = "Count / (e- / s)"
+                    standard_fluxcount_sky_name = "Sky Count / (e- / s)"
+                    standard_fluxcount_err_name = (
+                        "Count Uncertainty / (e- / s)"
+                    )
                     standard_fluxcount_continuum = spec.count_continuum
 
             if self.standard_wavelength_resampled:
@@ -5116,134 +5529,185 @@ class OneDSpec():
                     standard_fluxcount = spec.flux_resampled
                     standard_fluxcount_sky = spec.flux_sky_resampled
                     standard_fluxcount_err = spec.flux_err_resampled
-                    standard_fluxcount_name = 'Flux'
-                    standard_fluxcount_sky_name = 'Sky Flux'
-                    standard_fluxcount_err_name = 'Flux Uncertainty'
-                    standard_fluxcount_continuum =\
+                    standard_fluxcount_name = "Flux"
+                    standard_fluxcount_sky_name = "Sky Flux"
+                    standard_fluxcount_err_name = "Flux Uncertainty"
+                    standard_fluxcount_continuum = (
                         spec.flux_resampled_continuum
+                    )
                 else:
                     standard_fluxcount = spec.count_resampled
                     standard_fluxcount_sky = spec.count_sky_resampled
                     standard_fluxcount_err = spec.count_err_resampled
-                    standard_fluxcount_name = 'Count / (e- / s)'
-                    standard_fluxcount_sky_name = 'Sky Count / (e- / s)'
-                    standard_fluxcount_err_name =\
-                        'Count Uncertainty / (e- / s)'
-                    standard_fluxcount_continuum =\
+                    standard_fluxcount_name = "Count / (e- / s)"
+                    standard_fluxcount_sky_name = "Sky Count / (e- / s)"
+                    standard_fluxcount_err_name = (
+                        "Count Uncertainty / (e- / s)"
+                    )
+                    standard_fluxcount_continuum = (
                         spec.count_resampled_continuum
+                    )
 
             standard_wave_mask = (
-                (np.array(standard_wave).reshape(-1) > wave_min) &
-                (np.array(standard_wave).reshape(-1) < wave_max))
+                np.array(standard_wave).reshape(-1) > wave_min
+            ) & (np.array(standard_wave).reshape(-1) < wave_max)
             standard_flux_mask = (
-                (np.array(standard_fluxcount).reshape(-1) > np.nanpercentile(
-                    np.array(standard_fluxcount).reshape(-1)
-                    [standard_wave_mask], 10) / 1.5) &
-                (np.array(standard_fluxcount).reshape(-1) < np.nanpercentile(
-                    np.array(standard_fluxcount).reshape(-1)
-                    [standard_wave_mask], 90) * 1.5))
+                np.array(standard_fluxcount).reshape(-1)
+                > np.nanpercentile(
+                    np.array(standard_fluxcount).reshape(-1)[
+                        standard_wave_mask
+                    ],
+                    10,
+                )
+                / 1.5
+            ) & (
+                np.array(standard_fluxcount).reshape(-1)
+                < np.nanpercentile(
+                    np.array(standard_fluxcount).reshape(-1)[
+                        standard_wave_mask
+                    ],
+                    90,
+                )
+                * 1.5
+            )
 
             if np.nansum(standard_flux_mask) > 0:
 
                 standard_flux_min = np.nanmin(
-                    np.array(standard_fluxcount).reshape(-1)
-                    [standard_flux_mask])
+                    np.array(standard_fluxcount).reshape(-1)[
+                        standard_flux_mask
+                    ]
+                )
                 standard_flux_max = np.nanmax(
-                    np.array(standard_fluxcount).reshape(-1)
-                    [standard_flux_mask])
+                    np.array(standard_fluxcount).reshape(-1)[
+                        standard_flux_mask
+                    ]
+                )
 
             else:
 
                 standard_flux_min = np.nanmin(
-                    np.array(standard_fluxcount).reshape(-1))
-                standard_flux_max = np.nanmax(
-                    np.array(standard_fluxcount).reshape(-1))
-
-            fig_standard = go.Figure(layout=dict(updatemenus=list([
-                dict(
-                    active=0,
-                    buttons=list([
-                        dict(label='Log Scale',
-                             method='update',
-                             args=[{
-                                 'visible': [True, True]
-                             }, {
-                                 'title': 'Log scale',
-                                 'yaxis': {
-                                     'type': 'log'
-                                 }
-                             }]),
-                        dict(label='Linear Scale',
-                             method='update',
-                             args=[{
-                                 'visible': [True, False]
-                             }, {
-                                 'title': 'Linear scale',
-                                 'yaxis': {
-                                     'type': 'linear'
-                                 }
-                             }])
-                    ]),
+                    np.array(standard_fluxcount).reshape(-1)
                 )
-            ]),
-                                                 autosize=False,
-                                                 height=height,
-                                                 width=width,
-                                                 title='Standard Spectrum'))
+                standard_flux_max = np.nanmax(
+                    np.array(standard_fluxcount).reshape(-1)
+                )
+
+            fig_standard = go.Figure(
+                layout=dict(
+                    updatemenus=list(
+                        [
+                            dict(
+                                active=0,
+                                buttons=list(
+                                    [
+                                        dict(
+                                            label="Log Scale",
+                                            method="update",
+                                            args=[
+                                                {"visible": [True, True]},
+                                                {
+                                                    "title": "Log scale",
+                                                    "yaxis": {"type": "log"},
+                                                },
+                                            ],
+                                        ),
+                                        dict(
+                                            label="Linear Scale",
+                                            method="update",
+                                            args=[
+                                                {"visible": [True, False]},
+                                                {
+                                                    "title": "Linear scale",
+                                                    "yaxis": {
+                                                        "type": "linear"
+                                                    },
+                                                },
+                                            ],
+                                        ),
+                                    ]
+                                ),
+                            )
+                        ]
+                    ),
+                    autosize=False,
+                    height=height,
+                    width=width,
+                    title="Standard Spectrum",
+                )
+            )
 
             # show the image on the top
             fig_standard.add_trace(
-                go.Scatter(x=standard_wave,
-                           y=standard_fluxcount,
-                           line=dict(color='royalblue'),
-                           name=standard_fluxcount_name))
+                go.Scatter(
+                    x=standard_wave,
+                    y=standard_fluxcount,
+                    line=dict(color="royalblue"),
+                    name=standard_fluxcount_name,
+                )
+            )
 
             if standard_fluxcount_err is not None:
 
                 fig_standard.add_trace(
-                    go.Scatter(x=standard_wave,
-                               y=standard_fluxcount_err,
-                               line=dict(color='firebrick'),
-                               name=standard_fluxcount_err_name))
+                    go.Scatter(
+                        x=standard_wave,
+                        y=standard_fluxcount_err,
+                        line=dict(color="firebrick"),
+                        name=standard_fluxcount_err_name,
+                    )
+                )
 
             if standard_fluxcount_sky is not None:
 
                 fig_standard.add_trace(
-                    go.Scatter(x=standard_wave,
-                               y=standard_fluxcount_sky,
-                               line=dict(color='orange'),
-                               name=standard_fluxcount_sky_name))
+                    go.Scatter(
+                        x=standard_wave,
+                        y=standard_fluxcount_sky,
+                        line=dict(color="orange"),
+                        name=standard_fluxcount_sky_name,
+                    )
+                )
 
             if self.fluxcal.standard_fluxmag_true is not None:
 
                 fig_standard.add_trace(
-                    go.Scatter(x=self.fluxcal.standard_wave_true,
-                               y=self.fluxcal.standard_fluxmag_true,
-                               line=dict(color='black'),
-                               name='Standard'))
+                    go.Scatter(
+                        x=self.fluxcal.standard_wave_true,
+                        y=self.fluxcal.standard_fluxmag_true,
+                        line=dict(color="black"),
+                        name="Standard",
+                    )
+                )
 
             if standard_fluxcount_continuum is not None:
 
                 fig_standard.add_trace(
-                    go.Scatter(x=standard_wave,
-                               y=standard_fluxcount_continuum,
-                               line=dict(color='grey'),
-                               name="Continuum"))
+                    go.Scatter(
+                        x=standard_wave,
+                        y=standard_fluxcount_continuum,
+                        line=dict(color="grey"),
+                        name="Continuum",
+                    )
+                )
 
             fig_standard.update_layout(
-                hovermode='closest',
+                hovermode="closest",
                 showlegend=True,
-                xaxis=dict(title='Wavelength / A', range=[wave_min, wave_max]),
-                yaxis=dict(title='Flux',
-                           range=[standard_flux_min, standard_flux_max],
-                           type='linear'),
-                legend=go.layout.Legend(x=0,
-                                        y=1,
-                                        traceorder="normal",
-                                        font=dict(family="sans-serif",
-                                                  size=12,
-                                                  color="black"),
-                                        bgcolor='rgba(0,0,0,0)'))
+                xaxis=dict(title="Wavelength / A", range=[wave_min, wave_max]),
+                yaxis=dict(
+                    title="Flux",
+                    range=[standard_flux_min, standard_flux_max],
+                    type="linear",
+                ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=1,
+                    traceorder="normal",
+                    font=dict(family="sans-serif", size=12, color="black"),
+                    bgcolor="rgba(0,0,0,0)",
+                ),
+            )
 
             if filename is None:
 
@@ -5251,29 +5715,30 @@ class OneDSpec():
 
             if save_fig:
 
-                fig_type_split = fig_type.split('+')
+                fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
 
-                    save_path = filename + '.' + t
+                    save_path = filename + "." + t
 
-                    if t == 'iframe':
+                    if t == "iframe":
 
-                        pio.write_html(fig_standard,
-                                       save_path,
-                                       auto_open=open_iframe)
+                        pio.write_html(
+                            fig_standard, save_path, auto_open=open_iframe
+                        )
 
-                    elif t in ['jpg', 'png', 'svg', 'pdf']:
+                    elif t in ["jpg", "png", "svg", "pdf"]:
 
                         pio.write_image(fig_standard, save_path)
 
                     self.logger.info(
-                        'Figure is saved to {} for the '.format(save_path) +
-                        'standard_spectrum_list.')
+                        "Figure is saved to {} for the ".format(save_path)
+                        + "standard_spectrum_list."
+                    )
 
             if display:
 
-                if renderer == 'default':
+                if renderer == "default":
 
                     fig_standard.show(height=height, width=width)
 
@@ -5289,20 +5754,24 @@ class OneDSpec():
 
             return to_return
 
-        if ('science' not in stype_split) and ('standard' not in stype_split):
+        if ("science" not in stype_split) and ("standard" not in stype_split):
 
-            error_msg = 'Unknown stype, please choose from (1) science; ' +\
-                'and/or (2) standard. use + as delimiter.'
+            error_msg = (
+                "Unknown stype, please choose from (1) science; "
+                + "and/or (2) standard. use + as delimiter."
+            )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
-    def create_fits(self,
-                    output='arc_spec+wavecal+wavelength+flux+flux_resampled',
-                    spec_id=None,
-                    stype='science+standard',
-                    recreate=True,
-                    empty_primary_hdu=True):
-        '''
+    def create_fits(
+        self,
+        output="arc_spec+wavecal+wavelength+flux+flux_resampled",
+        spec_id=None,
+        stype="science+standard",
+        recreate=True,
+        empty_primary_hdu=True,
+    ):
+        """
         Create a HDU list, with a choice of any combination of the
         data, see below the 'output' parameters for details.
 
@@ -5345,32 +5814,42 @@ class OneDSpec():
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
 
-        '''
+        """
 
         # Split the string into strings
-        stype_split = stype.split('+')
-        output_split = output.split('+')
+        stype_split = stype.split("+")
+        output_split = output.split("+")
 
         for i in output_split:
 
             if i not in [
-                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
-                    'wavelength', 'count_resampled', 'sensitivity', 'flux',
-                    'sensitivity_resampled', 'flux_resampled'
+                "trace",
+                "count",
+                "weight_map",
+                "arc_spec",
+                "wavecal",
+                "wavelength",
+                "count_resampled",
+                "sensitivity",
+                "flux",
+                "sensitivity_resampled",
+                "flux_resampled",
             ]:
 
-                error_msg = '{} is not a valid output.'.format(i)
+                error_msg = "{} is not a valid output.".format(i)
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
-        if ('science' not in stype_split) and ('standard' not in stype_split):
+        if ("science" not in stype_split) and ("standard" not in stype_split):
 
-            error_msg = 'Unknown stype, please choose from (1) science; ' +\
-                'and/or (2) standard. use + as delimiter.'
+            error_msg = (
+                "Unknown stype, please choose from (1) science; "
+                + "and/or (2) standard. use + as delimiter."
+            )
             self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5379,9 +5858,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5396,27 +5876,28 @@ class OneDSpec():
                 self.science_spectrum_list[i].create_fits(
                     output=output,
                     recreate=recreate,
-                    empty_primary_hdu=empty_primary_hdu)
+                    empty_primary_hdu=empty_primary_hdu,
+                )
                 self.logger.info(
-                    'FITS is created for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "FITS is created for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].create_fits(
                 output=output,
                 recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu)
+                empty_primary_hdu=empty_primary_hdu,
+            )
             self.logger.info(
-                'FITS is created for the '
-                'standard_spectrum_list for spec_id: {}.'.format(i))
+                "FITS is created for the "
+                "standard_spectrum_list for spec_id: {}.".format(i)
+            )
 
-    def modify_trace_header(self,
-                            idx,
-                            method,
-                            *args,
-                            spec_id=None,
-                            stype='science+standard'):
+    def modify_trace_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the trace header.
 
@@ -5436,9 +5917,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5447,9 +5928,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5461,24 +5943,25 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_trace_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'trace header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "trace header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_trace_header(
-                idx, method, *args)
-            self.logger.info('trace header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "trace header is moldified for the " "standard_spectrum_list."
+            )
 
-    def modify_count_header(self,
-                            idx,
-                            method,
-                            *args,
-                            spec_id=None,
-                            stype='science+standard'):
+    def modify_count_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the count header.
 
@@ -5498,9 +5981,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5509,9 +5992,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5523,24 +6007,25 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_count_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'count header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "count header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_count_header(
-                idx, method, *args)
-            self.logger.info('count header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "count header is moldified for the " "standard_spectrum_list."
+            )
 
-    def modify_weight_map_header(self,
-                                 idx,
-                                 method,
-                                 *args,
-                                 spec_id=None,
-                                 stype='science+standard'):
+    def modify_weight_map_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the weight map header.
 
@@ -5560,9 +6045,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5571,9 +6056,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5585,24 +6071,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_weight_map_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'weight_map header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "weight_map header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_weight_map_header(
-                idx, method, *args)
-            self.logger.info('weight_map header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "weight_map header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def modify_count_resampled_header(self,
-                                      idx,
-                                      method,
-                                      *args,
-                                      spec_id=None,
-                                      stype='science+standard'):
+    def modify_count_resampled_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the count resampled header.
 
@@ -5622,9 +6110,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5633,9 +6121,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5647,24 +6136,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_count_resampled_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'count_resampled header is moldified for '
-                    'the science_spectrum_list for spec_id: {}.'.format(i))
+                    "count_resampled header is moldified for "
+                    "the science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_count_resampled_header(
-                idx, method, *args)
-            self.logger.info('count_resampled header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "count_resampled header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def modify_arc_spec_header(self,
-                               idx,
-                               method,
-                               *args,
-                               spec_id=None,
-                               stype='science+standard'):
+    def modify_arc_spec_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the arc spectrum header.
 
@@ -5684,9 +6175,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5695,9 +6186,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5709,24 +6201,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_arc_spec_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'arc_spec header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "arc_spec header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_arc_spec_header(
-                idx, method, *args)
-            self.logger.info('arc_spec header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "arc_spec header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def modify_wavecal_header(self,
-                              idx,
-                              method,
-                              *args,
-                              spec_id=None,
-                              stype='science+standard'):
+    def modify_wavecal_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the wavecal header.
 
@@ -5746,9 +6240,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5757,9 +6251,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5771,24 +6266,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_wavecal_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'wavecal header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "wavecal header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_wavecal_header(
-                idx, method, *args)
-            self.logger.info('wavecal header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "wavecal header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def modify_wavelength_header(self,
-                                 idx,
-                                 method,
-                                 *args,
-                                 spec_id=None,
-                                 stype='science+standard'):
+    def modify_wavelength_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the wavelength header.
 
@@ -5808,9 +6305,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5819,9 +6316,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5833,24 +6331,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_wavelength_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'wavelength header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "wavelength header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_wavelength_header(
-                idx, method, *args)
-            self.logger.info('wavelength header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "wavelength header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def modify_sensitivity_header(self,
-                                  idx,
-                                  method,
-                                  *args,
-                                  spec_id=None,
-                                  stype='science+standard'):
+    def modify_sensitivity_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the sensitivity header.
 
@@ -5870,9 +6370,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5881,9 +6381,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5895,24 +6396,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_sensitivity_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'sensitivity header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "sensitivity header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_sensitivity_header(
-                idx, method, *args)
-            self.logger.info('sensitivity header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "sensitivity header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def modify_flux_header(self,
-                           idx,
-                           method,
-                           *args,
-                           spec_id=None,
-                           stype='science+standard'):
+    def modify_flux_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the flux header.
 
@@ -5932,9 +6435,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -5943,9 +6446,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -5957,24 +6461,25 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_flux_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'flux header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "flux header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_flux_header(
-                idx, method, *args)
-            self.logger.info('flux header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "flux header is moldified for the " "standard_spectrum_list."
+            )
 
-    def modify_sensitivity_resampled_header(self,
-                                            idx,
-                                            method,
-                                            *args,
-                                            spec_id=None,
-                                            stype='science+standard'):
+    def modify_sensitivity_resampled_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the sensitivity resampled header.
 
@@ -5994,9 +6499,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -6005,9 +6510,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -6019,24 +6525,26 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[
-                    i].modify_sensitivity_resampled_header(idx, method, *args)
+                    i
+                ].modify_sensitivity_resampled_header(idx, method, *args)
                 self.logger.info(
-                    'sensitivity_resampled header is moldified '
-                    'for the science_spectrum_list for spec_id: {}.'.format(i))
+                    "sensitivity_resampled header is moldified "
+                    "for the science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_sensitivity_resampled_header(
-                idx, method, *args)
-            self.logger.info('sensitivity_resampled header is moldified for '
-                             'the standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "sensitivity_resampled header is moldified for "
+                "the standard_spectrum_list."
+            )
 
-    def modify_flux_resampled_header(self,
-                                     idx,
-                                     method,
-                                     *args,
-                                     spec_id=None,
-                                     stype='science+standard'):
+    def modify_flux_resampled_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
         """
         Wrapper function to modify the flux resampled header.
 
@@ -6056,9 +6564,9 @@ class OneDSpec():
         """
 
         # Split the string into strings
-        stype_split = stype.split('+')
+        stype_split = stype.split("+")
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -6067,9 +6575,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -6081,27 +6590,34 @@ class OneDSpec():
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_flux_resampled_header(
-                    idx, method, *args)
+                    idx, method, *args
+                )
                 self.logger.info(
-                    'flux_resampled header is moldified for the '
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "flux_resampled header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_flux_resampled_header(
-                idx, method, *args)
-            self.logger.info('flux_resampled header is moldified for the '
-                             'standard_spectrum_list.')
+                idx, method, *args
+            )
+            self.logger.info(
+                "flux_resampled header is moldified for the "
+                "standard_spectrum_list."
+            )
 
-    def save_fits(self,
-                  spec_id=None,
-                  output='arc_spec+wavecal+wavelength+flux+flux_resampled',
-                  filename='reduced',
-                  stype='science+standard',
-                  recreate=False,
-                  empty_primary_hdu=True,
-                  overwrite=False):
-        '''
+    def save_fits(
+        self,
+        spec_id=None,
+        output="arc_spec+wavecal+wavelength+flux+flux_resampled",
+        filename="reduced",
+        stype="science+standard",
+        recreate=False,
+        empty_primary_hdu=True,
+        overwrite=False,
+    ):
+        """
         Save the reduced data to disk, with a choice of any combination of the
         data, see below the 'output' parameters for details.
 
@@ -6149,35 +6665,45 @@ class OneDSpec():
         overwrite: bool (Default: False)
             Default is False.
 
-        '''
+        """
 
         # Fix the names and extensions
         filename = os.path.splitext(filename)[0]
 
         # Split the string into strings
-        stype_split = stype.split('+')
-        output_split = output.split('+')
+        stype_split = stype.split("+")
+        output_split = output.split("+")
 
         for i in output_split:
 
             if i not in [
-                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
-                    'wavelength', 'count_resampled', 'sensitivity', 'flux',
-                    'sensitivity_resampled', 'flux_resampled'
+                "trace",
+                "count",
+                "weight_map",
+                "arc_spec",
+                "wavecal",
+                "wavelength",
+                "count_resampled",
+                "sensitivity",
+                "flux",
+                "sensitivity_resampled",
+                "flux_resampled",
             ]:
 
-                error_msg = '{} is not a valid output.'.format(i)
+                error_msg = "{} is not a valid output.".format(i)
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
-        if ('science' not in stype_split) and ('standard' not in stype_split):
+        if ("science" not in stype_split) and ("standard" not in stype_split):
 
-            error_msg = 'Unknown stype, please choose from (1) science; ' +\
-                'and/or (2) standard. use + as delimiter.'
+            error_msg = (
+                "Unknown stype, please choose from (1) science; "
+                + "and/or (2) standard. use + as delimiter."
+            )
             self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -6186,9 +6712,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    error_msg = 'The given spec_id does not exist.'
+                    error_msg = "The given spec_id does not exist."
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
 
@@ -6200,38 +6727,44 @@ class OneDSpec():
 
             for i in spec_id:
 
-                filename_i = filename + '_science_' + str(i)
+                filename_i = filename + "_science_" + str(i)
 
                 self.science_spectrum_list[i].save_fits(
                     output=output,
                     filename=filename_i,
                     overwrite=overwrite,
                     recreate=recreate,
-                    empty_primary_hdu=empty_primary_hdu)
+                    empty_primary_hdu=empty_primary_hdu,
+                )
                 self.logger.info(
-                    'FITS file is saved to {} for the '.format(filename_i) +
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "FITS file is saved to {} for the ".format(filename_i)
+                    + "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
             self.standard_spectrum_list[0].save_fits(
                 output=output,
-                filename=filename + '_standard',
+                filename=filename + "_standard",
                 overwrite=overwrite,
                 recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu)
+                empty_primary_hdu=empty_primary_hdu,
+            )
             self.logger.info(
-                'FITS file is saved to {}_standard '.format(filename) +
-                'for the standard_spectrum_list.')
+                "FITS file is saved to {}_standard ".format(filename)
+                + "for the standard_spectrum_list."
+            )
 
-    def save_csv(self,
-                 spec_id=None,
-                 output='arc_spec+wavecal+wavelength+flux+flux_resampled',
-                 filename='reduced',
-                 stype='science+standard',
-                 recreate=False,
-                 overwrite=False):
-        '''
+    def save_csv(
+        self,
+        spec_id=None,
+        output="arc_spec+wavecal+wavelength+flux+flux_resampled",
+        filename="reduced",
+        stype="science+standard",
+        recreate=False,
+        overwrite=False,
+    ):
+        """
         Save the reduced data to disk, with a choice of any combination of the
         5 sets of data, see below the 'output' parameters for details.
 
@@ -6277,35 +6810,45 @@ class OneDSpec():
         overwrite: bool (Default: False)
             Default is False.
 
-        '''
+        """
 
         # Fix the names and extensions
         filename = os.path.splitext(filename)[0]
 
         # Split the string into strings
-        stype_split = stype.split('+')
-        output_split = output.split('+')
+        stype_split = stype.split("+")
+        output_split = output.split("+")
 
         for i in output_split:
 
             if i not in [
-                    'trace', 'count', 'weight_map', 'arc_spec', 'wavecal',
-                    'wavelength', 'count_resampled', 'sensitivity', 'flux',
-                    'sensitivity', 'flux_resampled'
+                "trace",
+                "count",
+                "weight_map",
+                "arc_spec",
+                "wavecal",
+                "wavelength",
+                "count_resampled",
+                "sensitivity",
+                "flux",
+                "sensitivity",
+                "flux_resampled",
             ]:
 
-                error_msg = '{} is not a valid output.'.format(i)
+                error_msg = "{} is not a valid output.".format(i)
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
-        if ('science' not in stype_split) and ('standard' not in stype_split):
+        if ("science" not in stype_split) and ("standard" not in stype_split):
 
-            error_msg = 'Unknown stype, please choose from (1) science; ' +\
-                'and/or (2) standard. use + as delimiter.'
+            error_msg = (
+                "Unknown stype, please choose from (1) science; "
+                + "and/or (2) standard. use + as delimiter."
+            )
             self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
-        if 'science' in stype_split:
+        if "science" in stype_split:
 
             if isinstance(spec_id, int):
 
@@ -6314,9 +6857,10 @@ class OneDSpec():
             if spec_id is not None:
 
                 if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())):
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    raise ValueError('The given spec_id does not exist.')
+                    raise ValueError("The given spec_id does not exist.")
 
             else:
 
@@ -6326,23 +6870,28 @@ class OneDSpec():
 
             for i in spec_id:
 
-                filename_i = filename + '_science_' + str(i)
+                filename_i = filename + "_science_" + str(i)
 
-                self.science_spectrum_list[i].save_csv(output=output,
-                                                       filename=filename_i,
-                                                       recreate=recreate,
-                                                       overwrite=overwrite)
+                self.science_spectrum_list[i].save_csv(
+                    output=output,
+                    filename=filename_i,
+                    recreate=recreate,
+                    overwrite=overwrite,
+                )
                 self.logger.info(
-                    'CSV file is saved to {} for the '.format(filename_i) +
-                    'science_spectrum_list for spec_id: {}.'.format(i))
+                    "CSV file is saved to {} for the ".format(filename_i)
+                    + "science_spectrum_list for spec_id: {}.".format(i)
+                )
 
-        if 'standard' in stype_split:
+        if "standard" in stype_split:
 
-            self.standard_spectrum_list[0].save_csv(output=output,
-                                                    filename=filename +
-                                                    '_standard',
-                                                    recreate=recreate,
-                                                    overwrite=overwrite)
+            self.standard_spectrum_list[0].save_csv(
+                output=output,
+                filename=filename + "_standard",
+                recreate=recreate,
+                overwrite=overwrite,
+            )
             self.logger.info(
-                'FITS file is saved to {}_standard '.format(filename) +
-                'for the standard_spectrum_list.')
+                "FITS file is saved to {}_standard ".format(filename)
+                + "for the standard_spectrum_list."
+            )

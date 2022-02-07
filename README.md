@@ -6,10 +6,11 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4127294.svg)](https://doi.org/10.5281/zenodo.4127294)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/aspired)
 ![Lines of code](https://img.shields.io/tokei/lines/github.com/cylammarco/aspired)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 We aim to provide a suite of publicly available spectral data reduction software to facilitate rapid scientific outcomes from time-domain observations. For time resolved observations, an automated pipeline frees astronomers from performance of the routine data analysis tasks to concentrate on interpretation, planning future observations and communication with international collaborators. Part of the OPTICON project coordinates the operation of a network of largely self-funded European robotic and conventional telescopes, coordinating common science goals and providing the tools to deliver science-ready photometric and spectroscopic data. As part of this activity is [SPRAT](https://ui.adsabs.harvard.edu/abs/2014SPIE.9147E..8HP/abstract), a compact, reliable, low-cost and high-throughput spectrograph and appropriate for deployment on a wide range of 1-4m class telescopes. Installed on the Liverpool Telescope since 2014, the deployable slit and grating mechanism and optical fibre based calibration system make the instrument self-contained.
 
-ASPIRED is written for use with python 3.7 and 3.8 (will revisit 3.9 and 3.10 in the future), and is intentionally developed as a self-consistent reduction pipeline with its own diagnostics and error handling. The pipeline should be able to reduce 2D spectral data from raw image to wavelength and flux calibrated 1D spectrum automatically without any user input (quicklook quality). However, the real goal is to provide a set of easily configurable routines to build pipelines for long slit spectrographs on different telescopes (science quality). We use SPRAT as a test case for this development, but our aim is to support a much wider range of instruments. By delivering near real-time data reduction we will facilitate automated or interactive decision making, allowing "on-the-fly" modification of observing strategies and rapid triggering of other facilities.
+ASPIRED is written for use with python 3.7, 3.8 and 3.9 (will revisit 3.10 in the future when it becomes available with github actions), and is intentionally developed as a self-consistent reduction pipeline with its own diagnostics and error handling. The pipeline should be able to reduce 2D spectral data from raw image to wavelength and flux calibrated 1D spectrum automatically without any user input (quicklook quality). However, the real goal is to provide a set of easily configurable routines to build pipelines for long slit spectrographs on different telescopes (science quality). We use SPRAT as a test case for this development, but our aim is to support a much wider range of instruments. By delivering near real-time data reduction we will facilitate automated or interactive decision making, allowing "on-the-fly" modification of observing strategies and rapid triggering of other facilities.
 
 Further information can be referred to this [arXiv article](https://arxiv.org/abs/2111.02127).
 
@@ -45,16 +46,16 @@ We are to cover as many use cases as possible. If you would like to apply some r
 See the examples of these use cases at [aspired-example](https://github.com/cylammarco/ASPIRED-example/).
 
 ## Dependencies
-* python >= 3.6
+* python >= 3.7
 * numpy
 * scipy
-* [astropy](https://github.com/astropy/astropy)
-* [astroscrappy](https://github.com/astropy/astroscrappy)
-* [ccdproc](https://github.com/astropy/ccdproc)
+* [astropy](https://github.com/astropy/astropy) >= 4.0
+* [astroscrappy](https://github.com/astropy/astroscrappy) >= 1.1
+* [ccdproc](https://github.com/astropy/ccdproc) 
 * [plotly](https://github.com/plotly/plotly.py) >= 5.0
-* [rascal](https://github.com/jveitchmichaelis/rascal) == 0.3
+* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.1
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
-* [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.12
+* [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.13
 
 ## Installation
 Instructions can be found [here](https://aspired.readthedocs.io/en/latest/installation/pip.html).

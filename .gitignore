@@ -142,3 +142,9 @@ test/test_output/*.svg
 test/test_output/*.jpg
 test/test_output/*.png
 test/test_output/*.iframe
+
+# for development use
+aspired/LICENSE
+aspired/README.md
+aspired/pyproject.toml
+aspired/CHANGELOG.rst

@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "aspired"
+version = "0.4.2"
+description = "The iraf-free spectral data reduction toolkit."
+license = "BSD-3-Clause"
+readme = "README.md"
+authors = ["Marco C Lam <lam@tau.ac.il>", "Robert J Smith <rjs@ljmu.ac.uk>"]
+maintainers = ["Marco C Lam <lam@tau.ac.il>"]
+homepage = "https://github.com/cylammarco/aspired"
+documentation = "https://aspired.readthedocs.io/en/latest/?badge=latest"
+repository = "https://github.com/cylammarco/aspired"
+
+[tool.poetry.dependencies]
+astropy = ">=4.0"
+python = ">=3.6"
+numpy = ">=1.16"
+scipy = ">=1.5.2"
+plotly = ">=5.1"
+astroscrappy = ">=1.1"
+ccdproc = ">= 2.3"
+statsmodels = ">=0.13"
+spectres = ">=2.1.1"
+rascal = ">=0.3.1"
+
+[tool.poetry.dev-dependencies]
+pytest = ">=5.3"
+pytest-cov = ">=2.8"
+
+[build-system]
+requires = ["poetry>=1.1", "setuptools >= 60.6.0", "wheel"]
+build-backend = "poetry.masonry.api"
