@@ -559,8 +559,15 @@ distance_mask = np.insert(distance_mask, 0, False)
 peaks = peaks[~distance_mask]
 
 # Line list
-wavelengths_linear = 3000.0 + 5.0 * peaks + (np.random.random(len(peaks)) - 0.5) * 2.
-wavelengths_quadratic = 3000.0 + 4 * peaks + 1.0e-3 * peaks**2.0 + (np.random.random(len(peaks)) - 0.5) * 2.
+wavelengths_linear = (
+    3000.0 + 5.0 * peaks + (np.random.random(len(peaks)) - 0.5) * 2.0
+)
+wavelengths_quadratic = (
+    3000.0
+    + 4 * peaks
+    + 1.0e-3 * peaks**2.0
+    + (np.random.random(len(peaks)) - 0.5) * 2.0
+)
 
 elements_linear = ["Linear"] * len(wavelengths_linear)
 elements_quadratic = ["Quadratic"] * len(wavelengths_quadratic)

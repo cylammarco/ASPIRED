@@ -2017,7 +2017,7 @@ def test_quadratic_fit_legendre():
         3000.0
         + 4 * peaks
         + 1.0e-3 * peaks**2.0
-        + (np.random.random(len(peaks)) - 0.5) * 2.
+        + (np.random.random(len(peaks)) - 0.5) * 2.0
     )
     elements_quadratic = ["Quadratic"] * len(wavelengths_quadratic)
 
@@ -2090,7 +2090,7 @@ def test_quadratic_fit_chebyshev():
         3000.0
         + 4 * peaks
         + 1.0e-3 * peaks**2.0
-        + (np.random.random(len(peaks)) - 0.5) * 2.
+        + (np.random.random(len(peaks)) - 0.5) * 2.0
     )
     elements_quadratic = ["Quadratic"] * len(wavelengths_quadratic)
 
