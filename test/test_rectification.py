@@ -96,7 +96,7 @@ def test_rectify():
 
 # assert the resampled image has the total photon count within 0.1% of the
 # input
-@patch("plotly.graph_object.Figure.show")
+@patch("plotly.graph_objects.Figure.show")
 def test_rectify_2(mock_show):
     twodspec = copy.copy(lhs6328_twodspec)
     twodspec.get_rectification(

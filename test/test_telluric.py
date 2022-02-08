@@ -65,7 +65,7 @@ def test_telluric_square_wave():
     )
 
 
-@patch("plotly.graph_object.Figure.show")
+@patch("plotly.graph_objects.Figure.show")
 def test_telluric_real_data(mock_show):
     std_wave = np.load(os.path.join(HERE, "test_data", "std_wave.npy"))
     std_flux = np.load(os.path.join(HERE, "test_data", "std_flux.npy"))

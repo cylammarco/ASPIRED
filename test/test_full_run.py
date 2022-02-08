@@ -10,7 +10,7 @@ from aspired import spectral_reduction
 HERE = os.path.dirname(os.path.realpath(__file__))
 
 
-@patch("plotly.graph_object.Figure.show")
+@patch("plotly.graph_objects.Figure.show")
 def test_full_run(mock_show):
     # Extract two spectra
 

@@ -558,7 +558,7 @@ def test_input_with_numpy_array_and_reduction():
     img.reduce()
 
 
-@patch("plotly.graph_object.Figure.show")
+@patch("plotly.graph_objects.Figure.show")
 def test_reduction_and_save(mock_show):
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(

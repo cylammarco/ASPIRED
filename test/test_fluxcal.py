@@ -42,7 +42,7 @@ def test_standard_return_suggestion():
     fluxcal.load_standard(target="bd")
 
 
-@patch("plotly.graph_object.Figure.show")
+@patch("plotly.graph_objects.Figure.show")
 def test_sensitivity(mock_show):
 
     hiltner_spectrum1D = Spectrum1D(log_file_name=None)
@@ -96,7 +96,7 @@ def test_sensitivity(mock_show):
     )
 
 
-@patch("plotly.graph_object.Figure.show")
+@patch("plotly.graph_objects.Figure.show")
 def test_fluxcalibration(mock_show):
 
     hiltner_spectrum1D = Spectrum1D(log_file_name=None)
