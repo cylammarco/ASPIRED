@@ -58,4 +58,3 @@ jobs:
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel-finished: true
-        github-token: ${{ secrets.COVERALL_TOKEN }}
