@@ -134,6 +134,7 @@ def test_wavecal():
     wavecal.list_atlas()
 
 
+@patch("plotly.graph_object.Figure.show")
 def test_setting_a_known_pair():
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
@@ -156,7 +157,6 @@ def test_setting_a_known_pair():
     assert wavecal.spectrum1D.calibrator.wave_known == 456
 
 
-@patch("matplotlib.pyplot.show")
 def test_setting_known_pairs(mock_show):
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
@@ -339,7 +339,7 @@ def test_overwritten_copy_of_spectrum1Ds_are_different():
     assert memory_1 != memory_2
 
 
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_user_supplied_arc_lines(mock_show):
 
     wavecal = WavelengthCalibration(log_file_name=None)
@@ -506,7 +506,7 @@ def test_user_supplied_poly_coeff_and_add_arc_twodspec():
     )
 
 
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_user_supplied_wavelength_twodspec(mock_show):
     # Load the image
     lhs6328_fits = fits.open(

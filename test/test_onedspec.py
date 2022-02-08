@@ -1205,7 +1205,7 @@ def test_extinction_function():
     )
 
 
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_standard_library_lookup(mock_show):
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
@@ -1219,7 +1219,7 @@ def test_standard_library_lookup(mock_show):
     onedspec.inspect_standard(display=True)
 
 
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_sensitivity(mock_show):
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
@@ -1333,7 +1333,7 @@ def test_adding_telluric_function():
     )
 
 
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_getting_telluric_profile(mock_show):
 
     global_onedspec.add_telluric_function([np.arange(10000), np.arange(10000)])
@@ -1383,7 +1383,7 @@ def test_applying_atmospheric_extinction_correction_wrong_spec_id():
     global_onedspec.apply_atmospheric_extinction_correction(spec_id=1000)
 
 
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_miscellaneous(mock_show):
 
     global_onedspec.apply_flux_calibration()

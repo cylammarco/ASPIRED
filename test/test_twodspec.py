@@ -500,7 +500,7 @@ def test_add_bad_pixel_mask_expect_fail():
 
 
 # gauss ap_extract
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_gauss_ap_extract(mock_show):
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_data(img)
@@ -521,7 +521,7 @@ def test_gauss_ap_extract(mock_show):
 
 
 # lowess ap_extract
-@patch("matplotlib.pyplot.show")
+@patch("plotly.graph_object.Figure.show")
 def test_lowess_ap_extract(mock_show):
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_data(img)
