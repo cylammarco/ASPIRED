@@ -134,7 +134,6 @@ def test_wavecal():
     wavecal.list_atlas()
 
 
-@patch("plotly.graph_objects.Figure.show")
 def test_setting_a_known_pair():
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
@@ -157,6 +156,7 @@ def test_setting_a_known_pair():
     assert wavecal.spectrum1D.calibrator.wave_known == 456
 
 
+@patch("plotly.graph_objects.Figure.show")
 def test_setting_known_pairs(mock_show):
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
@@ -170,7 +170,7 @@ def test_setting_known_pairs(mock_show):
         filename=os.path.join(
             HERE, "test_output", "test_wavecal_find_arc_lines"
         ),
-        display=False,
+        display=True,
         return_jsonstring=True,
     )
     wavecal.initialise_calibrator()
