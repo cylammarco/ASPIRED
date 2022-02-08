@@ -12,16 +12,21 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+from pkg_resources import get_distribution, DistributionNotFound
 import sys
+
+try:
+    __version__ = get_distribution(__name__).version
+    project = get_distribution(__name__).project_name
+except DistributionNotFound:
+    pass  # package is not installed
 
 sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "ASPIRED"
 copyright = "2020-2021, Marco Lam"
 author = "Marco Lam"
-__version__ = "0.4.1"
 
 # The full version, including alpha/beta/rc tags
 version = __version__
@@ -66,6 +71,7 @@ autodoc_mock_imports = [
     "astropy",
     "astroscrappy",
     "ccdproc",
+    "numpy",
     "rascal",
     "plotly",
     "scipy",
