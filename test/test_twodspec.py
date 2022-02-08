@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 import os
+from unittest.mock import patch
 
 from astropy.io import fits
 import numpy as np
@@ -499,7 +500,8 @@ def test_add_bad_pixel_mask_expect_fail():
 
 
 # gauss ap_extract
-def test_gauss_ap_extract():
+@patch("matplotlib.pyplot.show")
+def test_gauss_ap_extract(mock_show):
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_data(img)
     twodspec.ap_trace()
@@ -511,7 +513,7 @@ def test_gauss_ap_extract():
         filename=os.path.join(HERE, "test_output", "extracted_spectrum"),
     )
     twodspec.inspect_residual(
-        display=False,
+        display=True,
         save_fig=True,
         return_jsonstring=True,
         filename=os.path.join(HERE, "test_output", "residual_image"),
@@ -519,13 +521,14 @@ def test_gauss_ap_extract():
 
 
 # lowess ap_extract
-def test_lowess_ap_extract():
+@patch("matplotlib.pyplot.show")
+def test_lowess_ap_extract(mock_show):
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_data(img)
     twodspec.ap_trace()
     twodspec.ap_extract(model="lowess")
     twodspec.inspect_extracted_spectrum(
-        display=False,
+        display=True,
         save_fig=True,
         return_jsonstring=True,
         filename="test/test_output/extracted_spectrum",

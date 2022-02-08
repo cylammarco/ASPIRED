@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 import os
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -155,7 +156,8 @@ def test_setting_a_known_pair():
     assert wavecal.spectrum1D.calibrator.wave_known == 456
 
 
-def test_setting_known_pairs():
+@patch("matplotlib.pyplot.show")
+def test_setting_known_pairs(mock_show):
 
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
@@ -337,7 +339,8 @@ def test_overwritten_copy_of_spectrum1Ds_are_different():
     assert memory_1 != memory_2
 
 
-def test_user_supplied_arc_lines():
+@patch("matplotlib.pyplot.show")
+def test_user_supplied_arc_lines(mock_show):
 
     wavecal = WavelengthCalibration(log_file_name=None)
 
@@ -359,7 +362,7 @@ def test_user_supplied_arc_lines():
     wavecal.do_hough_transform()
 
     # Solve for the pixel-to-wavelength solution
-    wavecal.fit(max_tries=500, display=False)
+    wavecal.fit(max_tries=500, display=True)
 
     # Save a FITS file
     wavecal.save_fits(
@@ -503,7 +506,8 @@ def test_user_supplied_poly_coeff_and_add_arc_twodspec():
     )
 
 
-def test_user_supplied_wavelength_twodspec():
+@patch("matplotlib.pyplot.show")
+def test_user_supplied_wavelength_twodspec(mock_show):
     # Load the image
     lhs6328_fits = fits.open(
         os.path.join(HERE, "test_data", "v_e_20180810_12_1_0_0.fits.gz")
@@ -524,10 +528,10 @@ def test_user_supplied_wavelength_twodspec():
     )
 
     # Trace the spectra
-    lhs6328.ap_trace(nspec=2, display=False)
+    lhs6328.ap_trace(nspec=2, display=True)
 
     # Extract the spectra
-    lhs6328.ap_extract(apwidth=10, optimal=True, skywidth=10, display=False)
+    lhs6328.ap_extract(apwidth=10, optimal=True, skywidth=10, display=True)
 
     # Calibrate the 1D spectra
     lhs6328_onedspec = spectral_reduction.OneDSpec(log_file_name=None)

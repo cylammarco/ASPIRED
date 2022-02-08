@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
+from unittest.mock import patch
 
 import numpy as np
 import pytest
+
 from aspired import image_reduction
 from aspired import spectral_reduction
 from aspired.wavelength_calibration import WavelengthCalibration
@@ -1203,7 +1205,8 @@ def test_extinction_function():
     )
 
 
-def test_standard_library_lookup():
+@patch("matplotlib.pyplot.show")
+def test_standard_library_lookup(mock_show):
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
@@ -1213,9 +1216,11 @@ def test_standard_library_lookup():
     onedspec.lookup_standard_libraries(target="hr3454")
     onedspec.load_standard(library="esowdstan", target="agk_81d266_005")
     onedspec.inspect_standard(display=False)
+    onedspec.inspect_standard(display=True)
 
 
-def test_sensitivity():
+@patch("matplotlib.pyplot.show")
+def test_sensitivity(mock_show):
 
     onedspec = spectral_reduction.OneDSpec(log_file_name=None)
 
@@ -1255,7 +1260,7 @@ def test_sensitivity():
     # onedspec.save_sensitivity_func('test/test_output/' +\
     # 'test_onedspec_sensitivity_func')
     onedspec.inspect_sensitivity(
-        display=False,
+        display=True,
         return_jsonstring=True,
         save_fig=True,
         filename=os.path.join(
@@ -1328,7 +1333,8 @@ def test_adding_telluric_function():
     )
 
 
-def test_getting_telluric_profile():
+@patch("matplotlib.pyplot.show")
+def test_getting_telluric_profile(mock_show):
 
     global_onedspec.add_telluric_function([np.arange(10000), np.arange(10000)])
 
@@ -1343,7 +1349,7 @@ def test_getting_telluric_profile():
     global_onedspec.inspect_telluric_correction(
         display=False, spec_id=0, return_jsonstring=True
     )
-    global_onedspec.inspect_telluric_correction(display=False, spec_id=[0])
+    global_onedspec.inspect_telluric_correction(display=True, spec_id=[0])
 
     global_onedspec.apply_telluric_correction()
     global_onedspec.apply_telluric_correction(spec_id=0)
@@ -1377,7 +1383,8 @@ def test_applying_atmospheric_extinction_correction_wrong_spec_id():
     global_onedspec.apply_atmospheric_extinction_correction(spec_id=1000)
 
 
-def test_miscellaneous():
+@patch("matplotlib.pyplot.show")
+def test_miscellaneous(mock_show):
 
     global_onedspec.apply_flux_calibration()
     global_onedspec.apply_flux_calibration(spec_id=0)
@@ -1438,7 +1445,7 @@ def test_miscellaneous():
         ),
     )
     global_onedspec.inspect_reduced_spectrum(
-        display=False,
+        display=True,
         spec_id=0,
         renderer="default",
         return_jsonstring=True,

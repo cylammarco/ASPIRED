@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 import os
+from unittest.mock import patch
 
 import numpy as np
 
@@ -95,12 +96,13 @@ def test_rectify():
 
 # assert the resampled image has the total photon count within 0.1% of the
 # input
-def test_rectify_2():
+@patch("matplotlib.pyplot.show")
+def test_rectify_2(mock_show):
     twodspec = copy.copy(lhs6328_twodspec)
     twodspec.get_rectification(
         bin_size=6,
         n_bin="lala",
-        display=False,
+        display=True,
         save_fig=True,
         fig_type="iframe+png",
         filename=os.path.join(

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from unittest.mock import patch
 
 import numpy as np
 
@@ -9,7 +10,8 @@ from aspired import spectral_reduction
 HERE = os.path.dirname(os.path.realpath(__file__))
 
 
-def test_full_run():
+@patch("matplotlib.pyplot.show")
+def test_full_run(mock_show):
     # Extract two spectra
 
     # Line list
@@ -156,13 +158,13 @@ def test_full_run():
 
     # Extract the 1D arc by aperture sum of the traces provided
     lhs6328_twodspec.extract_arc_spec(
-        display=False,
+        display=True,
         save_fig=True,
         fig_type="jpg+png+pdf+svg+iframe",
         filename=os.path.join(HERE, "test_output", "test_full_run_arc_spec"),
         return_jsonstring=True,
     )
-    hilt102_twodspec.extract_arc_spec(display=False)
+    hilt102_twodspec.extract_arc_spec(display=True)
     hilt102_twodspec.create_fits(output="trace+count")
 
     # Handle 1D Science spectrum

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import copy
 import os
+from unittest.mock import patch
 
 import numpy as np
 
@@ -64,7 +65,8 @@ def test_telluric_square_wave():
     )
 
 
-def test_telluric_real_data():
+@patch("matplotlib.pyplot.show")
+def test_telluric_real_data(mock_show):
     std_wave = np.load(os.path.join(HERE, "test_data", "std_wave.npy"))
     std_flux = np.load(os.path.join(HERE, "test_data", "std_flux.npy"))
     std_flux_continuum = np.load(
@@ -100,7 +102,7 @@ def test_telluric_real_data():
     )
 
     onedspec.inspect_telluric_profile(
-        display=False,
+        display=True,
         return_jsonstring=True,
         save_fig=True,
         fig_type="iframe+jpg+png+svg+pdf",

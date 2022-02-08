@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -41,7 +42,8 @@ def test_standard_return_suggestion():
     fluxcal.load_standard(target="bd")
 
 
-def test_sensitivity():
+@patch("matplotlib.pyplot.show")
+def test_sensitivity(mock_show):
 
     hiltner_spectrum1D = Spectrum1D(log_file_name=None)
     sens = FluxCalibration(log_file_name=None)
@@ -72,6 +74,7 @@ def test_sensitivity():
         fig_type="iframe+png",
         filename=os.path.join(HERE, "test_output", "fluxcal_inspect_standard"),
     )
+    sens.inspect_standard(display=True)
 
     sens.get_sensitivity()
 
@@ -93,7 +96,8 @@ def test_sensitivity():
     )
 
 
-def test_fluxcalibration():
+@patch("matplotlib.pyplot.show")
+def test_fluxcalibration(mock_show):
 
     hiltner_spectrum1D = Spectrum1D(log_file_name=None)
     lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
@@ -141,3 +145,4 @@ def test_fluxcalibration():
         fig_type="iframe+png",
         filename=os.path.join(HERE, "test_output", "fluxcal_flux_calibration"),
     )
+    fluxcalibrator.apply_flux_calibration(lhs6328_spectrum1D, display=True)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+from unittest.mock import patch
 
 from astropy.io import fits
 import numpy as np
@@ -484,7 +485,6 @@ def test_input_with_only_one_column():
             HERE, "test_data", "sprat_LHS6328_expect_fail.list"
         )
     )
-    img.load_data()
 
 
 def test_cosmicray_cleaning_x_then_y():
@@ -558,7 +558,8 @@ def test_input_with_numpy_array_and_reduction():
     img.reduce()
 
 
-def test_reduction_and_save():
+@patch("matplotlib.pyplot.show")
+def test_reduction_and_save(mock_show):
     img = image_reduction.ImageReduction(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
@@ -574,6 +575,7 @@ def test_reduction_and_save():
         save_fig=True,
         fig_type="iframe+png+svg+pdf+jpg",
     )
+    img.inspect(display=True)
     img.list_files()
 
 
