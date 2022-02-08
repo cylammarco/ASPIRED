@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import math
 from time import time
 import numpy as np
@@ -90,15 +91,15 @@ for i in range(w_iter):
 
 time2 = time.time()
 print(time2 - time1)
-"""
+
 # Get the shift and scale for the trace
-idx = np.nanargmax(corr_val, axis=1)
-shift_solution = np.array([corr_idx[i,j] for i, j in enumerate(idx)])
-scale_solution = transform_scale[idx]
-"""
+# idx = np.nanargmax(corr_val, axis=1)
+# shift_solution = np.array([corr_idx[i,j] for i, j in enumerate(idx)])
+# scale_solution = transform_scale[idx]
 
 N_spec = 144
-# Find the spectral position in the middle of the gram in the upsampled pixel location location
+# Find the spectral position in the middle of the gram in the upsampled
+# pixel location location
 peaks = signal.find_peaks(
     signal.resample(
         np.nanmedian(data_split[w_iter // 2], axis=Saxis), N_resample
@@ -106,7 +107,8 @@ peaks = signal.find_peaks(
     distance=5,
     prominence=1,
 )
-# Sort the positions by the prominences, and return to the original scale (i.e. with subpixel position)
+# Sort the positions by the prominences, and return to the original
+# scale (i.e. with subpixel position)
 spec_init = (
     np.sort(peaks[0][np.argsort(-peaks[1]["prominences"])][:N_spec]) / scaling
 )

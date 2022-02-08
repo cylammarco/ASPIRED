@@ -1,16 +1,16 @@
-*  
+*
 *             G 6 0 - 5 4
-*    Table file for G60-54 flux standard 
+*    Table file for G60-54 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "micro-Janskys" 
-SET .Z.LABEL = "Flux" 
-*  
+*
+SET .Z.UNITS = "micro-Janskys"
+SET .Z.LABEL = "Flux"
+*
   3200      269.651
   3201      272.898
   3202      276.950

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import os
 import sys
@@ -7,15 +8,14 @@ sys.path.insert(0, os.path.join(base_dir, ".."))
 
 from standard_list import *
 
-"""
-ignore for now
-(1) a dictionary to match names to unique names (the search is one-to-one)
-(2) a dictionary to unique names to names (the search is one-to-many)
 
-essential
-(3) a dictionary to match libraries to unique names (the search is one-to-many)
-(4) a dictionary to match unique names to libraries (the search is one-to-many)
-"""
+# ignore for now
+# (1) a dictionary to match names to unique names (the search is one-to-one)
+# (2) a dictionary to unique names to names (the search is one-to-many)
+
+# essential
+# (3) a dictionary to match libraries to unique names (the search is one-to-many)
+# (4) a dictionary to match unique names to libraries (the search is one-to-many)
 
 # the order in which the standard libraries goes through in automated mode
 library_rank = {

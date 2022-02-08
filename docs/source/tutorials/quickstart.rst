@@ -65,7 +65,7 @@ science and standard spectra are shown.
       standard_frame.inspect()
 
 2.  With the image reduced, we can start performing spectral reduction,
-    starting from the 2D spectrum. The arc frames listed in the filelist 
+    starting from the 2D spectrum. The arc frames listed in the filelist
     were also loaded, and they are propagated to the TwoDSpec automatically:
 
     .. code-block:: python

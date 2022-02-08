@@ -1,10 +1,10 @@
 astropy>=4.0
+astroscrappy>=1.1
 ccdproc>=2.1
 Cython>=0.29.23
-rascal==0.3.1
-plotly>=5.0
-astroscrappy>=1.1
-spectres>=2.1.1
 numpy>=1.16
+plotly>=5.0
+rascal==0.3.1
 scipy>=1.5.2
+spectres>=2.1.1
 statsmodels>=0.12

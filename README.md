@@ -51,7 +51,7 @@ See the examples of these use cases at [aspired-example](https://github.com/cyla
 * scipy
 * [astropy](https://github.com/astropy/astropy) >= 4.0
 * [astroscrappy](https://github.com/astropy/astroscrappy) >= 1.1
-* [ccdproc](https://github.com/astropy/ccdproc) 
+* [ccdproc](https://github.com/astropy/ccdproc)
 * [plotly](https://github.com/plotly/plotly.py) >= 5.0
 * [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.1
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1

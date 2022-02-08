@@ -1,18 +1,18 @@
-*  
+*
 *          G R W + 7 0  5 8 2 4
-*    Table file for GRW+70 5824 flux standard 
+*    Table file for GRW+70 5824 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "AB magnitudes" 
-SET .Z.LABEL = "Flux" 
+*
+SET .Z.UNITS = "AB magnitudes"
+SET .Z.LABEL = "Flux"
 SET .Z.REVSCALE = 1
 SET .Z.MAGFLAG = 1
-*  
+*
   3200       12.378
   3201       12.382
   3202       12.385

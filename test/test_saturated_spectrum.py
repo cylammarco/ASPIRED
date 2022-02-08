@@ -1,19 +1,25 @@
+# -*- coding: utf-8 -*-
 import os
 
+from astropy.io import fits
 import numpy as np
 
 from aspired import image_reduction
 from aspired import spectral_reduction
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-"""
-fits_blob = fits.open('test/test_data/v_s_20180810_27_1_0_0.fits.gz')[0]
-fits_blob.data = fits_blob.data *\
-    (65000. / np.nanpercentile(fits_blob.data, 99.5))
-fits_blob.data[fits_blob.data>65535] = 65535.
-fits_blob.data = fits_blob.data.astype('int')
-fits_blob.writeto('test/test_data/fake_saturated_data.fits', overwrite=True)
-"""
+
+fits_blob = fits.open("test/test_data/v_s_20180810_27_1_0_0.fits.gz")[0]
+fits_blob.data = fits_blob.data * (
+    65000.0 / np.nanpercentile(fits_blob.data, 99.5)
+)
+fits_blob.data[fits_blob.data > 65535] = 65535.0
+fits_blob.data = fits_blob.data.astype("int")
+fits_blob.writeto(
+    os.path.join("test", "test_data", "fake_saturated_data.fits"),
+    overwrite=True,
+)
+
 
 # Line list
 atlas = [

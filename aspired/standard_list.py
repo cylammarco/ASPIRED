@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 library_list = [
     "esoctiostan",
     "esohststan",

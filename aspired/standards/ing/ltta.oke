@@ -1,18 +1,18 @@
-*  
+*
 *           L T T 9 4 9 1
-*    Table file for LTT 9491 flux standard 
+*    Table file for LTT 9491 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "AB magnitudes" 
-SET .Z.LABEL = "Flux" 
+*
+SET .Z.UNITS = "AB magnitudes"
+SET .Z.LABEL = "Flux"
 SET .Z.REVSCALE = 1
 SET .Z.MAGFLAG = 1
-*  
+*
   3200       14.074
   3201       14.059
   3202       14.057

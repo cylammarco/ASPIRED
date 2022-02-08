@@ -1,16 +1,16 @@
-*  
+*
 *             N G C  7 2 9 3
-*    Table file for NGC 7293 flux standard 
+*    Table file for NGC 7293 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "micro-Janskys" 
-SET .Z.LABEL = "Flux" 
-*  
+*
+SET .Z.UNITS = "micro-Janskys"
+SET .Z.LABEL = "Flux"
+*
   3200    43291.258
   3201    43171.836
   3202    46302.008

@@ -6,7 +6,7 @@ Version 0.4.1
 We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
 
 * New Features:
-  
+
     * All image output supoprts iframe, jpg, png, svg and pdf.
     * ImageReduction is initialised to configure the logger only.
     * ImageReduction frame location can be added with add_filelist(), and then added by executing load_data().

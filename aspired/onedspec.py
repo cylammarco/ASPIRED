@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from aspired.util import get_continuum
 import datetime
 import logging

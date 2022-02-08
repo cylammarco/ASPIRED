@@ -4,7 +4,7 @@
 *   Table file for GD-248, faint object flux standard,
 *   based on Filippenko and Greenstein (1984)  (PASP 96, 530)
 *   Note that these are fitted
-*   continuum fluxes, not directly measured fluxes, and 
+*   continuum fluxes, not directly measured fluxes, and
 *   should be used accordingly.   This file is designed for
 *   use with the Figaro routine GSPIKE.
 *

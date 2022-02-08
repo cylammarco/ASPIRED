@@ -4,7 +4,7 @@
 *   Table file for G157-34, faint object flux standard,
 *   based on Filippenko and Greenstein (1984)  (Preprint,
 *   submitted to P.A.S.P.)  Note that these are fitted
-*   continuum fluxes, not directly measured fluxes, and 
+*   continuum fluxes, not directly measured fluxes, and
 *   should be used accordingly.   This file is designed for
 *   use with the Figaro routine GSPIKE.  The data here is
 *   given to 3 decimal places and was supplied directly by

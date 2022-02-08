@@ -1,18 +1,18 @@
-*  
+*
 *         F E I G E  1 1 0
-*    Table file for FEIGE 110 flux standard 
+*    Table file for FEIGE 110 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "AB magnitudes" 
-SET .Z.LABEL = "Flux" 
+*
+SET .Z.UNITS = "AB magnitudes"
+SET .Z.LABEL = "Flux"
 SET .Z.REVSCALE = 1
 SET .Z.MAGFLAG = 1
-*  
+*
   3200       10.944
   3201       10.946
   3202       10.949

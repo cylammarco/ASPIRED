@@ -112,7 +112,7 @@ The bare minimum example code to perform a complete spectral data reduction with
    # Apply atmospheric extinction correction
    onedspec.set_atmospheric_extinction()
    onedspec.apply_atmospheric_extinction_correction()
-   
+
    # Inspect the reduced data product
    onedspec.inspect_reduced_spectrum()
 

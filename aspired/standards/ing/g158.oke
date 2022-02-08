@@ -1,16 +1,16 @@
-*  
+*
 *            G 1 5 8 - 1 0 0
-*    Table file for G158-100 flux standard 
+*    Table file for G158-100 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "micro-Janskys" 
-SET .Z.LABEL = "Flux" 
-*  
+*
+SET .Z.UNITS = "micro-Janskys"
+SET .Z.LABEL = "Flux"
+*
   3200      678.579
   3201      711.872
   3202      735.190

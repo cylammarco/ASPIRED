@@ -1,16 +1,16 @@
-*  
+*
 *          B D + 7 5  3 2 5
-*    Table file for BD+75 325 flux standard 
+*    Table file for BD+75 325 flux standard
 *    based on data from Oke ( AJ, 99, 1621, 1990 ).
-*    Data extracted from STSDAS table held in CALOBS 
-*    directory at STScI. Note that these are fitted 
-*    continuum fluxes, not directly measured fluxes, 
-*    and so should be treated in the same way as 
+*    Data extracted from STSDAS table held in CALOBS
+*    directory at STScI. Note that these are fitted
+*    continuum fluxes, not directly measured fluxes,
+*    and so should be treated in the same way as
 *    Fillipenko and Greenstein standards
-*  
-SET .Z.UNITS = "micro-Janskys" 
-SET .Z.LABEL = "Flux" 
-*  
+*
+SET .Z.UNITS = "micro-Janskys"
+SET .Z.LABEL = "Flux"
+*
   3200  1356439.750
   3201  1350205.000
   3202  1347722.625

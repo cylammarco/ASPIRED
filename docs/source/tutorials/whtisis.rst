@@ -98,7 +98,7 @@ In this example, we reduced a faint low-resolution spectrum of an ultracool whit
 
 4.  And then extract the spectra from the traces by using the ap_extract()
     method. The science spectrum is optimally extracted with an aperture with
-    the default size of 15 and 20 pixel on each side of the trace, the sky is 
+    the default size of 15 and 20 pixel on each side of the trace, the sky is
     measured by fitting a, by default, first order polynomial to the sky region of
     5 pixels on each side from the aperture by default. The aperture and the
     sky regions are separated by 3 pixels by default. After the extraction,
