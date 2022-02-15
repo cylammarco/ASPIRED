@@ -44,6 +44,5 @@ workflows:
     # Inside the workflow, you define the jobs you want to run.
     jobs:
       - python/test:
-          args: '--dev'
           pkg-manager: pip-dist
           test-tool: pytest
