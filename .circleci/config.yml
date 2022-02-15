@@ -45,5 +45,5 @@ workflows:
     jobs:
       - python/test:
           args: '--dev'
-          pkg-manager: poetry
+          pkg-manager: pip-dist
           test-tool: pytest
