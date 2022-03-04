@@ -36,7 +36,7 @@ jobs:
       - run:
           command: |
             python3 -m pip install --upgrade pip wheel
-            python3 -m pip install -r pip-requirements.txt --progress-bar off
+            python3 -m pip install -r requirements.txt --progress-bar off
             python3 -m pip install pytest coverage pytest-cov
             python3 -m pytest test
 
