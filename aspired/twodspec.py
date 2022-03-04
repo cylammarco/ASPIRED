@@ -2517,11 +2517,6 @@ class TwoDSpec:
 
             if use_arc:
 
-                self.logger.warning(
-                    "Arc frame is not available, retification "
-                    "polynomials are forced to be found with the "
-                    "light frame. "
-                )
                 use_arc = False
 
         elif isinstance(self.arc, CCDData):

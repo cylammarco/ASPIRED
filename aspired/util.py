@@ -299,7 +299,7 @@ def get_continuum(x, y, **kwargs):
 
     if "frac" not in kwargs:
 
-        kwargs["frac"] = 0.1
+        kwargs["frac"] = 0.15
 
     if "return_sorted" not in kwargs:
 

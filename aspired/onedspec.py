@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from aspired.util import get_continuum
+import copy
 import datetime
 import logging
 import os
@@ -12,6 +13,10 @@ from plotly import io as pio
 from spectres import spectres
 from scipy import optimize
 from scipy.interpolate import interp1d
+
+from matplotlib.pyplot import *
+
+ion()
 
 from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
@@ -4047,7 +4052,7 @@ class OneDSpec:
                 "flux calibration is not possible."
             )
 
-    def _min_std(self, factor, flux, telluric_profile, continuum, sigma=2.0):
+    def _min_std(self, factor, flux, telluric_profile, continuum, sigma=4.5):
         """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
@@ -4065,18 +4070,15 @@ class OneDSpec:
             0 being outside the Telluric regions.
         continuum: 1-d array (N)
             Continuum flux array.
-        sigma: float (default: 3.5)
+        sigma: float (default: 4.5)
             Level of sigma clipping.
 
         """
 
-        if factor < 0:
-
-            return np.inf
-
-        diff = flux + factor * telluric_profile - continuum
-        diff = sigma_clip(diff, sigma=sigma) * 1e20
-        nansum = np.nansum(np.abs(diff))
+        mask = telluric_profile != 0
+        telluric_absorption = factor * telluric_profile
+        diff = flux + telluric_absorption - continuum
+        nansum = np.nansum(diff[mask] ** 2.0) * 1e20
 
         return nansum
 
@@ -4095,6 +4097,8 @@ class OneDSpec:
             of wavelength.
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
 
@@ -4128,10 +4132,18 @@ class OneDSpec:
 
                     science_spec.add_telluric_func(telluric)
 
-                if isinstance(telluric, (np.ndarray, list)):
+                elif isinstance(telluric, (np.ndarray, list)):
 
                     science_spec.add_telluric_func(
                         interp1d(telluric[0], telluric[1])
+                    )
+
+                else:
+
+                    self.logger.warning(
+                        "telluric provided has to be a callable function, "
+                        "a list or a np.ndarray. "
+                        "{} is given".format(type(telluric))
                     )
 
                 if science_spec.wave is not None:
@@ -4140,10 +4152,24 @@ class OneDSpec:
                         science_spec.telluric_func(science_spec.wave)
                     )
 
+                else:
+
+                    self.logger.warning(
+                        "wave is not available. Telluric correction cannot"
+                        "be performed."
+                    )
+
                 if science_spec.wave_resampled is not None:
 
                     science_spec.add_telluric_profile_resampled(
                         science_spec.telluric_func(science_spec.wave_resampled)
+                    )
+
+                else:
+
+                    self.logger.warning(
+                        "wave_resampled is not available. Telluric correction "
+                        "cannot be performed."
                     )
 
         if "standard" in stype_split:
@@ -4155,10 +4181,18 @@ class OneDSpec:
 
                 standard_spec.add_telluric_func(telluric)
 
-            if isinstance(telluric, (np.ndarray, list)):
+            elif isinstance(telluric, (np.ndarray, list)):
 
                 standard_spec.add_telluric_func(
                     interp1d(telluric[0], telluric[1])
+                )
+
+            else:
+
+                self.logger.warning(
+                    "telluric provided has to be a callable function, "
+                    "a list or a np.ndarray. "
+                    "{} is given".format(type(telluric))
                 )
 
             if standard_spec.wave is not None:
@@ -4167,10 +4201,24 @@ class OneDSpec:
                     standard_spec.telluric_func(standard_spec.wave)
                 )
 
+            else:
+
+                self.logger.warning(
+                    "wave is not available. Telluric correction cannot"
+                    "be performed."
+                )
+
             if standard_spec.wave_resampled is not None:
 
                 standard_spec.add_telluric_profile_resampled(
                     standard_spec.telluric_func(standard_spec.wave_resampled)
+                )
+
+            else:
+
+                self.logger.warning(
+                    "wave_resampled is not available. Telluric correction "
+                    "cannot be performed."
                 )
 
     def get_continuum(self, spec_id=None, **kwargs):
@@ -4224,6 +4272,12 @@ class OneDSpec:
 
                 science_spec.add_flux_continuum(
                     get_continuum(wave, flux, **kwargs)
+                )
+
+            else:
+
+                self.logger.warning(
+                    "flux is None, only count_continuum is found."
                 )
 
     def get_resampled_continuum(self, spec_id=None, **kwargs):
@@ -4301,12 +4355,16 @@ class OneDSpec:
 
         """
 
-        telluric_func = self.fluxcal.get_telluric_profile(
+        (
+            telluric_func,
+            telluric_profile,
+            telluric_factor,
+        ) = self.fluxcal.get_telluric_profile(
             wave=self.standard_spectrum_list[0].wave,
             flux=self.standard_spectrum_list[0].flux,
             continuum=self.standard_spectrum_list[0].flux_continuum,
             mask_range=mask_range,
-            return_function=return_function,
+            return_function=True,
         )
 
         self.logger.info(
@@ -4332,14 +4390,18 @@ class OneDSpec:
 
             spec_id = list(self.science_spectrum_list.keys())
 
-        # Get the telluric profile
+        # Add the telluric profile from fluxcal to science onedspec
         for i in spec_id:
 
-            science_spec = self.science_spectrum_list[i]
-
-            science_spec.add_telluric_profile(
-                self.fluxcal.spectrum1D.telluric_profile
+            self.science_spectrum_list[i].add_telluric_func(telluric_func)
+            self.science_spectrum_list[i].add_telluric_profile(
+                telluric_profile
             )
+
+        # Add the telluric profile from fluxcal to standard onedspec
+        self.standard_spectrum_list[0].add_telluric_func(telluric_func)
+        self.standard_spectrum_list[0].add_telluric_profile(telluric_profile)
+        self.standard_spectrum_list[0].add_telluric_factor(telluric_factor)
 
         if return_function:
 
@@ -4434,9 +4496,10 @@ class OneDSpec:
 
             telluric_factor = optimize.minimize(
                 self._min_std,
-                np.nanmedian(flux),
+                np.nanmedian(np.abs(flux)),
                 args=(flux, science_spec.telluric_profile, flux_continuum),
                 tol=1e-20,
+                method="Nelder-Mead",
                 options={"maxiter": 10000},
             ).x
 
@@ -4466,12 +4529,14 @@ class OneDSpec:
 
                 telluric_factor_resampled = optimize.minimize(
                     self._min_std,
-                    np.nanmedian(flux_resampled),
+                    np.nanmedian(np.abs(flux_resampled)),
                     args=(
                         flux_resampled,
                         science_spec.telluric_profile_resampled,
                         flux_resampled_continuum,
                     ),
+                    tol=1e-20,
+                    method="Nelder-Mead",
                     options={"maxiter": 10000},
                 ).x
 
@@ -4485,11 +4550,47 @@ class OneDSpec:
                     telluric_factor_resampled
                 )
 
-            self.logger.info("telluric_factor is {}.".format(telluric_factor))
+        if self.standard_wavelength_resampled:
+
+            standard_spec = self.standard_spectrum_list[i]
+            wave_standard_resampled = standard_spec.wave_resampled
+
+            if (standard_spec.telluric_profile_resampled is None) or (
+                len(kwargs.keys()) > 0
+            ):
+
+                standard_spec.add_telluric_profile_resampled(
+                    standard_spec.telluric_func(wave_standard_resampled)
+                )
+
+                telluric_factor_resampled = optimize.minimize(
+                    self._min_std,
+                    np.nanmedian(np.abs(flux_resampled)),
+                    args=(
+                        standard_spec.flux_resampled,
+                        standard_spec.telluric_profile_resampled,
+                        standard_spec.flux_resampled_continuum,
+                    ),
+                    tol=1e-20,
+                    method="Nelder-Mead",
+                    options={"maxiter": 10000},
+                ).x
+
+                self.logger.info(
+                    "telluric_factor_resampled is {}.".format(
+                        telluric_factor_resampled
+                    )
+                )
+
+                standard_spec.add_telluric_factor_resampled(
+                    telluric_factor_resampled
+                )
 
         if auto_apply:
 
-            self.apply_telluric_correction(factor=factor, spec_id=spec_id)
+            self.apply_telluric_correction(
+                factor=factor, spec_id=spec_id, stype="science+standard"
+            )
 
     def inspect_telluric_profile(
         self,
@@ -4813,7 +4914,9 @@ class OneDSpec:
 
             return to_return
 
-    def apply_telluric_correction(self, factor=1.0, spec_id=None):
+    def apply_telluric_correction(
+        self, factor=1.0, spec_id=None, stype="science+standard"
+    ):
         """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
@@ -4833,51 +4936,39 @@ class OneDSpec:
             manally adjust the strength.
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
 
-        if isinstance(spec_id, int):
+        stype_split = stype.split("+")
 
-            spec_id = [spec_id]
+        if "science" in stype_split:
 
-        if spec_id is not None:
+            if isinstance(spec_id, int):
 
-            if not set(spec_id).issubset(
-                list(self.science_spectrum_list.keys())
-            ):
+                spec_id = [spec_id]
 
-                error_msg = "The given spec_id does not exist."
-                self.logger.critical(error_msg)
-                raise ValueError(error_msg)
+            if spec_id is not None:
 
-        else:
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
 
-            # if spec_id is None, contraints are applied to all
-            #  calibrators
-            spec_id = list(self.science_spectrum_list.keys())
-
-        # Get the telluric profile
-        for i in spec_id:
-
-            science_spec = self.science_spectrum_list[i]
-
-            if science_spec.telluric_profile is None:
-
-                self.logger.warning(
-                    "Telluric profile is not available, please "
-                    "construct a profile with get_telluric_profile()."
-                )
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
 
             else:
 
-                science_spec.flux = (
-                    science_spec.flux
-                    + science_spec.telluric_profile
-                    * science_spec.telluric_factor
-                    * factor
-                )
+                # if spec_id is None, contraints are applied to all
+                #  calibrators
+                spec_id = list(self.science_spectrum_list.keys())
 
-            if self.science_wavelength_resampled:
+            # Get the telluric profile
+            for i in spec_id:
+
+                science_spec = self.science_spectrum_list[i]
 
                 if science_spec.telluric_profile_resampled is None:
 
@@ -4892,9 +4983,64 @@ class OneDSpec:
                     science_spec.flux_resampled = (
                         science_spec.flux_resampled
                         + science_spec.telluric_profile_resampled
+                        * science_spec.telluric_factor_resampled
+                        * factor
+                    )
+
+                if science_spec.telluric_profile is None:
+
+                    self.logger.warning(
+                        "A resampled telluric profile is not available, "
+                        "please construct a profile with "
+                        "get_telluric_profile()."
+                    )
+
+                else:
+
+                    science_spec.flux = (
+                        science_spec.flux
+                        + science_spec.telluric_profile
                         * science_spec.telluric_factor
                         * factor
                     )
+
+        if "standard" in stype_split:
+
+            standard_spec = self.standard_spectrum_list[0]
+
+            if standard_spec.telluric_profile_resampled is None:
+
+                self.logger.warning(
+                    "A resampled telluric profile is not available, "
+                    "please construct a profile with "
+                    "get_telluric_profile()."
+                )
+
+            else:
+
+                standard_spec.flux_resampled = (
+                    standard_spec.flux_resampled
+                    + standard_spec.telluric_profile_resampled
+                    * standard_spec.telluric_factor_resampled
+                    * factor
+                )
+
+            if standard_spec.telluric_profile is None:
+
+                self.logger.warning(
+                    "A resampled telluric profile is not available, "
+                    "please construct a profile with "
+                    "get_telluric_profile()."
+                )
+
+            else:
+
+                standard_spec.flux = (
+                    standard_spec.flux
+                    + standard_spec.telluric_profile
+                    * standard_spec.telluric_factor
+                    * factor
+                )
 
     def set_atmospheric_extinction(
         self,

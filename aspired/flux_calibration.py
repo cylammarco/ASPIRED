@@ -324,7 +324,7 @@ class StandardLibrary:
         # Load the list of targets in the requested library
         try:
 
-            libraries = self.uname_to_lib[target]
+            libraries = self.uname_to_lib[target.lower()]
             return libraries, True
 
         except Exception as e:
@@ -335,7 +335,10 @@ class StandardLibrary:
             # closest match, Top 5 are returned.
             # difflib uses Gestalt pattern matching.
             target_list = difflib.get_close_matches(
-                target, list(self.uname_to_lib.keys()), n=5, cutoff=cutoff
+                target.lower(),
+                list(self.uname_to_lib.keys()),
+                n=5,
+                cutoff=cutoff,
             )
 
             if len(target_list) > 0:
@@ -381,8 +384,8 @@ class StandardLibrary:
 
         """
 
-        self.target = target
-        self.ftype = ftype
+        self.target = target.lower()
+        self.ftype = ftype.lower()
         self.cutoff = cutoff
 
         libraries, success = self.lookup_standard_libraries(self.target)
@@ -835,16 +838,15 @@ class FluxCalibration(StandardLibrary):
             ] = residual[left_telluric_start:right_telluric_end]
 
         # normalise the profile
-        telluric_profile /= np.ptp(telluric_profile)
+        telluric_factor = np.ptp(telluric_profile)
+        telluric_profile /= telluric_factor
         telluric_func = itp.interp1d(
             wave, telluric_profile, fill_value="extrapolate"
         )
 
-        self.spectrum1D.add_telluric_func(telluric_func)
-
         if return_function:
 
-            return telluric_func
+            return telluric_func, telluric_profile, telluric_factor
 
     def inspect_telluric_profile(
         self,
@@ -1185,12 +1187,21 @@ class FluxCalibration(StandardLibrary):
         self.spectrum1D.add_count_continuum(count)
         self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
 
-        self.get_telluric_profile(
+        (
+            telluric_func,
+            telluric_profile,
+            telluric_factor,
+        ) = self.get_telluric_profile(
             wave,
             getattr(self.spectrum1D, "count") * 10.0 ** sensitivity_func(wave),
             count * 10.0 ** sensitivity_func(wave),
             mask_range=mask_range,
+            return_function=True,
         )
+
+        self.spectrum1D.add_telluric_func(telluric_func)
+        self.spectrum1D.add_telluric_profile(telluric_profile)
+        self.spectrum1D.add_telluric_factor(telluric_factor)
 
         if return_function:
 

@@ -30,7 +30,7 @@ def test_telluric_square_wave():
 
     # Get the telluric profile
     fluxcal = FluxCalibration(log_file_name=None)
-    telluric_func = fluxcal.get_telluric_profile(
+    telluric_func, _, _ = fluxcal.get_telluric_profile(
         wave,
         flux_std,
         flux_std_continuum,
@@ -80,7 +80,7 @@ def test_telluric_real_data(mock_show):
 
     # Get the telluric profile
     fluxcal = FluxCalibration(log_file_name=None)
-    telluric_func = fluxcal.get_telluric_profile(
+    telluric_func, _, _ = fluxcal.get_telluric_profile(
         std_wave, std_flux, std_flux_continuum, return_function=True
     )
 

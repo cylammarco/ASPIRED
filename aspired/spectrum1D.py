@@ -3382,6 +3382,16 @@ class Spectrum1D:
                             header=self.header[output_type],
                         )
 
+                    else:
+
+                        self.logger.warning(
+                            filename
+                            + "_"
+                            + output_type
+                            + ".csv cannot be saved to disk. Please check "
+                            + "the path and/or set overwrite to True."
+                        )
+
                 else:
 
                     output_data_arc_spec = self.hdu_output[start].data
@@ -3401,6 +3411,14 @@ class Spectrum1D:
                             header=self.header[output_type],
                         )
 
+                    else:
+
+                        self.logger.warning(
+                            filename
+                            + "_arc_spec.csv cannot be saved to disk. Please "
+                            + "check the path and/or set overwrite to True."
+                        )
+
                     if overwrite or (
                         not os.path.exists(filename + "_arc_peaks.csv")
                     ):
@@ -3412,6 +3430,14 @@ class Spectrum1D:
                             header=self.header[output_type],
                         )
 
+                    else:
+
+                        self.logger.warning(
+                            filename
+                            + "_arc_peaks.csv cannot be saved to disk. Please "
+                            + "check the path and/or set overwrite to True."
+                        )
+
                     if overwrite or (
                         not os.path.exists(filename + "_arc_peaks_refined.csv")
                     ):
@@ -3421,6 +3447,15 @@ class Spectrum1D:
                             output_data_arc_peaks_refined,
                             delimiter=",",
                             header=self.header[output_type],
+                        )
+
+                    else:
+
+                        self.logger.warning(
+                            filename
+                            + "_arc_peaks_refined.csv cannot be saved to "
+                            + "disk. Please check the path and/or set "
+                            + "overwrite to True."
                         )
 
                 start = end

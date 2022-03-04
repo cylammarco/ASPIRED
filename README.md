@@ -4,7 +4,7 @@
 [![Readthedocs Status](https://readthedocs.org/projects/aspired/badge/?version=latest&style=flat)](https://aspired.readthedocs.io/en/latest/)
 [![PyPI version](https://badge.fury.io/py/aspired.svg)](https://badge.fury.io/py/aspired)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4127294.svg)](https://doi.org/10.5281/zenodo.4127294)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/aspired)
+[![Downloads](https://pepy.tech/badge/aspired)](https://pepy.tech/project/aspired)
 ![Lines of code](https://img.shields.io/tokei/lines/github.com/cylammarco/aspired)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -69,7 +69,7 @@ The [quickstart guide](https://aspired.readthedocs.io/en/latest/tutorials/quicks
 ## Contributing Code/Documentation
 If you are interested in contributing code to the project, thank you! For those unfamiliar with the process of contributing to an open-source project, you may want to read through Github’s own short informational section on how to submit a [contribution](https://opensource.guide/how-to-contribute/#how-to-submit-a-contribution) or send me a message.
 
-Style -- as long as it passes flake8.
+Style -- black. See the .pre-commit-config.yaml for the other requirements.
 
 ## Funding bodies
 1. European Union’s Horizon 2020 research and innovation programme (grant agreement No. 730890)
@@ -78,3 +78,11 @@ Style -- as long as it passes flake8.
 (May - June 2020)
 3. European Research Council Starting Grant (grant agreement No. 852097)
 (Sept 2020 - Current)
+
+## Citation
+If you make use of the ASPIRED toolkit, we would appreciate if you can refernce the two articles and two pieces of software listed below:
+
+1. [ASPIRED arXiv article](https://ui.adsabs.harvard.edu/abs/2021arXiv211102127L/abstract)
+2. [ASPIRED Zenodo](https://doi.org/10.5281/zenodo.4127294)
+3. [RASCAL arXiv article](https://ui.adsabs.harvard.edu/abs/2020ASPC..527..627V/abstract)
+4. [RASCAL Zenodo](https://doi.org/10.5281/zenodo.4117516)
