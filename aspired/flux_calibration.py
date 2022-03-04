@@ -844,6 +844,10 @@ class FluxCalibration(StandardLibrary):
             wave, telluric_profile, fill_value="extrapolate"
         )
 
+        self.spectrum1D.add_telluric_func(telluric_func)
+        self.spectrum1D.add_telluric_profile(telluric_profile)
+        self.spectrum1D.add_telluric_factor(telluric_factor)
+
         if return_function:
 
             return telluric_func, telluric_profile, telluric_factor
