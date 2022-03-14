@@ -350,8 +350,8 @@ class WavelengthCalibration:
 
         arc_spec = getattr(self.spectrum1D, "arc_spec")
 
-        arc_spec -= np.nanmin(arc_spec)
-        arc_spec /= np.nanmax(arc_spec)
+        arc_spec = arc_spec - np.nanmin(arc_spec)
+        arc_spec = arc_spec / np.nanmax(arc_spec)
 
         peaks, prop = signal.find_peaks(
             arc_spec, distance=distance, prominence=prominence / 100.0
