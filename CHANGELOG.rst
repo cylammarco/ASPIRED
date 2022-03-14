@@ -1,3 +1,33 @@
+Version 0.4.2
+-------------
+
+:Dat XX-Mar-2022
+
+* Major bug fixes:
+
+  * Telluric correction can be applied to both science and standard spectra in OneDSpec.
+  * Telluric profile is copied from a FluxCalibration instance to OneDSpec.
+
+* Minor bug fixes:
+
+  * When spectrum1D failed to save file, a warning is thrown.
+  * 
+
+* Dependency change
+
+  * Plotly dependency changed from orca to kaleido.
+  * Astroscrappy >= 1.0.8
+  * Rascal >= 0.3.2
+  * Astropy >=4.3
+
+* Other changes
+
+  * Installation is now configured with setup.cfg
+  * Adopted black style
+  * Using pre-commit
+  * Fixed coverall report submission issue
+  * Using unittest.mock.patch such that image display in tests do not block process
+
 Version 0.4.1
 -------------
 

@@ -909,12 +909,11 @@ class OneDSpec:
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
-
-        if type(arc_spec) == np.ndarray:
+        if isinstance(arc_spec, np.ndarray):
 
             arc_spec = [arc_spec]
 
-        elif type(arc_spec) == list:
+        elif isinstance(arc_spec, list):
 
             pass
 
@@ -928,91 +927,84 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_data_available:
+            if isinstance(spec_id, int):
 
-                if isinstance(spec_id, int):
+                spec_id = [spec_id]
 
-                    spec_id = [spec_id]
+            if spec_id is not None:
 
-                if spec_id is not None:
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
 
-                    if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())
-                    ):
+                    for i in spec_id:
 
-                        for i in spec_id:
+                        if i not in list(self.science_spectrum_list.keys()):
 
-                            if i not in list(
-                                self.science_spectrum_list.keys()
-                            ):
+                            self.add_science_spectrum1D(i)
 
-                                self.add_science_spectrum1D(i)
+                            self.logger.warning(
+                                "The given spec_id, {}, does not "
+                                "exist. A new spectrum1D is created. "
+                                "Please check you are providing the "
+                                "correct spec_id.".format(spec_id)
+                            )
 
-                                self.logger.warning(
-                                    "The given spec_id, {}, does not "
-                                    "exist. A new spectrum1D is created. "
-                                    "Please check you are providing the "
-                                    "correct spec_id.".format(spec_id)
-                                )
+                        else:
 
-                            else:
-
-                                pass
-
-                    else:
-
-                        pass
+                            pass
 
                 else:
 
-                    # if spec_id is None, calibrators are initialised to all
-                    spec_id = list(self.science_spectrum_list.keys())
+                    pass
 
-                # Check the sizes of the wave and spec_id and convert wave
-                # into a dictionary
-                if len(arc_spec) == len(spec_id):
+            else:
 
-                    arc_spec = {
-                        spec_id[i]: arc_spec[i] for i in range(len(spec_id))
-                    }
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
 
-                elif len(arc_spec) == 1:
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(arc_spec) == len(spec_id):
 
-                    arc_spec = {
-                        spec_id[i]: arc_spec[0] for i in range(len(spec_id))
-                    }
+                arc_spec = {
+                    spec_id[i]: arc_spec[i] for i in range(len(spec_id))
+                }
 
-                else:
+            elif len(arc_spec) == 1:
 
-                    error_msg = (
-                        "arc_spec must be the same length of shape "
-                        + "as spec_id."
-                    )
-                    self.logger.critical(error_msg)
-                    raise ValueError(error_msg)
+                arc_spec = {
+                    spec_id[i]: arc_spec[0] for i in range(len(spec_id))
+                }
 
-                for i in spec_id:
+            else:
 
-                    self.science_spectrum_list[i].add_arc_spec(
-                        arc_spec=arc_spec[i]
-                    )
-                    self.logger.info(
-                        "Added arc_spec to"
-                        "science_spectrum_list for spec_id: {}.".format(i)
-                    )
+                error_msg = (
+                    "arc_spec must be the same length or shape as spec_id. "
+                    + "arc_spec has shape {} and ".format(np.shape(arc_spec))
+                    + "spec_id has shape {}.".format(np.shape(spec_id))
+                )
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
 
-                self.science_arc_spec_available = True
+            for i in spec_id:
+
+                self.science_spectrum_list[i].add_arc_spec(
+                    arc_spec=arc_spec[i]
+                )
+                self.logger.info(
+                    "Added arc_spec to"
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+            self.science_arc_spec_available = True
 
         if "standard" in stype_split:
 
-            if self.standard_data_available:
+            self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec[0])
+            self.logger.info("Added arc_spec to" "standard_spectrum_list.")
 
-                self.standard_spectrum_list[0].add_arc_spec(
-                    arc_spec=arc_spec[0]
-                )
-                self.logger.info("Added arc_spec to" "standard_spectrum_list.")
-
-                self.standard_arc_spec_available = True
+            self.standard_arc_spec_available = True
 
     def add_arc_lines(self, peaks, spec_id=None, stype="science+standard"):
         """
