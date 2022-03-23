@@ -1,7 +1,7 @@
 Version 0.4.2
 -------------
 
-:Dat XX-Mar-2022
+:Dat 23-Mar-2022
 
 * Major bug fixes:
 
@@ -10,8 +10,8 @@ Version 0.4.2
 
 * Minor bug fixes:
 
-  * When spectrum1D failed to save file, a warning is thrown.
-  * 
+  * When spectrum1D failed to save file, a warning is displayed.
+  * Standard star names are all compared in lower-case strings.
 
 * Dependency change
 
