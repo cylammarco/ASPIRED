@@ -14,10 +14,6 @@ from spectres import spectres
 from scipy import optimize
 from scipy.interpolate import interp1d
 
-from matplotlib.pyplot import *
-
-ion()
-
 from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
 from .spectrum1D import Spectrum1D

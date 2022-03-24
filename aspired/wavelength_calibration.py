@@ -576,7 +576,7 @@ class WavelengthCalibration:
         min_wavelength=3000,
         max_wavelength=9000,
         range_tolerance=500,
-        linearity_tolerance=50,
+        linearity_tolerance=100,
     ):
         """
         Set the properties of the hough transform.
@@ -1000,7 +1000,7 @@ class WavelengthCalibration:
         max_tries=5000,
         fit_deg=4,
         fit_coeff=None,
-        fit_tolerance=10.0,
+        fit_tolerance=5.0,
         fit_type="poly",
         candidate_tolerance=2.0,
         brute_force=False,
@@ -1028,7 +1028,7 @@ class WavelengthCalibration:
             *NOT CURRENTLY USED, as of 17 Jan 2021*
             Set the baseline of the least square fit. If no fits outform this
             set of polynomial coefficients, this will be used as the best fit.
-        fit_tolerance: float (Default: 10)
+        fit_tolerance: float (Default: 5.0)
             Sets a tolerance on whether a fit found by RANSAC is considered
             acceptable.
         fit_type: string (Default: 'poly')
