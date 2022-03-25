@@ -2271,6 +2271,7 @@ class Spectrum1D:
             self.trace_hdulist += [trace_sigma_ImageHDU]
 
             # Add the trace
+            self.modify_trace_header(0, "set", "EXTNAME", "Trace")
             self.modify_trace_header(0, "set", "LABEL", "Trace")
             self.modify_trace_header(0, "set", "CRPIX1", 1)
             self.modify_trace_header(0, "set", "CDELT1", 1)
@@ -2280,6 +2281,7 @@ class Spectrum1D:
             self.modify_trace_header(0, "set", "BUNIT", "Pixel (Spatial)")
 
             # Add the trace_sigma
+            self.modify_trace_header(1, "set", "EXTNAME", "Trace width/sigma")
             self.modify_trace_header(1, "set", "LABEL", "Trace width/sigma")
             self.modify_trace_header(1, "set", "CRPIX1", 1)
             self.modify_trace_header(1, "set", "CDELT1", 1)
@@ -2334,6 +2336,7 @@ class Spectrum1D:
             self.modify_count_header(0, "set", "SKYDN", self.skywidthdn)
             self.modify_count_header(0, "set", "SKYUP", self.skywidthup)
             self.modify_count_header(0, "set", "XTYPE", self.extraction_type)
+            self.modify_count_header(0, "set", "EXTNAME", "Electron Count")
             self.modify_count_header(0, "set", "LABEL", "Electron Count")
             self.modify_count_header(0, "set", "CRPIX1", 1)
             self.modify_count_header(0, "set", "CDELT1", 1)
@@ -2343,6 +2346,9 @@ class Spectrum1D:
             self.modify_count_header(0, "set", "BUNIT", "electron")
 
             # Add the uncertainty count
+            self.modify_count_header(
+                1, "set", "EXTNAME", "Electron Count (Uncertainty)"
+            )
             self.modify_count_header(
                 1, "set", "LABEL", "Electron Count (Uncertainty)"
             )
@@ -2354,6 +2360,9 @@ class Spectrum1D:
             self.modify_count_header(1, "set", "BUNIT", "electron")
 
             # Add the sky count
+            self.modify_count_header(
+                2, "set", "EXTNAME", "Electron Count (Sky)"
+            )
             self.modify_count_header(2, "set", "LABEL", "Electron Count (Sky)")
             self.modify_count_header(2, "set", "CRPIX1", 1)
             self.modify_count_header(2, "set", "CDELT1", 1)
@@ -2391,6 +2400,9 @@ class Spectrum1D:
             self.weight_map_hdulist += [weight_map_ImageHDU]
 
             # Add the extraction weights
+            self.modify_weight_map_header(
+                "set", "EXTNAME", "Optimal Extraction Profile"
+            )
             self.modify_weight_map_header(
                 "set", "LABEL", "Optimal Extraction Profile"
             )
@@ -2453,6 +2465,9 @@ class Spectrum1D:
 
             # Add the resampled count
             self.modify_count_resampled_header(
+                0, "set", "EXTNAME", "Resampled Electron Count"
+            )
+            self.modify_count_resampled_header(
                 0, "set", "LABEL", "Resampled Electron Count"
             )
             self.modify_count_resampled_header(0, "set", "CRPIX1", 1.00e00)
@@ -2470,6 +2485,9 @@ class Spectrum1D:
 
             # Add the resampled uncertainty count
             self.modify_count_resampled_header(
+                1, "set", "EXTNAME", "Resampled Electron Count (Uncertainty)"
+            )
+            self.modify_count_resampled_header(
                 1, "set", "LABEL", "Resampled Electron Count (Uncertainty)"
             )
             self.modify_count_resampled_header(1, "set", "CRPIX1", 1.00e00)
@@ -2486,6 +2504,9 @@ class Spectrum1D:
             self.modify_count_resampled_header(1, "set", "BUNIT", "electron")
 
             # Add the resampled sky count
+            self.modify_count_resampled_header(
+                2, "set", "EXTNAME", "Resampled Electron Count (Sky)"
+            )
             self.modify_count_resampled_header(
                 2, "set", "LABEL", "Resampled Electron Count (Sky)"
             )
@@ -2541,6 +2562,7 @@ class Spectrum1D:
             self.arc_spec_hdulist += [peaks_refined_ImageHDU]
 
             # Add the arc spectrum
+            self.modify_arc_spec_header(0, "set", "EXTNAME", "Electron Count")
             self.modify_arc_spec_header(0, "set", "LABEL", "Electron Count")
             self.modify_arc_spec_header(0, "set", "CRPIX1", 1)
             self.modify_arc_spec_header(0, "set", "CDELT1", 1)
@@ -2553,11 +2575,17 @@ class Spectrum1D:
 
             # Add the peaks in native pixel value
             self.modify_arc_spec_header(
+                1, "set", "EXTNAME", "Peaks (Detector Pixel)"
+            )
+            self.modify_arc_spec_header(
                 1, "set", "LABEL", "Peaks (Detector Pixel)"
             )
             self.modify_arc_spec_header(1, "set", "BUNIT", "Pixel")
 
             # Add the peaks in effective pixel value
+            self.modify_arc_spec_header(
+                2, "set", "EXTNAME", "Peaks (Effective Pixel)"
+            )
             self.modify_arc_spec_header(
                 2, "set", "LABEL", "Peaks (Effective Pixel)"
             )
@@ -2624,7 +2652,8 @@ class Spectrum1D:
             self.modify_wavecal_header("set", "W8ED", self.weighted)
             self.modify_wavecal_header("set", "FILTER", self.filter_close)
             self.modify_wavecal_header("set", "PUSAGE", self.peak_utilisation)
-            self.modify_wavecal_header("set", "LABEL", "Electron Count")
+            self.modify_wavecal_header("set", "EXTNAME", "Peak Electron Count")
+            self.modify_wavecal_header("set", "LABEL", "Peak Electron Count")
             self.modify_wavecal_header("set", "CRPIX1", 1.00e00)
             self.modify_wavecal_header("set", "CDELT1", self.wave_bin)
             self.modify_wavecal_header("set", "CRVAL1", self.wave_start)
@@ -2663,6 +2692,9 @@ class Spectrum1D:
             self.wavelength_hdulist += [wavelength_ImageHDU]
 
             # Add the calibrated wavelength
+            self.modify_wavelength_header(
+                "set", "EXTNAME", "Pixel-Wavelength Mapping"
+            )
             self.modify_wavelength_header(
                 "set", "LABEL", "Pixel-Wavelength Mapping"
             )
@@ -2705,6 +2737,7 @@ class Spectrum1D:
             self.sensitivity_hdulist = fits.HDUList()
             self.sensitivity_hdulist += [sensitivity_ImageHDU]
 
+            self.modify_sensitivity_header("set", "EXTNAME", "Sensitivity")
             self.modify_sensitivity_header("set", "LABEL", "Sensitivity")
             self.modify_sensitivity_header("set", "CRPIX1", 1.00e00)
             self.modify_sensitivity_header("set", "CDELT1", 1)
@@ -2770,6 +2803,7 @@ class Spectrum1D:
             self.flux_hdulist += [flux_sky_ImageHDU]
 
             # Note that wave_start is the centre of the starting bin
+            self.modify_flux_header(0, "set", "EXTNAME", "Flux")
             self.modify_flux_header(0, "set", "LABEL", "Flux")
             self.modify_flux_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(0, "set", "CDELT1", 1)
@@ -2780,7 +2814,8 @@ class Spectrum1D:
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_header(1, "set", "LABEL", "Flux")
+            self.modify_flux_header(1, "set", "EXTNAME", "Flux (Uncertainty)")
+            self.modify_flux_header(1, "set", "LABEL", "Flux (Uncertainty)")
             self.modify_flux_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(1, "set", "CDELT1", 1)
             self.modify_flux_header(1, "set", "CRVAL1", self.pixel_list[0])
@@ -2790,7 +2825,8 @@ class Spectrum1D:
                 1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_header(2, "set", "LABEL", "Flux")
+            self.modify_flux_header(2, "set", "EXTNAME", "Flux (Sky)")
+            self.modify_flux_header(2, "set", "LABEL", "Flux (Sky)")
             self.modify_flux_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(2, "set", "CDELT1", 1)
             self.modify_flux_header(2, "set", "CRVAL1", self.pixel_list[0])
@@ -2827,6 +2863,9 @@ class Spectrum1D:
                 sensitivity_resampled_ImageHDU
             ]
 
+            self.modify_sensitivity_resampled_header(
+                "set", "EXTNAME", "Sensitivity"
+            )
             self.modify_sensitivity_resampled_header(
                 "set", "LABEL", "Sensitivity"
             )
@@ -2904,6 +2943,7 @@ class Spectrum1D:
             self.flux_resampled_hdulist += [flux_sky_resampled_ImageHDU]
 
             # Note that wave_start is the centre of the starting bin
+            self.modify_flux_resampled_header(0, "set", "EXTNAME", "Flux")
             self.modify_flux_resampled_header(0, "set", "LABEL", "Flux")
             self.modify_flux_resampled_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
@@ -2918,7 +2958,12 @@ class Spectrum1D:
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_resampled_header(1, "set", "LABEL", "Flux")
+            self.modify_flux_resampled_header(
+                1, "set", "EXTNAME", "Flux (Uncertainty)"
+            )
+            self.modify_flux_resampled_header(
+                1, "set", "LABEL", "Flux (Uncertainty)"
+            )
             self.modify_flux_resampled_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
                 1, "set", "CDELT1", self.wave_bin
@@ -2932,7 +2977,10 @@ class Spectrum1D:
                 1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_resampled_header(2, "set", "LABEL", "Flux")
+            self.modify_flux_resampled_header(
+                2, "set", "EXTNAME", "Flux (Sky)"
+            )
+            self.modify_flux_resampled_header(2, "set", "LABEL", "Flux (Sky)")
             self.modify_flux_resampled_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
                 2, "set", "CDELT1", self.wave_bin
