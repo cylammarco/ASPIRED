@@ -1,3 +1,12 @@
+Version 0.4.3
+-------------
+
+:Dat 25-Mar-2022
+
+* Minor bug fixes:
+
+  * FITS header LABEL and EXTNAME are now unique and identical.
+
 Version 0.4.2
 -------------
 
