@@ -2568,7 +2568,7 @@ class ImageReduction:
 
         else:
 
-            self.light_redcued = self.light_reduced.subtract(self.bias_main)
+            self.light_reduced = self.light_reduced.subtract(self.bias_main)
 
     def _dark_subtract(self):
         """
@@ -2630,7 +2630,7 @@ class ImageReduction:
 
             else:
 
-                self.flat_redcued = self.flat_reduced.subtract(self.bias_main)
+                self.flat_reduced = self.flat_reduced.subtract(self.bias_main)
                 self.logger.info("Flat frame is bias subtracted.")
 
             self.flat_reduced = self.flat_reduced / np.nanmean(
