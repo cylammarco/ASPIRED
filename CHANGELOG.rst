@@ -1,3 +1,13 @@
+Version 0.4.4
+-------------
+
+:Dat 3-Apr-2022
+
+* Minor bug fixes:
+
+  * Fixed typos in the image_reduction which led to the failure in bias subraction and flat division (#79).
+  * Fixed a few condition handling errors when manually adding frames to an image_reduction object one by one.
+
 Version 0.4.3
 -------------
 
@@ -5,7 +15,7 @@ Version 0.4.3
 
 * Minor bug fixes:
 
-  * FITS header LABEL and EXTNAME are now unique and identical.
+  * FITS header LABEL and EXTNAME are now unique and identical (#77).
 
 Version 0.4.2
 -------------
