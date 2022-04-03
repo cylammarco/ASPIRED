@@ -127,6 +127,7 @@ class TwoDSpec:
         self.logger.addHandler(self.handler)
 
         self.img = None
+        self.img_residual = None
         self.header = None
         self.arc = None
         self.arc_header = None
@@ -246,8 +247,20 @@ class TwoDSpec:
 
             self.img = data.image_fits.data
             self.header = data.image_fits.header
-            self.arc = data.arc_main
-            self.arc_header = data.arc_header[0]
+
+            if data.arc_main is not None:
+
+                self.arc = data.arc_main
+                self.arc_header = data.arc_header[0]
+
+            else:
+
+                self.logger.warning(
+                    "Arc frame is not in the ImageReduction "
+                    "object, please supplied manually if you wish to perform "
+                    "wavelength calibration."
+                )
+
             self.bad_mask = data.bad_mask
 
         # If a filepath is provided
@@ -579,7 +592,12 @@ class TwoDSpec:
                 if self.saxis == 1:
 
                     self.img = self.img[self.spatial_mask]
-                    self.img_residual = self.img_residual[self.spatial_mask]
+
+                    if self.img_residual is not None:
+
+                        self.img_residual = self.img_residual[
+                            self.spatial_mask
+                        ]
 
                     if self.bad_mask is not None:
 
@@ -588,7 +606,12 @@ class TwoDSpec:
                 else:
 
                     self.img = self.img[:, self.spatial_mask]
-                    self.img_residual = self.img_residual[:, self.spatial_mask]
+
+                    if self.img_residual is not None:
+
+                        self.img_residual = self.img_residual[
+                            :, self.spatial_mask
+                        ]
 
                     if self.bad_mask is not None:
 
@@ -602,7 +625,12 @@ class TwoDSpec:
                 if self.saxis == 1:
 
                     self.img = self.img[:, self.spec_mask]
-                    self.img_residual = self.img_residual[:, self.spec_mask]
+
+                    if self.img_residual is not None:
+
+                        self.img_residual = self.img_residual[
+                            :, self.spec_mask
+                        ]
 
                     if self.bad_mask is not None:
 
@@ -611,7 +639,10 @@ class TwoDSpec:
                 else:
 
                     self.img = self.img[self.spec_mask]
-                    self.img_residual = self.img_residual[self.spec_mask]
+
+                    if self.img_residual is not None:
+
+                        self.img_residual = self.img_residual[self.spec_mask]
 
                     if self.bad_mask is not None:
 
@@ -622,7 +653,10 @@ class TwoDSpec:
             if self.saxis == 0:
 
                 self.img = np.transpose(self.img)
-                self.img_residual = np.transpose(self.img_residual)
+
+                if self.img_residual is not None:
+
+                    self.img_residual = np.transpose(self.img_residual)
 
                 if self.bad_mask is not None:
 
@@ -633,7 +667,10 @@ class TwoDSpec:
             if self.flip:
 
                 self.img = np.flip(self.img)
-                self.img_residual = np.flip(self.img_residual)
+
+                if self.img_residual is not None:
+
+                    self.img_residual = np.flip(self.img_residual)
 
                 if self.bad_mask is not None:
 
