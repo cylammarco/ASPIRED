@@ -47,7 +47,7 @@ def test_telluric_square_wave():
     # onedspec.fluxcal.spectrum1D.add_flux_continuum(flux_std_continuum)
 
     onedspec.add_telluric_function(telluric_func, stype="science")
-    onedspec.get_telluric_correction()
+    onedspec.get_telluric_strength()
     onedspec.apply_telluric_correction()
 
     assert np.isclose(

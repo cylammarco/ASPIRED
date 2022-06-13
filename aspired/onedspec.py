@@ -4402,7 +4402,7 @@ class OneDSpec:
 
             return telluric_func
 
-    def get_telluric_correction(
+    def get_telluric_strength(
         self, spec_id=None, factor=1.0, auto_apply=False, **kwargs
     ):
         """
