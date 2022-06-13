@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 from aspired.util import get_continuum
-import copy
 import datetime
 import logging
 import os
 import pkg_resources
 
-from astropy.stats import sigma_clip
 import numpy as np
 from plotly import graph_objects as go
 from plotly import io as pio
@@ -2867,6 +2865,11 @@ class OneDSpec:
 
                 for i in spec_id:
 
+                    self.logger.info(
+                        "Attempting to fit wavelength solution for "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
+
                     solution_science.append(
                         self.science_wavecal[i].fit(
                             max_tries=max_tries,
@@ -2902,6 +2905,10 @@ class OneDSpec:
 
             if self.standard_hough_pairs_available:
 
+                self.logger.info(
+                    "Attempting to fit wavelength solution for "
+                    "standard_spectrum_list[0]."
+                )
                 solution["standard"] = self.standard_wavecal.fit(
                     max_tries=max_tries,
                     fit_deg=fit_deg,
@@ -4540,7 +4547,7 @@ class OneDSpec:
 
         if self.standard_wavelength_resampled:
 
-            standard_spec = self.standard_spectrum_list[i]
+            standard_spec = self.standard_spectrum_list[0]
             wave_standard_resampled = standard_spec.wave_resampled
 
             if (standard_spec.telluric_profile_resampled is None) or (
