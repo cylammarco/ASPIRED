@@ -1,7 +1,8 @@
-# Automated SpectroPhotometric Image REDuction (ASPIRED)
+# Automated SpectroPhotometric Image REDuction (ASPIRED) -- A Python-based spectral data reduction toolkit
 ![Python package](https://github.com/cylammarco/ASPIRED/workflows/Python%20package/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/github/cylammarco/ASPIRED/badge.svg?branch=main)](https://coveralls.io/github/cylammarco/ASPIRED?branch=main)
 [![Readthedocs Status](https://readthedocs.org/projects/aspired/badge/?version=latest&style=flat)](https://aspired.readthedocs.io/en/latest/)
+[![arXiv](https://img.shields.io/badge/arXiv-2111.02127-00ff00.svg)](https://arxiv.org/abs/2111.02127)
 [![PyPI version](https://badge.fury.io/py/aspired.svg)](https://badge.fury.io/py/aspired)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4127294.svg)](https://doi.org/10.5281/zenodo.4127294)
 [![Downloads](https://pepy.tech/badge/aspired)](https://pepy.tech/project/aspired)
@@ -14,7 +15,7 @@ ASPIRED is written for use with python 3.7, 3.8 and 3.9 (will revisit 3.10 in th
 
 Further information can be referred to this [arXiv article](https://arxiv.org/abs/2111.02127).
 
-Early stage development efforts can be referred to this [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205885L/abstract), which will appeare in the [Astronomical Society of the Pacific Conference Series (ASPCS)](http://www.aspbooks.org/a/volumes/upcoming/?book_id=606). This is in concurrent development with the automated wavelength calibration software [RASCAL](https://github.com/jveitchmichaelis/rascal), further information can be referred to this [arXiv article](https://ui.adsabs.harvard.edu/abs/2019arXiv191205883V/abstract) and it will appear in the same volume of ASPCS.
+Early stage development efforts can be referred to this [ASPC article](https://ui.adsabs.harvard.edu/abs/2020ASPC..527..655L/abstract) and this [arXiv article](https://ui.adsabs.harvard.edu/abs/2020arXiv201203505L/abstract). This is in concurrent development with the automated wavelength calibration software [RASCAL](https://github.com/jveitchmichaelis/rascal), further information can be referred to this [ASPC article](https://ui.adsabs.harvard.edu/abs/2020ASPC..527..627V/abstract) and it will appear in the same volume of ASPCS.
 
 Example notebooks and scripts can be found [here](https://github.com/cylammarco/ASPIRED-example).
 
