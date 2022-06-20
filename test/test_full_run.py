@@ -106,6 +106,9 @@ def test_full_run(mock_show):
         save_fig=True,
         filename=os.path.join(HERE, "test_output", "test_full_run_extract"),
     )
+    lhs6328_twodspec.inspect_line_spread_function(
+        spec_id=0, display=False, return_jsonstring=True
+    )
 
     # Optimal extraction
     lhs6328_twodspec.ap_extract(
@@ -117,6 +120,13 @@ def test_full_run(mock_show):
         variances=1000000.0,
         display=False,
         save_fig=True,
+        filename=os.path.join(HERE, "test_output", "test_full_run_extract"),
+    )
+
+    lhs6328_twodspec.inspect_line_spread_function(
+        save_fig=True,
+        display=True,
+        open_iframe=True,
         filename=os.path.join(HERE, "test_output", "test_full_run_extract"),
     )
 
