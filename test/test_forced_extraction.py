@@ -69,6 +69,24 @@ lhs6328_twodspec.ap_extract(
 horne86_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 horne86_var = copy.copy(lhs6328_twodspec.spectrum_list[0].var)
 
+# Optimal extraction to get the LSF for force extraction below with LOWESS
+lhs6328_twodspec.ap_extract(
+    apwidth=15,
+    skywidth=10,
+    skydeg=1,
+    optimal=True,
+    model="lowess",
+    display=False,
+    save_fig=True,
+    filename=os.path.join(HERE, "test_output", "test_force_extraxtion2"),
+    fig_type="iframe+png",
+)
+
+# Store the extracted count
+horne86_count_lowess = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
+horne86_var_lowess = copy.copy(lhs6328_twodspec.spectrum_list[0].var)
+
+
 # Optimal extraction to get the LSF for force extraction below
 lhs6328_twodspec.ap_extract(
     apwidth=15,
@@ -184,9 +202,9 @@ def test_forced_extraction_horne86_lowess():
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.999) & (
-        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.001
-    )
+    assert (
+        np.nansum(horne86_count_lowess) >= np.nansum(count_forced) * 0.999
+    ) & (np.nansum(horne86_count_lowess) <= np.nansum(count_forced) * 1.001)
 
 
 def test_forced_extraction_marsh89():
@@ -258,9 +276,9 @@ def test_forced_extraction_horne86_lowess_int_var():
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.99) & (
-        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.01
-    )
+    assert (
+        np.nansum(horne86_count_lowess) >= np.nansum(count_forced) * 0.99
+    ) & (np.nansum(horne86_count_lowess) <= np.nansum(count_forced) * 1.01)
 
 
 def test_forced_extraction_horne86_lowess_str_var():
@@ -295,6 +313,6 @@ def test_forced_extraction_horne86_lowess_str_var():
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.95) & (
-        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.05
-    )
+    assert (
+        np.nansum(horne86_count_lowess) >= np.nansum(count_forced) * 0.95
+    ) & (np.nansum(horne86_count_lowess) <= np.nansum(count_forced) * 1.05)
