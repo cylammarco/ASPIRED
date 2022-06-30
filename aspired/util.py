@@ -281,10 +281,10 @@ def grow_mask(mask, iterations, diagonal):
 def get_continuum(x, y, **kwargs):
     """
     This is a wrapper function of the lowess function from statsmodels that
-    uses a different frac default value that is more appropriate in getting
-    a first guess continuum which reject "outliers" much more aggressively.
-    This function also takes in values in a Pythonic way that of providing
-    arguments: "first x then y".
+    uses a different lowess_frac default value that is more appropriate in
+    getting a first guess continuum which reject "outliers" much more
+    aggressively. This function also takes in values in a Pythonic way that of
+    providing arguments: "first x then y".
 
     Parameters
     ----------
@@ -297,7 +297,7 @@ def get_continuum(x, y, **kwargs):
 
     """
 
-    if "frac" not in kwargs:
+    if "lowess_frac" not in kwargs:
 
         kwargs["frac"] = 0.15
 

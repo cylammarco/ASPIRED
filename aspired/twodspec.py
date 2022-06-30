@@ -3097,7 +3097,7 @@ class TwoDSpec:
         optimal=True,
         algorithm="horne86",
         model="gauss",
-        lowess_frac=0.25,
+        lowess_frac=0.2,
         lowess_it=3,
         lowess_delta=0.0,
         tolerance=1e-6,
