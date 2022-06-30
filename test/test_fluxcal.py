@@ -31,13 +31,12 @@ def test_iraf_standard():
     fluxcal.load_standard(target="bd75325", library="irafoke1990", ftype="mag")
 
 
-@pytest.mark.xfail(raises=ValueError)
-def test_standard_expect_fail():
+def test_standard_return_suggection1():
     fluxcal = FluxCalibration(log_file_name=None)
     fluxcal.load_standard(target="sun")
 
 
-def test_standard_return_suggestion():
+def test_standard_return_suggestion2():
     fluxcal = FluxCalibration(log_file_name=None)
     fluxcal.load_standard(target="bd")
 

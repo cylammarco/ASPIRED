@@ -15,6 +15,7 @@ from plotly import io as pio
 from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
+from scipy.special import erf
 from spectres import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
@@ -3418,6 +3419,7 @@ class TwoDSpec:
                 count_sky_source_slice = count_sky_extraction_slice[
                     source_pix - itrace
                 ].copy()
+                var_sky = np.nanvar(extraction_slice[source_pix - itrace])
 
                 count_sky[i] = (
                     np.nansum(count_sky_source_slice)
@@ -3444,6 +3446,7 @@ class TwoDSpec:
                     ) = self._tophat_extraction(
                         source_slice=source_slice,
                         sky_source_slice=count_sky_source_slice,
+                        var_sky=var_sky,
                         pix_frac=pix_frac,
                         gain=self.gain,
                         sky_width_dn=sky_width_dn,
@@ -3951,6 +3954,7 @@ class TwoDSpec:
         self,
         source_slice,
         sky_source_slice,
+        var_sky,
         pix_frac,
         gain,
         sky_width_dn,
@@ -3970,7 +3974,9 @@ class TwoDSpec:
             The counts along the profile for aperture extraction.
         sky_source_slice: 1-d numpy array (M)
             Count of the fitted sky along the pix, has to be the same
-            length as pix
+            length
+        var_sky: float
+            The variance of the sky_source_slice (measured, not fitted)
         pix_frac: float
             The decimal places of the centroid.
         gain: float
@@ -4010,8 +4016,6 @@ class TwoDSpec:
         )
 
         # finally, compute the error in this pixel
-        # standarddev in the background data
-        sigB = np.nanstd(sky_source_slice)
         sky = (
             np.nansum(sky_source_slice)
             - pix_frac * sky_source_slice[0]
@@ -4031,7 +4035,7 @@ class TwoDSpec:
         # multiply by the exposure time when computing the
         # uncertainty
         signal = source_plus_sky - sky
-        noise = np.sqrt(signal / gain + (nA + nA**2.0 / nB) * (sigB**2.0))
+        noise = np.sqrt(signal / gain + (nA + nA**2.0 / nB) * var_sky)
 
         self.logger.debug(
             "The signal and noise from the tophat extraction "
@@ -4155,25 +4159,34 @@ class TwoDSpec:
         i = 0
         is_optimal = True
 
-        while (f_diff > tol) | (v_diff > tol):
+        if model == "gauss":
 
-            if model == "gauss":
+            correction = erf(len(pix) * 0.5 / sigma / 1.4142135623730951)
+            P = np.mean(
+                np.reshape(
+                    self._gaus(ndimage.zoom(pix, 100), 1.0, 0.0, mu, sigma),
+                    (len(pix), 100),
+                ),
+                axis=1,
+            )
+            P /= np.sum(P)
+            P *= correction
 
-                P = self._gaus(pix, 1.0, 0.0, mu, sigma)
+        else:
 
-            else:
-
-                P = lowess(
-                    f,
-                    pix,
-                    frac=lowess_frac,
-                    it=lowess_it,
-                    delta=lowess_delta,
-                    return_sorted=False,
-                )
-
+            P = lowess(
+                f,
+                pix,
+                frac=lowess_frac,
+                it=lowess_it,
+                delta=lowess_delta,
+                return_sorted=False,
+            )
+            # This cannot happen in _gaus, so it is only under 'else'
             P[P < 0] = 0.0
             P /= np.nansum(P)
+
+        while (f_diff > tol) | (v_diff > tol):
 
             mask_cr = np.ones(len(P), dtype=bool)
             mask_cr = mask_cr & ~bad_mask.astype(bool)
@@ -4222,6 +4235,11 @@ class TwoDSpec:
 
         signal = f1
         noise = np.sqrt(v1)
+
+        if model == "gauss":
+
+            signal /= correction
+            noise /= correction
 
         self.logger.debug(
             "The signal and noise from the tophat extraction "
