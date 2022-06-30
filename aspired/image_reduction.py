@@ -72,6 +72,10 @@ class ImageReduction:
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
 
+        if not isinstance(verbose, bool):
+
+            raise ValueError("Please provide a boolean value for `verbose`.")
+
         if (log_level == "CRITICAL") or (not verbose):
 
             self.logger.setLevel(logging.CRITICAL)

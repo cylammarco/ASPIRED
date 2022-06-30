@@ -149,6 +149,11 @@ except Exception as e:
     print(e)
 
 
+@pytest.mark.xfail()
+def test_str_verbose_at_initialisation():
+    img = image_reduction.ImageReduction(verbose="haha", log_file_name=None)
+
+
 def test_absolute_path():
     current_absolute_path = os.path.abspath(
         "test/test_data/sprat_LHS6328.list"
