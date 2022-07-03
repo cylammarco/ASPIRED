@@ -249,6 +249,10 @@ def test_full_run(mock_show):
     lhs6328_onedspec.load_standard(target="hiltner102")
 
     lhs6328_onedspec.get_sensitivity(
+        sens_deg=11, method="polynomial", mask_fit_size=1
+    )
+
+    lhs6328_onedspec.get_sensitivity(
         k=3, method="interpolate", mask_fit_size=1
     )
 
