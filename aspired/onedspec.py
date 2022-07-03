@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from aspired.util import get_continuum
+import copy
 import datetime
 import logging
 import os
@@ -15,6 +15,7 @@ from scipy.interpolate import interp1d
 from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
 from .spectrum1D import Spectrum1D
+from .util import get_continuum
 
 __all__ = ["OneDSpec"]
 
@@ -5272,37 +5273,86 @@ class OneDSpec:
             self.logger.info("Standard airmass is {}.".format(standard_am))
             self.logger.info("Science airmass is {}.".format(science_am))
 
+            interpoalted_ext = self.extinction_func(science_spec.wave)
             # Get the atmospheric extinction correction factor
             science_flux_extinction_factor = 10.0 ** (
-                -(self.extinction_func(science_spec.wave) * science_am) / 2.5
+                -(interpoalted_ext * science_am) / 2.5
             )
+            # note that we are still using the science_spec.wave because we want
+            # to "uncorrect" the atmospheric correction on the standard star
+            # at the wavelength of of the science target
             standard_flux_extinction_factor = 10.0 ** (
-                -(self.extinction_func(science_spec.wave) * standard_am) / 2.5
+                -(interpoalted_ext * standard_am) / 2.5
             )
-            science_spec.flux /= (
+
+            # ratio of the +ve flux adjustment due to the airmass of the
+            # science observation, and the -ve flux adjustment due to the
+            # airmass of the standard observation
+            extinction_fraction = (
                 science_flux_extinction_factor
                 / standard_flux_extinction_factor
             )
 
+            # Apply the correction
+            science_flux_atm_ext_corrected = (
+                copy.deepcopy(science_spec.flux) / extinction_fraction
+            )
+            science_flux_err_atm_ext_corrected = (
+                copy.deepcopy(science_spec.flux_err) / extinction_fraction
+            )
+            science_flux_sky_atm_ext_corrected = (
+                copy.deepcopy(science_spec.flux_sky) / extinction_fraction
+            )
+
+            interpoalted_ext_resampled = self.extinction_func(
+                science_spec.wave_resampled
+            )
+            # Get the atmospheric extinction correction factor
             science_flux_resampled_extinction_factor = 10.0 ** (
-                -(
-                    self.extinction_func(science_spec.wave_resampled)
-                    * science_am
-                )
-                / 2.5
+                -(interpoalted_ext_resampled * science_am) / 2.5
             )
+            # note that we are still using the science_spec.wave because we want
+            # to "uncorrect" the atmospheric correction on the standard star
+            # at the wavelength of of the science target
             standard_flux_resampled_extinction_factor = 10.0 ** (
-                -(
-                    self.extinction_func(science_spec.wave_resampled)
-                    * standard_am
-                )
-                / 2.5
+                -(interpoalted_ext_resampled * standard_am) / 2.5
             )
-            science_spec.flux_resampled /= (
+
+            # ratio of the +ve flux adjustment due to the airmass of the
+            # science observation, and the -ve flux adjustment due to the
+            # airmass of the standard observation
+            extinction_fraction_resampled = (
                 science_flux_resampled_extinction_factor
                 / standard_flux_resampled_extinction_factor
             )
 
+            # Apply the correction
+            science_flux_resampled_atm_ext_corrected = (
+                copy.deepcopy(science_spec.flux_resampled)
+                / extinction_fraction_resampled
+            )
+            science_flux_err_resampled_atm_ext_corrected = (
+                copy.deepcopy(science_spec.flux_err_resampled)
+                / extinction_fraction_resampled
+            )
+            science_flux_sky_resampled_atm_ext_corrected = (
+                copy.deepcopy(science_spec.flux_sky_resampled)
+                / extinction_fraction_resampled
+            )
+
+            # Add the corrected spectra to the spectrum1D
+            science_spec.add_flux_atm_ext_corrected(
+                science_flux_atm_ext_corrected,
+                science_flux_err_atm_ext_corrected,
+                science_flux_sky_atm_ext_corrected,
+            )
+            science_spec.add_flux_resampled_atm_ext_corrected(
+                science_flux_resampled_atm_ext_corrected,
+                science_flux_err_resampled_atm_ext_corrected,
+                science_flux_sky_resampled_atm_ext_corrected,
+            )
+
+        # Flag it as corrected
         self.atmospheric_extinction_corrected = True
         self.logger.info("Atmospheric extinction is corrected.")
 
@@ -5312,6 +5362,7 @@ class OneDSpec:
         stype="science+standard",
         wave_min=3500.0,
         wave_max=8500.0,
+        atm_ext_corrected=True,
         display=True,
         renderer="default",
         width=1280,
@@ -5333,6 +5384,9 @@ class OneDSpec:
             Minimum wavelength to display
         wave_max: float (Default: 8500.)
             Maximum wavelength to display
+        atm_ext_corrected: bool (Default: True)
+            Set to True to use the atmospheric extinction corrected
+            spectrum (if available).
         display: bool (Default: True)
             Set to True to display disgnostic plot.
         renderer: str (Default: 'default')
@@ -5393,15 +5447,34 @@ class OneDSpec:
                     wave = spec.wave_resampled
 
                     if self.science_flux_calibrated:
-                        fluxcount = spec.flux_resampled
-                        fluxcount_sky = spec.flux_sky_resampled
-                        fluxcount_err = spec.flux_err_resampled
-                        fluxcount_name = "Flux"
-                        fluxcount_sky_name = "Sky Flux"
-                        fluxcount_err_name = "Flux Uncertainty"
-                        telluric = spec.telluric_profile_resampled
-                        telluric_factor = spec.telluric_factor_resampled
-                        fluxcount_continuum = spec.flux_resampled_continuum
+
+                        if (
+                            atm_ext_corrected
+                            & self.atmospheric_extinction_corrected
+                        ):
+                            fluxcount = spec.flux_resampled_atm_ext_corrected
+                            fluxcount_sky = (
+                                spec.flux_sky_resampled_atm_ext_corrected
+                            )
+                            fluxcount_err = (
+                                spec.flux_err_resampled_atm_ext_corrected
+                            )
+                            fluxcount_name = "Flux"
+                            fluxcount_sky_name = "Sky Flux"
+                            fluxcount_err_name = "Flux Uncertainty"
+                            telluric = spec.telluric_profile_resampled
+                            telluric_factor = spec.telluric_factor_resampled
+                            fluxcount_continuum = spec.flux_resampled_continuum
+                        else:
+                            fluxcount = spec.flux_resampled
+                            fluxcount_sky = spec.flux_sky_resampled
+                            fluxcount_err = spec.flux_err_resampled
+                            fluxcount_name = "Flux"
+                            fluxcount_sky_name = "Sky Flux"
+                            fluxcount_err_name = "Flux Uncertainty"
+                            telluric = spec.telluric_profile_resampled
+                            telluric_factor = spec.telluric_factor_resampled
+                            fluxcount_continuum = spec.flux_resampled_continuum
                     else:
                         fluxcount = spec.count_resampled
                         fluxcount_sky = spec.count_sky_resampled
@@ -5416,14 +5489,28 @@ class OneDSpec:
                     wave = spec.wave
 
                     if self.science_flux_calibrated:
-                        fluxcount = spec.flux
-                        fluxcount_sky = spec.flux_sky
-                        fluxcount_err = spec.flux_err
-                        fluxcount_name = "Flux"
-                        fluxcount_sky_name = "Sky Flux"
-                        fluxcount_err_name = "Flux Uncertainty"
-                        telluric = spec.telluric_profile
-                        fluxcount_continuum = spec.flux_continuum
+
+                        if (
+                            atm_ext_corrected
+                            & self.atmospheric_extinction_corrected
+                        ):
+                            fluxcount = spec.flux_atm_ext_corrected
+                            fluxcount_sky = spec.flux_sky_atm_ext_corrected
+                            fluxcount_err = spec.flux_err_atm_ext_corrected
+                            fluxcount_name = "Flux"
+                            fluxcount_sky_name = "Sky Flux"
+                            fluxcount_err_name = "Flux Uncertainty"
+                            telluric = spec.telluric_profile
+                            fluxcount_continuum = spec.flux_continuum
+                        else:
+                            fluxcount = spec.flux
+                            fluxcount_sky = spec.flux_sky
+                            fluxcount_err = spec.flux_err
+                            fluxcount_name = "Flux"
+                            fluxcount_sky_name = "Sky Flux"
+                            fluxcount_err_name = "Flux Uncertainty"
+                            telluric = spec.telluric_profile
+                            fluxcount_continuum = spec.flux_continuum
                     else:
                         fluxcount = spec.count
                         fluxcount_sky = spec.count_sky
@@ -5907,7 +5994,7 @@ class OneDSpec:
 
     def create_fits(
         self,
-        output="arc_spec+wavecal+wavelength+flux+flux_resampled",
+        output="arc_spec+wavecal+wavelength+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
         spec_id=None,
         stype="science+standard",
         recreate=True,
@@ -5942,10 +6029,16 @@ class OneDSpec:
                     Sensitivity (pixel)
                 flux: 4 HDUs
                     Flux, uncertainty, sky, and sensitivity (pixel)
+                flux_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (pixel)
                 sensitivity_resampled: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, sky, and sensitivity (wavelength)
+                flux_resampled_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
 
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
@@ -5974,8 +6067,10 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
+                "flux_atm_ext_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
+                "flux_resampled_atm_ext_corrected",
             ]:
 
                 error_msg = "{} is not a valid output.".format(i)
@@ -6752,7 +6847,7 @@ class OneDSpec:
     def save_fits(
         self,
         spec_id=None,
-        output="arc_spec+wavecal+wavelength+flux+flux_resampled",
+        output="arc_spec+wavecal+wavelength+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
         filename="reduced",
         stype="science+standard",
         recreate=False,
@@ -6790,10 +6885,16 @@ class OneDSpec:
                     Sensitivity (pixel)
                 flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                flux_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (pixel)
                 sensitivity_resampled: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 3 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                flux_resampled_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
 
         filename: String (Default: 'reduced')
             Disk location to be written to. Default is at where the
@@ -6828,8 +6929,10 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
+                "flux_atm_ext_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
+                "flux_resampled_atm_ext_corrected",
             ]:
 
                 error_msg = "{} is not a valid output.".format(i)
@@ -6973,8 +7076,10 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
-                "sensitivity",
+                "flux_atm_ext_corrected",
+                "sensitivity_resampled",
                 "flux_resampled",
+                "flux_resampled_atm_ext_corrected",
             ]:
 
                 error_msg = "{} is not a valid output.".format(i)

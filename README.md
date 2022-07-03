@@ -39,22 +39,24 @@ We are to cover as many use cases as possible. If you would like to apply some r
 8. [x] User supplied pixel-to-wavelength mapping (not fitted).
 9. [x] User supplied sensitivity curve.
 10. [x] Flux calibration for user supplied wavelength calibrated science and standard 1D spectra.
+11. [x] Apply atmospheric extinction correction.
+12. [x] Apply basic telluric absorption correction.
 
 ### Output
-11. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
-12. [x] Save data in FITS (with header information) or ascii (csv).
+13. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
+14. [x] Save data in FITS (with header information) or ascii (csv).
 
 See the examples of these use cases at [aspired-example](https://github.com/cylammarco/ASPIRED-example/).
 
 ## Dependencies
-* python >= 3.7
-* numpy
-* scipy
-* [astropy](https://github.com/astropy/astropy) >= 4.0
+* python >= 3.8 (It should work on 3.6 and 3.7 if you can sort out the astropy (>=5.0) requirement of >=3.8)
+* numpy >= 1.18 (It should work with much older numpy if you can sort out the astropy (>=5.0) requirement of >=1.18)
+* scipy >= 1.7
+* [astropy](https://github.com/astropy/astropy) >= 4.3
 * [astroscrappy](https://github.com/astropy/astroscrappy) >= 1.1
 * [ccdproc](https://github.com/astropy/ccdproc)
 * [plotly](https://github.com/plotly/plotly.py) >= 5.0
-* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.2
+* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.3
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
 * [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.13
 

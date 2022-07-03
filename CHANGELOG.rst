@@ -1,7 +1,34 @@
+Version 0.5.0-dev
+-----------------
+
+:Date X-X-2022
+
+* New Freatures:
+
+  * Atmospheric extinction corrected spectra are stored separately and has become a separate output option.
+  * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
+
+* Minor bug fixes:
+
+  * Fixed a bug that caused some standard star names are never matched
+  * Removed some unused package import in ondespec.py
+  * `ImageReduction()` is checking if `verbose` is supplied as a boolean at initialisation.
+  * Fixed a few typos when exporting FITS files with `spectrum1D`.
+
+* (API) changes:
+
+  * get_telluric_correction() to get_telluric_strength() as the function only get the multiplication factor to the template telluric absorption profile.
+  * `lowess_frac` is used throughout the woftware to denote the `frac` argument for the `lowess()` function.
+
+* Other changes:
+
+  * Small change in the Horne86 optimal extraction function, it should have become more efficient.
+  * 
+
 Version 0.4.4
 -------------
 
-:Dat 3-Apr-2022
+:Date 3-Apr-2022
 
 * Minor bug fixes:
 
@@ -11,7 +38,7 @@ Version 0.4.4
 Version 0.4.3
 -------------
 
-:Dat 25-Mar-2022
+:Date 25-Mar-2022
 
 * Minor bug fixes:
 
@@ -20,7 +47,7 @@ Version 0.4.3
 Version 0.4.2
 -------------
 
-:Dat 23-Mar-2022
+:Date 23-Mar-2022
 
 * Major bug fixes:
 

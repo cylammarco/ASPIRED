@@ -58,7 +58,7 @@ def test_full_run(mock_show):
 
     # Science frame
     lhs6328_frame = image_reduction.ImageReduction(
-        log_level="INFO", log_file_folder=os.path.join(HERE, "test_output")
+        log_level="ERROR", log_file_folder=os.path.join(HERE, "test_output")
     )
     lhs6328_frame.add_filelist("test/test_data/sprat_LHS6328.list")
     lhs6328_frame.load_data()
@@ -74,7 +74,7 @@ def test_full_run(mock_show):
         cosmicray=True,
         psfmodel="gaussxy",
         readnoise=5.7,
-        log_level="INFO",
+        log_level="ERROR",
         log_file_folder=os.path.join(HERE, "test_output"),
     )
 
@@ -137,7 +137,7 @@ def test_full_run(mock_show):
 
     # Standard frame
     standard_frame = image_reduction.ImageReduction(
-        log_level="INFO", log_file_folder=os.path.join(HERE, "test_output")
+        log_level="ERROR", log_file_folder=os.path.join(HERE, "test_output")
     )
     standard_frame.add_filelist(
         os.path.join(HERE, "test_data", "sprat_Hiltner102.list")
@@ -156,7 +156,7 @@ def test_full_run(mock_show):
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
         readnoise=5.7,
-        log_level="INFO",
+        log_level="ERROR",
         log_file_folder=os.path.join(HERE, "test_output"),
     )
 
@@ -179,7 +179,7 @@ def test_full_run(mock_show):
 
     # Handle 1D Science spectrum
     lhs6328_onedspec = spectral_reduction.OneDSpec(
-        log_level="INFO", log_file_folder=os.path.join(HERE, "test_output")
+        log_level="ERROR", log_file_folder=os.path.join(HERE, "test_output")
     )
     lhs6328_onedspec.from_twodspec(lhs6328_twodspec, stype="science")
     lhs6328_onedspec.from_twodspec(hilt102_twodspec, stype="standard")

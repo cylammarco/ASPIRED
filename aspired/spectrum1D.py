@@ -231,9 +231,15 @@ class Spectrum1D:
         self.flux = None
         self.flux_err = None
         self.flux_sky = None
+        self.flux_atm_ext_corrected = None
+        self.flux_err_atm_ext_corrected = None
+        self.flux_sky_atm_ext_corrected = None
         self.flux_resampled = None
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
+        self.flux_resampled_atm_ext_corrected = None
+        self.flux_err_resampled_atm_ext_corrected = None
+        self.flux_sky_resampled_atm_ext_corrected = None
 
         # Continuum
         self.count_continuum = None
@@ -281,19 +287,21 @@ class Spectrum1D:
         self.empty_primary_hdu = True
 
         self.header = {
-            "flux_resampled": "Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux, "
-            "Resampled Sensitivity Curve",
-            "count_resampled": "Resampled Count, Resampled Count Uncertainty, "
-            "Resampled Sky Count",
+            "trace": "Pixel positions of the trace in the spatial direction, "
+            "Width of the trace",
+            "count": "Count, Count Uncertainty, Sky Count",
+            "weight_map": "Weight map of the extration (variance)",
             "arc_spec": "1D Arc Spectrum, Arc Line Position, Arc Line Effective Position",
             "wavecal": "Polynomial coefficients for wavelength calibration",
             "wavelength": "The pixel-to-wavelength mapping",
-            "flux": "Flux, Flux Uncertainty, Sky Flux",
+            "count_resampled": "Resampled Count, Resampled Count Uncertainty, "
+            "Resampled Sky Count",
             "sensitivity": "Sensitivity Curve",
-            "weight_map": "Weight map of the extration (variance)",
-            "count": "Count, Count Uncertainty, Sky Count",
-            "trace": "Pixel positions of the trace in the spatial direction, "
-            "Width of the trace",
+            "flux": "Flux, Flux Uncertainty, Sky Flux",
+            "flux_atm_ext_corrected": "Flux, Flux Uncertainty, Sky Flux",
+            "sensitivity_resampled": "Resampled Sensitivity Curve",
+            "flux_resampled": "Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux",
+            "flux_resampled_atm_ext_corrected": "Flux, Flux Uncertainty, Sky Flux",
         }
 
         self.n_hdu = {
@@ -306,8 +314,10 @@ class Spectrum1D:
             "count_resampled": 3,
             "sensitivity": 1,
             "flux": 3,
+            "flux_atm_ext_corrected": 3,
             "sensitivity_resampled": 1,
             "flux_resampled": 3,
+            "flux_resampled_atm_ext_corrected": 3,
         }
 
         self.hdu_order = {
@@ -320,8 +330,10 @@ class Spectrum1D:
             "count_resampled": 6,
             "sensitivity": 7,
             "flux": 8,
-            "sensitivity_resampled": 9,
-            "flux_resampled": 10,
+            "flux_atm_ext_corrected": 9,
+            "sensitivity_resampled": 10,
+            "flux_resampled": 11,
+            "flux_resampled_atm_ext_corrected": 12,
         }
 
         self.hdu_content = {
@@ -334,8 +346,10 @@ class Spectrum1D:
             "count_resampled": False,
             "sensitivity": False,
             "flux": False,
+            "flux_atm_ext_corrected": False,
             "sensitivity_resampled": False,
             "flux_resampled": False,
+            "flux_resampled_atm_ext_corrected": False,
         }
 
     def merge(self, spectrum1D, overwrite=False):
@@ -2001,6 +2015,39 @@ class Spectrum1D:
         self.flux_err = None
         self.flux_sky = None
 
+    def add_flux_atm_ext_corrected(self, flux, flux_err, flux_sky):
+        """
+        Add the flux and the associated uncertainty and sky background
+        in the raw pixel sampling.
+
+        Parameters
+        ----------
+        flux: list or numpy.ndarray
+            The atmospheric absorption corrected flux at each extracted
+            column of pixels.
+        flux_err: list or numpy.ndarray
+            The atmospheric absorption corrected uncertainty in flux at each
+            extracted column of pixels.
+        flux_sky: list or numpy.ndarray
+            The atmospheric absorption corrected flux of the background sky
+            at each extracted column of pixels.
+
+        """
+
+        self.flux_atm_ext_corrected = flux
+        self.flux_err_atm_ext_corrected = flux_err
+        self.flux_sky_atm_ext_corrected = flux_sky
+
+    def remove_flux_atm_ext_corrected(self):
+        """
+        Remove the atmospheric absorption corrected flux, uncertainty of flux, and background sky flux.
+
+        """
+
+        self.flux_atm_ext_corrected = None
+        self.flux_err_atm_ext_corrected = None
+        self.flux_sky_atm_ext_corrected = None
+
     def add_flux_resampled(
         self, flux_resampled, flux_err_resampled, flux_sky_resampled
     ):
@@ -2033,6 +2080,39 @@ class Spectrum1D:
         self.flux_resampled = None
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
+
+    def add_flux_resampled_atm_ext_corrected(self, flux, flux_err, flux_sky):
+        """
+        Add the flux and the associated uncertainty and sky background
+        in the raw pixel sampling.
+
+        Parameters
+        ----------
+        flux: list or numpy.ndarray
+            The atmospheric absorption corrected flux at each extracted
+            column of pixels.
+        flux_err: list or numpy.ndarray
+            The atmospheric absorption corrected uncertainty in flux at each
+            extracted column of pixels.
+        flux_sky: list or numpy.ndarray
+            The atmospheric absorption corrected flux of the background sky
+            at each extracted column of pixels.
+
+        """
+
+        self.flux_resampled_atm_ext_corrected = flux
+        self.flux_err_resampled_atm_ext_corrected = flux_err
+        self.flux_sky_resampled_atm_ext_corrected = flux_sky
+
+    def remove_flux_resampled_atm_ext_corrected(self):
+        """
+        Remove the atmospheric absorption corrected flux, uncertainty of flux, and background sky flux.
+
+        """
+
+        self.flux_resampled_atm_ext_corrected = None
+        self.flux_resampled_err_atm_ext_corrected = None
+        self.flux_resampled_sky_atm_ext_corrected = None
 
     def _modify_imagehdu_data(self, hdulist, idx, method, *args):
         """
@@ -2208,6 +2288,25 @@ class Spectrum1D:
 
         self._modify_imagehdu_header(self.flux_hdulist, idx, method, *args)
 
+    def modify_flux_atm_ext_corrected_header(self, idx, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+------------------+
+        | HDU | Data             |
+        +-----+------------------+
+        |  0  | Flux             |
+        |  1  | Flux uncertainty |
+        |  2  | Flux (sky)       |
+        +-----+------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.flux_atm_ext_corrected_hdulist, idx, method, *args
+        )
+
     def modify_sensitivity_resampled_header(self, method, *args):
         """
         for method 'set', it takes
@@ -2243,6 +2342,27 @@ class Spectrum1D:
 
         self._modify_imagehdu_header(
             self.flux_resampled_hdulist, idx, method, *args
+        )
+
+    def modify_flux_resampled_atm_ext_corrected_header(
+        self, idx, method, *args
+    ):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+------------------+
+        | HDU | Data             |
+        +-----+------------------+
+        |  0  | Flux             |
+        |  1  | Flux uncertainty |
+        |  2  | Flux (sky)       |
+        +-----+------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.flux_resampled_atm_ext_corrected_hdulist, idx, method, *args
         )
 
     def create_trace_fits(self):
@@ -2844,6 +2964,150 @@ class Spectrum1D:
             self.logger.error("flux ImageHDU cannot be created.")
             self.flux_hdulist = None
 
+    def create_flux_atm_ext_corrected_fits(self):
+        """
+        Create an ImageHDU for the atmospheric extinction corrected flux
+        calibrated spectrum at each native pixel.
+
+        """
+
+        try:
+
+            header = None
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if self.standard_header is not None:
+                if header is None:
+                    header = self.standard_header
+                else:
+                    header += self.standard_header
+
+            if self.arc_header is not None:
+                if header is None:
+                    header = self.arc_header
+                else:
+                    header += self.arc_header
+
+            if header is not None:
+
+                # Put the data in ImageHDUs
+                flux_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_atm_ext_corrected, header=header
+                )
+                flux_err_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_err_atm_ext_corrected, header=header
+                )
+                flux_sky_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_sky_atm_ext_corrected, header=header
+                )
+
+            else:
+
+                flux_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_atm_ext_corrected
+                )
+                flux_err_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_err_atm_ext_corrected
+                )
+                flux_sky_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_sky_atm_ext_corrected
+                )
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.flux_atm_ext_corrected_hdulist = fits.HDUList()
+            self.flux_atm_ext_corrected_hdulist += [
+                flux_atm_ext_corrected_ImageHDU
+            ]
+            self.flux_atm_ext_corrected_hdulist += [
+                flux_err_atm_ext_corrected_ImageHDU
+            ]
+            self.flux_atm_ext_corrected_hdulist += [
+                flux_sky_atm_ext_corrected_ImageHDU
+            ]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "EXTNAME", "Flux"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "LABEL", "Flux"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "CRPIX1", 1.00e00
+            )
+            self.modify_flux_atm_ext_corrected_header(0, "set", "CDELT1", 1)
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "CRVAL1", self.pixel_list[0]
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "CTYPE1", "Pixel"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "CUNIT1", "Pixel"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
+
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "EXTNAME", "Flux (Uncertainty)"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "LABEL", "Flux (Uncertainty)"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "CRPIX1", 1.00e00
+            )
+            self.modify_flux_atm_ext_corrected_header(1, "set", "CDELT1", 1)
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "CRVAL1", self.pixel_list[0]
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "CTYPE1", "Pixel"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "CUNIT1", "Pixel"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
+
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "EXTNAME", "Flux (Sky)"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "LABEL", "Flux (Sky)"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "CRPIX1", 1.00e00
+            )
+            self.modify_flux_atm_ext_corrected_header(2, "set", "CDELT1", 1)
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "CRVAL1", self.pixel_list[0]
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "CTYPE1", "Pixel"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "CUNIT1", "Pixel"
+            )
+            self.modify_flux_atm_ext_corrected_header(
+                2, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
+
+        except Exception as e:
+
+            self.logger.error(str(e))
+
+            # Set it to None if the above failed
+            self.logger.error(
+                "flux_atm_ext_corrected ImageHDU cannot be created."
+            )
+            self.flux_atm_ext_corrected_hdulist = None
+
     def create_sensitivity_resampled_fits(self):
         """
         Create an ImageHDU for the sensitivity at the resampled wavelength.
@@ -3002,6 +3266,154 @@ class Spectrum1D:
             self.logger.error("flux_resampled ImageHDU cannot be created.")
             self.flux_resampled_hdulist = None
 
+    def create_flux_resampled_atm_ext_corrected_fits(self):
+        """
+        Create an ImageHDU for the atmospheric extinction corrected flux
+        calibrated spectrum at the resampled wavelength.
+
+        """
+
+        try:
+
+            header = None
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if self.standard_header is not None:
+                if header is None:
+                    header = self.standard_header
+                else:
+                    header += self.standard_header
+
+            if self.arc_header is not None:
+                if header is None:
+                    header = self.arc_header
+                else:
+                    header += self.arc_header
+
+            if header is not None:
+                # Put the data and header in ImageHDUs
+                flux_resampled_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_resampled_atm_ext_corrected, header=header
+                )
+                flux_err_resampled_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_err_resampled_atm_ext_corrected, header=header
+                )
+                flux_sky_resampled_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_sky_resampled_atm_ext_corrected, header=header
+                )
+            else:
+                # Put the data in ImageHDUs
+                flux_resampled_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_resampled_atm_ext_corrected
+                )
+                flux_err_resampled_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_err_resampled_atm_ext_corrected
+                )
+                flux_sky_resampled_atm_ext_corrected_ImageHDU = fits.ImageHDU(
+                    self.flux_sky_resampled_atm_ext_corrected
+                )
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.flux_resampled_atm_ext_corrected_hdulist = fits.HDUList()
+            self.flux_resampled_atm_ext_corrected_hdulist += [
+                flux_resampled_atm_ext_corrected_ImageHDU
+            ]
+            self.flux_resampled_atm_ext_corrected_hdulist += [
+                flux_err_resampled_atm_ext_corrected_ImageHDU
+            ]
+            self.flux_resampled_atm_ext_corrected_hdulist += [
+                flux_sky_resampled_atm_ext_corrected_ImageHDU
+            ]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "EXTNAME", "Flux"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "LABEL", "Flux"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "CRPIX1", 1.00e00
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "CDELT1", self.wave_bin
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "CRVAL1", self.wave_start
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "CTYPE1", "Wavelength"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "CUNIT1", "Angstroms"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
+
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "EXTNAME", "Flux (Uncertainty)"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "LABEL", "Flux (Uncertainty)"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "CRPIX1", 1.00e00
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "CDELT1", self.wave_bin
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "CRVAL1", self.wave_start
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "CTYPE1", "Wavelength"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "CUNIT1", "Angstroms"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
+
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "EXTNAME", "Flux (Sky)"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "LABEL", "Flux (Sky)"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "CRPIX1", 1.00e00
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "CDELT1", self.wave_bin
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "CRVAL1", self.wave_start
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "CTYPE1", "Wavelength"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "CUNIT1", "Angstroms"
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                2, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
+
+        except Exception as e:
+
+            self.logger.error(str(e))
+
+            # Set it to None if the above failed
+            self.logger.error(
+                "flux_resampled_atm_ext_corrected ImageHDU cannot be created."
+            )
+            self.flux_resampled_atm_ext_corrected_hdulist = None
+
     def remove_trace_fits(self):
         """
         Remove the trace FITS HDUList.
@@ -3050,6 +3462,14 @@ class Spectrum1D:
 
         self.flux_resampled_hdulist = None
 
+    def remove_flux_resampled_atm_ext_corrected_fits(self):
+        """
+        Remove the flux_resampled_atm_ext_corrected FITS HDUList.
+
+        """
+
+        self.flux_resampled_atm_ext_corrected_hdulist = None
+
     def remove_wavelength_fits(self):
         """
         Remove the wavelength FITS HDUList.
@@ -3064,7 +3484,7 @@ class Spectrum1D:
 
         """
 
-        self.weight_map = None
+        self.weight_map_hdulist = None
 
     def remove_flux_fits(self):
         """
@@ -3072,7 +3492,15 @@ class Spectrum1D:
 
         """
 
-        self.flux = None
+        self.flux_hdulist = None
+
+    def remove_flux_atm_ext_corrected_fits(self):
+        """
+        Remove the flux_resampled_atm_ext_corrected FITS HDUList.
+
+        """
+
+        self.flux_atm_ext_corrected_hdulist = None
 
     def remove_wavelength_resampled_fits(self):
         """
@@ -3088,7 +3516,7 @@ class Spectrum1D:
 
         """
 
-        self.sensitivity_resampled = None
+        self.sensitivity_resampled_hdulist = None
 
     def create_fits(
         self,
@@ -3127,10 +3555,16 @@ class Spectrum1D:
                     Sensitivity (pixel)
                 flux: 4 HDUs
                     Flux, uncertainty, and sky (pixel)
+                flux_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (pixel)
                 sensitivity_resampled: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                flux_resampled_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
 
         recreate: boolean (Default: False)
             Set to True to overwrite the FITS data and header.
@@ -3254,6 +3688,14 @@ class Spectrum1D:
                 hdu_output += self.flux_hdulist
                 self.hdu_content["flux"] = True
 
+            if "flux_atm_ext_corrected" in output_split:
+
+                if not self.hdu_content["flux_atm_ext_corrected"]:
+                    self.create_flux_atm_ext_corrected_fits()
+
+                hdu_output += self.flux_atm_ext_corrected_hdulist
+                self.hdu_content["flux_atm_ext_corrected"] = True
+
             if "sensitivity_resampled" in output_split:
 
                 if not self.hdu_content["sensitivity_resampled"]:
@@ -3269,6 +3711,14 @@ class Spectrum1D:
 
                 hdu_output += self.flux_resampled_hdulist
                 self.hdu_content["flux_resampled"] = True
+
+            if "flux_resampled_atm_ext_corrected" in output_split:
+
+                if not self.hdu_content["flux_resampled_atm_ext_corrected"]:
+                    self.create_flux_resampled_atm_ext_corrected_fits()
+
+                hdu_output += self.flux_resampled_atm_ext_corrected_hdulist
+                self.hdu_content["flux_resampled_atm_ext_corrected"] = True
 
             # If the primary HDU is not chosen to be empty
             if not empty_primary_hdu:
@@ -3329,10 +3779,16 @@ class Spectrum1D:
                     Sensitivity (pixel)
                 flux: 4 HDUs
                     Flux, uncertainty, and sky (pixel)
+                flux_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (pixel)
                 sensitivity: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                flux_resampled_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
 
         filename: str
             Filename for the output, all of them will share the same name but

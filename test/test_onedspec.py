@@ -1321,8 +1321,8 @@ global_onedspec.apply_atmospheric_extinction_correction(
 
 global_onedspec.create_fits(
     output="trace+count+wavelength+count_resampled+"
-    "sensitivity+flux+sensitivity_resampled+"
-    "flux_resampled",
+    "sensitivity+flux+flux_atm_ext_corrected+sensitivity_resampled+"
+    "flux_resampled+flux_resampled_atm_ext_corrected",
     empty_primary_hdu=False,
 )
 
@@ -1483,20 +1483,20 @@ def test_miscellaneous(mock_show):
 
     global_onedspec.create_fits(
         output="trace+count+weight_map+arc_spec+wavecal+"
-        "wavelength+count_resampled+sensitivity+flux+"
-        "sensitivity_resampled+flux_resampled",
+        "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
+        "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
         empty_primary_hdu=False,
     )
     global_onedspec.create_fits(
         output="trace+count+weight_map+arc_spec+wavecal+"
-        "wavelength+count_resampled+sensitivity+flux+"
-        "sensitivity_resampled+flux_resampled",
+        "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
+        "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
         recreate=True,
     )
     global_onedspec.create_fits(
         output="trace+count+weight_map+arc_spec+wavecal+"
-        "wavelength+count_resampled+sensitivity+flux+"
-        "sensitivity_resampled+flux_resampled",
+        "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
+        "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
         spec_id=0,
         empty_primary_hdu=False,
         recreate=True,
