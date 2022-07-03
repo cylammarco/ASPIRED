@@ -3164,9 +3164,7 @@ class OneDSpec:
 
             if self.standard_wavecal_polynomial_available:
 
-                pw_pairs_standard = self.standard_wavecal[
-                    0
-                ].get_pix_wave_pairs()
+                pw_pairs_standard = self.standard_wavecal.get_pix_wave_pairs()
 
                 pw_pairs["standard"] = pw_pairs_standard
 
@@ -3422,7 +3420,7 @@ class OneDSpec:
         if "standard" in stype_split:
 
             calibrators["standard"] = getattr(
-                self.standard_wavecal[0].spectrum1D, "calibrator"
+                self.standard_wavecal.spectrum1D, "calibrator"
             )
 
         return calibrators

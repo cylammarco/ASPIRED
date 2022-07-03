@@ -127,7 +127,7 @@ def test_full_run(mock_show):
         save_fig=True,
         display=True,
         open_iframe=True,
-        filename=os.path.join(HERE, "test_output", "test_full_run_extract"),
+        filename=os.path.join(HERE, "test_output", "test_full_run_lsf"),
     )
 
     lhs6328_twodspec.save_fits(
@@ -164,6 +164,13 @@ def test_full_run(mock_show):
 
     hilt102_twodspec.ap_extract(
         apwidth=15, skysep=3, skywidth=5, skydeg=1, optimal=True, display=False
+    )
+    hilt102_twodspec.inspect_line_spread_function(
+        display=True,
+        save_fig=True,
+        fig_type="jpg+png+pdf+svg+iframe",
+        filename=os.path.join(HERE, "test_output", "test_full_run_lsf"),
+        return_jsonstring=True,
     )
 
     # Extract the 1D arc by aperture sum of the traces provided
@@ -227,6 +234,13 @@ def test_full_run(mock_show):
         max_tries=200, stype="science+standard", display=False
     )
     lhs6328_onedspec.robust_refit()
+
+    # list the matched pixel-peaks
+    lhs6328_onedspec.get_pix_wave_pairs(spec_id=0)
+    lhs6328_onedspec.get_pix_wave_pairs()
+
+    # get all the calibrators
+    cal = lhs6328_onedspec.get_calibrator()
 
     # Apply the wavelength calibration and display it
     lhs6328_onedspec.apply_wavelength_calibration(stype="science+standard")
@@ -311,6 +325,16 @@ def test_full_run(mock_show):
     # save figure
     lhs6328_onedspec.inspect_reduced_spectrum(
         filename=os.path.join(HERE, "test_output", "test_full_run"),
+        display=False,
+        save_fig=True,
+        fig_type="iframe+png",
+    )
+
+    # Plot the hough search space
+    lhs6328_onedspec.plot_search_space(
+        filename=os.path.join(
+            HERE, "test_output", "test_full_run_plot_hough_space"
+        ),
         display=False,
         save_fig=True,
         fig_type="iframe+png",
