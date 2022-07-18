@@ -1,3 +1,11 @@
+Version 0.4.5
+-------------
+
+* Minor bug fixes
+
+  * Fixed typo relating to logging of the setting of airmass.
+  * Fixed a bug in sorting peaks by prominence
+
 Version 0.4.4
 -------------
 
