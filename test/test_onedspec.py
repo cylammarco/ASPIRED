@@ -873,7 +873,7 @@ def test_calibrator_science():
         len(
             onedspec.science_wavecal[0].spectrum1D.calibrator.atlas.atlas_lines
         )
-        == 14
+        == 20
     )
     onedspec.remove_atlas_lines_range(
         wavelength=5000.0, tolerance=1.5, spec_id=0
@@ -882,20 +882,20 @@ def test_calibrator_science():
         len(
             onedspec.science_wavecal[0].spectrum1D.calibrator.atlas.atlas_lines
         )
-        == 12
+        == 18
     )
     assert (
         len(
             onedspec.science_wavecal[1].spectrum1D.calibrator.atlas.atlas_lines
         )
-        == 14
+        == 20
     )
     onedspec.remove_atlas_lines_range(wavelength=5000.0, tolerance=1.5)
     assert (
         len(
             onedspec.science_wavecal[1].spectrum1D.calibrator.atlas.atlas_lines
         )
-        == 12
+        == 18
     )
 
     onedspec.clear_atlas()
@@ -2060,7 +2060,7 @@ def test_quadratic_fit_legendre():
         elements=elements_quadratic, wavelengths=wavelengths_quadratic
     )
     onedspec.set_ransac_properties(
-        sample_size=10, minimum_matches=20, minimum_fit_error=1e-12
+        sample_size=10, minimum_matches=15, minimum_fit_error=1e-12
     )
     onedspec.do_hough_transform(brute_force=False)
 
