@@ -1,0 +1,19 @@
+{
+    "description": "The Automated SpectroPhotometric REDuction (ASPIRED) toolkit is aimed to be as general as possible with high flexibility such that it can work with different instruments. It offers a flexible set of functions for users to refine and tailor-make automated pipelines for different instruments. ASPIRED is entirely Python-based and is independent of iraf.",
+    "license": "BSD-3-Clause",
+    "title": "ASPIRED: A Python-based spectral data reduction toolkit",
+    "upload_type": "software",
+    "creators": [
+        {
+            "affiliation": "Tel Aviv University",
+            "name": "Lam, Marco C",
+            "orcid": "0000-0002-9347-2298"
+        },
+        {
+            "affiliation": "Liverpool John Moores University",
+            "name": "Smith, Robert J",
+            "orcid": "0000-0003-3434-1922"
+        }
+    ],
+    "access_right": "open"
+}

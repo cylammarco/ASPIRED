@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: ASPIRED
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Marco C
+    family-names: Lam
+    email: lam@mail.tau.ac.il
+    affiliation: Tel Aviv University
+    orcid: 'https://orcid.org/0000-0002-9347-2298'
+  - given-names: Robert J
+    family-names: Smith
+    email: r.j.smith@ljmu.ac.uk
+    affiliation: Liverpool John Moores University
+    orcid: 'https://orcid.org/0000-0003-3434-1922'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.4127294
+    description: Zenodo
+  - type: article
+    value: "arXiv:2111.02127"
+    description: The ArXiv preprint of the article
+repository-code: 'https://github.com/cylammarco/ASPIRED'
+url: 'https://pypi.org/project/aspired/'
+license: BSD-3-Clause
