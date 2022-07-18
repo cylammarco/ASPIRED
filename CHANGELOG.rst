@@ -1,6 +1,8 @@
 Version 0.4.5
 -------------
 
+:Date 18-July-2022
+
 * Minor bug fixes
 
   * Fixed typo relating to logging of the setting of airmass.
@@ -9,7 +11,7 @@ Version 0.4.5
 Version 0.4.4
 -------------
 
-:Dat 3-Apr-2022
+:Date 3-Apr-2022
 
 * Minor bug fixes:
 
@@ -19,7 +21,7 @@ Version 0.4.4
 Version 0.4.3
 -------------
 
-:Dat 25-Mar-2022
+:Date 25-Mar-2022
 
 * Minor bug fixes:
 
@@ -28,7 +30,7 @@ Version 0.4.3
 Version 0.4.2
 -------------
 
-:Dat 23-Mar-2022
+:Date 23-Mar-2022
 
 * Major bug fixes:
 
