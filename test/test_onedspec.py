@@ -2060,7 +2060,7 @@ def test_quadratic_fit_legendre():
         elements=elements_quadratic, wavelengths=wavelengths_quadratic
     )
     onedspec.set_ransac_properties(
-        sample_size=10, minimum_matches=20, minimum_fit_error=1e-12
+        sample_size=10, minimum_matches=15, minimum_fit_error=1e-10
     )
     onedspec.do_hough_transform(brute_force=False)
 

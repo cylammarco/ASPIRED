@@ -1042,6 +1042,9 @@ class FluxCalibration(StandardLibrary):
         count = np.asarray(getattr(self.spectrum1D, "count"))
         count_err = np.asarray(getattr(self.spectrum1D, "count_err"))
         wave = np.asarray(getattr(self.spectrum1D, "wave"))
+        exptime = getattr(self.spectrum1D, "exptime")
+        if exptime is None:
+            exptime = 1.0
 
         if getattr(self.spectrum1D, "count_continuum") is None:
 
@@ -1090,8 +1093,8 @@ class FluxCalibration(StandardLibrary):
             # Set the smoothing parameters
             self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
-        # Get the sensitivity curve
-        sensitivity = standard_flux_true / standard_flux
+        # Get the sensitivity curve and convert the unit to per second
+        sensitivity = standard_flux_true / (standard_flux / exptime)
         sensitivity_masked = sensitivity.copy()
 
         if mask_range is not None:
@@ -1219,7 +1222,7 @@ class FluxCalibration(StandardLibrary):
         parameters
         ----------
         sensitivity_func: callable function
-            Interpolated sensivity curve object.
+            Interpolated sensivity curve object (in unit of per second).
 
         """
 
@@ -1491,6 +1494,9 @@ class FluxCalibration(StandardLibrary):
         count = getattr(target_spectrum1D, "count")
         count_err = getattr(target_spectrum1D, "count_err")
         count_sky = getattr(target_spectrum1D, "count_sky")
+        exptime = getattr(target_spectrum1D, "exptime")
+        if exptime is None:
+            exptime = 1.0
 
         if getattr(target_spectrum1D, "count_continuum") is None:
 
@@ -1500,7 +1506,7 @@ class FluxCalibration(StandardLibrary):
 
         # apply the flux calibration
         sensitivity_func = getattr(self.spectrum1D, "sensitivity_func")
-        sensitivity = 10.0 ** sensitivity_func(wave)
+        sensitivity = 10.0 ** sensitivity_func(wave) / exptime
 
         flux = sensitivity * count
         flux_resampled = spectres(

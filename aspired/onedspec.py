@@ -5276,9 +5276,9 @@ class OneDSpec:
             science_flux_extinction_factor = 10.0 ** (
                 -(interpoalted_ext * science_am) / 2.5
             )
-            # note that we are still using the science_spec.wave because we want
-            # to "uncorrect" the atmospheric correction on the standard star
-            # at the wavelength of of the science target
+            # note that we are still using the science_spec.wave because we
+            # want to "uncorrect" the atmospheric correction on the standard
+            # star at the wavelength of of the science target
             standard_flux_extinction_factor = 10.0 ** (
                 -(interpoalted_ext * standard_am) / 2.5
             )
@@ -5309,9 +5309,9 @@ class OneDSpec:
             science_flux_resampled_extinction_factor = 10.0 ** (
                 -(interpoalted_ext_resampled * science_am) / 2.5
             )
-            # note that we are still using the science_spec.wave because we want
-            # to "uncorrect" the atmospheric correction on the standard star
-            # at the wavelength of of the science target
+            # note that we are still using the science_spec.wave because we
+            # want to "uncorrect" the atmospheric correction on the standard
+            # star at the wavelength of of the science target
             standard_flux_resampled_extinction_factor = 10.0 ** (
                 -(interpoalted_ext_resampled * standard_am) / 2.5
             )
@@ -6062,6 +6062,7 @@ class OneDSpec:
                 "arc_spec",
                 "wavecal",
                 "wavelength",
+                "wavelength_resampled",
                 "count_resampled",
                 "sensitivity",
                 "flux",
@@ -6877,6 +6878,8 @@ class OneDSpec:
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
+                wavelength_resampled: 1 HDU
+                    Wavelength of each resampled position
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
@@ -6924,6 +6927,7 @@ class OneDSpec:
                 "arc_spec",
                 "wavecal",
                 "wavelength",
+                "wavelength_resampled",
                 "count_resampled",
                 "sensitivity",
                 "flux",
@@ -7001,7 +7005,7 @@ class OneDSpec:
     def save_csv(
         self,
         spec_id=None,
-        output="arc_spec+wavecal+wavelength+flux+flux_resampled",
+        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_resampled",
         filename="reduced",
         stype="science+standard",
         recreate=False,
@@ -7032,6 +7036,8 @@ class OneDSpec:
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
+                wavelength_resampled: 1 HDU
+                    Wavelength of each resampled position
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
@@ -7071,6 +7077,7 @@ class OneDSpec:
                 "arc_spec",
                 "wavecal",
                 "wavelength",
+                "wavelength_resampled",
                 "count_resampled",
                 "sensitivity",
                 "flux",

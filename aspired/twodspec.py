@@ -1085,7 +1085,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.airmass = float(self.header[airmass])
                 self.logger.info(
-                    "exptime is found to be {}.".format(self.exptime)
+                    "Airmass is found to be {}.".format(self.airmass)
                 )
 
             elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
@@ -1130,14 +1130,14 @@ class TwoDSpec:
                         ]
                     ]
                     self.logger.info(
-                        "exptime is found to be {}.".format(self.airmass)
+                        "Airmass is found to be {}.".format(self.airmass)
                     )
 
                 else:
 
                     self.airmass = 1.0
                     self.logger.warning(
-                        "Exposure Time value cannot be identified. "
+                        "Airmass value cannot be identified. "
                         + "It is set to 1."
                     )
 
@@ -1146,7 +1146,7 @@ class TwoDSpec:
                 self.airmass = 1.0
                 self.logger.warning(
                     "Header is not provided. "
-                    + "Exposure Time value is not provided. "
+                    + "Airmass value is not provided. "
                     + "It is set to 1."
                 )
 
@@ -2040,7 +2040,7 @@ class TwoDSpec:
         # maximum shift (SEMI-AMPLITUDE) from the neighbour (pixel)
         shift_tol_len = int(shift_tol * resample_factor)
 
-        spec_spatial = np.zeros(nresample)
+        spec_spatial = np.zeros((nwindow, nresample))
 
         pix = np.arange(nresample)
 
@@ -2107,7 +2107,7 @@ class TwoDSpec:
             spec_spatial_tmp[np.isnan(spec_spatial_tmp)] = np.nanmin(
                 spec_spatial_tmp
             )
-            spec_spatial += spec_spatial_tmp
+            spec_spatial[i] = copy.deepcopy(spec_spatial_tmp)
 
             # Update (increment) the reference line
             if i == nwindow - 1:
@@ -2118,6 +2118,7 @@ class TwoDSpec:
 
                 lines_ref = lines
 
+        spec_spatial = np.nanmedian(spec_spatial, axis=0)
         nscaled = (nresample * scale_solution).astype("int")
 
         # Find the spectral position in the middle of the gram in the upsampled
@@ -2184,8 +2185,10 @@ class TwoDSpec:
 
                 # rounding
                 idx = int(np.round(spec_idx[i][j] + 0.5))
-                subspec_cleaned = sigma_clip(img_split[j], sigma=3)
-                ap_val[j] = np.sum(
+                subspec_cleaned = sigma_clip(
+                    img_split[j], sigma=3, masked=True
+                ).data
+                ap_val[j] = np.nansum(
                     np.nansum(subspec_cleaned, axis=1)[idx - 2 : idx + 2]
                 ) / 5 - np.nanmedian(subspec_cleaned)
 
@@ -2204,40 +2207,39 @@ class TwoDSpec:
             ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
             self.logger.info(
                 "The trace is found at {}.".format(
-                    [(x, y) for (x, y) in zip(ap_p, ap)]
+                    [
+                        (x, y)
+                        for (x, y) in zip(
+                            np.arange(self.spec_size) * resample_factor, ap
+                        )
+                    ]
                 )
             )
 
             # Get the centre of the upsampled spectrum
-            ap_centre_idx = ap[start_window_idx] * resample_factor
+            ap_centre_pix = float(np.argmax(spec_spatial))
+            first_pix = ap_centre_pix - trace_width * resample_factor
+            last_pix = ap_centre_pix + trace_width * resample_factor + 1
 
-            # Get the indices for the trace_width-pixels on the left and right
-            # of the spectrum, and apply the resampling factor.
-            start_idx = int(ap_centre_idx - trace_width * resample_factor)
-            end_idx = int(start_idx + 2 * trace_width * resample_factor + 1)
-
-            start_idx = max(0, start_idx)
-            end_idx = min(self.spatial_size * resample_factor, end_idx)
-
-            if start_idx == end_idx:
-
-                ap_sigma = np.nan
-                continue
+            first_pix = int(max(0, first_pix))
+            last_pix = int(min(len(spec_spatial), last_pix))
 
             # compute ONE sigma for each trace
             pguess = [
-                np.nanmax(spec_spatial[start_idx:end_idx]),
-                np.nanpercentile(spec_spatial, 10),
-                ap_centre_idx,
-                3.0,
+                np.nanmax(spec_spatial[first_pix:last_pix]),
+                np.nanpercentile(spec_spatial[first_pix:last_pix], 5.0),
+                ap_centre_pix - first_pix,
+                3.0 * resample_factor,
             ]
 
-            non_nan_mask = np.isfinite(spec_spatial[start_idx:end_idx])
+            non_nan_mask = np.isfinite(
+                spec_spatial[first_pix:last_pix]
+            ) & ~np.isnan(spec_spatial[first_pix:last_pix])
 
             popt, _ = curve_fit(
                 self._gaus,
-                np.arange(start_idx, end_idx)[non_nan_mask],
-                spec_spatial[start_idx:end_idx][non_nan_mask],
+                np.arange(len(spec_spatial[first_pix:last_pix]))[non_nan_mask],
+                spec_spatial[first_pix:last_pix][non_nan_mask],
                 p0=pguess,
             )
             ap_sigma = abs(popt[3]) / resample_factor
@@ -2880,7 +2882,7 @@ class TwoDSpec:
                     zmax=np.nanpercentile(np.log10(self.img_rectified), 90),
                     xaxis="x",
                     yaxis="y",
-                    colorbar=dict(title="log( e- count / s)"),
+                    colorbar=dict(title="log( e- count )"),
                 )
             )
             if self.arc_rectified is not None:
@@ -3593,13 +3595,6 @@ class TwoDSpec:
                     nreject=nreject,
                 )
 
-            # All the extraction methods return signal and noise in the
-            # same format
-            count /= self.exptime
-            count_err /= self.exptime
-            count_sky /= self.exptime
-            var /= self.exptime
-
             spec.add_aperture(
                 width_dn, width_up, sep_dn, sep_up, sky_width_dn, sky_width_up
             )
@@ -3684,7 +3679,7 @@ class TwoDSpec:
                         zmax=self.zmax,
                         xaxis="x",
                         yaxis="y",
-                        colorbar=dict(title="log( e- count / s )"),
+                        colorbar=dict(title="log( e- count )"),
                     )
                 )
 
@@ -3824,7 +3819,7 @@ class TwoDSpec:
                         xaxis="x2",
                         yaxis="y2",
                         line=dict(color="firebrick"),
-                        name="Sky e- count / s",
+                        name="Sky e- count",
                     )
                 )
                 fig.add_trace(
@@ -3834,7 +3829,7 @@ class TwoDSpec:
                         xaxis="x2",
                         yaxis="y2",
                         line=dict(color="orange"),
-                        name="Uncertainty e- count / s",
+                        name="Uncertainty e- count",
                     )
                 )
                 fig.add_trace(
@@ -3844,7 +3839,7 @@ class TwoDSpec:
                         xaxis="x2",
                         yaxis="y2",
                         line=dict(color="royalblue"),
-                        name="Target e- count / s",
+                        name="Target e- count",
                     )
                 )
 
@@ -4242,9 +4237,16 @@ class TwoDSpec:
             noise /= correction
 
         self.logger.debug(
-            "The signal and noise from the tophat extraction "
+            "The signal and noise from the horne86 extraction "
             "are {} and {}.".format(signal, noise)
         )
+
+        if model == "gauss":
+
+            self.logger.debug(
+                "The correction factor of the gaussian profile "
+                "is {}.".format(correction)
+            )
 
         return signal, noise, is_optimal, P, var_f
 

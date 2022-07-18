@@ -424,3 +424,83 @@ def test_marsh_extraction_fast_apwidth_str():
         qmode="fast-nearest",
         display=False,
     )
+
+
+# Exposure time and gain should not have an effect on the extraction itself
+def test_gausian_spectral_extraction_10000s_exptime_2x_gain():
+    # masking
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_gaussian_data,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        cosmicray_sigma=5.0,
+        readnoise=0.1,
+        gain=2.0,
+        seeing=1.0,
+        exptime=10000.0,
+    )
+
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
+    dummy_twodspec.ap_trace(
+        rescale=True,
+        fit_deg=0,
+    )
+    trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
+    assert np.isclose(trace, 35), (
+        "Trace is at row "
+        + str(trace)
+        + ", but it is expected to be at row 35."
+    )
+
+    # Direct extraction by summing over the aperture along the trace
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=False,
+    )
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_tophat = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+    # Optimal extraction (Horne86 gauss)
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="gauss")
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_horne = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+    # Optimal extraction (Horne86 lowess)
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=True,
+        model="lowess",
+        lowess_frac=0.05,
+    )
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_horne = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+    # Optimal extraction (Marsh89)
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="marsh89")
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_marsh = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )

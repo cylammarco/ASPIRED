@@ -361,7 +361,7 @@ class WavelengthCalibration:
 
         if isinstance(top_n_peaks, (int, float)):
 
-            peaks = peaks[prom_sorted_arg][: int(top_n_peaks)]
+            peaks = np.sort(peaks[prom_sorted_arg][: int(top_n_peaks)])
 
         self.spectrum1D.add_peaks(peaks)
 

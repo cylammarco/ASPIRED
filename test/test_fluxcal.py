@@ -3,7 +3,6 @@ import os
 from unittest.mock import patch
 
 import numpy as np
-import pytest
 
 from aspired.flux_calibration import FluxCalibration
 from aspired.spectrum1D import Spectrum1D

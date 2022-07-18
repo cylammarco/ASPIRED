@@ -297,6 +297,12 @@ def get_continuum(x, y, **kwargs):
 
     """
 
+    assert np.shape(x) == np.shape(y), (
+        "x and y must be in the same shape "
+        + "x is in shape {} and ".format(np.shape(x))
+        + "y is in shape {}.".format(np.shape(y))
+    )
+
     if "lowess_frac" not in kwargs:
 
         kwargs["frac"] = 0.15

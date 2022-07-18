@@ -7,6 +7,7 @@ Version 0.5.0-dev
 
   * Atmospheric extinction corrected spectra are stored separately and has become a separate output option.
   * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
+  * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
 
 * Minor bug fixes:
 
@@ -14,6 +15,8 @@ Version 0.5.0-dev
   * Removed some unused package import in ondespec.py
   * `ImageReduction()` is checking if `verbose` is supplied as a boolean at initialisation.
   * Fixed a few typos when exporting FITS files with `spectrum1D`.
+  * Fixed typo relating to logging of the setting of airmass.
+  * Fixed a bug in sorting peaks by prominence
 
 * (API) changes:
 
@@ -23,7 +26,12 @@ Version 0.5.0-dev
 * Other changes:
 
   * Small change in the Horne86 optimal extraction function, it should have become more efficient.
-  * 
+  * Improved stability in computing the spectral width when using Horne86+Gaussian. 
+  * `count`, `count_err`, `count_sky` are strictly in unit of electron count.
+  * Sensitivity function in FluxCalibration remains in the unit of flux/mag per electron, however, because `count` is no longer in the unit of electron per second, the exposure time is needed when applying the sensitivity function.
+  * `get_continuum` is now checking input array/list size and throw error if they don't match.
+  * OneDSpec and spectrum1D expanded to accommodate wavelength_resampled
+  * spectrum1D exapanded to handle atmospheric extinction corrected spectrum as an independent data list
 
 Version 0.4.4
 -------------

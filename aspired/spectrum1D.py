@@ -281,6 +281,7 @@ class Spectrum1D:
         self.flux_hdulist = None
         self.flux_resampled_hdulist = None
         self.wavelength_hdulist = None
+        self.wavelength_resampled_hdulist = None
 
         # FITS output properties
         self.hdu_output = None
@@ -291,17 +292,21 @@ class Spectrum1D:
             "Width of the trace",
             "count": "Count, Count Uncertainty, Sky Count",
             "weight_map": "Weight map of the extration (variance)",
-            "arc_spec": "1D Arc Spectrum, Arc Line Position, Arc Line Effective Position",
+            "arc_spec": "1D Arc Spectrum, Arc Line Position, Arc Line "
+            + "Effective Position",
             "wavecal": "Polynomial coefficients for wavelength calibration",
             "wavelength": "The pixel-to-wavelength mapping",
+            "wavelength_resampled": "The pixel-to-wavelength mapping at",
             "count_resampled": "Resampled Count, Resampled Count Uncertainty, "
             "Resampled Sky Count",
             "sensitivity": "Sensitivity Curve",
             "flux": "Flux, Flux Uncertainty, Sky Flux",
             "flux_atm_ext_corrected": "Flux, Flux Uncertainty, Sky Flux",
             "sensitivity_resampled": "Resampled Sensitivity Curve",
-            "flux_resampled": "Resampled Flux, Resampled Flux Uncertainty, Resampled Sky Flux",
-            "flux_resampled_atm_ext_corrected": "Flux, Flux Uncertainty, Sky Flux",
+            "flux_resampled": "Resampled Flux, Resampled Flux Uncertainty, "
+            + "Resampled Sky Flux",
+            "flux_resampled_atm_ext_corrected": "Flux, Flux Uncertainty, "
+            + "Sky Flux",
         }
 
         self.n_hdu = {
@@ -311,6 +316,7 @@ class Spectrum1D:
             "arc_spec": 3,
             "wavecal": 1,
             "wavelength": 1,
+            "wavelength_resampled": 1,
             "count_resampled": 3,
             "sensitivity": 1,
             "flux": 3,
@@ -327,13 +333,14 @@ class Spectrum1D:
             "arc_spec": 3,
             "wavecal": 4,
             "wavelength": 5,
-            "count_resampled": 6,
-            "sensitivity": 7,
-            "flux": 8,
-            "flux_atm_ext_corrected": 9,
-            "sensitivity_resampled": 10,
-            "flux_resampled": 11,
-            "flux_resampled_atm_ext_corrected": 12,
+            "wavelength_resampled": 6,
+            "count_resampled": 7,
+            "sensitivity": 8,
+            "flux": 9,
+            "flux_atm_ext_corrected": 10,
+            "sensitivity_resampled": 11,
+            "flux_resampled": 12,
+            "flux_resampled_atm_ext_corrected": 13,
         }
 
         self.hdu_content = {
@@ -343,6 +350,7 @@ class Spectrum1D:
             "arc_spec": False,
             "wavecal": False,
             "wavelength": False,
+            "wavelength_resampled": False,
             "count_resampled": False,
             "sensitivity": False,
             "flux": False,
@@ -2040,7 +2048,8 @@ class Spectrum1D:
 
     def remove_flux_atm_ext_corrected(self):
         """
-        Remove the atmospheric absorption corrected flux, uncertainty of flux, and background sky flux.
+        Remove the atmospheric absorption corrected flux, uncertainty of flux,
+        and background sky flux.
 
         """
 
@@ -2106,7 +2115,8 @@ class Spectrum1D:
 
     def remove_flux_resampled_atm_ext_corrected(self):
         """
-        Remove the atmospheric absorption corrected flux, uncertainty of flux, and background sky flux.
+        Remove the atmospheric absorption corrected flux, uncertainty of flux,
+        and background sky flux.
 
         """
 
@@ -2253,6 +2263,24 @@ class Spectrum1D:
         """
 
         self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
+
+    def modify_wavelength_resampled_header(self, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+        wavelength fits only has one ImageHDU so the idx is always 0
+
+        +-----+---------------------------------------------+
+        | HDU | Data                                        |
+        +-----+---------------------------------------------+
+        |  0  | Wavelength value at each resampled position |
+        +-----+---------------------------------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.wavelength_resampled_hdulist, 0, method, *args
+        )
 
     def modify_sensitivity_header(self, method, *args):
         """
@@ -2834,6 +2862,60 @@ class Spectrum1D:
             # Set it to None if the above failed
             self.logger.error("wavelength ImageHDU cannot be created.")
             self.wavelength_hdulist = None
+
+    def create_wavelength_resampled_fits(self):
+        """
+        Create an ImageHDU for the wavelength at each resampled position.
+
+        """
+
+        try:
+
+            # Put the data in an ImageHDU
+
+            # Use the header of the arc
+            if self.arc_header is not None:
+                wavelength_resampled_ImageHDU = fits.ImageHDU(
+                    self.wave, header=self.arc_header
+                )
+            else:
+                wavelength_resampled_ImageHDU = fits.ImageHDU(self.wave)
+
+            # Create an empty HDU list and populate with the ImageHDU
+            self.wavelength_resampled_hdulist = fits.HDUList()
+            self.wavelength_resampled_hdulist += [
+                wavelength_resampled_ImageHDU
+            ]
+
+            # Add the calibrated wavelength
+            self.modify_wavelength_resampled_header(
+                "set", "EXTNAME", "Wavelength At Resampled Position"
+            )
+            self.modify_wavelength_resampled_header(
+                "set", "LABEL", "Wavelength At Resampled Position"
+            )
+            self.modify_wavelength_resampled_header("set", "CRPIX1", 1)
+            self.modify_wavelength_resampled_header("set", "CDELT1", 1)
+            self.modify_wavelength_resampled_header(
+                "set", "CRVAL1", self.pixel_list[0]
+            )
+            self.modify_wavelength_resampled_header(
+                "set", "CTYPE1", "Pixel (Dispersion)"
+            )
+            self.modify_wavelength_resampled_header("set", "CUNIT1", "Pixel")
+            self.modify_wavelength_resampled_header(
+                "set", "BUNIT", "Angstroms"
+            )
+
+        except Exception as e:
+
+            self.logger.error(str(e))
+
+            # Set it to None if the above failed
+            self.logger.error(
+                "wavelength_resampled ImageHDU cannot be created."
+            )
+            self.wavelength_resampled_hdulist = None
 
     def create_sensitivity_fits(self):
         """
@@ -3549,6 +3631,8 @@ class Spectrum1D:
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
+                wavelength_resampled: 1 HDU
+                    Wavelength of each resampled position
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
@@ -3664,6 +3748,14 @@ class Spectrum1D:
                 hdu_output += self.wavelength_hdulist
                 self.hdu_content["wavelength"] = True
 
+            if "wavelength_resampled" in output_split:
+
+                if not self.hdu_content["wavelength_resampled"]:
+                    self.create_wavelength_resampled_fits()
+
+                hdu_output += self.wavelength_resampled_hdulist
+                self.hdu_content["wavelength_resampled"] = True
+
             if "count_resampled" in output_split:
 
                 if not self.hdu_content["count_resampled"]:
@@ -3773,6 +3865,8 @@ class Spectrum1D:
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
+                wavelength_resampled: 1 HDU
+                    Wavelength of each resampled position
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
@@ -3834,6 +3928,8 @@ class Spectrum1D:
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
+                wavelength_resampled: 1 HDU
+                    Wavelength of each resampled position
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
