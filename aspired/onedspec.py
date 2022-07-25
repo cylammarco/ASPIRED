@@ -6019,7 +6019,9 @@ class OneDSpec:
 
     def create_fits(
         self,
-        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
+        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+"
+        + "flux_atm_ext_corrected+flux_resampled+"
+        + "flux_resampled_atm_ext_corrected",
         recreate=True,
         empty_primary_hdu=True,
         spec_id=None,
@@ -6872,7 +6874,9 @@ class OneDSpec:
 
     def save_fits(
         self,
-        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
+        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+"
+        + "flux_atm_ext_corrected+flux_resampled+"
+        + "flux_resampled_atm_ext_corrected",
         filename="reduced",
         recreate=False,
         empty_primary_hdu=True,
@@ -7031,7 +7035,8 @@ class OneDSpec:
 
     def save_csv(
         self,
-        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_resampled",
+        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+"
+        + "flux_resampled",
         filename="reduced",
         recreate=False,
         overwrite=False,
