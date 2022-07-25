@@ -1699,19 +1699,19 @@ class OneDSpec:
         stype="science+standard",
     ):
         """
-                If the peaks were found with find_arc_lines(), peaks and spectrum can
-                be None.
+        If the peaks were found with find_arc_lines(), peaks and spectrum can
+        be None.
 
-                Parameters
-                ----------
-                peaks: list, numpy.ndarray or None (Default: None)
-                    The pixel values of the peaks (start from zero)
-                spectrum: list, numpy.ndarray or None (Default: None)
-                    The spectral intensity as a function of pixel.
-                spec_id: int or None (Default: None)
-                    The ID corresponding to the spectrum1D object
-        s        stype: str (Default: 'science+standard')
-                    'science' and/or 'standard' to indicate type, use '+' as delimiter
+        Parameters
+        ----------
+        peaks: list, numpy.ndarray or None (Default: None)
+            The pixel values of the peaks (start from zero)
+        spectrum: list, numpy.ndarray or None (Default: None)
+            The spectral intensity as a function of pixel.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
 
