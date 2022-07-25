@@ -3143,6 +3143,10 @@ class Spectrum1D:
 
         output_split = output.split("+")
 
+        if recreate:
+            for k, v in self.hdu_content.items():
+                self.hdu_content[k] = False
+
         # If the requested list of HDUs is already good to go
         if set([k for k, v in self.hdu_content.items() if v]) == set(
             output_split
@@ -3169,9 +3173,6 @@ class Spectrum1D:
         else:
 
             self.hdu_output = None
-            if recreate:
-                for k, v in self.hdu_content.items():
-                    self.hdu_content[k] = False
 
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()
