@@ -150,11 +150,17 @@ class TwoDSpec:
         self.flip_applied = False
 
         # Default values if not supplied
-        self.airmass = None
-        self.readnoise = None
-        self.gain = None
-        self.seeing = None
-        self.exptime = None
+        self.airmass = 1.0
+        self.readnoise = 0.0
+        self.gain = 1.0
+        self.seeing = 1.0
+        self.exptime = 1.0
+
+        self.airmass_is_default_value = True
+        self.readnoise_is_default_value = True
+        self.gain_is_default_value = True
+        self.seeing_is_default_value = True
+        self.Exptime_is_default_value = True
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -748,6 +754,7 @@ class TwoDSpec:
                 self.logger.info(
                     "readnoise is found to be {}.".format(self.readnoise)
                 )
+                self.readnoise_is_default_value = False
 
             elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
 
@@ -762,6 +769,7 @@ class TwoDSpec:
                     self.logger.info(
                         "readnoise is set to {}.".format(self.readnoise)
                     )
+                    self.readnoise_is_default_value = False
 
             else:
 
@@ -773,6 +781,7 @@ class TwoDSpec:
                     + " is "
                     + "given. It is set to 0."
                 )
+                self.readnoise_is_default_value = True
 
         else:
 
@@ -794,6 +803,7 @@ class TwoDSpec:
                     self.logger.info(
                         "readnoise is found to be {}.".format(self.readnoise)
                     )
+                    self.readnoise_is_default_value = False
 
                 else:
 
@@ -802,6 +812,7 @@ class TwoDSpec:
                         "Readnoise value cannot be identified. "
                         + "It is set to 0."
                     )
+                    self.readnoise_is_default_value = True
 
             else:
 
@@ -810,6 +821,7 @@ class TwoDSpec:
                     "Header is not provided. Readnoise value "
                     + "is not provided. It is set to 0."
                 )
+                self.readnoise_is_default_value = True
 
     # Get the gain
     def set_gain(self, gain=None):
@@ -833,6 +845,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
                 self.logger.info("gain is found to be {}.".format(self.gain))
+                self.gain_is_default_value = False
 
             elif isinstance(gain, (float, int)) & (~np.isnan(gain)):
 
@@ -845,6 +858,7 @@ class TwoDSpec:
                     # use the given gain value
                     self.gain = float(gain)
                     self.logger.info("gain is set to {}.".format(self.gain))
+                    self.gain_is_default_value = False
 
             else:
 
@@ -856,6 +870,7 @@ class TwoDSpec:
                     + " is given. It is "
                     + "set to 1."
                 )
+                self.gain_is_default_value = True
         else:
 
             # if None is given and header is provided, check if the read noise
@@ -872,6 +887,7 @@ class TwoDSpec:
                     self.logger.info(
                         "gain is found to be {}.".format(self.gain)
                     )
+                    self.gain_is_default_value = False
 
                 else:
 
@@ -879,6 +895,7 @@ class TwoDSpec:
                     self.logger.warning(
                         "Gain value cannot be identified. " + "It is set to 1."
                     )
+                    self.gain_is_default_value = True
 
             else:
 
@@ -887,6 +904,7 @@ class TwoDSpec:
                     "Header is not provide. Gain value is not "
                     + "provided. It is set to 1."
                 )
+                self.gain_is_default_value = True
 
     # Get the Seeing
     def set_seeing(self, seeing=None):
@@ -912,6 +930,7 @@ class TwoDSpec:
                 self.logger.info(
                     "seeing is found to be {}.".format(self.seeing)
                 )
+                self.seeing_is_default_value = False
 
             elif isinstance(seeing, (float, int)) & (~np.isnan(seeing)):
 
@@ -926,6 +945,7 @@ class TwoDSpec:
                     self.logger.info(
                         "seeing is set to {}.".format(self.seeing)
                     )
+                    self.seeing_is_default_value = False
 
             else:
 
@@ -937,6 +957,7 @@ class TwoDSpec:
                     + " is given. It is "
                     + "set to 1."
                 )
+                self.seeing_is_default_value = True
 
         else:
 
@@ -958,6 +979,7 @@ class TwoDSpec:
                     self.logger.info(
                         "seeing is found to be {}.".format(self.seeing)
                     )
+                    self.seeing_is_default_value = False
 
                 else:
 
@@ -966,6 +988,7 @@ class TwoDSpec:
                         "Seeing value cannot be identified. "
                         + "It is set to 1."
                     )
+                    self.seeing_is_default_value = True
 
             else:
 
@@ -974,6 +997,7 @@ class TwoDSpec:
                     "Header is not provided. Seeing value is "
                     + "not provided. It is set to 1."
                 )
+                self.seeing_is_default_value = True
 
     # Get the Exposure Time
     def set_exptime(self, exptime=None):
@@ -999,6 +1023,7 @@ class TwoDSpec:
                 self.logger.info(
                     "exptime is found to be {}.".format(self.exptime)
                 )
+                self.exptime_is_default_value = False
 
             elif isinstance(exptime, (float, int)) & (~np.isnan(exptime)):
 
@@ -1013,6 +1038,7 @@ class TwoDSpec:
                     self.logger.info(
                         "exptime is set to {}.".format(self.exptime)
                     )
+                    self.exptime_is_default_value = False
 
             else:
 
@@ -1024,6 +1050,7 @@ class TwoDSpec:
                     + " is given. "
                     + "It is set to 1."
                 )
+                self.exptime_is_default_value = True
 
         else:
 
@@ -1045,6 +1072,7 @@ class TwoDSpec:
                     self.logger.info(
                         "exptime is found to be {}.".format(self.exptime)
                     )
+                    self.exptime_is_default_value = False
 
                 else:
 
@@ -1053,6 +1081,7 @@ class TwoDSpec:
                         "Exposure Time value cannot be identified. "
                         + "It is set to 1."
                     )
+                    self.exptime_is_default_value = True
 
             else:
 
@@ -1062,8 +1091,9 @@ class TwoDSpec:
                     + "Exposure Time value is not provided. "
                     + "It is set to 1."
                 )
+                self.exptime_is_default_value = True
 
-    # Get the Exposure Time
+    # Get the Airmass
     def set_airmass(self, airmass=None):
         """
         Set the airmass of the image.
@@ -1087,6 +1117,7 @@ class TwoDSpec:
                 self.logger.info(
                     "Airmass is found to be {}.".format(self.airmass)
                 )
+                self.airmass_is_default_value = False
 
             elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
 
@@ -1099,18 +1130,21 @@ class TwoDSpec:
                     # use the given airmass value
                     self.airmass = float(airmass)
                     self.logger.info(
-                        "airmass is set to {}.".format(self.airmass)
+                        "Airmass is set to {}.".format(self.airmass)
                     )
+                    self.airmass_is_default_value = False
 
             else:
 
                 self.logger.warning(
-                    "Exposure Time has to be None, a numeric value or the "
+                    "Airmass has to be None, a numeric value or the "
                     + "FITS header keyword, "
                     + str(airmass)
                     + " is "
                     + "given. It is set to 1."
                 )
+                self.airmass = 1.0
+                self.airmass_is_default_value = True
 
         else:
 
@@ -1132,6 +1166,7 @@ class TwoDSpec:
                     self.logger.info(
                         "Airmass is found to be {}.".format(self.airmass)
                     )
+                    self.airmass_is_default_value = False
 
                 else:
 
@@ -1140,6 +1175,7 @@ class TwoDSpec:
                         "Airmass value cannot be identified. "
                         + "It is set to 1."
                     )
+                    self.airmass_is_default_value = True
 
             else:
 
@@ -1149,6 +1185,7 @@ class TwoDSpec:
                     + "Airmass value is not provided. "
                     + "It is set to 1."
                 )
+                self.airmass_is_default_value = True
 
     def add_bad_mask(self, bad_mask=None):
         """
@@ -1846,6 +1883,22 @@ class TwoDSpec:
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
+
+        if self.airmass_is_default_value:
+
+            self.set_airmass()
+
+        if self.seeing_is_default_value:
+
+            self.set_seeing()
+
+        if self.readnoise_is_default_value:
+
+            self.set_readnoise()
+
+        if self.gain_is_default_value:
+
+            self.set_gain()
 
     def _gaus(self, x, a, b, x0, sigma):
         """
