@@ -50,7 +50,11 @@ User Guide
    :maxdepth: 2
    :caption: Spectral Reduction API
 
-   modules/spectralreductionmodule
+   modules/spectrum1d_api
+   modules/wavelengthcalibration_api
+   modules/fluxcalibration_api
+   modules/twodspec_api
+   modules/onedspec_api
 
 .. toctree::
    :maxdepth: 1
