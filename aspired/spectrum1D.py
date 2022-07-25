@@ -2973,18 +2973,6 @@ class Spectrum1D:
             if self.spectrum_header is not None:
                 header = self.spectrum_header
 
-            if self.standard_header is not None:
-                if header is None:
-                    header = self.standard_header
-                else:
-                    header += self.standard_header
-
-            if self.arc_header is not None:
-                if header is None:
-                    header = self.arc_header
-                else:
-                    header += self.arc_header
-
             if header is not None:
 
                 # Put the data in ImageHDUs
@@ -3060,18 +3048,6 @@ class Spectrum1D:
             # Use the header of the standard
             if self.spectrum_header is not None:
                 header = self.spectrum_header
-
-            if self.standard_header is not None:
-                if header is None:
-                    header = self.standard_header
-                else:
-                    header += self.standard_header
-
-            if self.arc_header is not None:
-                if header is None:
-                    header = self.arc_header
-                else:
-                    header += self.arc_header
 
             if header is not None:
 
@@ -3249,18 +3225,6 @@ class Spectrum1D:
             if self.spectrum_header is not None:
                 header = self.spectrum_header
 
-            if self.standard_header is not None:
-                if header is None:
-                    header = self.standard_header
-                else:
-                    header += self.standard_header
-
-            if self.arc_header is not None:
-                if header is None:
-                    header = self.arc_header
-                else:
-                    header += self.arc_header
-
             if header is not None:
                 # Put the data in ImageHDUs
                 flux_resampled_ImageHDU = fits.ImageHDU(
@@ -3362,18 +3326,6 @@ class Spectrum1D:
             # Use the header of the standard
             if self.spectrum_header is not None:
                 header = self.spectrum_header
-
-            if self.standard_header is not None:
-                if header is None:
-                    header = self.standard_header
-                else:
-                    header += self.standard_header
-
-            if self.arc_header is not None:
-                if header is None:
-                    header = self.arc_header
-                else:
-                    header += self.arc_header
 
             if header is not None:
                 # Put the data and header in ImageHDUs
@@ -3661,6 +3613,10 @@ class Spectrum1D:
 
         output_split = output.split("+")
 
+        if recreate:
+            for k, v in self.hdu_content.items():
+                self.hdu_content[k] = False
+
         # If the requested list of HDUs is already good to go
         if set([k for k, v in self.hdu_content.items() if v]) == set(
             output_split
@@ -3687,9 +3643,6 @@ class Spectrum1D:
         else:
 
             self.hdu_output = None
-            if recreate:
-                for k, v in self.hdu_content.items():
-                    self.hdu_content[k] = False
 
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()

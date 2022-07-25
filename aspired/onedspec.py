@@ -4401,12 +4401,23 @@ class OneDSpec:
 
             return telluric_func
 
+    def get_telluric_correction(
+        self, spec_id=None, factor=1.0, auto_apply=False, **kwargs
+    ):
+        self.logger.warning(
+            DeprecationWarning(
+                "get_telluric_correction() will be removed in the next "
+                "release. Please use get_telluric_strength()."
+            )
+        )
+        self.get_telluric_strength(
+            spec_id=None, factor=1.0, auto_apply=False, **kwargs
+        )
+
     def get_telluric_strength(
         self, spec_id=None, factor=1.0, auto_apply=False, **kwargs
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         Get the telluric absorption profile from the standard star based on
         the masked regions given in generating the sensitivity curve. Note
         that the profile has a "positive" flux so that in the step of applying
@@ -4599,8 +4610,6 @@ class OneDSpec:
         open_iframe=False,
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         Display the Telluric profile.
 
         Parameters
@@ -4663,8 +4672,6 @@ class OneDSpec:
         open_iframe=False,
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         Inspect the Telluric absorption correction on top of pre-corrected
         spectra.
 
@@ -4912,8 +4919,6 @@ class OneDSpec:
         self, factor=1.0, spec_id=None, stype="science+standard"
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         Apply the telluric correction with the extra multiplier 'factor'.
         The 'factor' provided in the profile() is NOT
         propagated to this function, it has to be explicitly provided
@@ -5045,8 +5050,6 @@ class OneDSpec:
         **kwargs
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         The ORM atmospheric extinction correction table is taken from
         http://www.ing.iac.es/astronomy/observing/manuals/ps/tech_notes/tn031.pdf
 
@@ -5105,8 +5108,6 @@ class OneDSpec:
         self, science_airmass=None, standard_airmass=None, spec_id=None
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         This is the first step in allowing atmospheric extinction correction
         of the spectra. Currently it only works if both the science and
         standard spectra are present and both airmass values are provided.
@@ -5992,7 +5993,7 @@ class OneDSpec:
 
     def create_fits(
         self,
-        output="arc_spec+wavecal+wavelength+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
+        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
         spec_id=None,
         stype="science+standard",
         recreate=True,
@@ -6846,7 +6847,7 @@ class OneDSpec:
     def save_fits(
         self,
         spec_id=None,
-        output="arc_spec+wavecal+wavelength+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
+        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
         filename="reduced",
         stype="science+standard",
         recreate=False,
