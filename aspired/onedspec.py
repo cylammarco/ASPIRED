@@ -681,9 +681,9 @@ class OneDSpec:
     def add_spec(
         self,
         count,
-        spec_id=None,
         count_err=None,
         count_sky=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1101,8 +1101,8 @@ class OneDSpec:
         self,
         trace,
         trace_sigma,
-        spec_id=None,
         pixel_list=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1527,7 +1527,6 @@ class OneDSpec:
 
     def find_arc_lines(
         self,
-        spec_id=None,
         prominence=5.0,
         top_n_peaks=None,
         distance=5.0,
@@ -1542,6 +1541,7 @@ class OneDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1692,7 +1692,11 @@ class OneDSpec:
                 )
 
     def initialise_calibrator(
-        self, spec_id=None, peaks=None, arc_spec=None, stype="science+standard"
+        self,
+        peaks=None,
+        arc_spec=None,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         If the peaks were found with find_arc_lines(), peaks and spectrum can
@@ -1782,12 +1786,12 @@ class OneDSpec:
 
     def set_calibrator_properties(
         self,
-        spec_id=None,
         num_pix=None,
         pixel_list=None,
         plotting_library="plotly",
         logger_name="Calibrator",
         log_level="info",
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1870,7 +1874,6 @@ class OneDSpec:
 
     def set_hough_properties(
         self,
-        spec_id=None,
         num_slopes=5000,
         xbins=200,
         ybins=200,
@@ -1878,6 +1881,7 @@ class OneDSpec:
         max_wavelength=10000.0,
         range_tolerance=500,
         linearity_tolerance=100,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1964,7 +1968,6 @@ class OneDSpec:
 
     def set_ransac_properties(
         self,
-        spec_id=None,
         sample_size=5,
         top_n_candidate=5,
         linear=True,
@@ -1975,6 +1978,7 @@ class OneDSpec:
         minimum_matches=3,
         minimum_peak_utilisation=0.0,
         minimum_fit_error=1e-4,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2141,7 +2145,6 @@ class OneDSpec:
         self,
         elements,
         wavelengths,
-        spec_id=None,
         intensities=None,
         candidate_tolerance=10.0,
         constrain_poly=False,
@@ -2149,6 +2152,7 @@ class OneDSpec:
         pressure=101325.0,
         temperature=273.15,
         relative_humidity=0.0,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2276,7 +2280,6 @@ class OneDSpec:
     def add_atlas(
         self,
         elements,
-        spec_id=None,
         min_atlas_wavelength=3000.0,
         max_atlas_wavelength=10000.0,
         min_intensity=10.0,
@@ -2287,6 +2290,7 @@ class OneDSpec:
         pressure=101325.0,
         temperature=273.15,
         relative_humidity=0,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2605,7 +2609,10 @@ class OneDSpec:
                 self.logger.warning("Standard atlas is not available.")
 
     def do_hough_transform(
-        self, spec_id=None, brute_force=False, stype="science+standard"
+        self,
+        brute_force=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         ** brute_force is EXPERIMENTAL as of 1 Oct 2021 **
@@ -2673,7 +2680,6 @@ class OneDSpec:
 
     def plot_search_space(
         self,
-        spec_id=None,
         fit_coeff=None,
         top_n_candidate=3,
         weighted=True,
@@ -2683,6 +2689,7 @@ class OneDSpec:
         return_jsonstring=False,
         renderer="default",
         display=False,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2773,7 +2780,6 @@ class OneDSpec:
 
     def fit(
         self,
-        spec_id=None,
         max_tries=5000,
         fit_deg=4,
         fit_coeff=None,
@@ -2788,6 +2794,7 @@ class OneDSpec:
         save_fig=False,
         fig_type="iframe+png",
         filename=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2935,7 +2942,6 @@ class OneDSpec:
 
     def robust_refit(
         self,
-        spec_id=None,
         fit_coeff=None,
         n_delta=None,
         refine=False,
@@ -2949,6 +2955,7 @@ class OneDSpec:
         renderer="default",
         save_fig=False,
         filename=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -3421,10 +3428,10 @@ class OneDSpec:
 
     def apply_wavelength_calibration(
         self,
-        spec_id=None,
         wave_start=None,
         wave_end=None,
         wave_bin=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -3893,7 +3900,6 @@ class OneDSpec:
 
     def apply_flux_calibration(
         self,
-        spec_id=None,
         inspect=False,
         wave_min=3500.0,
         wave_max=8500.0,
@@ -3906,6 +3912,7 @@ class OneDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -5301,8 +5308,6 @@ class OneDSpec:
 
     def inspect_reduced_spectrum(
         self,
-        spec_id=None,
-        stype="science+standard",
         wave_min=3500.0,
         wave_max=8500.0,
         display=True,
@@ -5314,6 +5319,8 @@ class OneDSpec:
         filename=None,
         open_iframe=False,
         return_jsonstring=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Parameters
@@ -5901,10 +5908,10 @@ class OneDSpec:
     def create_fits(
         self,
         output="arc_spec+wavecal+wavelength+flux+flux_resampled",
-        spec_id=None,
-        stype="science+standard",
         recreate=True,
         empty_primary_hdu=True,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Create a HDU list, with a choice of any combination of the
@@ -6744,13 +6751,13 @@ class OneDSpec:
 
     def save_fits(
         self,
-        spec_id=None,
         output="arc_spec+wavecal+wavelength+flux+flux_resampled",
         filename="reduced",
-        stype="science+standard",
         recreate=False,
         empty_primary_hdu=True,
         overwrite=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
@@ -6892,12 +6899,12 @@ class OneDSpec:
 
     def save_csv(
         self,
-        spec_id=None,
         output="arc_spec+wavecal+wavelength+flux+flux_resampled",
         filename="reduced",
-        stype="science+standard",
         recreate=False,
         overwrite=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
