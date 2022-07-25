@@ -112,18 +112,18 @@ def test_logger():
     )
 
     assert (
-        debug_debug_length == 10
-    ), "Expecting 10 lines in the log file, " + "{} is logged.".format(
+        debug_debug_length == 5
+    ), "Expecting 5 lines in the log file, " + "{} is logged.".format(
         debug_debug_length
     )
     assert (
-        debug_info_length == 9
-    ), "Expecting 9 lines in the log file, " + "{} is logged.".format(
+        debug_info_length == 4
+    ), "Expecting 4 lines in the log file, " + "{} is logged.".format(
         debug_info_length
     )
     assert (
-        debug_warning_length == 8
-    ), "Expecting 8 lines in the log file, " + "{} is logged.".format(
+        debug_warning_length == 3
+    ), "Expecting 3 lines in the log file, " + "{} is logged.".format(
         debug_warning_length
     )
     assert (
