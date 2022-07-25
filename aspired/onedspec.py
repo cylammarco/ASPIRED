@@ -680,9 +680,9 @@ class OneDSpec:
     def add_spec(
         self,
         count,
-        spec_id=None,
         count_err=None,
         count_sky=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -690,13 +690,13 @@ class OneDSpec:
         ----------
         count: 1-d array
             The summed count at each column about the trace.
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         count_err: 1-d array (Default: None)
             the uncertainties of the count values
         count_sky: 1-d array (Default: None)
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1100,8 +1100,8 @@ class OneDSpec:
         self,
         trace,
         trace_sigma,
-        spec_id=None,
         pixel_list=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1112,14 +1112,14 @@ class OneDSpec:
             spectral position.
         trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         pixel_list: list or numpy.narray (Default: None)
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(len(spec.trace[0])), for example, in the case of accounting
             for chip gaps (10 pixels) in a 3-CCD setting, you should provide
             [0,1,2,...90, 100,101,...190, 200,201,...290]
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1526,7 +1526,6 @@ class OneDSpec:
 
     def find_arc_lines(
         self,
-        spec_id=None,
         prominence=5.0,
         top_n_peaks=None,
         distance=5.0,
@@ -1541,13 +1540,12 @@ class OneDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
         stype="science+standard",
     ):
         """
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         background: int or None (Default: None)
             User-supplied estimated background level
         percentile: float (Default: 2.)
@@ -1589,6 +1587,8 @@ class OneDSpec:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1691,7 +1691,7 @@ class OneDSpec:
                 )
 
     def initialise_calibrator(
-        self, spec_id=None, peaks=None, arc_spec=None, stype="science+standard"
+        self, peaks=None, arc_spec=None, spec_id=None, stype="science+standard"
     ):
         """
         If the peaks were found with find_arc_lines(), peaks and spectrum can
@@ -1699,12 +1699,12 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         peaks: list, numpy.ndarray or None (Default: None)
             The pixel values of the peaks (start from zero)
         spectrum: list, numpy.ndarray or None (Default: None)
             The spectral intensity as a function of pixel.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1781,19 +1781,17 @@ class OneDSpec:
 
     def set_calibrator_properties(
         self,
-        spec_id=None,
         num_pix=None,
         pixel_list=None,
         plotting_library="plotly",
         logger_name="Calibrator",
         log_level="info",
+        spec_id=None,
         stype="science+standard",
     ):
         """
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         num_pix: int (Default: None)
             The number of pixels in the dispersion direction
         pixel_list: list or numpy array (Default: None)
@@ -1811,6 +1809,8 @@ class OneDSpec:
             provided.
         log_level : str (Default: 'info')
             Choose {critical, error, warning, info, debug, notset}.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1869,7 +1869,6 @@ class OneDSpec:
 
     def set_hough_properties(
         self,
-        spec_id=None,
         num_slopes=5000,
         xbins=200,
         ybins=200,
@@ -1877,13 +1876,12 @@ class OneDSpec:
         max_wavelength=10000.0,
         range_tolerance=500,
         linearity_tolerance=100,
+        spec_id=None,
         stype="science+standard",
     ):
         """
         Parameters
         ----------
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         num_slopes: int (Default: 5000)
             Number of slopes to consider during Hough transform
         xbins: int (Default: 200)
@@ -1902,6 +1900,8 @@ class OneDSpec:
             A toleranceold (Ansgtroms) which defines some padding around the
             range tolerance to allow for non-linearity. This should be the
             maximum expected excursion from linearity.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1963,7 +1963,6 @@ class OneDSpec:
 
     def set_ransac_properties(
         self,
-        spec_id=None,
         sample_size=5,
         top_n_candidate=5,
         linear=True,
@@ -1974,6 +1973,7 @@ class OneDSpec:
         minimum_matches=3,
         minimum_peak_utilisation=0.0,
         minimum_fit_error=1e-4,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -1984,8 +1984,6 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         sample_size: int (Default: 5)
             Number of pixel-wavelength hough pairs to be used for each arc line
             being picked.
@@ -2014,6 +2012,8 @@ class OneDSpec:
             valid solution.
         minimum_fit_error: float (Default 1e-4)
             Set to remove overfitted/unrealistic fits.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2140,7 +2140,6 @@ class OneDSpec:
         self,
         elements,
         wavelengths,
-        spec_id=None,
         intensities=None,
         candidate_tolerance=10.0,
         constrain_poly=False,
@@ -2148,6 +2147,7 @@ class OneDSpec:
         pressure=101325.0,
         temperature=273.15,
         relative_humidity=0.0,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2165,8 +2165,6 @@ class OneDSpec:
             name for convenience with built-in atlases
         wavelengths : list
             Wavelength to add (Angstrom)
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         intensities : list or None (Default: None)
             Relative line intensities
         candidate_tolerance: float (Default: 10.)
@@ -2186,6 +2184,8 @@ class OneDSpec:
             Temperature when the observation took place, in Kelvin.
         relative_humidity: float (Default: 0.)
             In percentage.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2275,7 +2275,6 @@ class OneDSpec:
     def add_atlas(
         self,
         elements,
-        spec_id=None,
         min_atlas_wavelength=3000.0,
         max_atlas_wavelength=10000.0,
         min_intensity=10.0,
@@ -2286,6 +2285,7 @@ class OneDSpec:
         pressure=101325.0,
         temperature=273.15,
         relative_humidity=0,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2293,8 +2293,6 @@ class OneDSpec:
         ----------
         elements: str or list of strings
             Chemical symbol, case insensitive
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         min_atlas_wavelength: float (Default: 3000.)
             Minimum wavelength of the arc lines.
         max_atlas_wavelength: float (Default: 10000.)
@@ -2321,6 +2319,8 @@ class OneDSpec:
             Temperature when the observation took place, in Kelvin.
         relative_humidity: float (Default: 0)
             In percentage.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2604,7 +2604,7 @@ class OneDSpec:
                 self.logger.warning("Standard atlas is not available.")
 
     def do_hough_transform(
-        self, spec_id=None, brute_force=False, stype="science+standard"
+        self, brute_force=False, spec_id=None, stype="science+standard"
     ):
         """
         ** brute_force is EXPERIMENTAL as of 1 Oct 2021 **
@@ -2616,11 +2616,11 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         brute_force: bool (Default: False)
             Set to true to compute the gradient and intercept between
             every two data points
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2672,7 +2672,6 @@ class OneDSpec:
 
     def plot_search_space(
         self,
-        spec_id=None,
         fit_coeff=None,
         top_n_candidate=3,
         weighted=True,
@@ -2682,6 +2681,7 @@ class OneDSpec:
         return_jsonstring=False,
         renderer="default",
         display=False,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2692,6 +2692,30 @@ class OneDSpec:
 
         Parameters
         ----------
+        fit_coeff: list (default: None)
+            List of best polynomial fit_coefficients
+        top_n_candidate: int (default: 3)
+            Top ranked lines to be fitted.
+        weighted: (default: True)
+            Draw sample based on the distance from the matched known wavelength
+            of the atlas.
+        save_fig: boolean (default: False)
+            Save an image if set to True. matplotlib uses the pyplot.save_fig()
+            while the plotly uses the pio.write_html() or pio.write_image().
+            The support format types should be provided in fig_type.
+        fig_type: string (default: 'png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: (default: None)
+            The destination to save the image.
+        return_jsonstring: (default: False)
+            Set to True to save the plotly figure as json string. Ignored if
+            matplotlib is used.
+        renderer: (default: 'default')
+            Set the rendered for the plotly display. Ignored if matplotlib is
+            used.
+        display: boolean (Default: False)
+            Set to True to display disgnostic plot.
         spec_id: int (Default: None)
             The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
@@ -2772,7 +2796,6 @@ class OneDSpec:
 
     def fit(
         self,
-        spec_id=None,
         max_tries=5000,
         fit_deg=4,
         fit_coeff=None,
@@ -2787,6 +2810,7 @@ class OneDSpec:
         save_fig=False,
         fig_type="iframe+png",
         filename=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2830,6 +2854,8 @@ class OneDSpec:
         filename: str or None (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2943,7 +2969,6 @@ class OneDSpec:
 
     def robust_refit(
         self,
-        spec_id=None,
         fit_coeff=None,
         n_delta=None,
         refine=False,
@@ -2957,6 +2982,7 @@ class OneDSpec:
         renderer="default",
         save_fig=False,
         filename=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -2966,8 +2992,6 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         fit_coeff: list or None (Default: None)
             List of polynomial fit coefficients.
         n_delta: int (Default: None)
@@ -2996,6 +3020,8 @@ class OneDSpec:
         filename: str or None (Default: None)
             Filename for the output, all of them will share the same name but
             will have different extension.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3427,10 +3453,10 @@ class OneDSpec:
 
     def apply_wavelength_calibration(
         self,
-        spec_id=None,
         wave_start=None,
         wave_end=None,
         wave_bin=None,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -3441,14 +3467,14 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         wave_start: float or None (Default: None)
             Provide the minimum wavelength for resampling.
         wave_end: float or None (Default: None)
             Provide the maximum wavelength for resampling
         wave_bin: float or None (Default: None)
             Provide the resampling bin size
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str or None (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3899,7 +3925,6 @@ class OneDSpec:
 
     def apply_flux_calibration(
         self,
-        spec_id=None,
         inspect=False,
         wave_min=3500.0,
         wave_max=8500.0,
@@ -3912,6 +3937,7 @@ class OneDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
         stype="science+standard",
     ):
         """
@@ -3923,8 +3949,6 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         inspect: bool (Default: False)
             Set to True to create/display/save figure
         wave_min: float (Default: 3500)
@@ -3954,6 +3978,8 @@ class OneDSpec:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -4402,20 +4428,20 @@ class OneDSpec:
             return telluric_func
 
     def get_telluric_correction(
-        self, spec_id=None, factor=1.0, auto_apply=False, **kwargs
+        self, factor=1.0, auto_apply=False, spec_id=None, **kwargs
     ):
         self.logger.warning(
             DeprecationWarning(
-                "get_telluric_correction() will be removed in the next "
-                "release. Please use get_telluric_strength()."
+                "get_telluric_correction() will be removed in version >=0.6."
+                "Please use get_telluric_strength()."
             )
         )
         self.get_telluric_strength(
-            spec_id=None, factor=1.0, auto_apply=False, **kwargs
+            factor=factor, auto_apply=auto_apply, spec_id=spec_id, **kwargs
         )
 
     def get_telluric_strength(
-        self, spec_id=None, factor=1.0, auto_apply=False, **kwargs
+        self, factor=1.0, auto_apply=False, spec_id=None, **kwargs
     ):
         """
         Get the telluric absorption profile from the standard star based on
@@ -4428,8 +4454,6 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         factor: float (Default: 1.0)
             The extra fudge factor multiplied to the telluric profile to
             manally adjust the strength.
@@ -4437,6 +4461,8 @@ class OneDSpec:
             Set to True to accept the computed telluric absorption correction
             automatically, which is currently an irresversible process through
             the public API.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
 
         """
 
@@ -4660,7 +4686,6 @@ class OneDSpec:
     def inspect_telluric_correction(
         self,
         factor=1.0,
-        spec_id=None,
         display=True,
         renderer="default",
         width=1280,
@@ -4670,6 +4695,7 @@ class OneDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
     ):
         """
         Inspect the Telluric absorption correction on top of pre-corrected
@@ -4680,8 +4706,6 @@ class OneDSpec:
         factor: float (Default: 1.0)
             The extra fudge factor multiplied to the telluric profile to
             manally adjust the strength.
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         display: bool (Default: True)
             Set to True to display disgnostic plot.
         renderer: string (Default: 'default')
@@ -4705,6 +4729,8 @@ class OneDSpec:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
 
         Returns
         -------
@@ -5357,8 +5383,6 @@ class OneDSpec:
 
     def inspect_reduced_spectrum(
         self,
-        spec_id=None,
-        stype="science+standard",
         wave_min=3500.0,
         wave_max=8500.0,
         atm_ext_corrected=True,
@@ -5371,14 +5395,12 @@ class OneDSpec:
         filename=None,
         open_iframe=False,
         return_jsonstring=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
-        stype: str (Default: 'science+standard')
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
         wave_min: float (Default: 3500.)
             Minimum wavelength to display
         wave_max: float (Default: 8500.)
@@ -5409,6 +5431,10 @@ class OneDSpec:
         return_jsonstring: bool (Default: False)
             set to True to return JSON-string that can be rendered by Plotly
             in any support language.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
 
@@ -5994,10 +6020,10 @@ class OneDSpec:
     def create_fits(
         self,
         output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
-        spec_id=None,
-        stype="science+standard",
         recreate=True,
         empty_primary_hdu=True,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Create a HDU list, with a choice of any combination of the
@@ -6039,14 +6065,14 @@ class OneDSpec:
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
 
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
-        stype: str (Default: 'science+standard')
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
         recreate: bool (Default: True)
             Set to True to overwrite the FITS data and header.
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
 
@@ -6846,13 +6872,13 @@ class OneDSpec:
 
     def save_fits(
         self,
-        spec_id=None,
         output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_atm_ext_corrected+flux_resampled+flux_resampled_atm_ext_corrected",
         filename="reduced",
-        stype="science+standard",
         recreate=False,
         empty_primary_hdu=True,
         overwrite=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
@@ -6860,8 +6886,6 @@ class OneDSpec:
 
         Parameters
         ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
         output: String
             (Default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
             Type of data to be saved, the order is fixed (in the order of
@@ -6901,14 +6925,16 @@ class OneDSpec:
         filename: String (Default: 'reduced')
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
-        stype: str (Default: 'science+standard')
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
         recreate: bool (Default: False)
             Set to True to overwrite the FITS data and header.
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
         overwrite: bool (Default: False)
             Default is False.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
 
@@ -7005,12 +7031,12 @@ class OneDSpec:
 
     def save_csv(
         self,
-        spec_id=None,
         output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+flux_resampled",
         filename="reduced",
-        stype="science+standard",
         recreate=False,
         overwrite=False,
+        spec_id=None,
+        stype="science+standard",
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
