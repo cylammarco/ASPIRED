@@ -1690,6 +1690,128 @@ class OneDSpec:
                     "Standard arc spectrum/a are not imported."
                 )
 
+    def inspect_arc_lines(
+        self,
+        display=False,
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        renderer="default",
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+        spec_id=None,
+        stype="science+standard",
+    ):
+        """
+        Parameters
+        ----------
+        display: bool (Default: False)
+            Set to True to display disgnostic plot.
+        renderer: str (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return  JSON-string that can be rendered by Plotly
+            in any support language.
+        renderer: str (Default: 'default')
+            plotly renderer options.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str or None (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True
+
+        """
+
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if self.science_arc_lines_available:
+
+                if isinstance(spec_id, int):
+
+                    spec_id = [spec_id]
+
+                if spec_id is not None:
+
+                    if not set(spec_id).issubset(
+                        list(self.science_spectrum_list.keys())
+                    ):
+
+                        error_msg = "The given spec_id does not exist."
+                        self.logger.critical(error_msg)
+                        raise ValueError(error_msg)
+
+                else:
+
+                    # if spec_id is None
+                    spec_id = list(self.science_spectrum_list.keys())
+
+                for i in spec_id:
+
+                    self.inspect_arc_lines(
+                        display=display,
+                        width=width,
+                        height=height,
+                        return_jsonstring=return_jsonstring,
+                        renderer=renderer,
+                        save_fig=save_fig,
+                        fig_type=fig_type,
+                        filename=filename,
+                        open_iframe=open_iframe,
+                        spec_id=spec_id,
+                        stype="science",
+                    )
+
+            else:
+
+                self.logger.warning("Science arc spectrum/a are not imported.")
+
+        if "standard" in stype_split:
+
+            if self.standard_arc_lines_available:
+
+                self.inspect_arc_lines(
+                    display=display,
+                    width=width,
+                    height=height,
+                    return_jsonstring=return_jsonstring,
+                    renderer=renderer,
+                    save_fig=save_fig,
+                    fig_type=fig_type,
+                    filename=filename,
+                    open_iframe=open_iframe,
+                    spec_id=spec_id,
+                    stype="standard",
+                )
+
+            else:
+
+                self.logger.warning(
+                    "Standard arc spectrum/a are not imported."
+                )
+
     def initialise_calibrator(
         self, peaks=None, arc_spec=None, spec_id=None, stype="science+standard"
     ):

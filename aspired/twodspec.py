@@ -162,6 +162,14 @@ class TwoDSpec:
         self.seeing_is_default_value = True
         self.Exptime_is_default_value = True
 
+        self.zmin = None
+        self.zmax = None
+
+        self.start_window_idx = None
+        self.spec_idx = None
+        self.spec_pix = None
+        self.resample_factor = 1.0
+
         self.verbose = verbose
         self.logger_name = logger_name
         self.log_level = log_level
@@ -2063,14 +2071,15 @@ class TwoDSpec:
 
             img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
 
-        nresample = self.spatial_size * resample_factor
-        img_tmp = ndimage.zoom(img_tmp, zoom=resample_factor)
+        self.resample_factor = resample_factor
+        nresample = self.spatial_size * self.resample_factor
+        img_tmp = ndimage.zoom(img_tmp, zoom=self.resample_factor)
 
         # split the spectrum into subspectra
         img_split = np.array_split(img_tmp, nwindow, axis=1)
-        start_window_idx = nwindow // 2
+        self.start_window_idx = nwindow // 2
 
-        lines_ref_init = np.nanmedian(img_split[start_window_idx], axis=1)
+        lines_ref_init = np.nanmedian(img_split[self.start_window_idx], axis=1)
         lines_ref_init[np.isnan(lines_ref_init)] = 0.0
 
         # linear scaling limits
@@ -2091,7 +2100,7 @@ class TwoDSpec:
         scale_solution = np.ones(nwindow)
 
         # maximum shift (SEMI-AMPLITUDE) from the neighbour (pixel)
-        shift_tol_len = int(shift_tol * resample_factor)
+        shift_tol_len = int(shift_tol * self.resample_factor)
 
         spec_spatial = np.zeros((nwindow, nresample))
 
@@ -2099,8 +2108,8 @@ class TwoDSpec:
 
         # Scipy correlate method, ignore first and last window
         for i in chain(
-            range(start_window_idx, nwindow),
-            range(start_window_idx - 1, -1, -1),
+            range(self.start_window_idx, nwindow),
+            range(self.start_window_idx - 1, -1, -1),
         ):
 
             self.logger.info("Correlating the {}-th window.".format(i))
@@ -2144,7 +2153,7 @@ class TwoDSpec:
             scale_solution[i] = scaling_range[np.nanargmax(corr_val)]
 
             # Align the spatial profile before stacking
-            if i == (start_window_idx - 1):
+            if i == (self.start_window_idx - 1):
 
                 pix = np.arange(nresample)
 
@@ -2194,41 +2203,47 @@ class TwoDSpec:
                     : self.nspec_traced
                 ]
             )
-            / resample_factor
+            / self.resample_factor
         )
 
         # Create array to populate the spectral locations
-        spec_idx = np.zeros((len(spec_init), len(img_split)))
+        self.spec_idx = np.zeros((len(spec_init), len(img_split)))
 
         # Populate the initial values
-        spec_idx[:, start_window_idx] = spec_init
+        self.spec_idx[:, self.start_window_idx] = spec_init
 
         # Pixel positions of the mid point of each data_split (spectral)
-        spec_pix = [len(i[0]) for i in img_split]
-        spec_pix[0] -= spec_pix[0] // 2
-        for i in range(1, len(spec_pix)):
-            spec_pix[i] += spec_pix[i - 1]
+        self.spec_pix = [len(i[0]) for i in img_split]
+        self.spec_pix[0] -= self.spec_pix[0] // 2
+        for i in range(1, len(self.spec_pix)):
+            self.spec_pix[i] += self.spec_pix[i - 1]
 
-        spec_pix = np.array(spec_pix).astype("int")
+        self.spec_pix = np.array(self.spec_pix).astype("int")
 
         # Looping through pixels larger than middle pixel
-        for i in range(start_window_idx + 1, nwindow):
+        for i in range(self.start_window_idx + 1, nwindow):
 
-            spec_idx[:, i] = (
-                spec_idx[:, i - 1] * resample_factor * nscaled[i] / nresample
+            self.spec_idx[:, i] = (
+                self.spec_idx[:, i - 1]
+                * self.resample_factor
+                * nscaled[i]
+                / nresample
                 - shift_solution[i]
-            ) / resample_factor
+            ) / self.resample_factor
 
         # Looping through pixels smaller than middle pixel
-        for i in range(start_window_idx - 1, -1, -1):
+        for i in range(self.start_window_idx - 1, -1, -1):
 
-            spec_idx[:, i] = (
-                (spec_idx[:, i + 1] * resample_factor - shift_solution[i])
+            self.spec_idx[:, i] = (
+                (
+                    self.spec_idx[:, i + 1] * self.resample_factor
+                    - shift_solution[i]
+                )
                 / (int(nresample * scale_solution[i + 1]) / nresample)
-                / resample_factor
+                / self.resample_factor
             )
 
-        for i in range(len(spec_idx)):
+        for i in range(len(self.spec_idx)):
 
             # Get the median of the subspectrum and then get the Count at the
             # central 5 pixels of the aperture
@@ -2237,7 +2252,7 @@ class TwoDSpec:
             for j in range(nwindow):
 
                 # rounding
-                idx = int(np.round(spec_idx[i][j] + 0.5))
+                idx = int(np.round(self.spec_idx[i][j] + 0.5))
                 subspec_cleaned = sigma_clip(
                     img_split[j], sigma=3, masked=True
                 ).data
@@ -2256,14 +2271,19 @@ class TwoDSpec:
             )
 
             # fit the trace
-            ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
-            ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
+            ap_p = np.polyfit(
+                self.spec_pix[mask], self.spec_idx[i][mask], int(fit_deg)
+            )
+            ap = np.polyval(
+                ap_p, np.arange(self.spec_size) * self.resample_factor
+            )
             self.logger.info(
                 "The trace is found at {}.".format(
                     [
                         (x, y)
                         for (x, y) in zip(
-                            np.arange(self.spec_size) * resample_factor, ap
+                            np.arange(self.spec_size) * self.resample_factor,
+                            ap,
                         )
                     ]
                 )
@@ -2271,8 +2291,8 @@ class TwoDSpec:
 
             # Get the centre of the upsampled spectrum
             ap_centre_pix = float(np.argmax(spec_spatial))
-            first_pix = ap_centre_pix - trace_width * resample_factor
-            last_pix = ap_centre_pix + trace_width * resample_factor + 1
+            first_pix = ap_centre_pix - trace_width * self.resample_factor
+            last_pix = ap_centre_pix + trace_width * self.resample_factor + 1
 
             first_pix = int(max(0, first_pix))
             last_pix = int(min(len(spec_spatial), last_pix))
@@ -2282,7 +2302,7 @@ class TwoDSpec:
                 np.nanmax(spec_spatial[first_pix:last_pix]),
                 np.nanpercentile(spec_spatial[first_pix:last_pix], 5.0),
                 ap_centre_pix - first_pix,
-                3.0 * resample_factor,
+                3.0 * self.resample_factor,
             ]
 
             non_nan_mask = np.isfinite(
@@ -2295,7 +2315,7 @@ class TwoDSpec:
                 spec_spatial[first_pix:last_pix][non_nan_mask],
                 p0=pguess,
             )
-            ap_sigma = abs(popt[3]) / resample_factor
+            ap_sigma = abs(popt[3]) / self.resample_factor
 
             self.logger.info(
                 "Aperture is fitted with a Gaussian sigma of "
@@ -2320,99 +2340,161 @@ class TwoDSpec:
         # Plot
         if save_fig or display or return_jsonstring:
 
-            fig = go.Figure(
-                layout=dict(autosize=False, height=height, width=width)
+            to_return = self.inspect_trace(
+                display=display,
+                renderer=renderer,
+                width=width,
+                height=height,
+                return_jsonstring=return_jsonstring,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename,
+                open_iframe=open_iframe,
             )
-
-            fig.add_trace(
-                go.Heatmap(
-                    z=np.log10(self.img),
-                    zmin=self.zmin,
-                    zmax=self.zmax,
-                    colorscale="Viridis",
-                    colorbar=dict(title="log( e- count )"),
-                )
-            )
-
-            for i in range(len(spec_idx)):
-
-                fig.add_trace(
-                    go.Scatter(
-                        x=np.arange(self.spec_size),
-                        y=self.spectrum_list[i].trace,
-                        line=dict(color="black"),
-                    )
-                )
-                fig.add_trace(
-                    go.Scatter(
-                        x=spec_pix / resample_factor,
-                        y=spec_idx[i],
-                        mode="markers",
-                        marker=dict(color="grey"),
-                    )
-                )
-            fig.add_trace(
-                go.Scatter(
-                    x=np.ones(len(spec_idx))
-                    * spec_pix[start_window_idx]
-                    / resample_factor,
-                    y=spec_idx[:, start_window_idx],
-                    mode="markers",
-                    marker=dict(color="firebrick"),
-                )
-            )
-            fig.update_layout(
-                yaxis_title="Spatial Direction / pixel",
-                xaxis=dict(
-                    zeroline=False,
-                    showgrid=False,
-                    title="Dispersion Direction / pixel",
-                ),
-                bargap=0,
-                hovermode="closest",
-                showlegend=False,
-            )
-
-            if filename is None:
-
-                filename = "ap_trace"
-
-            if save_fig:
-
-                fig_type_split = fig_type.split("+")
-
-                for t in fig_type_split:
-
-                    if t == "iframe":
-
-                        pio.write_html(
-                            fig, filename + "." + t, auto_open=open_iframe
-                        )
-
-                    elif t in ["jpg", "png", "svg", "pdf"]:
-
-                        pio.write_image(fig, filename + "." + t)
-
-                    self.logger.info(
-                        "Figure is saved to {} for the ".format(
-                            filename + "." + t
-                        )
-                        + "science_spectrum_list for spec_id: {}.".format(i)
-                    )
-
-            if display:
-
-                if renderer == "default":
-
-                    fig.show()
-
-                else:
-
-                    fig.show(renderer)
 
             if return_jsonstring:
 
-                return fig.to_json()
+                return to_return
+
+    def inspect_trace(
+        self,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
+        Display the trace(s) over the image.
+
+        Parameters
+        ----------
+        display: bool (Default: False)
+            Set to True to display disgnostic plot.
+        renderer: str (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json str that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
+
+        Returns
+        -------
+        JSON-string if return_jsonstring is True, otherwise only an image is
+        displayed
+
+        """
+
+        fig = go.Figure(
+            layout=dict(autosize=False, height=height, width=width)
+        )
+
+        fig.add_trace(
+            go.Heatmap(
+                z=np.log10(self.img),
+                zmin=self.zmin,
+                zmax=self.zmax,
+                colorscale="Viridis",
+                colorbar=dict(title="log( e- count )"),
+            )
+        )
+
+        for i in range(len(self.spec_idx)):
+
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(self.spec_size),
+                    y=self.spectrum_list[i].trace,
+                    line=dict(color="black"),
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=self.spec_pix / self.resample_factor,
+                    y=self.spec_idx[i],
+                    mode="markers",
+                    marker=dict(color="grey"),
+                )
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=np.ones(len(self.spec_idx))
+                * self.spec_pix[self.start_window_idx]
+                / self.resample_factor,
+                y=self.spec_idx[:, self.start_window_idx],
+                mode="markers",
+                marker=dict(color="firebrick"),
+            )
+        )
+        fig.update_layout(
+            yaxis_title="Spatial Direction / pixel",
+            xaxis=dict(
+                zeroline=False,
+                showgrid=False,
+                title="Dispersion Direction / pixel",
+            ),
+            bargap=0,
+            hovermode="closest",
+            showlegend=False,
+        )
+
+        if filename is None:
+
+            filename = "ap_trace"
+
+        if save_fig:
+
+            fig_type_split = fig_type.split("+")
+
+            for t in fig_type_split:
+
+                if t == "iframe":
+
+                    pio.write_html(
+                        fig, filename + "." + t, auto_open=open_iframe
+                    )
+
+                elif t in ["jpg", "png", "svg", "pdf"]:
+
+                    pio.write_image(fig, filename + "." + t)
+
+                self.logger.info(
+                    "Figure is saved to {} for the ".format(filename + "." + t)
+                    + "spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if display:
+
+            if renderer == "default":
+
+                fig.show()
+
+            else:
+
+                fig.show(renderer)
+
+        if return_jsonstring:
+
+            return fig.to_json()
 
     def add_trace(self, trace, trace_sigma, spec_id=None):
         """
@@ -3148,7 +3230,6 @@ class TwoDSpec:
         skywidth=5,
         skydeg=1,
         sky_sigma=3.0,
-        spec_id=None,
         optimal=True,
         algorithm="horne86",
         model="gauss",
@@ -3174,6 +3255,7 @@ class TwoDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
     ):
         """
         Extract the spectra using the traces, support tophat or optimal
@@ -3681,62 +3763,193 @@ class TwoDSpec:
                     "of the spectrum."
                 )
 
-            if save_fig or display or return_jsonstring:
+        if save_fig or display or return_jsonstring:
 
-                min_trace = int(min(spec.trace) + 0.5)
-                max_trace = int(max(spec.trace) + 0.5)
+            to_return = self.inspect_extraction(
+                display=display,
+                renderer=renderer,
+                width=width,
+                height=height,
+                return_jsonstring=return_jsonstring,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename,
+                open_iframe=open_iframe,
+                spec_id=spec_id,
+            )
 
-                fig = go.Figure(
-                    layout=dict(autosize=False, height=height, width=width)
-                )
-                # the 3 is to show a little bit outside the extraction regions
-                img_display = np.log10(
-                    self.img[
-                        max(
-                            0, min_trace - width_dn - sep_dn - sky_width_dn - 3
-                        ) : min(
-                            max_trace + width_up + sep_up + sky_width_up,
-                            len(self.img[0]),
-                        )
-                        + 3,
-                        :,
-                    ]
-                )
+        if return_jsonstring:
 
-                # show the image on the top
-                # the 3 is the show a little bit outside the extraction regions
-                fig.add_trace(
-                    go.Heatmap(
-                        x=np.arange(len_trace),
-                        y=np.arange(
-                            max(
-                                0,
-                                min_trace
-                                - width_dn
-                                - sep_dn
-                                - sky_width_dn
-                                - 3,
-                            ),
-                            min(
-                                max_trace
-                                + width_up
-                                + sep_up
-                                + sky_width_up
-                                + 3,
-                                len(self.img[0]),
-                            ),
-                        ),
-                        z=img_display,
-                        colorscale="Viridis",
-                        zmin=self.zmin,
-                        zmax=self.zmax,
-                        xaxis="x",
-                        yaxis="y",
-                        colorbar=dict(title="log( e- count )"),
+            return to_return
+
+    def inspect_extraction(
+        self,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+        spec_id=None,
+    ):
+        """
+        Display the extracted spectrum/a.
+
+        Parameters
+        ----------
+        display: bool (Default: False)
+            Set to True to display disgnostic plot.
+        renderer: str (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool (Default: False)
+            set to True to return json str that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True.
+
+        """
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            assert np.in1d(
+                spec_id, list(self.spectrum_list.keys())
+            ).all(), "Some "
+            "spec_id provided are not in the spectrum_list."
+
+        else:
+
+            spec_id = list(self.spectrum_list.keys())
+
+        to_return = []
+
+        for j in spec_id:
+
+            spec = self.spectrum_list[j]
+
+            width_dn = spec.widthdn
+            width_up = spec.widthup
+
+            sep_dn = spec.sepdn
+            sep_up = spec.sepup
+
+            sky_width_dn = spec.skywidthdn
+            sky_width_up = spec.skywidthup
+
+            offset = 0
+
+            len_trace = len(spec.trace)
+
+            spec_id = list(self.spectrum_list.keys())
+
+            min_trace = int(min(spec.trace) + 0.5)
+            max_trace = int(max(spec.trace) + 0.5)
+
+            fig = go.Figure(
+                layout=dict(autosize=False, height=height, width=width)
+            )
+            # the 3 is to show a little bit outside the extraction regions
+            img_display = np.log10(
+                self.img[
+                    max(
+                        0, min_trace - width_dn - sep_dn - sky_width_dn - 3
+                    ) : min(
+                        max_trace + width_up + sep_up + sky_width_up,
+                        len(self.img[0]),
                     )
-                )
+                    + 3,
+                    :,
+                ]
+            )
 
-                # Middle black box on the image
+            # show the image on the top
+            # the 3 is the show a little bit outside the extraction regions
+            fig.add_trace(
+                go.Heatmap(
+                    x=np.arange(len_trace),
+                    y=np.arange(
+                        max(
+                            0,
+                            min_trace - width_dn - sep_dn - sky_width_dn - 3,
+                        ),
+                        min(
+                            max_trace + width_up + sep_up + sky_width_up + 3,
+                            len(self.img[0]),
+                        ),
+                    ),
+                    z=img_display,
+                    colorscale="Viridis",
+                    zmin=self.zmin,
+                    zmax=self.zmax,
+                    xaxis="x",
+                    yaxis="y",
+                    colorbar=dict(title="log( e- count )"),
+                )
+            )
+
+            # Middle black box on the image
+            fig.add_trace(
+                go.Scatter(
+                    x=list(
+                        np.concatenate(
+                            (
+                                np.arange(len_trace),
+                                np.arange(len_trace)[::-1],
+                                np.zeros(1),
+                            )
+                        )
+                    ),
+                    y=list(
+                        np.concatenate(
+                            (
+                                np.array(spec.trace) - width_dn - 1,
+                                np.array(spec.trace[::-1]) + width_up + 1,
+                                np.ones(1) * (spec.trace[0] - width_dn - 1),
+                            )
+                        )
+                    ),
+                    xaxis="x",
+                    yaxis="y",
+                    mode="lines",
+                    line_color="black",
+                    showlegend=False,
+                )
+            )
+
+            # Lower red box on the image
+            if offset == 0:
+
+                lower_redbox_upper_bound = (
+                    np.array(spec.trace) - width_dn - sep_dn - 1
+                )
+                lower_redbox_lower_bound = (
+                    np.array(spec.trace)[::-1]
+                    - width_dn
+                    - sep_dn
+                    - sky_width_dn
+                )
+                lower_redbox_lower_bound[lower_redbox_lower_bound < 0] = 1
+
                 fig.add_trace(
                     go.Scatter(
                         x=list(
@@ -3751,248 +3964,201 @@ class TwoDSpec:
                         y=list(
                             np.concatenate(
                                 (
-                                    np.array(spec.trace) - width_dn - 1,
-                                    np.array(spec.trace[::-1]) + width_up + 1,
-                                    np.ones(1)
-                                    * (spec.trace[0] - width_dn - 1),
+                                    lower_redbox_upper_bound,
+                                    lower_redbox_lower_bound,
+                                    np.ones(1) * lower_redbox_upper_bound[0],
+                                )
+                            )
+                        ),
+                        line_color="red",
+                        xaxis="x",
+                        yaxis="y",
+                        mode="lines",
+                        showlegend=False,
+                    )
+                )
+
+            # Upper red box on the image
+            if sep_up + sky_width_up > 0:
+
+                upper_redbox_upper_bound = (
+                    np.array(spec.trace) + width_up + sep_up + sky_width_up
+                )
+                upper_redbox_lower_bound = (
+                    np.array(spec.trace)[::-1] + width_up + sep_up + 1
+                )
+
+                upper_redbox_upper_bound[
+                    upper_redbox_upper_bound > self.spatial_size
+                ] = (self.spatial_size + 1)
+
+                fig.add_trace(
+                    go.Scatter(
+                        x=list(
+                            np.concatenate(
+                                (
+                                    np.arange(len_trace),
+                                    np.arange(len_trace)[::-1],
+                                    np.zeros(1),
+                                )
+                            )
+                        ),
+                        y=list(
+                            np.concatenate(
+                                (
+                                    upper_redbox_upper_bound,
+                                    upper_redbox_lower_bound,
+                                    np.ones(1) * upper_redbox_upper_bound[0],
                                 )
                             )
                         ),
                         xaxis="x",
                         yaxis="y",
                         mode="lines",
-                        line_color="black",
+                        line_color="red",
                         showlegend=False,
                     )
                 )
 
-                # Lower red box on the image
-                if offset == 0:
+            # plot the SNR
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=np.array(spec.count) / np.array(spec.count_err),
+                    xaxis="x2",
+                    yaxis="y3",
+                    line=dict(color="slategrey"),
+                    name="Signal-to-Noise Ratio",
+                )
+            )
 
-                    lower_redbox_upper_bound = (
-                        np.array(spec.trace) - width_dn - sep_dn - 1
-                    )
-                    lower_redbox_lower_bound = (
-                        np.array(spec.trace)[::-1]
-                        - width_dn
-                        - sep_dn
-                        - sky_width_dn
-                    )
-                    lower_redbox_lower_bound[lower_redbox_lower_bound < 0] = 1
+            # extrated source, sky and uncertainty
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=spec.count_sky,
+                    xaxis="x2",
+                    yaxis="y2",
+                    line=dict(color="firebrick"),
+                    name="Sky e- count",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=spec.count_err,
+                    xaxis="x2",
+                    yaxis="y2",
+                    line=dict(color="orange"),
+                    name="Uncertainty e- count",
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=spec.count,
+                    xaxis="x2",
+                    yaxis="y2",
+                    line=dict(color="royalblue"),
+                    name="Target e- count",
+                )
+            )
 
-                    fig.add_trace(
-                        go.Scatter(
-                            x=list(
-                                np.concatenate(
-                                    (
-                                        np.arange(len_trace),
-                                        np.arange(len_trace)[::-1],
-                                        np.zeros(1),
-                                    )
+            # Decorative stuff
+            fig.update_layout(
+                xaxis=dict(showticklabels=False),
+                yaxis=dict(
+                    zeroline=False,
+                    domain=[0.5, 1],
+                    showgrid=False,
+                    title="Spatial Direction / pixel",
+                ),
+                yaxis2=dict(
+                    range=[
+                        min(
+                            np.nanmin(
+                                sigma_clip(spec.count, sigma=5.0, masked=False)
+                            ),
+                            np.nanmin(
+                                sigma_clip(
+                                    spec.count_err, sigma=5.0, masked=False
                                 )
                             ),
-                            y=list(
-                                np.concatenate(
-                                    (
-                                        lower_redbox_upper_bound,
-                                        lower_redbox_lower_bound,
-                                        np.ones(1)
-                                        * lower_redbox_upper_bound[0],
-                                    )
+                            np.nanmin(
+                                sigma_clip(
+                                    spec.count_sky, sigma=5.0, masked=False
                                 )
                             ),
-                            line_color="red",
-                            xaxis="x",
-                            yaxis="y",
-                            mode="lines",
-                            showlegend=False,
-                        )
+                            1,
+                        ),
+                        max(np.nanmax(spec.count), np.nanmax(spec.count_sky)),
+                    ],
+                    zeroline=False,
+                    domain=[0, 0.5],
+                    showgrid=True,
+                    title=" e- count",
+                ),
+                yaxis3=dict(
+                    title="S/N ratio",
+                    anchor="x2",
+                    overlaying="y2",
+                    side="right",
+                ),
+                xaxis2=dict(
+                    title="Dispersion Direction / pixel",
+                    anchor="y2",
+                    matches="x",
+                ),
+                legend=go.layout.Legend(
+                    x=0,
+                    y=0.45,
+                    traceorder="normal",
+                    font=dict(family="sans-serif", size=12, color="black"),
+                    bgcolor="rgba(0,0,0,0)",
+                ),
+                bargap=0,
+                hovermode="closest",
+                showlegend=True,
+            )
+
+            if filename is None:
+
+                filename = "ap_extract"
+
+            if save_fig:
+
+                fig_type_split = fig_type.split("+")
+
+                for t in fig_type_split:
+
+                    save_path = filename + "_" + str(j) + "." + t
+
+                    if t == "iframe":
+
+                        pio.write_html(fig, save_path, auto_open=open_iframe)
+
+                    elif t in ["jpg", "png", "svg", "pdf"]:
+
+                        pio.write_image(fig, save_path)
+
+                    self.logger.info(
+                        "Figure is saved to {} ".format(save_path)
+                        + "for spec_id: {}.".format(j)
                     )
 
-                # Upper red box on the image
-                if sep_up + sky_width_up > 0:
+            if display:
 
-                    upper_redbox_upper_bound = (
-                        np.array(spec.trace) + width_up + sep_up + sky_width_up
-                    )
-                    upper_redbox_lower_bound = (
-                        np.array(spec.trace)[::-1] + width_up + sep_up + 1
-                    )
+                if renderer == "default":
 
-                    upper_redbox_upper_bound[
-                        upper_redbox_upper_bound > self.spatial_size
-                    ] = (self.spatial_size + 1)
+                    fig.show()
 
-                    fig.add_trace(
-                        go.Scatter(
-                            x=list(
-                                np.concatenate(
-                                    (
-                                        np.arange(len_trace),
-                                        np.arange(len_trace)[::-1],
-                                        np.zeros(1),
-                                    )
-                                )
-                            ),
-                            y=list(
-                                np.concatenate(
-                                    (
-                                        upper_redbox_upper_bound,
-                                        upper_redbox_lower_bound,
-                                        np.ones(1)
-                                        * upper_redbox_upper_bound[0],
-                                    )
-                                )
-                            ),
-                            xaxis="x",
-                            yaxis="y",
-                            mode="lines",
-                            line_color="red",
-                            showlegend=False,
-                        )
-                    )
+                else:
 
-                # plot the SNR
-                fig.add_trace(
-                    go.Scatter(
-                        x=np.arange(len_trace),
-                        y=count / count_err,
-                        xaxis="x2",
-                        yaxis="y3",
-                        line=dict(color="slategrey"),
-                        name="Signal-to-Noise Ratio",
-                    )
-                )
+                    fig.show(renderer)
 
-                # extrated source, sky and uncertainty
-                fig.add_trace(
-                    go.Scatter(
-                        x=np.arange(len_trace),
-                        y=count_sky,
-                        xaxis="x2",
-                        yaxis="y2",
-                        line=dict(color="firebrick"),
-                        name="Sky e- count",
-                    )
-                )
-                fig.add_trace(
-                    go.Scatter(
-                        x=np.arange(len_trace),
-                        y=count_err,
-                        xaxis="x2",
-                        yaxis="y2",
-                        line=dict(color="orange"),
-                        name="Uncertainty e- count",
-                    )
-                )
-                fig.add_trace(
-                    go.Scatter(
-                        x=np.arange(len_trace),
-                        y=count,
-                        xaxis="x2",
-                        yaxis="y2",
-                        line=dict(color="royalblue"),
-                        name="Target e- count",
-                    )
-                )
+            if return_jsonstring:
 
-                # Decorative stuff
-                fig.update_layout(
-                    xaxis=dict(showticklabels=False),
-                    yaxis=dict(
-                        zeroline=False,
-                        domain=[0.5, 1],
-                        showgrid=False,
-                        title="Spatial Direction / pixel",
-                    ),
-                    yaxis2=dict(
-                        range=[
-                            min(
-                                np.nanmin(
-                                    sigma_clip(count, sigma=5.0, masked=False)
-                                ),
-                                np.nanmin(
-                                    sigma_clip(
-                                        count_err, sigma=5.0, masked=False
-                                    )
-                                ),
-                                np.nanmin(
-                                    sigma_clip(
-                                        count_sky, sigma=5.0, masked=False
-                                    )
-                                ),
-                                1,
-                            ),
-                            max(np.nanmax(count), np.nanmax(count_sky)),
-                        ],
-                        zeroline=False,
-                        domain=[0, 0.5],
-                        showgrid=True,
-                        title=" e- count",
-                    ),
-                    yaxis3=dict(
-                        title="S/N ratio",
-                        anchor="x2",
-                        overlaying="y2",
-                        side="right",
-                    ),
-                    xaxis2=dict(
-                        title="Dispersion Direction / pixel",
-                        anchor="y2",
-                        matches="x",
-                    ),
-                    legend=go.layout.Legend(
-                        x=0,
-                        y=0.45,
-                        traceorder="normal",
-                        font=dict(family="sans-serif", size=12, color="black"),
-                        bgcolor="rgba(0,0,0,0)",
-                    ),
-                    bargap=0,
-                    hovermode="closest",
-                    showlegend=True,
-                )
-
-                if filename is None:
-
-                    filename = "ap_extract"
-
-                if save_fig:
-
-                    fig_type_split = fig_type.split("+")
-
-                    for t in fig_type_split:
-
-                        save_path = filename + "_" + str(j) + "." + t
-
-                        if t == "iframe":
-
-                            pio.write_html(
-                                fig, save_path, auto_open=open_iframe
-                            )
-
-                        elif t in ["jpg", "png", "svg", "pdf"]:
-
-                            pio.write_image(fig, save_path)
-
-                        self.logger.info(
-                            "Figure is saved to {} ".format(save_path)
-                            + "for spec_id: {}.".format(j)
-                        )
-
-                if display:
-
-                    if renderer == "default":
-
-                        fig.show()
-
-                    else:
-
-                        fig.show(renderer)
-
-                if return_jsonstring:
-
-                    to_return.append(fig.to_json())
+                to_return.append(fig.to_json())
 
         if return_jsonstring:
 
@@ -5277,7 +5443,6 @@ class TwoDSpec:
 
     def extract_arc_spec(
         self,
-        spec_id=None,
         spec_width=None,
         display=False,
         renderer="default",
@@ -5288,6 +5453,7 @@ class TwoDSpec:
         fig_type="iframe+png",
         filename=None,
         open_iframe=False,
+        spec_id=None,
     ):
         """
         This function applies the trace(s) to the arc image then take median
@@ -5302,8 +5468,6 @@ class TwoDSpec:
 
         Parameters
         ----------
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
         spec_width: int (Default: None)
             The number of pixels in the spatial direction used to sum for the
             arc spectrum
@@ -5330,6 +5494,8 @@ class TwoDSpec:
             will have different extension.
         open_iframe: bool
             Open the iframe in the default browser if set to True.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
 
         """
 
@@ -5339,7 +5505,7 @@ class TwoDSpec:
 
         if spec_id is not None:
 
-            if spec_id not in list(self.spectrum_list.keys()):
+            if not set(spec_id).issubset(list(self.spectrum_list.keys())):
 
                 error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
@@ -5390,74 +5556,175 @@ class TwoDSpec:
             # note that the display is adjusted for the chip gaps
             if save_fig or display or return_jsonstring:
 
-                fig = go.Figure(
-                    layout=dict(autosize=False, height=height, width=width)
+                to_return = self.inspect_arc_spec(
+                    display=display,
+                    renderer=renderer,
+                    width=width,
+                    height=height,
+                    return_jsonstring=return_jsonstring,
+                    save_fig=save_fig,
+                    fig_type=fig_type,
+                    filename=filename,
+                    open_iframe=open_iframe,
+                    spec_id=spec_id,
                 )
 
-                fig.add_trace(
-                    go.Scatter(
-                        x=np.arange(len_trace),
-                        y=arc_spec,
-                        mode="lines",
-                        line=dict(color="royalblue", width=1),
+        if return_jsonstring:
+
+            return to_return
+
+    def inspect_arc_spec(
+        self,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+        spec_id=None,
+    ):
+        """
+        Display the extracted arc spectrum.
+
+        Parameters
+        ----------
+        display: bool
+            Set to True to display disgnostic plot.
+        renderer: str
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool
+            set to True to return json str that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool
+            Open the iframe in the default browser if set to True.
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+
+        """
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            if not set(spec_id).issubset(list(self.spectrum_list.keys())):
+
+                error_msg = (
+                    "The given spec_id(s): {} do(es) ".format(spec_id)
+                    + "not exist. The twodspec object has "
+                    + "{}.".format(list(self.spectrum_list.keys()))
+                )
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+        else:
+
+            # if spec_id is None, all arc spectra are extracted
+            spec_id = list(self.spectrum_list.keys())
+
+        if self.arc is None:
+
+            error_msg = (
+                "arc is not provided. Please provide arc by "
+                + "using add_arc() or with from_twodspec() before "
+                + "executing find_arc_lines()."
+            )
+            self.logger.critical(error_msg)
+            raise ValueError(error_msg)
+
+        to_return = []
+
+        for i in spec_id:
+
+            spec = self.spectrum_list[i]
+
+            len_trace = len(spec.trace)
+            trace = np.nanmean(spec.trace)
+
+            fig = go.Figure(
+                layout=dict(autosize=False, height=height, width=width)
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(len_trace),
+                    y=spec.arc_spec,
+                    mode="lines",
+                    line=dict(color="royalblue", width=1),
+                )
+            )
+
+            fig.update_layout(
+                xaxis=dict(
+                    zeroline=False,
+                    range=[0, len_trace],
+                    title="Dispersion Direction / pixel",
+                ),
+                yaxis=dict(
+                    zeroline=False,
+                    range=[0, max(spec.arc_spec)],
+                    title="e- count / s",
+                ),
+                hovermode="closest",
+                showlegend=False,
+            )
+
+            if filename is None:
+
+                filename = "arc_spec_{}".format(i)
+
+            if save_fig:
+
+                fig_type_split = fig_type.split("+")
+
+                for t in fig_type_split:
+
+                    save_path = filename + "_" + str(i) + "." + t
+
+                    if t == "iframe":
+
+                        pio.write_html(fig, save_path, auto_open=open_iframe)
+
+                    elif t in ["jpg", "png", "svg", "pdf"]:
+
+                        pio.write_image(fig, save_path)
+
+                    self.logger.info(
+                        "Figure is saved to {} ".format(save_path)
+                        + "for spec_id: {}.".format(i)
                     )
-                )
 
-                fig.update_layout(
-                    xaxis=dict(
-                        zeroline=False,
-                        range=[0, len_trace],
-                        title="Dispersion Direction / pixel",
-                    ),
-                    yaxis=dict(
-                        zeroline=False,
-                        range=[0, max(arc_spec)],
-                        title="e- count / s",
-                    ),
-                    hovermode="closest",
-                    showlegend=False,
-                )
+            if display:
 
-                if filename is None:
+                if renderer == "default":
 
-                    filename = "arc_spec"
+                    fig.show()
 
-                if save_fig:
+                else:
 
-                    fig_type_split = fig_type.split("+")
+                    fig.show(renderer)
 
-                    for t in fig_type_split:
+            if return_jsonstring:
 
-                        save_path = filename + "_" + str(i) + "." + t
-
-                        if t == "iframe":
-
-                            pio.write_html(
-                                fig, save_path, auto_open=open_iframe
-                            )
-
-                        elif t in ["jpg", "png", "svg", "pdf"]:
-
-                            pio.write_image(fig, save_path)
-
-                        self.logger.info(
-                            "Figure is saved to {} ".format(save_path)
-                            + "for spec_id: {}.".format(i)
-                        )
-
-                if display:
-
-                    if renderer == "default":
-
-                        fig.show()
-
-                    else:
-
-                        fig.show(renderer)
-
-                if return_jsonstring:
-
-                    to_return.append(fig.to_json())
+                to_return.append(fig.to_json())
 
         if return_jsonstring:
 
