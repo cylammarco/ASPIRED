@@ -2352,9 +2352,9 @@ class TwoDSpec:
                 open_iframe=open_iframe,
             )
 
-            if return_jsonstring:
+        if return_jsonstring:
 
-                return to_return
+            return to_return
 
     def inspect_trace(
         self,
@@ -5553,21 +5553,21 @@ class TwoDSpec:
             spec.add_arc_spec(list(arc_spec))
             spec.add_arc_header(self.arc_header)
 
-            # note that the display is adjusted for the chip gaps
-            if save_fig or display or return_jsonstring:
+        # note that the display is adjusted for the chip gaps
+        if save_fig or display or return_jsonstring:
 
-                to_return = self.inspect_arc_spec(
-                    display=display,
-                    renderer=renderer,
-                    width=width,
-                    height=height,
-                    return_jsonstring=return_jsonstring,
-                    save_fig=save_fig,
-                    fig_type=fig_type,
-                    filename=filename,
-                    open_iframe=open_iframe,
-                    spec_id=spec_id,
-                )
+            to_return = self.inspect_arc_spec(
+                display=display,
+                renderer=renderer,
+                width=width,
+                height=height,
+                return_jsonstring=return_jsonstring,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename,
+                open_iframe=open_iframe,
+                spec_id=spec_id,
+            )
 
         if return_jsonstring:
 
