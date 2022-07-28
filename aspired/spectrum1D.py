@@ -4517,136 +4517,174 @@ class Spectrum1D:
                 if not self.hdu_content["trace"]:
                     self.create_trace_fits()
 
-                hdu_output += self.trace_hdulist
-                self.hdu_content["trace"] = True
+                if self.trace_hdulist is not None:
+
+                    hdu_output += self.trace_hdulist
+                    self.hdu_content["trace"] = True
 
             if "count" in output_split:
 
                 if not self.hdu_content["count"]:
                     self.create_count_fits()
 
-                hdu_output += self.count_hdulist
-                self.hdu_content["count"] = True
+                if self.count_hdulist is not None:
+
+                    hdu_output += self.count_hdulist
+                    self.hdu_content["count"] = True
 
             if "weight_map" in output_split:
 
                 if not self.hdu_content["weight_map"]:
                     self.create_weight_map_fits()
 
-                hdu_output += self.weight_map_hdulist
-                self.hdu_content["weight_map"] = True
+                if self.weight_map_hdulist is not None:
+
+                    hdu_output += self.weight_map_hdulist
+                    self.hdu_content["weight_map"] = True
 
             if "arc_spec" in output_split:
 
                 if not self.hdu_content["arc_spec"]:
                     self.create_arc_spec_fits()
 
-                hdu_output += self.arc_spec_hdulist
-                self.hdu_content["arc_spec"] = True
+                if self.arc_spec_hdulist is not None:
+
+                    hdu_output += self.arc_spec_hdulist
+                    self.hdu_content["arc_spec"] = True
 
             if "wavecal" in output_split:
 
                 if not self.hdu_content["wavecal"]:
                     self.create_wavecal_fits()
 
-                hdu_output += self.wavecal_hdulist
-                self.hdu_content["wavecal"] = True
+                if self.wavecal_hdulist is not None:
+
+                    hdu_output += self.wavecal_hdulist
+                    self.hdu_content["wavecal"] = True
 
             if "wavelength" in output_split:
 
                 if not self.hdu_content["wavelength"]:
                     self.create_wavelength_fits()
 
-                hdu_output += self.wavelength_hdulist
-                self.hdu_content["wavelength"] = True
+                if self.wavelength_hdulist is not None:
+
+                    hdu_output += self.wavelength_hdulist
+                    self.hdu_content["wavelength"] = True
 
             if "wavelength_resampled" in output_split:
 
                 if not self.hdu_content["wavelength_resampled"]:
                     self.create_wavelength_resampled_fits()
 
-                hdu_output += self.wavelength_resampled_hdulist
-                self.hdu_content["wavelength_resampled"] = True
+                if self.wavelength_resampled_hdulist is None:
+
+                    hdu_output += self.wavelength_resampled_hdulist
+                    self.hdu_content["wavelength_resampled"] = True
 
             if "count_resampled" in output_split:
 
                 if not self.hdu_content["count_resampled"]:
                     self.create_count_resampled_fits()
 
-                hdu_output += self.count_resampled_hdulist
-                self.hdu_content["count_resampled"] = True
+                if self.count_resampled_hdulist is not None:
+
+                    hdu_output += self.count_resampled_hdulist
+                    self.hdu_content["count_resampled"] = True
 
             if "sensitivity" in output_split:
 
                 if not self.hdu_content["sensitivity"]:
                     self.create_sensitivity_fits()
 
-                hdu_output += self.sensitivity_hdulist
-                self.hdu_content["sensitivity"] = True
+                if self.sensitivity_hdulist is not None:
+
+                    hdu_output += self.sensitivity_hdulist
+                    self.hdu_content["sensitivity"] = True
 
             if "flux" in output_split:
 
                 if not self.hdu_content["flux"]:
                     self.create_flux_fits()
 
-                hdu_output += self.flux_hdulist
-                self.hdu_content["flux"] = True
+                if self.flux_hdulist is not None:
+
+                    hdu_output += self.flux_hdulist
+                    self.hdu_content["flux"] = True
 
             if "flux_atm_ext_corrected" in output_split:
 
                 if not self.hdu_content["flux_atm_ext_corrected"]:
                     self.create_flux_atm_ext_corrected_fits()
 
-                hdu_output += self.flux_atm_ext_corrected_hdulist
-                self.hdu_content["flux_atm_ext_corrected"] = True
+                if self.flux_atm_ext_corrected_hdulist is not None:
+
+                    hdu_output += self.flux_atm_ext_corrected_hdulist
+                    self.hdu_content["flux_atm_ext_corrected"] = True
 
             if "flux_telluric_corrected" in output_split:
 
                 if not self.hdu_content["flux_telluric_corrected"]:
                     self.create_flux_telluric_corrected_fits()
 
-                hdu_output += self.flux_telluric_corrected_hdulist
-                self.hdu_content["flux_telluric_corrected"] = True
+                if self.flux_telluric_corrected_hdulist is not None:
+
+                    hdu_output += self.flux_telluric_corrected_hdulist
+                    self.hdu_content["flux_telluric_corrected"] = True
 
             if "flux_atm_ext_telluric_corrected" in output_split:
 
                 if not self.hdu_content["flux_atm_ext_telluric_corrected"]:
                     self.create_flux_atm_ext_telluric_corrected_fits()
 
-                hdu_output += self.flux_atm_ext_telluric_corrected_hdulist
-                self.hdu_content["flux_atm_ext_telluric_corrected"] = True
+                if self.flux_atm_ext_telluric_corrected_hdulist:
+
+                    hdu_output += self.flux_atm_ext_telluric_corrected_hdulist
+                    self.hdu_content["flux_atm_ext_telluric_corrected"] = True
 
             if "sensitivity_resampled" in output_split:
 
                 if not self.hdu_content["sensitivity_resampled"]:
                     self.create_sensitivity_resampled_fits()
 
-                hdu_output += self.sensitivity_resampled_hdulist
-                self.hdu_content["sensitivity_resampled"] = True
+                if self.sensitivity_resampled_hdulist:
+
+                    hdu_output += self.sensitivity_resampled_hdulist
+                    self.hdu_content["sensitivity_resampled"] = True
 
             if "flux_resampled" in output_split:
 
                 if not self.hdu_content["flux_resampled"]:
                     self.create_flux_resampled_fits()
 
-                hdu_output += self.flux_resampled_hdulist
-                self.hdu_content["flux_resampled"] = True
+                if self.flux_resampled_hdulist is not None:
+
+                    hdu_output += self.flux_resampled_hdulist
+                    self.hdu_content["flux_resampled"] = True
 
             if "flux_resampled_atm_ext_corrected" in output_split:
 
                 if not self.hdu_content["flux_resampled_atm_ext_corrected"]:
                     self.create_flux_resampled_atm_ext_corrected_fits()
 
-                hdu_output += self.flux_resampled_atm_ext_corrected_hdulist
-                self.hdu_content["flux_resampled_atm_ext_corrected"] = True
+                if self.flux_resampled_atm_ext_corrected_hdulist is not None:
+
+                    hdu_output += self.flux_resampled_atm_ext_corrected_hdulist
+                    self.hdu_content["flux_resampled_atm_ext_corrected"] = True
 
             if "flux_resampled_telluric_corrected" in output_split:
 
                 if not self.hdu_content["flux_resampled_telluric_corrected"]:
                     self.create_flux_resampled_telluric_corrected_fits()
 
-                hdu_output += self.flux_resampled_telluric_corrected_hdulist
-                self.hdu_content["flux_resampled_telluric_corrected"] = True
+                if self.flux_resampled_telluric_corrected_hdulist is not None:
+
+                    hdu_output += (
+                        self.flux_resampled_telluric_corrected_hdulist
+                    )
+                    self.hdu_content[
+                        "flux_resampled_telluric_corrected"
+                    ] = True
 
             if "flux_resampled_atm_ext_telluric_corrected" in output_split:
 
@@ -4655,12 +4693,17 @@ class Spectrum1D:
                 ]:
                     self.create_flux_resampled_atm_ext_telluric_corrected_fits()
 
-                hdu_output += (
+                if (
                     self.flux_resampled_atm_ext_telluric_corrected_hdulist
-                )
-                self.hdu_content[
-                    "flux_resampled_atm_ext_telluric_corrected"
-                ] = True
+                    is not None
+                ):
+
+                    hdu_output += (
+                        self.flux_resampled_atm_ext_telluric_corrected_hdulist
+                    )
+                    self.hdu_content[
+                        "flux_resampled_atm_ext_telluric_corrected"
+                    ] = True
 
             # If the primary HDU is not chosen to be empty
             if not empty_primary_hdu:
