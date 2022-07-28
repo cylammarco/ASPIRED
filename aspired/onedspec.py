@@ -6216,13 +6216,15 @@ class OneDSpec:
 
         # If output is *, chamge it to everything
         if output == "*":
-            output = "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-            +"wavelength_resampled+count_resampled+sensitivity+flux+"
-            +"flux_atm_ext_corrected+flux_telluric_corrected+"
-            +"flux_atm_ext_telluric_corrected+flux_resampled+"
-            +"flux_resampled_telluric_corrected+"
-            +"flux_resampled_atm_ext_telluric_corrected"
-            +"flux_resampled_atm_ext_corrected"
+            output = (
+                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+                + "wavelength_resampled+count_resampled+sensitivity+flux+"
+                + "flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "flux_atm_ext_telluric_corrected+flux_resampled+"
+                + "flux_resampled_telluric_corrected+"
+                + "flux_resampled_atm_ext_corrected+"
+                + "flux_resampled_atm_ext_telluric_corrected"
+            )
 
         # Split the string into strings
         stype_split = stype.split("+")
@@ -7111,13 +7113,15 @@ class OneDSpec:
 
         # If output is *, chamge it to everything
         if output == "*":
-            output = "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-            +"wavelength_resampled+count_resampled+sensitivity+flux+"
-            +"flux_atm_ext_corrected+flux_telluric_corrected+"
-            +"flux_atm_ext_telluric_corrected+flux_resampled+"
-            +"flux_resampled_telluric_corrected+"
-            +"flux_resampled_atm_ext_telluric_corrected"
-            +"flux_resampled_atm_ext_corrected"
+            output = (
+                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+                + "wavelength_resampled+count_resampled+sensitivity+flux+"
+                + "flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "flux_atm_ext_telluric_corrected+flux_resampled+"
+                + "flux_resampled_telluric_corrected+"
+                + "flux_resampled_atm_ext_corrected+"
+                + "flux_resampled_atm_ext_telluric_corrected"
+            )
 
         # Split the string into strings
         stype_split = stype.split("+")
@@ -7296,13 +7300,15 @@ class OneDSpec:
 
         # If output is *, chamge it to everything
         if output == "*":
-            output = "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-            +"wavelength_resampled+count_resampled+sensitivity+flux+"
-            +"flux_atm_ext_corrected+flux_telluric_corrected+"
-            +"flux_atm_ext_telluric_corrected+flux_resampled+"
-            +"flux_resampled_telluric_corrected+"
-            +"flux_resampled_atm_ext_telluric_corrected"
-            +"flux_resampled_atm_ext_corrected"
+            output = (
+                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+                + "wavelength_resampled+count_resampled+sensitivity+flux+"
+                + "flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "flux_atm_ext_telluric_corrected+flux_resampled+"
+                + "flux_resampled_telluric_corrected+"
+                + "flux_resampled_atm_ext_corrected+"
+                + "flux_resampled_atm_ext_telluric_corrected"
+            )
 
         # Split the string into strings
         stype_split = stype.split("+")
