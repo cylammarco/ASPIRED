@@ -33,7 +33,7 @@ def gaussian(pixels, central_pixel):
 
 
 # background noise
-bg_level = 10.0
+bg_level = 5.0
 
 # Prepare dummy data
 # total signal should be [2 * (2 + 5 + 10) + 20] - [1 * 7] = 47

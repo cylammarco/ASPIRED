@@ -6141,9 +6141,7 @@ class OneDSpec:
 
     def create_fits(
         self,
-        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+"
-        + "flux_atm_ext_corrected+flux_resampled+"
-        + "flux_resampled_atm_ext_corrected",
+        output="*",
         recreate=True,
         empty_primary_hdu=True,
         spec_id=None,
@@ -6163,8 +6161,10 @@ class OneDSpec:
 
                 trace: 2 HDUs
                     Trace, and trace width (pixel)
-                count: 4 HDUs
-                    Count, uncertainty, sky, optimal flag, and weight (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
                 arc_spec: 3 HDUs
                     1D arc spectrum, arc line pixels, and arc line effective
                     pixels
@@ -6172,21 +6172,35 @@ class OneDSpec:
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
+                wavelength_resampled: 1 HDU
+                    Wavelength of each resampled position
                 count_resampled: 3 HDUs
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
                 flux: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (pixel)
+                    Flux, uncertainty, and sky (pixel)
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
-                sensitivity_resampled: 1 HDU
+                flux_telluric_corrected: 3 HDUs
+                    Telluric corrected flux, uncertainty, and
+                    sky (pixel)
+                flux_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric corrected flux, uncertainty, and
+                    sky (pixel)
+                sensitivity: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
-                    Flux, uncertainty, sky, and sensitivity (wavelength)
+                    Flux, uncertainty, and sky (wavelength)
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
+                flux_resampled_telluric_corrected: 3 HDUs
+                    Telluric corrected flux, uncertainty, and
+                    sky (wavelength)
+                flux_resampled_atm_ext_telluric corrected: 3 HDUs
+                    Atmospheric extinction and telluric corrected flux, uncertainty, and
                     sky (wavelength)
 
         recreate: bool (Default: True)
@@ -6199,6 +6213,16 @@ class OneDSpec:
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
+
+        # If output is *, chamge it to everything
+        if output == "*":
+            output = "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+            +"wavelength_resampled+count_resampled+sensitivity+flux+"
+            +"flux_atm_ext_corrected+flux_telluric_corrected+"
+            +"flux_atm_ext_telluric_corrected+flux_resampled+"
+            +"flux_resampled_telluric_corrected+"
+            +"flux_resampled_atm_ext_telluric_corrected"
+            +"flux_resampled_atm_ext_corrected"
 
         # Split the string into strings
         stype_split = stype.split("+")
@@ -6218,9 +6242,13 @@ class OneDSpec:
                 "sensitivity",
                 "flux",
                 "flux_atm_ext_corrected",
+                "flux_telluric_corrected",
+                "flux_atm_ext_telluric_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
                 "flux_resampled_atm_ext_corrected",
+                "flux_resampled_telluric_corrected",
+                "flux_resampled_atm_ext_telluric_corrected",
             ]:
 
                 error_msg = "{} is not a valid output.".format(i)
@@ -7020,8 +7048,10 @@ class OneDSpec:
 
                 trace: 2 HDUs
                     Trace, and trace width (pixel)
-                count: 4 HDUs
-                    Count, uncertainty, sky, optimal flag, and weight (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
                 arc_spec: 3 HDUs
                     1D arc spectrum, arc line pixels, and arc line effective
                     pixels
@@ -7035,17 +7065,29 @@ class OneDSpec:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 3 HDUs
+                flux: 4 HDUs
                     Flux, uncertainty, and sky (pixel)
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
-                sensitivity_resampled: 1 HDU
+                flux_telluric_corrected: 3 HDUs
+                    Telluric corrected flux, uncertainty, and
+                    sky (pixel)
+                flux_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric corrected flux, uncertainty, and
+                    sky (pixel)
+                sensitivity: 1 HDU
                     Sensitivity (wavelength)
-                flux_resampled: 3 HDUs
+                flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
+                flux_resampled_telluric_corrected: 3 HDUs
+                    Telluric corrected flux, uncertainty, and
+                    sky (wavelength)
+                flux_resampled_atm_ext_telluric corrected: 3 HDUs
+                    Atmospheric extinction and telluric corrected flux, uncertainty, and
                     sky (wavelength)
 
         filename: String (Default: 'reduced')
@@ -7067,6 +7109,16 @@ class OneDSpec:
         # Fix the names and extensions
         filename = os.path.splitext(filename)[0]
 
+        # If output is *, chamge it to everything
+        if output == "*":
+            output = "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+            +"wavelength_resampled+count_resampled+sensitivity+flux+"
+            +"flux_atm_ext_corrected+flux_telluric_corrected+"
+            +"flux_atm_ext_telluric_corrected+flux_resampled+"
+            +"flux_resampled_telluric_corrected+"
+            +"flux_resampled_atm_ext_telluric_corrected"
+            +"flux_resampled_atm_ext_corrected"
+
         # Split the string into strings
         stype_split = stype.split("+")
         output_split = output.split("+")
@@ -7085,9 +7137,13 @@ class OneDSpec:
                 "sensitivity",
                 "flux",
                 "flux_atm_ext_corrected",
+                "flux_telluric_corrected",
+                "flux_atm_ext_telluric_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
                 "flux_resampled_atm_ext_corrected",
+                "flux_resampled_telluric_corrected",
+                "flux_resampled_atm_ext_telluric_corrected",
             ]:
 
                 error_msg = "{} is not a valid output.".format(i)
@@ -7181,8 +7237,10 @@ class OneDSpec:
 
                 trace: 2 HDUs
                     Trace, and trace width (pixel)
-                count: 4 HDUs
-                    Count, uncertainty, sky, optimal flag, and weight (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
                 arc_spec: 3 HDUs
                     1D arc spectrum, arc line pixels, and arc line effective
                     pixels
@@ -7196,12 +7254,30 @@ class OneDSpec:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 3 HDUs
-                    Flux, uncertainty, sky, and sensitivity (pixel)
-                sensitivity_resampled: 1 HDU
+                flux: 4 HDUs
+                    Flux, uncertainty, and sky (pixel)
+                flux_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (pixel)
+                flux_telluric_corrected: 3 HDUs
+                    Telluric corrected flux, uncertainty, and
+                    sky (pixel)
+                flux_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric corrected flux, uncertainty, and
+                    sky (pixel)
+                sensitivity: 1 HDU
                     Sensitivity (wavelength)
-                flux_resampled: 3 HDUs
-                    Flux, uncertainty, sky, and sensitivity (wavelength)
+                flux_resampled: 4 HDUs
+                    Flux, uncertainty, and sky (wavelength)
+                flux_resampled_atm_ext_corrected: 3 HDUs
+                    Atmospheric extinction corrected flux, uncertainty, and
+                    sky (wavelength)
+                flux_resampled_telluric_corrected: 3 HDUs
+                    Telluric corrected flux, uncertainty, and
+                    sky (wavelength)
+                flux_resampled_atm_ext_telluric corrected: 3 HDUs
+                    Atmospheric extinction and telluric corrected flux, uncertainty, and
+                    sky (wavelength)
 
         filename: String (Default: 'reduced')
             Disk location to be written to. Default is at where the
@@ -7217,6 +7293,16 @@ class OneDSpec:
 
         # Fix the names and extensions
         filename = os.path.splitext(filename)[0]
+
+        # If output is *, chamge it to everything
+        if output == "*":
+            output = "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+            +"wavelength_resampled+count_resampled+sensitivity+flux+"
+            +"flux_atm_ext_corrected+flux_telluric_corrected+"
+            +"flux_atm_ext_telluric_corrected+flux_resampled+"
+            +"flux_resampled_telluric_corrected+"
+            +"flux_resampled_atm_ext_telluric_corrected"
+            +"flux_resampled_atm_ext_corrected"
 
         # Split the string into strings
         stype_split = stype.split("+")
@@ -7236,9 +7322,13 @@ class OneDSpec:
                 "sensitivity",
                 "flux",
                 "flux_atm_ext_corrected",
+                "flux_telluric_corrected",
+                "flux_atm_ext_telluric_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
                 "flux_resampled_atm_ext_corrected",
+                "flux_resampled_telluric_corrected",
+                "flux_resampled_atm_ext_telluric_corrected",
             ]:
 
                 error_msg = "{} is not a valid output.".format(i)

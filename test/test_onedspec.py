@@ -1320,9 +1320,7 @@ global_onedspec.apply_atmospheric_extinction_correction(
 )
 
 global_onedspec.create_fits(
-    output="trace+count+wavelength+count_resampled+"
-    "sensitivity+flux+flux_atm_ext_corrected+sensitivity_resampled+"
-    "flux_resampled+flux_resampled_atm_ext_corrected",
+    output="*",
     empty_primary_hdu=False,
 )
 
