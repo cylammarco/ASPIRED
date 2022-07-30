@@ -1926,28 +1926,6 @@ class Spectrum1D:
 
         self.telluric_profile = None
 
-    def add_telluric_profile_resampled(self, telluric_profile_resampled):
-        """
-        Add the Telluric profile - relative intensity at each resampled
-        wavelength.
-
-        Parameters
-        ----------
-        telluric_profile: list or numpy.ndarray
-            The relative intensity of the telluric absorption strength [0, 1]
-
-        """
-
-        self.telluric_profile_resampled = telluric_profile_resampled
-
-    def remove_telluric_profile_resampled(self):
-        """
-        Remove the Telluric profile at the resampled wavelengths.
-
-        """
-
-        self.telluric_profile_resampled = None
-
     def add_telluric_factor(self, telluric_factor):
         """
         Add the Telluric factor.
@@ -1993,31 +1971,6 @@ class Spectrum1D:
         """
 
         self.telluric_nudge_factor = None
-
-    def add_telluric_nudge_factor_resampled(
-        self, telluric_nudge_factor_resampled
-    ):
-        """
-        Add the Telluric nudge factor found using the resampled flux.
-
-        Parameters
-        ----------
-        telluric_nudge_factor_resampled: float
-            The multiplier to the telluric profile that minimises the sum
-            of the deviation of corrected spectrum from the resampled
-            continuum spectrum.
-
-        """
-
-        self.telluric_nudge_factor_resampled = telluric_nudge_factor_resampled
-
-    def remove_telluric_nudge_factor_resampled(self):
-        """
-        Remove the Telluric nudge factor for the resampled spectrum.
-
-        """
-
-        self.telluric_nudge_factor_resampled = None
 
     def add_flux(self, flux, flux_err, flux_sky):
         """

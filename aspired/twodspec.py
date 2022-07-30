@@ -2093,7 +2093,6 @@ class TwoDSpec:
         """
 
         # Get the shape of the 2D spectrum and define upsampling ratio
-
         img_tmp = self.img.astype(float)
         img_tmp[np.isnan(img_tmp)] = 0.0
         img_tmp[
