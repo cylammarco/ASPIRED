@@ -322,6 +322,11 @@ def test_spectrum1D():
     assert spec.flux_err is None
     assert spec.flux_sky is None
 
+    spec.add_atm_ext(np.arange(100))
+    assert (spec.atm_ext == np.arange(100)).all()
+    spec.remove_atm_ext()
+    assert spec.atm_ext is None
+
     spec.add_flux_atm_ext_corrected(
         np.arange(100), np.arange(200), np.arange(300)
     )
@@ -332,6 +337,11 @@ def test_spectrum1D():
     assert spec.flux_atm_ext_corrected is None
     assert spec.flux_err_atm_ext_corrected is None
     assert spec.flux_sky_atm_ext_corrected is None
+
+    spec.add_telluric_profile(np.arange(100))
+    assert (spec.telluric_profile == np.arange(100)).all()
+    spec.remove_telluric_profile()
+    assert spec.telluric_profile is None
 
     spec.add_flux_telluric_corrected(
         np.arange(100), np.arange(200), np.arange(300)
@@ -364,6 +374,11 @@ def test_spectrum1D():
     assert spec.flux_err_resampled is None
     assert spec.flux_sky_resampled is None
 
+    spec.add_atm_ext_resampled(np.arange(100))
+    assert (spec.atm_ext_resampled == np.arange(100)).all()
+    spec.remove_atm_ext_resampled()
+    assert spec.atm_ext_resampled is None
+
     spec.add_flux_resampled_atm_ext_corrected(
         np.arange(100), np.arange(200), np.arange(300)
     )
@@ -374,6 +389,11 @@ def test_spectrum1D():
     assert spec.flux_resampled_atm_ext_corrected is None
     assert spec.flux_err_resampled_atm_ext_corrected is None
     assert spec.flux_sky_resampled_atm_ext_corrected is None
+
+    spec.add_telluric_profile_resampled(np.arange(100))
+    assert (spec.telluric_profile_resampled == np.arange(100)).all()
+    spec.remove_telluric_profile_resampled()
+    assert spec.telluric_profile_resampled is None
 
     spec.add_flux_resampled_telluric_corrected(
         np.arange(100), np.arange(200), np.arange(300)

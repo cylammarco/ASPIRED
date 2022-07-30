@@ -5312,14 +5312,18 @@ class OneDSpec:
                 / standard_flux_extinction_factor
             )
 
+            self.science_spectrum_list[i].add_atm_ext(self.extinction_fraction)
+
             case_a = (
                 self.telluric_corrected & self.atmospheric_extinction_corrected
             )
-            # case_b = (not self.telluric_corrected) & self.atmospheric_extinction_corrected
+            # case_b = (not self.telluric_corrected) &
+            #  self.atmospheric_extinction_corrected
             case_c = self.telluric_corrected & (
                 not self.atmospheric_extinction_corrected
             )
-            # case_d = (not self.telluric_corrected) & (not self.atmospheric_extinction_corrected)
+            # case_d = (not self.telluric_corrected) &
+            # (not self.atmospheric_extinction_corrected)
 
             # Apply the correction
             science_flux_atm_ext_corrected = (
@@ -6223,8 +6227,8 @@ class OneDSpec:
                             flux_sky_resampled_telluric_corrected,
                         )
                         self.logger.info(
-                            "flux_telluric_corrected is resampled for spec_id: "
-                            "{}.".format(i)
+                            "flux_telluric_corrected is resampled for "
+                            "spec_id: {}.".format(i)
                         )
 
                     if (
@@ -6495,8 +6499,8 @@ class OneDSpec:
                 weight_map: 1 HDU
                     Weight (pixel)
                 arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                    1D arc spectrum, arc line position (pixel), and arc
+                    line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -6507,30 +6511,39 @@ class OneDSpec:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                atm_ext: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
+                telluric_profile: 1 HDU
+                    Telluric absorption profile
                 flux_telluric_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (pixel)
                 flux_atm_ext_telluric_corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (pixel)
+                    Atmospheric extinction and telluric corrected flux,
+                    uncertainty, and sky (pixel)
                 sensitivity_resampled: 1 HDU
-                    Sensitivity in the resampled wavelenth (wavelength)
+                    Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                atm_ext_resampled: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_telluric_corrected: 3 HDUs
+                telluric_profile_resampled: 1 HDU
+                    Telluric absorption profile
+                flux_resampled_telluic_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_atm_ext_telluric corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (wavelength)
+                flux_resampled_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric  corrected flux,
+                    uncertainty, and sky (wavelength)
+
 
         recreate: bool (Default: True)
             Set to True to overwrite the FITS data and header.
@@ -6545,13 +6558,17 @@ class OneDSpec:
 
         # If output is *, chamge it to everything
         if output == "*":
+
             output = (
                 "trace+count+weight_map+arc_spec+wavecal+wavelength+"
                 + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "flux_atm_ext_corrected+flux_telluric_corrected+"
-                + "flux_atm_ext_telluric_corrected+flux_resampled+"
-                + "flux_resampled_telluric_corrected+"
+                + "atm_ext+flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "telluric_profile+flux_atm_ext_telluric_corrected+"
+                + "sensitivity_resampled+"
+                + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
+                + "telluric_profile_resampled+"
+                + "flux_resampled_telluric_corrected+"
                 + "flux_resampled_atm_ext_telluric_corrected"
             )
 
@@ -6572,12 +6589,16 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
+                "atm_ext",
                 "flux_atm_ext_corrected",
+                "telluric_profile",
                 "flux_telluric_corrected",
                 "flux_atm_ext_telluric_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
+                "atm_ext_resampled",
                 "flux_resampled_atm_ext_corrected",
+                "telluric_profile_resampled",
                 "flux_resampled_telluric_corrected",
                 "flux_resampled_atm_ext_telluric_corrected",
             ]:
@@ -6847,71 +6868,6 @@ class OneDSpec:
                 "standard_spectrum_list."
             )
 
-    def modify_count_resampled_header(
-        self, idx, method, *args, spec_id=None, stype="science+standard"
-    ):
-        """
-        Wrapper function to modify the count resampled header.
-
-        Parameters
-        ----------
-        idx: int
-            The HDU number of the count resampled FITS
-        method: str
-            The operation to modify the header with
-        *args:
-            Extra arguments for the method
-        spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
-        stype: str (Default: 'science+standard')
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
-
-        """
-
-        # Split the string into strings
-        stype_split = stype.split("+")
-
-        if "science" in stype_split:
-
-            if isinstance(spec_id, int):
-
-                spec_id = [spec_id]
-
-            if spec_id is not None:
-
-                if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())
-                ):
-
-                    error_msg = "The given spec_id does not exist."
-                    self.logger.critical(error_msg)
-                    raise ValueError(error_msg)
-
-            else:
-
-                # if spec_id is None, calibrators are initialised to all
-                spec_id = list(self.science_spectrum_list.keys())
-
-            for i in spec_id:
-
-                self.science_spectrum_list[i].modify_count_resampled_header(
-                    idx, method, *args
-                )
-                self.logger.info(
-                    "count_resampled header is moldified for "
-                    "the science_spectrum_list for spec_id: {}.".format(i)
-                )
-
-        if "standard" in stype_split:
-
-            self.standard_spectrum_list[0].modify_count_resampled_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "count_resampled header is moldified for the "
-                "standard_spectrum_list."
-            )
-
     def modify_arc_spec_header(
         self, idx, method, *args, spec_id=None, stype="science+standard"
     ):
@@ -7107,6 +7063,136 @@ class OneDSpec:
                 "standard_spectrum_list."
             )
 
+    def modify_wavelength_resampled_header(
+        self, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the wavelength_resampled header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the wavelength_resampled FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_wavelength_resampled_header(method, *args)
+                self.logger.info(
+                    "wavelength header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].modify_wavelength_resampled_header(
+                method, *args
+            )
+            self.logger.info(
+                "wavelength header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_count_resampled_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the count resampled header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the count resampled FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[i].modify_count_resampled_header(
+                    idx, method, *args
+                )
+                self.logger.info(
+                    "count_resampled header is moldified for "
+                    "the science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].modify_count_resampled_header(
+                idx, method, *args
+            )
+            self.logger.info(
+                "count_resampled header is moldified for the "
+                "standard_spectrum_list."
+            )
+
     def modify_sensitivity_header(
         self, method, *args, spec_id=None, stype="science+standard"
     ):
@@ -7234,6 +7320,331 @@ class OneDSpec:
             )
             self.logger.info(
                 "flux header is moldified for the " "standard_spectrum_list."
+            )
+
+    def modify_atm_ext_header(
+        self, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the atmospheric extinction factor header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the sensitivity FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[i].modify_atm_ext_header(
+                    method, *args
+                )
+                self.logger.info(
+                    "atm_ext header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].modify_atm_ext_header(method, *args)
+            self.logger.info(
+                "atm_ext header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_flux_atm_ext_corrected_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the flux_atm_ext_corrected header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the flux FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_flux_atm_ext_corrected_header(idx, method, *args)
+                self.logger.info(
+                    "flux_atm_ext_corrected header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_flux_atm_ext_corrected_header(idx, method, *args)
+            self.logger.info(
+                "flux_atm_ext_corrected header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_telluric_profile_header(
+        self, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the telluric_profile header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the telluric_profile FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[i].modify_telluric_profile_header(
+                    method, *args
+                )
+                self.logger.info(
+                    "telluric_profile header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].modify_telluric_profile_header(
+                method, *args
+            )
+            self.logger.info(
+                "telluric_profile header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_flux_telluric_corrected_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the flux_atm_ext_corrected header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the flux FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_flux_telluric_corrected_header(idx, method, *args)
+                self.logger.info(
+                    "flux_telluric_corrected header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_flux_telluric_corrected_header(idx, method, *args)
+            self.logger.info(
+                "flux_telluric_corrected header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_flux_atm_ext_telluric_corrected_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the flux_atm_ext_telluric_corrected header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the flux FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_flux_atm_ext_telluric_corrected_header(
+                    idx, method, *args
+                )
+                self.logger.info(
+                    "flux_atm_ext_telluric_corrected header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_flux_atm_ext_telluric_corrected_header(idx, method, *args)
+            self.logger.info(
+                "flux_atm_ext_telluric_corrected header is moldified for the "
+                "standard_spectrum_list."
             )
 
     def modify_sensitivity_resampled_header(
@@ -7364,6 +7775,347 @@ class OneDSpec:
                 "standard_spectrum_list."
             )
 
+    def modify_atm_ext_resampled_header(
+        self, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the resampled atmospheric extinction
+        factor header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the resampled atmospheric extinction FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[i].modify_atm_ext_resampled_header(
+                    method, *args
+                )
+                self.logger.info(
+                    "atm_ext_resampled header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].modify_atm_ext_resampled_header(
+                method, *args
+            )
+            self.logger.info(
+                "atm_ext_resampled header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_flux_resampled_atm_ext_corrected_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the atmospheric extinction corrected flux
+        resampled header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the flux resampled FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_flux_resampled_atm_ext_corrected_header(
+                    idx, method, *args
+                )
+                self.logger.info(
+                    "flux_resampled_atm_ext header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_flux_resampled_atm_ext_corrected_header(
+                idx, method, *args
+            )
+            self.logger.info(
+                "flux_resampled_atm_ext header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_telluric_profile_resampled_header(
+        self, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the resampled telluric profile header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the telluric_profile FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_telluric_profile_resampled_header(method, *args)
+                self.logger.info(
+                    "telluric_profile_resampled header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_telluric_profile_resampled_header(method, *args)
+            self.logger.info(
+                "telluric_profile_resampled header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_flux_resampled_telluric_corrected_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the telluric absorption corrected flux
+        resampled header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the flux resampled FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_flux_resampled_telluric_corrected_header(
+                    idx, method, *args
+                )
+                self.logger.info(
+                    "flux_resampled_telluric header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_flux_resampled_telluric_corrected_header(
+                idx, method, *args
+            )
+            self.logger.info(
+                "flux_resampled_telluric header is moldified for the "
+                "standard_spectrum_list."
+            )
+
+    def modify_flux_resampled_atm_ext_telluric_corrected_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the telluric absorption corrected flux
+        resampled header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the flux resampled FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[
+                    i
+                ].modify_flux_resampled_atm_ext_telluric_corrected_header(
+                    idx, method, *args
+                )
+                self.logger.info(
+                    "flux_resampled_atm_ext_telluric header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[
+                0
+            ].modify_flux_resampled_atm_ext_telluric_corrected_header(
+                idx, method, *args
+            )
+            self.logger.info(
+                "flux_resampled_atm_ext_telluric header is moldified for the "
+                "standard_spectrum_list."
+            )
+
     def save_fits(
         self,
         output="*",
@@ -7393,8 +8145,8 @@ class OneDSpec:
                 weight_map: 1 HDU
                     Weight (pixel)
                 arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                    1D arc spectrum, arc line position (pixel), and arc
+                    line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -7405,30 +8157,38 @@ class OneDSpec:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                atm_ext: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
+                telluric_profile: 1 HDU
+                    Telluric absorption profile
                 flux_telluric_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (pixel)
                 flux_atm_ext_telluric_corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (pixel)
+                    Atmospheric extinction and telluric corrected flux,
+                    uncertainty, and sky (pixel)
                 sensitivity_resampled: 1 HDU
-                    Sensitivity in the resampled wavelenth (wavelength)
+                    Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                atm_ext_resampled: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_telluric_corrected: 3 HDUs
+                telluric_profile_resampled: 1 HDU
+                    Telluric absorption profile
+                flux_resampled_telluic_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_atm_ext_telluric corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (wavelength)
+                flux_resampled_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric  corrected flux,
+                    uncertainty, and sky (wavelength)
 
         filename: String (Default: 'reduced')
             Disk location to be written to. Default is at where the
@@ -7451,13 +8211,17 @@ class OneDSpec:
 
         # If output is *, chamge it to everything
         if output == "*":
+
             output = (
                 "trace+count+weight_map+arc_spec+wavecal+wavelength+"
                 + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "flux_atm_ext_corrected+flux_telluric_corrected+"
-                + "flux_atm_ext_telluric_corrected+flux_resampled+"
-                + "flux_resampled_telluric_corrected+"
+                + "atm_ext+flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "telluric_profile+flux_atm_ext_telluric_corrected+"
+                + "sensitivity_resampled+"
+                + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
+                + "telluric_profile_resampled+"
+                + "flux_resampled_telluric_corrected+"
                 + "flux_resampled_atm_ext_telluric_corrected"
             )
 
@@ -7478,12 +8242,16 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
+                "atm_ext",
                 "flux_atm_ext_corrected",
+                "telluric_profile",
                 "flux_telluric_corrected",
                 "flux_atm_ext_telluric_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
+                "atm_ext_resampled",
                 "flux_resampled_atm_ext_corrected",
+                "telluric_profile_resampled",
                 "flux_resampled_telluric_corrected",
                 "flux_resampled_atm_ext_telluric_corrected",
             ]:
@@ -7583,8 +8351,8 @@ class OneDSpec:
                 weight_map: 1 HDU
                     Weight (pixel)
                 arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                    1D arc spectrum, arc line position (pixel), and arc
+                    line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -7595,30 +8363,38 @@ class OneDSpec:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                atm_ext: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
+                telluric_profile: 1 HDU
+                    Telluric absorption profile
                 flux_telluric_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (pixel)
                 flux_atm_ext_telluric_corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (pixel)
+                    Atmospheric extinction and telluric corrected flux,
+                    uncertainty, and sky (pixel)
                 sensitivity_resampled: 1 HDU
-                    Sensitivity in the resampled wavelenth (wavelength)
+                    Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                atm_ext_resampled: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_telluric_corrected: 3 HDUs
+                telluric_profile_resampled: 1 HDU
+                    Telluric absorption profile
+                flux_resampled_telluic_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_atm_ext_telluric corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (wavelength)
+                flux_resampled_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric  corrected flux,
+                    uncertainty, and sky (wavelength)
 
         filename: String (Default: 'reduced')
             Disk location to be written to. Default is at where the
@@ -7637,13 +8413,17 @@ class OneDSpec:
 
         # If output is *, chamge it to everything
         if output == "*":
+
             output = (
                 "trace+count+weight_map+arc_spec+wavecal+wavelength+"
                 + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "flux_atm_ext_corrected+flux_telluric_corrected+"
-                + "flux_atm_ext_telluric_corrected+flux_resampled+"
-                + "flux_resampled_telluric_corrected+"
+                + "atm_ext+flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "telluric_profile+flux_atm_ext_telluric_corrected+"
+                + "sensitivity_resampled+"
+                + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
+                + "telluric_profile_resampled+"
+                + "flux_resampled_telluric_corrected+"
                 + "flux_resampled_atm_ext_telluric_corrected"
             )
 
@@ -7664,12 +8444,16 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
+                "atm_ext",
                 "flux_atm_ext_corrected",
+                "telluric_profile",
                 "flux_telluric_corrected",
                 "flux_atm_ext_telluric_corrected",
                 "sensitivity_resampled",
                 "flux_resampled",
+                "atm_ext_resampled",
                 "flux_resampled_atm_ext_corrected",
+                "telluric_profile_resampled",
                 "flux_resampled_telluric_corrected",
                 "flux_resampled_atm_ext_telluric_corrected",
             ]:

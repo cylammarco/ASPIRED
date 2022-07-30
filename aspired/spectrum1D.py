@@ -264,17 +264,20 @@ class Spectrum1D:
         # Tellurics
         self.telluric_func = None
         self.telluric_profile = None
+        self.telluric_profile_resampled = None
         self.telluric_factor = 1.0
         self.telluric_nudge_factor = 1.0
 
         # Sensitivity curve properties
         self.sensitivity = None
+        self.sensitivity_resampled = None
         self.sensitivity_func = None
         self.wave_literature = None
         self.flux_literature = None
 
         # Atmospheric extinction properties
-        self.atmospheric_extinction_fraction = None
+        self.atm_ext = None
+        self.atm_ext_resampled = None
 
         # HDU lists for output
         self.trace_hdulist = None
@@ -305,15 +308,19 @@ class Spectrum1D:
             + "Resampled Count Uncertainty, Resampled Sky Count",
             "sensitivity": "Sensitivity Curve",
             "flux": "Flux, Flux Uncertainty, Sky Flux",
+            "atm_ext": "Atmospheric Extinction correction factor",
             "flux_atm_ext_corrected": "Flux, Flux Uncertainty, Sky Flux",
+            "telluric_profile": "Telluric absorption profile",
             "flux_telluric_corrected": "Flux, Flux Uncertainty, " + "Sky Flux",
             "flux_atm_ext_telluric_corrected": "Flux, Flux Uncertainty, "
             + "Sky Flux",
             "sensitivity_resampled": "Resampled Sensitivity Curve",
             "flux_resampled": "Resampled Flux, Resampled Flux Uncertainty, "
             + "Resampled Sky Flux",
+            "atm_ext_resampled": "Atmospheric Extinction correction factor",
             "flux_resampled_atm_ext_corrected": "Flux, Flux Uncertainty, "
             + "Sky Flux",
+            "telluric_profile_resampled": "Telluric absorption profile",
             "flux_resampled_telluric_corrected": "Flux, Flux Uncertainty, "
             + "Sky Flux",
             "flux_resampled_atm_ext_telluric_corrected": "Flux, "
@@ -331,12 +338,16 @@ class Spectrum1D:
             "count_resampled": 3,
             "sensitivity": 1,
             "flux": 3,
+            "atm_ext": 1,
             "flux_atm_ext_corrected": 3,
+            "telluric_profile": 1,
             "flux_telluric_corrected": 3,
             "flux_atm_ext_telluric_corrected": 3,
             "sensitivity_resampled": 1,
             "flux_resampled": 3,
+            "atm_ext_resampled": 1,
             "flux_resampled_atm_ext_corrected": 3,
+            "telluric_profile_resampled": 1,
             "flux_resampled_telluric_corrected": 3,
             "flux_resampled_atm_ext_telluric_corrected": 3,
         }
@@ -352,14 +363,18 @@ class Spectrum1D:
             "count_resampled": 7,
             "sensitivity": 8,
             "flux": 9,
-            "flux_atm_ext_corrected": 10,
-            "flux_telluric_corrected": 11,
-            "flux_atm_ext_telluric_corrected": 12,
-            "sensitivity_resampled": 13,
-            "flux_resampled": 14,
-            "flux_resampled_atm_ext_corrected": 15,
-            "flux_resampled_telluric_corrected": 16,
-            "flux_resampled_atm_ext_telluric_corrected": 17,
+            "atm_ext": 10,
+            "flux_atm_ext_corrected": 11,
+            "telluric_profile": 12,
+            "flux_telluric_corrected": 13,
+            "flux_atm_ext_telluric_corrected": 14,
+            "sensitivity_resampled": 15,
+            "flux_resampled": 16,
+            "atm_ext_resampled": 17,
+            "flux_resampled_atm_ext_corrected": 18,
+            "telluric_profile_resampled": 19,
+            "flux_resampled_telluric_corrected": 20,
+            "flux_resampled_atm_ext_telluric_corrected": 21,
         }
 
         self.hdu_content = {
@@ -373,12 +388,16 @@ class Spectrum1D:
             "count_resampled": False,
             "sensitivity": False,
             "flux": False,
+            "atm_ext": False,
             "flux_atm_ext_corrected": False,
+            "telluric_profile": False,
             "flux_telluric_corrected": False,
             "flux_atm_ext_telluric_corrected": False,
             "sensitivity_resampled": False,
             "flux_resampled": False,
+            "atm_ext_resampled": False,
             "flux_resampled_atm_ext_corrected": False,
+            "telluric_profile_resampled": False,
             "flux_resampled_telluric_corrected": False,
             "flux_resampled_atm_ext_telluric_corrected": False,
         }
@@ -2002,6 +2021,30 @@ class Spectrum1D:
         self.flux_err = None
         self.flux_sky = None
 
+    def add_atm_ext(self, atm_ext):
+        """
+        Add the atmospheric extinction correction factor in the native
+        wavelengths.
+
+        Parameters
+        ----------
+        atm_ext: list or numpy.ndarray
+            The atmospheric absorption corrected flux at each extracted
+            column of pixels.
+
+        """
+
+        self.atm_ext = atm_ext
+
+    def remove_atm_ext(self):
+        """
+        Remove the atmospheric extinction correction factor in the native
+        wavelengthss.
+
+        """
+
+        self.atm_ext = None
+
     def add_flux_atm_ext_corrected(self, flux, flux_err, flux_sky):
         """
         Add the atmospheric extinction corrected flux and the associated
@@ -2035,6 +2078,28 @@ class Spectrum1D:
         self.flux_atm_ext_corrected = None
         self.flux_err_atm_ext_corrected = None
         self.flux_sky_atm_ext_corrected = None
+
+    def add_telluric_profile(self, telluric_profile):
+        """
+        Add the telluric absorption profile in the native wavelengths.
+
+        Parameters
+        ----------
+        telluric_profile: list or numpy.ndarray
+            The atmospheric absorption corrected flux at each extracted
+            column of pixels.
+
+        """
+
+        self.telluric_profile = telluric_profile
+
+    def remove_telluric_profile(self):
+        """
+        Remove the telluric absorption profile in the native wavelengthss.
+
+        """
+
+        self.telluric_profile = None
 
     def add_flux_telluric_corrected(self, flux, flux_err, flux_sky):
         """
@@ -2138,6 +2203,30 @@ class Spectrum1D:
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
 
+    def add_atm_ext_resampled(self, atm_ext_resampled):
+        """
+        Add the atmospheric extinction correction factor in the resampled
+        wavelengths.
+
+        Parameters
+        ----------
+        atm_ext_resampled: list or numpy.ndarray
+            The atmospheric absorption corrected flux at the resampled
+            wavelengths.
+
+        """
+
+        self.atm_ext_resampled = atm_ext_resampled
+
+    def remove_atm_ext_resampled(self):
+        """
+        Remove the atmospheric extinction correction factor in the resampled
+        wavelengths.
+
+        """
+
+        self.atm_ext_resampled = None
+
     def add_flux_resampled_atm_ext_corrected(self, flux, flux_err, flux_sky):
         """
         Add the flux and the associated uncertainty and sky background
@@ -2171,6 +2260,28 @@ class Spectrum1D:
         self.flux_resampled_atm_ext_corrected = None
         self.flux_err_resampled_atm_ext_corrected = None
         self.flux_sky_resampled_atm_ext_corrected = None
+
+    def add_telluric_profile_resampled(self, telluric_profile_resampled):
+        """
+        Add the telluric absorption profile in the resampled wavelengths.
+
+        Parameters
+        ----------
+        telluric_profile_resampled: list or numpy.ndarray
+            The atmospheric absorption corrected flux at each extracted
+            column of pixels.
+
+        """
+
+        self.telluric_profile_resampled = telluric_profile_resampled
+
+    def remove_telluric_profile_resampled(self):
+        """
+        Remove the telluric absorption profile in the resampled wavelengthss.
+
+        """
+
+        self.telluric_profile_resampled = None
 
     def add_flux_resampled_telluric_corrected(self, flux, flux_err, flux_sky):
         """
@@ -2315,25 +2426,6 @@ class Spectrum1D:
 
         self._modify_imagehdu_header(self.weight_map_hdulist, 0, method, *args)
 
-    def modify_count_resampled_header(self, idx, method, *args):
-        """
-        for method 'set', it takes
-        keyword, value=None, comment=None, before=None, after=None
-
-        +-----+---------------------------------+
-        | HDU | Data                            |
-        +-----+---------------------------------+
-        |  0  | Photoelectron count             |
-        |  1  | Photoelectron count uncertainty |
-        |  2  | Photoelectron count (sky)       |
-        +-----+---------------------------------+
-
-        """
-
-        self._modify_imagehdu_header(
-            self.count_resampled_hdulist, idx, method, *args
-        )
-
     def modify_arc_spec_header(self, idx, method, *args):
         """
         for method 'set', it takes
@@ -2401,6 +2493,25 @@ class Spectrum1D:
             self.wavelength_resampled_hdulist, 0, method, *args
         )
 
+    def modify_count_resampled_header(self, idx, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+---------------------------------+
+        | HDU | Data                            |
+        +-----+---------------------------------+
+        |  0  | Photoelectron count             |
+        |  1  | Photoelectron count uncertainty |
+        |  2  | Photoelectron count (sky)       |
+        +-----+---------------------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.count_resampled_hdulist, idx, method, *args
+        )
+
     def modify_sensitivity_header(self, method, *args):
         """
         for method 'set', it takes
@@ -2435,6 +2546,21 @@ class Spectrum1D:
 
         self._modify_imagehdu_header(self.flux_hdulist, idx, method, *args)
 
+    def modify_atm_ext_header(self, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+------------------------+
+        | HDU | Data                   |
+        +-----+------------------------+
+        |  0  | Atmospheric Extinction |
+        +-----+------------------------+
+
+        """
+
+        self._modify_imagehdu_header(self.atm_ext_hdulist, 0, method, *args)
+
     def modify_flux_atm_ext_corrected_header(self, idx, method, *args):
         """
         for method 'set', it takes
@@ -2452,6 +2578,23 @@ class Spectrum1D:
 
         self._modify_imagehdu_header(
             self.flux_atm_ext_corrected_hdulist, idx, method, *args
+        )
+
+    def modify_telluric_profile_header(self, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+-----------------------------+
+        | HDU | Data                        |
+        +-----+-----------------------------+
+        |  0  | Telluric Absorption Profile |
+        +-----+-----------------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.telluric_profile_hdulist, 0, method, *args
         )
 
     def modify_flux_telluric_corrected_header(self, idx, method, *args):
@@ -2522,13 +2665,29 @@ class Spectrum1D:
         |  0  | Flux             |
         |  1  | Flux Uncertainty |
         |  2  | Flux Sky         |
-        |  3  | Sensitivity      |
         +-----+------------------+
 
         """
 
         self._modify_imagehdu_header(
             self.flux_resampled_hdulist, idx, method, *args
+        )
+
+    def modify_atm_ext_resampled_header(self, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+------------------------+
+        | HDU | Data                   |
+        +-----+------------------------+
+        |  0  | Atmospheric Extinction |
+        +-----+------------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.atm_ext_resampled_hdulist, 0, method, *args
         )
 
     def modify_flux_resampled_atm_ext_corrected_header(
@@ -2550,6 +2709,23 @@ class Spectrum1D:
 
         self._modify_imagehdu_header(
             self.flux_resampled_atm_ext_corrected_hdulist, idx, method, *args
+        )
+
+    def modify_telluric_profile_resampled_header(self, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+-----------------------------+
+        | HDU | Data                        |
+        +-----+-----------------------------+
+        |  0  | Telluric Absorption Profile |
+        +-----+-----------------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.telluric_profile_resampled_hdulist, 0, method, *args
         )
 
     def modify_flux_resampled_telluric_corrected_header(
@@ -3113,10 +3289,10 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
+            self.logger.warning(
                 "wavelength_resampled ImageHDU cannot be created."
             )
             self.wavelength_resampled_hdulist = None
@@ -3237,6 +3413,57 @@ class Spectrum1D:
             # Set it to None if the above failed
             self.logger.error("flux ImageHDU cannot be created.")
             self.flux_hdulist = None
+
+    def create_atm_ext_fits(self):
+        """
+        Create an ImageHDU for the atmospheric extinction corrected flux
+        calibrated spectrum at the resampled wavelength.
+
+        """
+
+        try:
+
+            header = None
+
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if header is not None:
+                # Put the data and header in ImageHDUs
+                atm_ext_ImageHDU = fits.ImageHDU(self.atm_ext, header=header)
+            else:
+                # Put the data in ImageHDUs
+                atm_ext_ImageHDU = fits.ImageHDU(self.atm_ext)
+
+            print(atm_ext_ImageHDU)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.atm_ext_hdulist = fits.HDUList()
+            self.atm_ext_hdulist += [atm_ext_ImageHDU]
+
+            print(self.atm_ext_hdulist)
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_atm_ext_header(
+                "set", "EXTNAME", "Atmopheric Extinction Correction Factor"
+            )
+            self.modify_atm_ext_header(
+                "set", "LABEL", "Atmopheric Extinction Correction Factor"
+            )
+            self.modify_atm_ext_header("set", "CRPIX1", 1.00e00)
+            self.modify_atm_ext_header("set", "CDELT1", self.wave_bin)
+            self.modify_atm_ext_header("set", "CRVAL1", self.wave_start)
+            self.modify_atm_ext_header("set", "CTYPE1", "Wavelength")
+            self.modify_atm_ext_header("set", "CUNIT1", " ")
+            self.modify_atm_ext_header("set", "BUNIT", " ")
+
+        except Exception as e:
+
+            self.logger.warning(str(e))
+
+            # Set it to None if the above failed
+            self.logger.warning("atm_ext ImageHDU cannot be created.")
+            self.atm_ext_hdulist = None
 
     def create_flux_atm_ext_corrected_fits(self):
         """
@@ -3362,13 +3589,67 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
+            self.logger.warning(
                 "flux_atm_ext_corrected ImageHDU cannot be created."
             )
             self.flux_atm_ext_corrected_hdulist = None
+
+    def create_telluric_profile_fits(self):
+        """
+        Create an ImageHDU for the Telluric absorption profile at resampled
+        wavelength.
+
+        """
+
+        try:
+
+            header = None
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if header is not None:
+                # Put the data and header in ImageHDUs
+                telluric_profile_ImageHDU = fits.ImageHDU(
+                    self.telluric_profile, header=header
+                )
+            else:
+                # Put the data in ImageHDUs
+                telluric_profile_ImageHDU = fits.ImageHDU(
+                    self.telluric_profile
+                )
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.telluric_profile_hdulist = fits.HDUList()
+            self.telluric_profile_hdulist += [telluric_profile_ImageHDU]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_telluric_profile_header(
+                "set", "EXTNAME", "Telluric Absorption Profile"
+            )
+            self.modify_telluric_profile_header(
+                "set", "LABEL", "Telluric Absorption Profile"
+            )
+            self.modify_telluric_profile_header("set", "CRPIX1", 1.00e00)
+            self.modify_telluric_profile_header("set", "CDELT1", self.wave_bin)
+            self.modify_telluric_profile_header(
+                "set", "CRVAL1", self.wave_start
+            )
+            self.modify_telluric_profile_header("set", "CTYPE1", "Wavelength")
+            self.modify_telluric_profile_header("set", "CUNIT1", "")
+            self.modify_telluric_profile_header("set", "BUNIT", "")
+
+        except Exception as e:
+
+            self.logger.warning(str(e))
+
+            # Set it to None if the above failed
+            self.logger.warning("telluric_profile ImageHDU cannot be created.")
+            self.telluric_profile_hdulist = None
 
     def create_flux_telluric_corrected_fits(self):
         """
@@ -3494,10 +3775,10 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
+            self.logger.warning(
                 "flux_telluric_corrected ImageHDU cannot be created."
             )
             self.flux_telluric_corrected_hdulist = None
@@ -3632,10 +3913,10 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
+            self.logger.warning(
                 "flux_atm_ext_telluric_corrected ImageHDU cannot be created."
             )
             self.flux_atm_ext_telluric_corrected_hdulist = None
@@ -3786,6 +4067,64 @@ class Spectrum1D:
             self.logger.error("flux_resampled ImageHDU cannot be created.")
             self.flux_resampled_hdulist = None
 
+    def create_atm_ext_resampled_fits(self):
+        """
+        Create an ImageHDU for the atmospheric extinction corrected flux
+        calibrated spectrum at the resampled wavelength.
+
+        """
+
+        try:
+
+            header = None
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if header is not None:
+                # Put the data and header in ImageHDUs
+                atm_ext_resampled_ImageHDU = fits.ImageHDU(
+                    self.atm_ext_resampled, header=header
+                )
+            else:
+                # Put the data in ImageHDUs
+                atm_ext_resampled_ImageHDU = fits.ImageHDU(
+                    self.atm_ext_resampled
+                )
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.atm_ext_resampled_hdulist = fits.HDUList()
+            self.atm_ext_resampled_hdulist += [atm_ext_resampled_ImageHDU]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_atm_ext_resampled_header(
+                "set", "EXTNAME", "Atmopheric Extinction Correction Factor"
+            )
+            self.modify_atm_ext_resampled_header(
+                "set", "LABEL", "Atmopheric Extinction Correction Factor"
+            )
+            self.modify_atm_ext_resampled_header("set", "CRPIX1", 1.00e00)
+            self.modify_atm_ext_resampled_header(
+                "set", "CDELT1", self.wave_bin
+            )
+            self.modify_atm_ext_resampled_header(
+                "set", "CRVAL1", self.wave_start
+            )
+            self.modify_atm_ext_resampled_header("set", "CTYPE1", "Wavelength")
+            self.modify_atm_ext_resampled_header("set", "CUNIT1", "")
+            self.modify_atm_ext_resampled_header("set", "BUNIT", "")
+
+        except Exception as e:
+
+            self.logger.warning(str(e))
+
+            # Set it to None if the above failed
+            self.logger.warning(
+                "atm_ext_resampled ImageHDU cannot be created."
+            )
+            self.atm_ext_resampled_hdulist = None
+
     def create_flux_resampled_atm_ext_corrected_fits(self):
         """
         Create an ImageHDU for the atmospheric extinction corrected flux
@@ -3914,13 +4253,77 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
+            self.logger.warning(
                 "flux_resampled_atm_ext_corrected ImageHDU cannot be created."
             )
             self.flux_resampled_atm_ext_corrected_hdulist = None
+
+    def create_telluric_profile_resampled_fits(self):
+        """
+        Create an ImageHDU for the Telluric absorption profile at resampled
+        wavelength.
+
+        """
+
+        try:
+
+            header = None
+
+            # Use the header of the standard
+            if self.spectrum_header is not None:
+                header = self.spectrum_header
+
+            if header is not None:
+                # Put the data and header in ImageHDUs
+                telluric_profile_resampled_ImageHDU = fits.ImageHDU(
+                    self.telluric_profile_resampled, header=header
+                )
+            else:
+                # Put the data in ImageHDUs
+                telluric_profile_resampled_ImageHDU = fits.ImageHDU(
+                    self.telluric_profile_resampled
+                )
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.telluric_profile_resampled_hdulist = fits.HDUList()
+            self.telluric_profile_resampled_hdulist += [
+                telluric_profile_resampled_ImageHDU
+            ]
+
+            # Note that wave_start is the centre of the starting bin
+            self.modify_telluric_profile_resampled_header(
+                "set", "EXTNAME", "Telluric Absorption Profile"
+            )
+            self.modify_telluric_profile_resampled_header(
+                "set", "LABEL", "Telluric Absorption Profile"
+            )
+            self.modify_telluric_profile_resampled_header(
+                "set", "CRPIX1", 1.00e00
+            )
+            self.modify_telluric_profile_resampled_header(
+                "set", "CDELT1", self.wave_bin
+            )
+            self.modify_telluric_profile_resampled_header(
+                "set", "CRVAL1", self.wave_start
+            )
+            self.modify_telluric_profile_resampled_header(
+                "set", "CTYPE1", "Wavelength"
+            )
+            self.modify_telluric_profile_resampled_header("set", "CUNIT1", "")
+            self.modify_telluric_profile_resampled_header("set", "BUNIT", "")
+
+        except Exception as e:
+
+            self.logger.warning(str(e))
+
+            # Set it to None if the above failed
+            self.logger.warning(
+                "telluric_profile_resampled ImageHDU cannot be created."
+            )
+            self.telluric_profile_resampled_hdulist = None
 
     def create_flux_resampled_telluric_corrected_fits(self):
         """
@@ -4050,10 +4453,10 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
+            self.logger.warning(
                 "flux_resampled_telluric_corrected ImageHDU cannot be created."
             )
             self.flux_resampled_telluric_corrected_hdulist = None
@@ -4203,11 +4606,12 @@ class Spectrum1D:
 
         except Exception as e:
 
-            self.logger.error(str(e))
+            self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.error(
-                "flux_resampled_atm_ext_telluric_corrected ImageHDU cannot be created."
+            self.logger.warning(
+                "flux_resampled_atm_ext_telluric_corrected ImageHDU cannot "
+                "be created."
             )
             self.flux_resampled_atm_ext_telluric_corrected_hdulist = None
 
@@ -4275,6 +4679,14 @@ class Spectrum1D:
 
         self.flux_hdulist = None
 
+    def remove_atm_ext_fits(self):
+        """
+        Remove the atm_ext FITS HDUList.
+
+        """
+
+        self.atm_ext_hdulist = None
+
     def remove_flux_atm_ext_corrected_fits(self):
         """
         Remove the flux_resampled_atm_ext_corrected FITS HDUList.
@@ -4282,6 +4694,14 @@ class Spectrum1D:
         """
 
         self.flux_atm_ext_corrected_hdulist = None
+
+    def remove_telluric_profile_fits(self):
+        """
+        Remove the telluric_profile FITS HDUList.
+
+        """
+
+        self.telluric_profile_hdulist = None
 
     def remove_flux_telluric_corrected_fits(self):
         """
@@ -4323,6 +4743,14 @@ class Spectrum1D:
 
         self.flux_resampled_hdulist = None
 
+    def remove_atm_ext_resampled_fits(self):
+        """
+        Remove the atm_ext_resampled FITS HDUList.
+
+        """
+
+        self.atm_ext_resampled_hdulist = None
+
     def remove_flux_resampled_atm_ext_corrected_fits(self):
         """
         Remove the flux_resampled_atm_ext_corrected FITS HDUList.
@@ -4330,6 +4758,14 @@ class Spectrum1D:
         """
 
         self.flux_resampled_atm_ext_corrected_hdulist = None
+
+    def remove_telluric_profile_resampled_fits(self):
+        """
+        Remove the telluric_profile_resampled FITS HDUList.
+
+        """
+
+        self.telluric_profile_resampled_hdulist = None
 
     def remove_flux_resampled_telluric_corrected_fits(self):
         """
@@ -4386,9 +4822,13 @@ class Spectrum1D:
                     Sensitivity (pixel)
                 flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                atm_ext: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
+                telluric_profile: 1 HDU
+                    Telluric absorption profile
                 flux_telluric_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (pixel)
@@ -4399,9 +4839,13 @@ class Spectrum1D:
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                atm_ext_resampled: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
+                telluric_profile_resampled: 1 HDU
+                    Telluric absorption profile
                 flux_resampled_telluic_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (wavelength)
@@ -4560,6 +5004,16 @@ class Spectrum1D:
                     hdu_output += self.flux_hdulist
                     self.hdu_content["flux"] = True
 
+            if "atm_ext" in output_split:
+
+                if not self.hdu_content["atm_ext"]:
+                    self.create_atm_ext_fits()
+
+                if self.atm_ext_hdulist is not None:
+
+                    hdu_output += self.atm_ext_hdulist
+                    self.hdu_content["atm_ext"] = True
+
             if "flux_atm_ext_corrected" in output_split:
 
                 if not self.hdu_content["flux_atm_ext_corrected"]:
@@ -4569,6 +5023,16 @@ class Spectrum1D:
 
                     hdu_output += self.flux_atm_ext_corrected_hdulist
                     self.hdu_content["flux_atm_ext_corrected"] = True
+
+            if "telluric_profile" in output_split:
+
+                if not self.hdu_content["telluric_profile"]:
+                    self.create_telluric_profile_fits()
+
+                if self.telluric_profile_hdulist is not None:
+
+                    hdu_output += self.telluric_profile_hdulist
+                    self.hdu_content["telluric_profile"] = True
 
             if "flux_telluric_corrected" in output_split:
 
@@ -4610,6 +5074,16 @@ class Spectrum1D:
                     hdu_output += self.flux_resampled_hdulist
                     self.hdu_content["flux_resampled"] = True
 
+            if "atm_ext_resampled" in output_split:
+
+                if not self.hdu_content["atm_ext_resampled"]:
+                    self.create_atm_ext_resampled_fits()
+
+                if self.atm_ext_resampled_hdulist is not None:
+
+                    hdu_output += self.atm_ext_resampled_hdulist
+                    self.hdu_content["atm_ext_resampled"] = True
+
             if "flux_resampled_atm_ext_corrected" in output_split:
 
                 if not self.hdu_content["flux_resampled_atm_ext_corrected"]:
@@ -4619,6 +5093,16 @@ class Spectrum1D:
 
                     hdu_output += self.flux_resampled_atm_ext_corrected_hdulist
                     self.hdu_content["flux_resampled_atm_ext_corrected"] = True
+
+            if "telluric_profile_resampled" in output_split:
+
+                if not self.hdu_content["telluric_profile_resampled"]:
+                    self.create_telluric_profile_resampled_fits()
+
+                if self.telluric_profile_resampled_hdulist is not None:
+
+                    hdu_output += self.telluric_profile_resampled_hdulist
+                    self.hdu_content["telluric_profile_resampled"] = True
 
             if "flux_resampled_telluric_corrected" in output_split:
 
@@ -4700,8 +5184,8 @@ class Spectrum1D:
                 weight_map: 1 HDU
                     Weight (pixel)
                 arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                    1D arc spectrum, arc line position (pixel), and arc
+                    line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -4712,30 +5196,38 @@ class Spectrum1D:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                atm_ext: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
+                telluric_profile: 1 HDU
+                    Telluric absorption profile
                 flux_telluric_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (pixel)
                 flux_atm_ext_telluric_corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (pixel)
-                sensitivity: 1 HDU
+                    Atmospheric extinction and telluric corrected flux,
+                    uncertainty, and sky (pixel)
+                sensitivity_resampled: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                atm_ext_resampled: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_telluric_corrected: 3 HDUs
+                telluric_profile_resampled: 1 HDU
+                    Telluric absorption profile
+                flux_resampled_telluic_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_atm_ext_telluric corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (wavelength)
+                flux_resampled_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric  corrected flux,
+                    uncertainty, and sky (wavelength)
 
         filename: str
             Filename for the output, all of them will share the same name but
@@ -4775,8 +5267,8 @@ class Spectrum1D:
                 weight_map: 1 HDU
                     Weight (pixel)
                 arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                    1D arc spectrum, arc line position (pixel), and arc
+                    line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -4787,30 +5279,38 @@ class Spectrum1D:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
+                atm_ext: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (pixel)
+                telluric_profile: 1 HDU
+                    Telluric absorption profile
                 flux_telluric_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (pixel)
                 flux_atm_ext_telluric_corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (pixel)
-                sensitivity: 1 HDU
+                    Atmospheric extinction and telluric corrected flux,
+                    uncertainty, and sky (pixel)
+                sensitivity_resampled: 1 HDU
                     Sensitivity (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
+                atm_ext_resampled: 1 HDU
+                    Atmospheric extinction correction factor
                 flux_resampled_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_telluric_corrected: 3 HDUs
+                telluric_profile_resampled: 1 HDU
+                    Telluric absorption profile
+                flux_resampled_telluic_corrected: 3 HDUs
                     Telluric corrected flux, uncertainty, and
                     sky (wavelength)
-                flux_resampled_atm_ext_telluric corrected: 3 HDUs
-                    Atmospheric extinction and telluric corrected flux, uncertainty, and
-                    sky (wavelength)
+                flux_resampled_atm_ext_telluric_corrected: 3 HDUs
+                    Atmospheric extinction and telluric  corrected flux,
+                    uncertainty, and sky (wavelength)
 
         filename: String
             Disk location to be written to. Default is at where the

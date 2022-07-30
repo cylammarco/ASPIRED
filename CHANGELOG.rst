@@ -10,6 +10,7 @@ Version 0.5.0-dev
   * Atmospheric extinction corrected spectra are stored separately and has become a separate output option.
   * Telluric corrected spectra are stored separately and has become a separate output option.
   * Atmospheric extinction AND telluric corrected spectra are stored separately and has become a separate output option.
+  * Atmospheric extinction correction factor and telluric absorption correction can be exported as FITS and CSV.
   * Resampling is now performed immediately before creating and saving files. All the calibrations are now done in the native pixel/wavelength sampling.
   * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
   * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
