@@ -3,7 +3,9 @@ import copy
 import os
 from unittest.mock import patch
 
+from astropy import units
 from astropy.io import fits
+from astropy.nddata import CCDData
 import numpy as np
 import pytest
 
@@ -24,6 +26,12 @@ img_with_fits = copy.copy(img)
 img_with_fits._create_image_fits()
 
 img_in_hdulist = fits.HDUList(img_with_fits.image_fits)
+
+img_in_CCDData = CCDData(
+    img.light_reduced,
+    header=fits.Header(img.light_header[0]),
+    unit=units.count,
+)
 
 
 def file_len(fname):
@@ -190,6 +198,13 @@ def test_add_data_primaryhdu():
 def test_add_data_hdulist():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_data(img_in_hdulist)
+    assert (twodspec.img == img_with_fits.image_fits.data).all()
+    assert twodspec.header == img_with_fits.image_fits.header
+
+
+def test_add_data_CCDData():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_data(img_in_CCDData)
     assert (twodspec.img == img_with_fits.image_fits.data).all()
     assert twodspec.header == img_with_fits.image_fits.header
 

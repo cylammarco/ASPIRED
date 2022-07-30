@@ -219,7 +219,9 @@ class TwoDSpec:
         data: 2D numpy array (M x N) OR astropy.io.fits object
             2D spectral image in either format
         header: FITS header (deafult: None)
-            THIS WILL OVERRIDE the header from the astropy.io.fits object
+            This take priority over the header from the
+            fits.hdu.hdulist.HDUList, fits.hdu.image.PrimaryHDU,
+            or CCDData.
 
         """
 
@@ -235,7 +237,10 @@ class TwoDSpec:
         elif isinstance(data, fits.hdu.hdulist.HDUList):
 
             self.img = data[0].data
-            self.header = data[0].header
+            if header is None:
+                self.header = data[0].header
+            else:
+                self.header = header
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.warning(
                 "An HDU list is provided, only the first " "HDU will be read."
@@ -247,9 +252,23 @@ class TwoDSpec:
         ):
 
             self.img = data.data
-            self.header = data.header
+            if header is None:
+                self.header = data.header
+            else:
+                self.header = header
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.info("A PrimaryHDU is loaded as data.")
+
+        # If it is a CCDData
+        elif isinstance(data, CCDData):
+
+            self.img = data.data
+            if header is None:
+                self.header = data.header
+            else:
+                self.header = header
+            self.bad_mask = create_bad_pixel_mask(self.img)[0]
+            self.logger.info("A CCDData is loaded as data.")
 
         # If it is an ImageReduction object
         elif isinstance(data, ImageReduction):
@@ -261,7 +280,11 @@ class TwoDSpec:
                 data._create_image_fits()
 
             self.img = data.image_fits.data
-            self.header = data.image_fits.header
+
+            if header is None:
+                self.header = data.image_fits.header
+            else:
+                self.header = header
 
             if data.arc_main is not None:
 
