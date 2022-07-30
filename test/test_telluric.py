@@ -51,7 +51,7 @@ def test_telluric_square_wave():
     onedspec.apply_telluric_correction()
 
     assert np.isclose(
-        np.nansum(onedspec.science_spectrum_list[0].flux),
+        np.nansum(onedspec.science_spectrum_list[0].flux_telluric_corrected),
         np.nansum(flux_sci_continuum),
         rtol=1e-2,
     )

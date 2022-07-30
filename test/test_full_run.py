@@ -126,7 +126,7 @@ def test_full_run(mock_show):
     lhs6328_twodspec.inspect_line_spread_function(
         save_fig=True,
         display=True,
-        open_iframe=True,
+        open_iframe=False,
         filename=os.path.join(HERE, "test_output", "test_full_run_lsf"),
     )
 

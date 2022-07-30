@@ -1249,9 +1249,7 @@ def test_sensitivity(mock_show):
     onedspec.add_fit_coeff(
         np.array((4000.0, 1, 0.2, 0.0071)), spec_id=0, stype="science+standard"
     )
-    onedspec.apply_wavelength_calibration(
-        wave_bin=100.0, wave_start=4000.0, wave_end=9000.0
-    )
+    onedspec.apply_wavelength_calibration()
 
     onedspec.load_standard(target="cd32d9927")
     onedspec.inspect_standard(
@@ -1296,9 +1294,7 @@ global_onedspec.add_arc_spec(
 global_onedspec.add_fit_coeff(
     np.array((4000.0, 1, 0.2, 0.0071)), spec_id=0, stype="science+standard"
 )
-global_onedspec.apply_wavelength_calibration(
-    wave_bin=100.0, wave_start=4000.0, wave_end=9000.0
-)
+global_onedspec.apply_wavelength_calibration()
 
 global_onedspec.load_standard(target="cd32d9927")
 coeff = np.polynomial.polynomial.polyfit(

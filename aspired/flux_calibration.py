@@ -1424,8 +1424,8 @@ class FluxCalibration(StandardLibrary):
         self,
         target_spectrum1D,
         inspect=False,
-        wave_min=3500.0,
-        wave_max=8500.0,
+        wave_min=None,
+        wave_max=None,
         display=False,
         renderer="default",
         width=1280,
@@ -1451,9 +1451,9 @@ class FluxCalibration(StandardLibrary):
             The spectrum to be flux calibrated.
         inspect: bool (Default: False)
             Set to True to create/display/save figure
-        wave_min: float (Default: 3500)
+        wave_min: float (Default: None -> 3500)
             Minimum wavelength to display
-        wave_max: float (Default: 8500)
+        wave_max: float (Default: None -> 8500)
             Maximum wavelength to display
         display: bool (Default: False)
             Set to True to display disgnostic plot.
@@ -1488,9 +1488,6 @@ class FluxCalibration(StandardLibrary):
         self.target_spec_id = getattr(target_spectrum1D, "spec_id")
 
         wave = getattr(target_spectrum1D, "wave")
-        wave_resampled = getattr(target_spectrum1D, "wave_resampled")
-        if wave_resampled is None:
-            wave_resampled = wave
         count = getattr(target_spectrum1D, "count")
         count_err = getattr(target_spectrum1D, "count_err")
         count_sky = getattr(target_spectrum1D, "count_sky")
@@ -1509,112 +1506,55 @@ class FluxCalibration(StandardLibrary):
         sensitivity = 10.0 ** sensitivity_func(wave) / exptime
 
         flux = sensitivity * count
-        flux_resampled = spectres(
-            np.array(wave_resampled).reshape(-1),
-            np.array(wave).reshape(-1),
-            np.array(flux).reshape(-1),
-            verbose=True,
-        )
 
-        if count_err is None:
-
-            flux_err_resampled = np.zeros_like(flux_resampled)
-
-        else:
+        if count_err is not None:
 
             flux_err = sensitivity * count_err
-            flux_err_resampled = spectres(
-                np.array(wave_resampled).reshape(-1),
-                np.array(wave).reshape(-1),
-                np.array(flux_err).reshape(-1),
-                verbose=True,
-            )
 
-        if count_sky is None:
-
-            flux_sky_resampled = np.zeros_like(flux_resampled)
-
-        else:
+        if count_sky is not None:
 
             flux_sky = sensitivity * count_sky
-            flux_sky_resampled = spectres(
-                np.array(wave_resampled).reshape(-1),
-                np.array(wave).reshape(-1),
-                np.array(flux_sky).reshape(-1),
-                verbose=True,
-            )
 
         flux_continuum = sensitivity * count_continuum
-        flux_continuum_resampled = spectres(
-            np.array(wave_resampled).reshape(-1),
-            np.array(wave).reshape(-1),
-            np.array(flux_continuum).reshape(-1),
-            verbose=True,
-        )
-        flux_continuum_resampled[np.isnan(flux_continuum_resampled)] = 0.0
-        count_continuum_resampled = spectres(
-            np.array(wave_resampled).reshape(-1),
-            np.array(wave).reshape(-1),
-            np.array(count_continuum).reshape(-1),
-            verbose=True,
-        )
 
         target_spectrum1D.add_flux_continuum(flux_continuum)
-        target_spectrum1D.add_flux_resampled_continuum(
-            flux_continuum_resampled
-        )
-        target_spectrum1D.add_count_resampled_continuum(
-            count_continuum_resampled
-        )
-
-        # Only computed for diagnostic
-        sensitivity_resampled = spectres(
-            np.array(wave_resampled).reshape(-1),
-            np.array(wave).reshape(-1),
-            np.array(sensitivity).reshape(-1),
-            verbose=True,
-        )
-
-        flux_resampled[np.isnan(flux_resampled)] = 0.0
-        flux_err_resampled[np.isnan(flux_err_resampled)] = 0.0
-        flux_sky_resampled[np.isnan(flux_sky_resampled)] = 0.0
 
         target_spectrum1D.add_flux(flux, flux_err, flux_sky)
-        target_spectrum1D.add_flux_resampled(
-            flux_resampled, flux_err_resampled, flux_sky_resampled
-        )
         target_spectrum1D.add_sensitivity(sensitivity)
-        target_spectrum1D.add_sensitivity_resampled(sensitivity_resampled)
 
         # Add the rest of the flux calibration parameters
         target_spectrum1D.merge(self.spectrum1D)
 
+        if wave_min is None:
+
+            wave_min = 3500.0
+
+        if wave_max is None:
+
+            wave_max = 8500.0
+
         if inspect:
 
-            wave_mask = (np.array(wave_resampled).reshape(-1) > wave_min) & (
-                np.array(wave_resampled).reshape(-1) < wave_max
+            wave_mask = (np.array(wave).reshape(-1) > wave_min) & (
+                np.array(wave).reshape(-1) < wave_max
             )
 
             flux_low = (
-                np.nanpercentile(
-                    np.array(flux_resampled).reshape(-1)[wave_mask], 5
-                )
+                np.nanpercentile(np.array(flux).reshape(-1)[wave_mask], 5)
                 / 1.5
             )
             flux_high = (
-                np.nanpercentile(
-                    np.array(flux_resampled).reshape(-1)[wave_mask], 95
-                )
+                np.nanpercentile(np.array(flux).reshape(-1)[wave_mask], 95)
                 * 1.5
             )
-            flux_mask = (np.array(flux_resampled).reshape(-1) > flux_low) & (
-                np.array(flux_resampled).reshape(-1) < flux_high
+            flux_mask = (np.array(flux).reshape(-1) > flux_low) & (
+                np.array(flux).reshape(-1) < flux_high
             )
             flux_min = np.log10(
-                np.nanmin(np.array(flux_resampled).reshape(-1)[flux_mask])
+                np.nanmin(np.array(flux).reshape(-1)[flux_mask])
             )
             flux_max = np.log10(
-                np.nanmax(np.array(flux_resampled).reshape(-1)[flux_mask])
+                np.nanmax(np.array(flux).reshape(-1)[flux_mask])
             )
 
             fig = go.Figure(
@@ -1664,8 +1604,8 @@ class FluxCalibration(StandardLibrary):
             # show the image on the top
             fig.add_trace(
                 go.Scatter(
-                    x=wave_resampled,
-                    y=flux_resampled,
+                    x=wave,
+                    y=flux,
                     line=dict(color="royalblue"),
                     name="Flux",
                 )
@@ -1675,8 +1615,8 @@ class FluxCalibration(StandardLibrary):
 
                 fig.add_trace(
                     go.Scatter(
-                        x=wave_resampled,
-                        y=flux_err_resampled,
+                        x=wave,
+                        y=flux_err,
                         line=dict(color="firebrick"),
                         name="Flux Uncertainty",
                     )
@@ -1686,8 +1626,8 @@ class FluxCalibration(StandardLibrary):
 
                 fig.add_trace(
                     go.Scatter(
-                        x=wave_resampled,
-                        y=flux_sky_resampled,
+                        x=wave,
+                        y=flux_sky,
                         line=dict(color="orange"),
                         name="Sky Flux",
                     )
@@ -1697,8 +1637,8 @@ class FluxCalibration(StandardLibrary):
 
                 fig.add_trace(
                     go.Scatter(
-                        x=wave_resampled,
-                        y=flux_continuum_resampled,
+                        x=wave,
+                        y=flux_continuum,
                         line=dict(color="grey"),
                         name="Continuum",
                     )
@@ -1764,7 +1704,7 @@ class FluxCalibration(StandardLibrary):
 
     def create_fits(
         self,
-        output="count+count_resampled+flux+flux_resampled",
+        output="count+wavelength+sensitivity+flux",
         empty_primary_hdu=True,
         recreate=False,
     ):
@@ -1776,22 +1716,15 @@ class FluxCalibration(StandardLibrary):
             the following description), but the options are flexible. The
             input strings are delimited by "+",
 
-            trace: 2 HDUs
-                Trace, and trace width (pixel)
             count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
-            arc_spec: 3 HDUs
-                1D arc spectrum, arc line pixels, and arc line effective pixels
-            wavecal: 1 HDU
-                Polynomial coefficients for wavelength calibration
             wavelength: 1 HDU
                 Wavelength of each pixel
-            count_resampled: 3 HDUs
-                Resampled Count, uncertainty, and sky (wavelength)
+            sensitivity: 1 HDU
+                Sensitivity (pixel)
             flux: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (pixel)
-            flux_resampled: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (wavelength)
+                Flux, uncertainty, and sky
+
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank (Default: True)
         recreate: bool (Default: False)
@@ -1808,7 +1741,7 @@ class FluxCalibration(StandardLibrary):
 
     def save_fits(
         self,
-        output="count_resampled+sensitivity_resampled+flux_resampled",
+        output="count+wavelength+sensitivity+flux",
         filename="fluxcal",
         empty_primary_hdu=True,
         overwrite=False,
@@ -1830,14 +1763,13 @@ class FluxCalibration(StandardLibrary):
 
             count: 4 HDUs
                 Count, uncertainty, sky, optimal flag, and weight (pixel)
-            count_resampled: 3 HDUs
-                Resampled Count, uncertainty, and sky (wavelength)
             wavelength: 1 HDU
                 Wavelength of each pixel
+            sensitivity: 1 HDU
+                Sensitivity (pixel)
             flux: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (pixel)
-            flux_resampled: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (wavelength)
+                Flux, uncertainty, and sky
+
         filename: String
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.
@@ -1868,7 +1800,7 @@ class FluxCalibration(StandardLibrary):
 
     def save_csv(
         self,
-        output="sensitivity_resampled+flux_resampled",
+        output="count+wavelength+sensitivity+flux",
         filename="fluxcal",
         overwrite=False,
         recreate=False,
@@ -1888,15 +1820,14 @@ class FluxCalibration(StandardLibrary):
             are guaranteed to exist.
 
             count: 4 HDUs
-                Count, uncertainty, sky, and weight (pixel)
-            count_resampled: 3 HDUs
-                Resampled Count, uncertainty, and sky (wavelength)
+                Count, uncertainty, sky, optimal flag, and weight (pixel)
             wavelength: 1 HDU
                 Wavelength of each pixel
+            sensitivity: 1 HDU
+                Sensitivity (pixel)
             flux: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (pixel)
-            flux_resampled: 4 HDUs
-                Flux, uncertainty, sky, and sensitivity (wavelength)
+                Flux, uncertainty, and sky
+
         filename: String (Default: None)
             Disk location to be written to. Default is at where the
             process/subprocess is execuated.

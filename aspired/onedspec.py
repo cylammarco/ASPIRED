@@ -2,6 +2,7 @@
 import copy
 import datetime
 import logging
+from msilib.schema import Error
 import os
 import pkg_resources
 
@@ -180,8 +181,15 @@ class OneDSpec:
         self.science_wavelength_resampled = False
         self.standard_wavelength_resampled = False
 
+        # This concerns the extinction itself
         self.atmospheric_extinction_correction_available = False
+        self.telluric_profile_available = False
+        self.telluric_strnegth_available = False
+
+        # This concerns the spectrum being corrected or not
         self.atmospheric_extinction_corrected = False
+        self.telluric_corrected = False
+        self.extinction_fraction = 1.0
 
         self.sensitivity_curve_available = False
 
@@ -3575,26 +3583,14 @@ class OneDSpec:
 
     def apply_wavelength_calibration(
         self,
-        wave_start=None,
-        wave_end=None,
-        wave_bin=None,
         spec_id=None,
         stype="science+standard",
     ):
         """
-        Apply the wavelength calibration. Because the polynomial fit can run
-        away at the two ends, the default minimum and maximum are limited to
-        1,000 and 12,000 A, respectively. This can be overridden by providing
-        user's choice of wave_start and wave_end.
+        Apply the wavelength calibration.
 
         Parameters
         ----------
-        wave_start: float or None (Default: None)
-            Provide the minimum wavelength for resampling.
-        wave_end: float or None (Default: None)
-            Provide the maximum wavelength for resampling
-        wave_bin: float or None (Default: None)
-            Provide the resampling bin size
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum1D object
         stype: str or None (Default: 'science+standard')
@@ -3641,60 +3637,13 @@ class OneDSpec:
                         .reshape(-1)
                     )
 
-                    # compute the new equally-spaced wavelength array
-                    if wave_bin is None:
-
-                        wave_bin = np.nanmedian(np.ediff1d(wave))
-
-                    if wave_start is None:
-
-                        wave_start = wave[0]
-
-                    if wave_end is None:
-
-                        wave_end = wave[-1]
-
-                    wave_resampled = np.arange(wave_start, wave_end, wave_bin)
-
-                    count_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.count).reshape(-1),
-                        verbose=True,
-                    )
-
-                    if spec.count_err is not None:
-
-                        count_err_resampled = spectres(
-                            np.array(wave_resampled).reshape(-1),
-                            np.array(wave).reshape(-1),
-                            np.array(spec.count_err).reshape(-1),
-                            verbose=True,
-                        )
-
-                    if spec.count_sky is not None:
-
-                        count_sky_resampled = spectres(
-                            np.array(wave_resampled).reshape(-1),
-                            np.array(wave).reshape(-1),
-                            np.array(spec.count_sky).reshape(-1),
-                            verbose=True,
-                        )
-
                     spec.add_wavelength(wave)
-                    spec.add_wavelength_resampled(wave_resampled)
-                    spec.add_count_resampled(
-                        count_resampled,
-                        count_err_resampled,
-                        count_sky_resampled,
-                    )
 
                 self.logger.info(
                     "Wavelength calibration is applied for the "
                     "science_spectrum_list for spec_id: {}.".format(i)
                 )
                 self.science_wavelength_calibrated = True
-                self.science_wavelength_resampled = True
 
             else:
 
@@ -3711,65 +3660,17 @@ class OneDSpec:
                     np.array(spec.pixel_list), spec.fit_coeff
                 ).reshape(-1)
 
-                # compute the new equally-spaced wavelength array
-                if wave_bin is None:
-
-                    wave_bin = np.nanmedian(np.ediff1d(wave))
-
-                if wave_start is None:
-
-                    wave_start = wave[0]
-
-                if wave_end is None:
-
-                    wave_end = wave[-1]
-
-                wave_resampled = np.arange(wave_start, wave_end, wave_bin)
-
-                # apply the flux calibration and resample
-                count_resampled = spectres(
-                    np.array(wave_resampled).reshape(-1),
-                    np.array(wave).reshape(-1),
-                    np.array(spec.count).reshape(-1),
-                    verbose=True,
-                )
-
-                if spec.count_err is not None:
-
-                    count_err_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.count_err).reshape(-1),
-                        verbose=True,
-                    )
-
-                if spec.count_sky is not None:
-
-                    count_sky_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.count_sky).reshape(-1),
-                        verbose=True,
-                    )
-
                 spec.add_wavelength(wave)
-                spec.add_wavelength_resampled(wave_resampled)
-                spec.add_count_resampled(
-                    count_resampled, count_err_resampled, count_sky_resampled
-                )
 
                 self.logger.info(
                     "Wavelength calibration is applied for the "
                     "standard_spectrum_list."
                 )
                 self.standard_wavelength_calibrated = True
-                self.standard_wavelength_resampled = True
 
             else:
 
                 self.logger.warning("Standard spectrum is not imported.")
-
-            self.standard_wavelength_calibrated = True
 
     def lookup_standard_libraries(self, target, cutoff=0.4):
         """
@@ -4228,8 +4129,6 @@ class OneDSpec:
         self, telluric, spec_id=None, stype="science+standard"
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         Provide a callable function that gives the Telluric profile.
 
         Parameters
@@ -4293,25 +4192,13 @@ class OneDSpec:
                     science_spec.add_telluric_profile(
                         science_spec.telluric_func(science_spec.wave)
                     )
+                    self.telluric_profile_available = True
 
                 else:
 
                     self.logger.warning(
                         "wave is not available. Telluric correction cannot"
                         "be performed."
-                    )
-
-                if science_spec.wave_resampled is not None:
-
-                    science_spec.add_telluric_profile_resampled(
-                        science_spec.telluric_func(science_spec.wave_resampled)
-                    )
-
-                else:
-
-                    self.logger.warning(
-                        "wave_resampled is not available. Telluric correction "
-                        "cannot be performed."
                     )
 
         if "standard" in stype_split:
@@ -4342,25 +4229,13 @@ class OneDSpec:
                 standard_spec.add_telluric_profile(
                     standard_spec.telluric_func(standard_spec.wave)
                 )
+                self.telluric_profile_available = True
 
             else:
 
                 self.logger.warning(
                     "wave is not available. Telluric correction cannot"
                     "be performed."
-                )
-
-            if standard_spec.wave_resampled is not None:
-
-                standard_spec.add_telluric_profile_resampled(
-                    standard_spec.telluric_func(standard_spec.wave_resampled)
-                )
-
-            else:
-
-                self.logger.warning(
-                    "wave_resampled is not available. Telluric correction "
-                    "cannot be performed."
                 )
 
     def get_continuum(self, spec_id=None, **kwargs):
@@ -4422,56 +4297,6 @@ class OneDSpec:
                     "flux is None, only count_continuum is found."
                 )
 
-    def get_resampled_continuum(self, spec_id=None, **kwargs):
-        """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
-        Get the continnum from the resampled wave, count and flux.
-
-        Parameters
-        ----------
-        spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
-        **kwargs: dictionary
-            The keyword arguments to be passed to the lowess function
-            for generating the continuum.
-
-        """
-
-        if isinstance(spec_id, int):
-
-            spec_id = [spec_id]
-
-        if spec_id is not None:
-
-            if not set(spec_id).issubset(
-                list(self.science_spectrum_list.keys())
-            ):
-
-                error_msg = "The given spec_id does not exist."
-                self.logger.critical(error_msg)
-                raise ValueError(error_msg)
-
-        else:
-
-            spec_id = list(self.science_spectrum_list.keys())
-
-        # Get the telluric profile
-        for i in spec_id:
-
-            science_spec = self.science_spectrum_list[i]
-
-            wave_resampled = science_spec.wave_resampled
-            count_resampled = science_spec.count_resampled
-            flux_resampled = science_spec.flux_resampled
-
-            science_spec.add_flux_resampled_continuum(
-                get_continuum(wave_resampled, flux_resampled, **kwargs)
-            )
-            science_spec.add_count_resampled_continuum(
-                get_continuum(wave_resampled, count_resampled, **kwargs)
-            )
-
     def get_telluric_profile(
         self,
         spec_id=None,
@@ -4479,8 +4304,6 @@ class OneDSpec:
         return_function=False,
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
-
         Getting the Telluric absorption profile from the continuum of the
         standard star spectrum.
 
@@ -4545,6 +4368,8 @@ class OneDSpec:
         self.standard_spectrum_list[0].add_telluric_profile(telluric_profile)
         self.standard_spectrum_list[0].add_telluric_factor(telluric_factor)
 
+        self.telluric_profile_available = True
+
         if return_function:
 
             return telluric_func
@@ -4587,6 +4412,15 @@ class OneDSpec:
             The ID corresponding to the spectrum1D object
 
         """
+
+        if not self.telluric_profile_available:
+
+            error_msg = (
+                "Telluric profile is not available. Please provide "
+                "one or get one with get_telluric_profile(). Fine tuning can "
+                "be done using also get_continuum() on the standard spectrum."
+            )
+            raise ValueError(error_msg)
 
         if isinstance(spec_id, int):
 
@@ -4659,70 +4493,28 @@ class OneDSpec:
             science_spec.add_telluric_factor(telluric_factor)
             self.logger.info("telluric_factor is {}.".format(telluric_factor))
 
-            if self.science_wavelength_resampled:
+            self.telluric_strnegth_available = True
 
-                wave_resampled = science_spec.wave_resampled
-                flux_resampled = science_spec.flux_resampled
-
-                if science_spec.flux_resampled_continuum is None:
-
-                    self.get_resampled_continuum(i, **kwargs)
-
-                flux_resampled_continuum = (
-                    science_spec.flux_resampled_continuum
-                )
-
-                if (science_spec.telluric_profile_resampled is None) or (
-                    len(kwargs.keys()) > 0
-                ):
-
-                    science_spec.add_telluric_profile_resampled(
-                        science_spec.telluric_func(wave_resampled)
-                    )
-
-                telluric_factor_resampled = optimize.minimize(
-                    self._min_std,
-                    np.nanmedian(np.abs(flux_resampled)),
-                    args=(
-                        flux_resampled,
-                        science_spec.telluric_profile_resampled,
-                        flux_resampled_continuum,
-                    ),
-                    tol=1e-20,
-                    method="Nelder-Mead",
-                    options={"maxiter": 10000},
-                ).x
-
-                self.logger.info(
-                    "telluric_factor_resampled is {}.".format(
-                        telluric_factor_resampled
-                    )
-                )
-
-                science_spec.add_telluric_factor_resampled(
-                    telluric_factor_resampled
-                )
-
-        if self.standard_wavelength_resampled:
+        if self.standard_wavelength_calibrated:
 
             standard_spec = self.standard_spectrum_list[0]
-            wave_standard_resampled = standard_spec.wave_resampled
+            wave_standard = standard_spec.wave
 
-            if (standard_spec.telluric_profile_resampled is None) or (
+            if (standard_spec.telluric_profile is None) or (
                 len(kwargs.keys()) > 0
             ):
 
-                standard_spec.add_telluric_profile_resampled(
-                    standard_spec.telluric_func(wave_standard_resampled)
+                standard_spec.add_telluric_profile(
+                    standard_spec.telluric_func(wave_standard)
                 )
 
-                telluric_factor_resampled = optimize.minimize(
+                telluric_factor = optimize.minimize(
                     self._min_std,
-                    np.nanmedian(np.abs(flux_resampled)),
+                    np.nanmedian(np.abs(flux)),
                     args=(
-                        standard_spec.flux_resampled,
-                        standard_spec.telluric_profile_resampled,
-                        standard_spec.flux_resampled_continuum,
+                        standard_spec.flux,
+                        standard_spec.telluric_profile,
+                        standard_spec.flux_continuum,
                     ),
                     tol=1e-20,
                     method="Nelder-Mead",
@@ -4730,14 +4522,10 @@ class OneDSpec:
                 ).x
 
                 self.logger.info(
-                    "telluric_factor_resampled is {}.".format(
-                        telluric_factor_resampled
-                    )
+                    "telluric_factor is {}.".format(telluric_factor)
                 )
 
-                standard_spec.add_telluric_factor_resampled(
-                    telluric_factor_resampled
-                )
+                standard_spec.add_telluric_factor(telluric_factor)
 
         if auto_apply:
 
@@ -4820,8 +4608,10 @@ class OneDSpec:
         spec_id=None,
     ):
         """
-        Inspect the Telluric absorption correction on top of pre-corrected
-        spectra.
+        Inspect the Telluric absorption correction on top of the spectra. This
+        does NOT apply the correction to the spectrum. This is for inspection
+        and manually modifying an extrac multiplier (fnudge factor) to the
+        absorption strength.
 
         Parameters
         ----------
@@ -4860,6 +4650,23 @@ class OneDSpec:
 
         """
 
+        if not self.telluric_profile_available:
+
+            error_msg = (
+                "Telluric profile is not available. Please provide "
+                "one or get one with get_telluric_profile(). Fine tuning can "
+                "be done using also get_continuum() on the standard spectrum."
+            )
+            raise ValueError(error_msg)
+
+        if not self.telluric_strnegth_available:
+
+            error_msg = (
+                "Telluric strength is not available. executing "
+                "get_telluric_strength()."
+            )
+            self.get_telluric_strength()
+
         if isinstance(spec_id, int):
 
             spec_id = [spec_id]
@@ -4894,6 +4701,7 @@ class OneDSpec:
             fluxcount_continuum = spec.flux_continuum
             telluric_factor = spec.telluric_factor
             telluric_profile = spec.telluric_profile
+            spec.add_telluric_nudge_factor(factor)
 
             flux_low = (
                 np.nanpercentile(np.array(fluxcount).reshape(-1), 5) / 1.5
@@ -5064,13 +4872,12 @@ class OneDSpec:
             return to_return
 
     def apply_telluric_correction(
-        self, factor=1.0, spec_id=None, stype="science+standard"
+        self, factor=None, spec_id=None, stype="science+standard"
     ):
         """
         Apply the telluric correction with the extra multiplier 'factor'.
-        The 'factor' provided in the profile() is NOT
-        propagated to this function, it has to be explicitly provided
-        to this function.
+        The 'factor' provided in the profile() is propagated to this
+        function, it has to be explicitly provided to this function.
 
         The telluric absorption profile is normalised to 1 at the most
         absorpted wavelegnth, the factor manually provided can be
@@ -5087,6 +4894,23 @@ class OneDSpec:
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
         """
+
+        if not self.telluric_profile_available:
+
+            error_msg = (
+                "Telluric profile is not available. Please provide "
+                "one or get one with get_telluric_profile(). Fine tuning can "
+                "be done using also get_continuum() on the standard spectrum."
+            )
+            raise ValueError(error_msg)
+
+        if not self.telluric_strnegth_available:
+
+            error_msg = (
+                "Telluric strength is not available. executing "
+                "get_telluric_strength()."
+            )
+            self.get_telluric_strength()
 
         stype_split = stype.split("+")
 
@@ -5117,23 +4941,6 @@ class OneDSpec:
 
                 science_spec = self.science_spectrum_list[i]
 
-                if science_spec.telluric_profile_resampled is None:
-
-                    self.logger.warning(
-                        "A resampled telluric profile is not available, "
-                        "please construct a profile with "
-                        "get_telluric_profile()."
-                    )
-
-                else:
-
-                    science_spec.flux_resampled = (
-                        science_spec.flux_resampled
-                        + science_spec.telluric_profile_resampled
-                        * science_spec.telluric_factor_resampled
-                        * factor
-                    )
-
                 if science_spec.telluric_profile is None:
 
                     self.logger.warning(
@@ -5144,33 +4951,59 @@ class OneDSpec:
 
                 else:
 
-                    science_spec.flux = (
+                    case_a = (
+                        self.telluric_corrected
+                        & self.atmospheric_extinction_corrected
+                    )
+                    case_b = (
+                        not self.telluric_corrected
+                    ) & self.atmospheric_extinction_corrected
+                    # case_c = self.telluric_corrected & (
+                    #    not self.atmospheric_extinction_corrected
+                    # )
+                    # case_d = (not self.telluric_corrected) & (
+                    #    not self.atmospheric_extinction_corrected
+                    # )
+
+                    if factor is None:
+
+                        factor = science_spec.telluric_nudge_factor
+
+                    else:
+
+                        science_spec.add_telluric_nudge_factor(factor)
+
+                    # in all cases
+                    flux_telluric_corrected = (
                         science_spec.flux
                         + science_spec.telluric_profile
                         * science_spec.telluric_factor
                         * factor
                     )
+                    science_spec.add_flux_telluric_corrected(
+                        flux_telluric_corrected,
+                        science_spec.flux_err,
+                        science_spec.flux_sky,
+                    )
+
+                    if case_a or case_b:
+
+                        flux_atm_ext_telluric_corrected = (
+                            science_spec.flux_atm_ext_corrected
+                            + science_spec.telluric_profile
+                            * science_spec.telluric_factor
+                            * factor
+                            * self.extinction_fraction
+                        )
+                        science_spec.add_flux_atm_ext_telluric_corrected(
+                            flux_atm_ext_telluric_corrected,
+                            science_spec.flux_err_atm_ext_corrected,
+                            science_spec.flux_sky_atm_ext_corrected,
+                        )
 
         if "standard" in stype_split:
 
             standard_spec = self.standard_spectrum_list[0]
-
-            if standard_spec.telluric_profile_resampled is None:
-
-                self.logger.warning(
-                    "A resampled telluric profile is not available, "
-                    "please construct a profile with "
-                    "get_telluric_profile()."
-                )
-
-            else:
-
-                standard_spec.flux_resampled = (
-                    standard_spec.flux_resampled
-                    + standard_spec.telluric_profile_resampled
-                    * standard_spec.telluric_factor_resampled
-                    * factor
-                )
 
             if standard_spec.telluric_profile is None:
 
@@ -5182,12 +5015,56 @@ class OneDSpec:
 
             else:
 
-                standard_spec.flux = (
+                if factor is None:
+
+                    factor = standard_spec.telluric_nudge_factor
+
+                else:
+
+                    standard_spec.add_telluric_nudge_factor(factor)
+
+                case_a = (
+                    self.telluric_corrected
+                    & self.atmospheric_extinction_corrected
+                )
+                case_b = (
+                    not self.telluric_corrected
+                ) & self.atmospheric_extinction_corrected
+                # case_c = self.telluric_corrected & (
+                #    not self.atmospheric_extinction_corrected
+                # )
+                # case_d = (not self.telluric_corrected) & (
+                #    not self.atmospheric_extinction_corrected
+                # )
+
+                # in all cases
+                flux_telluric_corrected = (
                     standard_spec.flux
                     + standard_spec.telluric_profile
                     * standard_spec.telluric_factor
                     * factor
                 )
+                standard_spec.add_flux_telluric_corrected(
+                    flux_telluric_corrected,
+                    standard_spec.flux_err,
+                    standard_spec.flux_sky,
+                )
+
+                if case_a or case_b:
+
+                    # standard doesn't require atmospheic extinction correction
+                    flux_atm_ext_telluric_corrected = (
+                        standard_spec.flux
+                        + standard_spec.telluric_profile
+                        * standard_spec.telluric_factor
+                        * factor
+                        * self.extinction_fraction
+                    )
+                    standard_spec.add_flux_atm_ext_telluric_corrected(
+                        flux_atm_ext_telluric_corrected,
+                        standard_spec.flux_err_atm_ext_corrected,
+                        standard_spec.flux_sky_atm_ext_corrected,
+                    )
 
     def set_atmospheric_extinction(
         self,
@@ -5435,56 +5312,29 @@ class OneDSpec:
             # ratio of the +ve flux adjustment due to the airmass of the
             # science observation, and the -ve flux adjustment due to the
             # airmass of the standard observation
-            extinction_fraction = (
+            self.extinction_fraction = (
                 science_flux_extinction_factor
                 / standard_flux_extinction_factor
             )
 
+            case_a = (
+                self.telluric_corrected & self.atmospheric_extinction_corrected
+            )
+            # case_b = (not self.telluric_corrected) & self.atmospheric_extinction_corrected
+            case_c = self.telluric_corrected & (
+                not self.atmospheric_extinction_corrected
+            )
+            # case_d = (not self.telluric_corrected) & (not self.atmospheric_extinction_corrected)
+
             # Apply the correction
             science_flux_atm_ext_corrected = (
-                copy.deepcopy(science_spec.flux) / extinction_fraction
+                copy.deepcopy(science_spec.flux) / self.extinction_fraction
             )
             science_flux_err_atm_ext_corrected = (
-                copy.deepcopy(science_spec.flux_err) / extinction_fraction
+                copy.deepcopy(science_spec.flux_err) / self.extinction_fraction
             )
             science_flux_sky_atm_ext_corrected = (
-                copy.deepcopy(science_spec.flux_sky) / extinction_fraction
-            )
-
-            interpoalted_ext_resampled = self.extinction_func(
-                science_spec.wave_resampled
-            )
-            # Get the atmospheric extinction correction factor
-            science_flux_resampled_extinction_factor = 10.0 ** (
-                -(interpoalted_ext_resampled * science_am) / 2.5
-            )
-            # note that we are still using the science_spec.wave because we
-            # want to "uncorrect" the atmospheric correction on the standard
-            # star at the wavelength of of the science target
-            standard_flux_resampled_extinction_factor = 10.0 ** (
-                -(interpoalted_ext_resampled * standard_am) / 2.5
-            )
-
-            # ratio of the +ve flux adjustment due to the airmass of the
-            # science observation, and the -ve flux adjustment due to the
-            # airmass of the standard observation
-            extinction_fraction_resampled = (
-                science_flux_resampled_extinction_factor
-                / standard_flux_resampled_extinction_factor
-            )
-
-            # Apply the correction
-            science_flux_resampled_atm_ext_corrected = (
-                copy.deepcopy(science_spec.flux_resampled)
-                / extinction_fraction_resampled
-            )
-            science_flux_err_resampled_atm_ext_corrected = (
-                copy.deepcopy(science_spec.flux_err_resampled)
-                / extinction_fraction_resampled
-            )
-            science_flux_sky_resampled_atm_ext_corrected = (
-                copy.deepcopy(science_spec.flux_sky_resampled)
-                / extinction_fraction_resampled
+                copy.deepcopy(science_spec.flux_sky) / self.extinction_fraction
             )
 
             # Add the corrected spectra to the spectrum1D
@@ -5493,11 +5343,29 @@ class OneDSpec:
                 science_flux_err_atm_ext_corrected,
                 science_flux_sky_atm_ext_corrected,
             )
-            science_spec.add_flux_resampled_atm_ext_corrected(
-                science_flux_resampled_atm_ext_corrected,
-                science_flux_err_resampled_atm_ext_corrected,
-                science_flux_sky_resampled_atm_ext_corrected,
-            )
+
+            if case_a or case_c:
+
+                # Apply the correction
+                science_flux_atm_ext_telluric_corrected = (
+                    copy.deepcopy(science_spec.flux_telluric_corrected)
+                    / self.extinction_fraction
+                )
+                science_flux_err_atm_ext_telluric_corrected = (
+                    copy.deepcopy(science_spec.flux_err_telluric_corrected)
+                    / self.extinction_fraction
+                )
+                science_flux_sky_atm_ext_telluric_corrected = (
+                    copy.deepcopy(science_spec.flux_sk_telluric_correctedy)
+                    / self.extinction_fraction
+                )
+
+                # Add the corrected spectra to the spectrum1D
+                science_spec.add_flux_atm_ext_telluric_corrected(
+                    science_flux_atm_ext_telluric_corrected,
+                    science_flux_err_atm_ext_telluric_corrected,
+                    science_flux_sky_atm_ext_telluric_corrected,
+                )
 
         # Flag it as corrected
         self.atmospheric_extinction_corrected = True
@@ -5508,6 +5376,7 @@ class OneDSpec:
         wave_min=3500.0,
         wave_max=8500.0,
         atm_ext_corrected=True,
+        telluric_corrected=True,
         display=True,
         renderer="default",
         width=1280,
@@ -5530,6 +5399,8 @@ class OneDSpec:
         atm_ext_corrected: bool (Default: True)
             Set to True to use the atmospheric extinction corrected
             spectrum (if available).
+        telluric_corrected: bool (Default: True)
+            Set to True to use the telluric corrected spectrum (if available).
         display: bool (Default: True)
             Set to True to display disgnostic plot.
         renderer: str (Default: 'default')
@@ -5589,49 +5460,7 @@ class OneDSpec:
                 spec = self.science_spectrum_list[i]
                 telluric = None
 
-                if self.science_wavelength_resampled:
-
-                    wave = spec.wave_resampled
-
-                    if self.science_flux_calibrated:
-
-                        if (
-                            atm_ext_corrected
-                            & self.atmospheric_extinction_corrected
-                        ):
-                            fluxcount = spec.flux_resampled_atm_ext_corrected
-                            fluxcount_sky = (
-                                spec.flux_sky_resampled_atm_ext_corrected
-                            )
-                            fluxcount_err = (
-                                spec.flux_err_resampled_atm_ext_corrected
-                            )
-                            fluxcount_name = "Flux"
-                            fluxcount_sky_name = "Sky Flux"
-                            fluxcount_err_name = "Flux Uncertainty"
-                            telluric = spec.telluric_profile_resampled
-                            telluric_factor = spec.telluric_factor_resampled
-                            fluxcount_continuum = spec.flux_resampled_continuum
-                        else:
-                            fluxcount = spec.flux_resampled
-                            fluxcount_sky = spec.flux_sky_resampled
-                            fluxcount_err = spec.flux_err_resampled
-                            fluxcount_name = "Flux"
-                            fluxcount_sky_name = "Sky Flux"
-                            fluxcount_err_name = "Flux Uncertainty"
-                            telluric = spec.telluric_profile_resampled
-                            telluric_factor = spec.telluric_factor_resampled
-                            fluxcount_continuum = spec.flux_resampled_continuum
-                    else:
-                        fluxcount = spec.count_resampled
-                        fluxcount_sky = spec.count_sky_resampled
-                        fluxcount_err = spec.count_err_resampled
-                        fluxcount_name = "Count / (e- / s)"
-                        fluxcount_sky_name = "Sky Count / (e- / s)"
-                        fluxcount_err_name = "Count Uncertainty / (e- / s)"
-                        fluxcount_continuum = spec.count_resampled_continuum
-
-                elif self.science_wavelength_calibrated:
+                if self.science_wavelength_calibrated:
 
                     wave = spec.wave
 
@@ -5641,15 +5470,58 @@ class OneDSpec:
                             atm_ext_corrected
                             & self.atmospheric_extinction_corrected
                         ):
-                            fluxcount = spec.flux_atm_ext_corrected
-                            fluxcount_sky = spec.flux_sky_atm_ext_corrected
-                            fluxcount_err = spec.flux_err_atm_ext_corrected
+
+                            if telluric_corrected & self.telluric_corrected:
+
+                                fluxcount = (
+                                    spec.flux_atm_ext_telluric_corrected
+                                )
+                                fluxcount_sky = (
+                                    spec.flux_sky_atm_ext_telluric_corrected
+                                )
+                                fluxcount_err = (
+                                    spec.flux_err_atm_ext_telluric_corrected
+                                )
+                                fluxcount_name = "Flux"
+                                fluxcount_sky_name = "Sky Flux"
+                                fluxcount_err_name = "Flux Uncertainty"
+                                telluric = spec.telluric_profile
+                                telluric_factor = spec.telluric_factor
+                                telluric_nudge_factor = (
+                                    spec.telluric_nudge_factor
+                                )
+                                fluxcount_continuum = spec.flux_continuum
+
+                            else:
+
+                                fluxcount = spec.flux_atm_ext_corrected
+                                fluxcount_sky = spec.flux_sky_atm_ext_corrected
+                                fluxcount_err = spec.flux_err_atm_ext_corrected
+                                fluxcount_name = "Flux"
+                                fluxcount_sky_name = "Sky Flux"
+                                fluxcount_err_name = "Flux Uncertainty"
+                                telluric = spec.telluric_profile
+                                telluric_factor = spec.telluric_factor
+                                telluric_nudge_factor = (
+                                    spec.telluric_nudge_factor
+                                )
+                                fluxcount_continuum = spec.flux_continuum
+
+                        elif telluric_corrected & self.telluric_corrected:
+
+                            fluxcount = spec.flux_telluric_corrected
+                            fluxcount_sky = spec.flux_sky_telluric_corrected
+                            fluxcount_err = spec.flux_err_telluric_corrected
                             fluxcount_name = "Flux"
                             fluxcount_sky_name = "Sky Flux"
                             fluxcount_err_name = "Flux Uncertainty"
                             telluric = spec.telluric_profile
+                            telluric_factor = spec.telluric_factor
+                            telluric_nudge_factor = spec.telluric_nudge_factor
                             fluxcount_continuum = spec.flux_continuum
+
                         else:
+
                             fluxcount = spec.flux
                             fluxcount_sky = spec.flux_sky
                             fluxcount_err = spec.flux_err
@@ -5657,8 +5529,12 @@ class OneDSpec:
                             fluxcount_sky_name = "Sky Flux"
                             fluxcount_err_name = "Flux Uncertainty"
                             telluric = spec.telluric_profile
+                            telluric_factor = spec.telluric_factor
+                            telluric_nudge_factor = spec.telluric_nudge_factor
                             fluxcount_continuum = spec.flux_continuum
+
                     else:
+
                         fluxcount = spec.count
                         fluxcount_sky = spec.count_sky
                         fluxcount_err = spec.count_err
@@ -5792,7 +5668,9 @@ class OneDSpec:
                     fig_sci.add_trace(
                         go.Scatter(
                             x=wave,
-                            y=telluric * telluric_factor,
+                            y=telluric
+                            * telluric_factor
+                            * telluric_nudge_factor,
                             line=dict(color="grey"),
                             name="Telluric Correction",
                         )
@@ -5885,6 +5763,8 @@ class OneDSpec:
                     standard_fluxcount_name = "Flux"
                     standard_fluxcount_sky_name = "Sky Flux"
                     standard_fluxcount_err_name = "Flux Uncertainty"
+                    standard_telluric = spec.telluric_profile
+                    standard_telluric_factor = spec.telluric_factor
                     standard_fluxcount_continuum = spec.flux_continuum
                 else:
                     standard_fluxcount = spec.count
@@ -5895,34 +5775,9 @@ class OneDSpec:
                     standard_fluxcount_err_name = (
                         "Count Uncertainty / (e- / s)"
                     )
+                    standard_telluric = spec.telluric_profile
+                    standard_telluric_factor = spec.telluric_factor
                     standard_fluxcount_continuum = spec.count_continuum
-
-            if self.standard_wavelength_resampled:
-
-                standard_wave = spec.wave_resampled
-
-                if self.standard_flux_calibrated:
-                    standard_fluxcount = spec.flux_resampled
-                    standard_fluxcount_sky = spec.flux_sky_resampled
-                    standard_fluxcount_err = spec.flux_err_resampled
-                    standard_fluxcount_name = "Flux"
-                    standard_fluxcount_sky_name = "Sky Flux"
-                    standard_fluxcount_err_name = "Flux Uncertainty"
-                    standard_fluxcount_continuum = (
-                        spec.flux_resampled_continuum
-                    )
-                else:
-                    standard_fluxcount = spec.count_resampled
-                    standard_fluxcount_sky = spec.count_sky_resampled
-                    standard_fluxcount_err = spec.count_err_resampled
-                    standard_fluxcount_name = "Count / (e- / s)"
-                    standard_fluxcount_sky_name = "Sky Count / (e- / s)"
-                    standard_fluxcount_err_name = (
-                        "Count Uncertainty / (e- / s)"
-                    )
-                    standard_fluxcount_continuum = (
-                        spec.count_resampled_continuum
-                    )
 
             standard_wave_mask = (
                 np.array(standard_wave).reshape(-1) > wave_min
@@ -6056,6 +5911,17 @@ class OneDSpec:
                     )
                 )
 
+            if standard_telluric is not None:
+
+                fig_standard.add_trace(
+                    go.Scatter(
+                        x=standard_wave,
+                        y=standard_telluric * standard_telluric_factor,
+                        line=dict(color="grey"),
+                        name="Telluric Correction",
+                    )
+                )
+
             if standard_fluxcount_continuum is not None:
 
                 fig_standard.add_trace(
@@ -6139,6 +6005,474 @@ class OneDSpec:
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
+    def resample(
+        self,
+        wave_start=None,
+        wave_end=None,
+        wave_bin=None,
+        stype="science+standard",
+        spec_id=None,
+    ):
+        """
+
+        Parameters
+        ----------
+        wave_min: None (Default to the minimum fitted wavlength)
+            Minimum wavelength to display
+        wave_max: None (Default to the maximum fitted wavlength)
+            Maximum wavelength to display
+        wave_bin: None (Deafult to median of the wavelength bin size)
+            Provide the resampling bin size
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum1D object
+        stype: str or None (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, contraints are applied to all
+                #  calibrators
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                spec = self.science_spectrum_list[i]
+
+                if spec.wave is not None:
+
+                    # Adjust for pixel shift due to chip gaps
+                    wave = spec.wave
+
+                    # compute the new equally-spaced wavelength array
+                    if wave_bin is None:
+
+                        wave_bin = np.nanmedian(np.ediff1d(wave))
+
+                    if wave_start is None:
+
+                        wave_start = wave[0]
+
+                    if wave_end is None:
+
+                        wave_end = wave[-1]
+
+                    wave_resampled = np.arange(wave_start, wave_end, wave_bin)
+                    spec.add_wavelength_resampled(wave_resampled)
+
+                    if spec.count is not None:
+
+                        count_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.count).reshape(-1),
+                            verbose=True,
+                        )
+
+                        count_err_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.count_err).reshape(-1),
+                            verbose=True,
+                        )
+
+                        count_sky_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.count_sky).reshape(-1),
+                            verbose=True,
+                        )
+
+                        spec.add_count_resampled(
+                            count_resampled,
+                            count_err_resampled,
+                            count_sky_resampled,
+                        )
+
+                        self.logger.info(
+                            "count is resampled for spec_id: {}.".format(i)
+                        )
+
+                    if spec.sensitivity is not None:
+
+                        sensitivity_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.sensitivity).reshape(-1),
+                            verbose=True,
+                        )
+
+                        spec.add_sensitivity_resampled(
+                            sensitivity_resampled,
+                        )
+
+                    if spec.flux is not None:
+
+                        flux_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux).reshape(-1),
+                            verbose=True,
+                        )
+
+                        flux_err_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_err).reshape(-1),
+                            verbose=True,
+                        )
+
+                        flux_sky_resampled = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_sky).reshape(-1),
+                            verbose=True,
+                        )
+
+                        spec.add_flux_resampled(
+                            flux_resampled,
+                            flux_err_resampled,
+                            flux_sky_resampled,
+                        )
+
+                        self.logger.info(
+                            "flux is resampled for spec_id: {}.".format(i)
+                        )
+
+                    if spec.flux_atm_ext_corrected is not None:
+
+                        flux_resampled_atm_ext_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_atm_ext_corrected).reshape(-1),
+                            verbose=True,
+                        )
+
+                        flux_err_resampled_atm_ext_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_err_atm_ext_corrected).reshape(
+                                -1
+                            ),
+                            verbose=True,
+                        )
+
+                        flux_sky_resampled_atm_ext_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_sky_atm_ext_corrected).reshape(
+                                -1
+                            ),
+                            verbose=True,
+                        )
+
+                        spec.add_flux_resampled_atm_ext_corrected(
+                            flux_resampled_atm_ext_corrected,
+                            flux_err_resampled_atm_ext_corrected,
+                            flux_sky_resampled_atm_ext_corrected,
+                        )
+                        self.logger.info(
+                            "flux_atm_ext_corrected is resampled for spec_id: "
+                            "{}.".format(i)
+                        )
+
+                    if spec.flux_telluric_corrected is not None:
+
+                        flux_resampled_telluric_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_telluric_corrected).reshape(-1),
+                            verbose=True,
+                        )
+
+                        flux_err_resampled_telluric_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_err_telluric_corrected).reshape(
+                                -1
+                            ),
+                            verbose=True,
+                        )
+
+                        flux_sky_resampled_telluric_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(spec.flux_sky_telluric_corrected).reshape(
+                                -1
+                            ),
+                            verbose=True,
+                        )
+
+                        spec.add_flux_resampled_telluric_corrected(
+                            flux_resampled_telluric_corrected,
+                            flux_err_resampled_telluric_corrected,
+                            flux_sky_resampled_telluric_corrected,
+                        )
+                        self.logger.info(
+                            "flux_telluric_corrected is resampled for spec_id: "
+                            "{}.".format(i)
+                        )
+
+                    if (
+                        spec.flux_resampled_atm_ext_telluric_corrected
+                        is not None
+                    ):
+
+                        flux_resampled_atm_ext_telluric_corrected = spectres(
+                            np.array(wave_resampled).reshape(-1),
+                            np.array(wave).reshape(-1),
+                            np.array(
+                                spec.flux_atm_ext_telluric_corrected
+                            ).reshape(-1),
+                            verbose=True,
+                        )
+
+                        flux_err_resampled_atm_ext_telluric_corrected = (
+                            spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_err_atm_ext_telluric_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+                        )
+
+                        flux_sky_resampled_atm_ext_telluric_corrected = (
+                            spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_sky_atm_ext_telluric_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+                        )
+
+                        spec.add_flux_resampled_atm_ext_telluric_corrected(
+                            flux_resampled_atm_ext_telluric_corrected,
+                            flux_err_resampled_atm_ext_telluric_corrected,
+                            flux_sky_resampled_atm_ext_telluric_corrected,
+                        )
+                        self.logger.info(
+                            "flux_resampled_atm_ext_telluric_corrected is "
+                            "resampled for spec_id: {}.".format(i)
+                        )
+
+        if "standard" in stype_split:
+
+            spec = self.standard_spectrum_list[0]
+
+            if spec.wave is not None:
+
+                # Adjust for pixel shift due to chip gaps
+                wave = spec.wave
+
+                # compute the new equally-spaced wavelength array
+                if wave_bin is None:
+
+                    wave_bin = np.nanmedian(np.ediff1d(wave))
+
+                if wave_start is None:
+
+                    wave_start = wave[0]
+
+                if wave_end is None:
+
+                    wave_end = wave[-1]
+
+                wave_resampled = np.arange(wave_start, wave_end, wave_bin)
+                spec.add_wavelength_resampled(wave_resampled)
+                self.standard_wavelength_resampled = True
+
+                if spec.count is not None:
+
+                    count_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.count).reshape(-1),
+                        verbose=True,
+                    )
+
+                    count_err_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.count_err).reshape(-1),
+                        verbose=True,
+                    )
+
+                    count_sky_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.count_sky).reshape(-1),
+                        verbose=True,
+                    )
+
+                    spec.add_count_resampled(
+                        count_resampled,
+                        count_err_resampled,
+                        count_sky_resampled,
+                    )
+
+                self.logger.info(
+                    "Wavelength calibration is applied for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+                if spec.sensitivity is not None:
+
+                    sensitivity_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.sensitivity).reshape(-1),
+                        verbose=True,
+                    )
+
+                    spec.add_sensitivity_resampled(
+                        sensitivity_resampled,
+                    )
+
+                if spec.flux is not None:
+
+                    flux_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_err_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_err).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_sky_resampled = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_sky).reshape(-1),
+                        verbose=True,
+                    )
+
+                    spec.add_flux_resampled(
+                        flux_resampled,
+                        flux_err_resampled,
+                        flux_sky_resampled,
+                    )
+
+                if spec.flux_atm_ext_corrected is not None:
+
+                    flux_resampled_atm_ext_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_atm_ext_corrected).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_err_resampled_atm_ext_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_err_atm_ext_corrected).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_sky_resampled_atm_ext_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_sky_atm_ext_corrected).reshape(-1),
+                        verbose=True,
+                    )
+
+                    spec.add_flux_resampled_atm_ext_corrected(
+                        flux_resampled_atm_ext_corrected,
+                        flux_err_resampled_atm_ext_corrected,
+                        flux_sky_resampled_atm_ext_corrected,
+                    )
+
+                if spec.flux_telluric_corrected is not None:
+
+                    flux_resampled_telluric_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_telluric_corrected).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_err_resampled_telluric_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_err_telluric_corrected).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_sky_resampled_telluric_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_sky_telluric_corrected).reshape(-1),
+                        verbose=True,
+                    )
+
+                    spec.add_flux_resampled_telluric_corrected(
+                        flux_resampled_telluric_corrected,
+                        flux_err_resampled_telluric_corrected,
+                        flux_sky_resampled_telluric_corrected,
+                    )
+
+                if spec.flux_resampled_atm_ext_telluric_corrected is not None:
+
+                    flux_resampled_atm_ext_telluric_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(spec.flux_atm_ext_telluric_corrected).reshape(
+                            -1
+                        ),
+                        verbose=True,
+                    )
+
+                    flux_err_resampled_atm_ext_telluric_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(
+                            spec.flux_err_atm_ext_telluric_corrected
+                        ).reshape(-1),
+                        verbose=True,
+                    )
+
+                    flux_sky_resampled_atm_ext_telluric_corrected = spectres(
+                        np.array(wave_resampled).reshape(-1),
+                        np.array(wave).reshape(-1),
+                        np.array(
+                            spec.flux_sky_atm_ext_telluric_corrected
+                        ).reshape(-1),
+                        verbose=True,
+                    )
+
+                    spec.add_flux_resampled_atm_ext_telluric_corrected(
+                        flux_resampled_atm_ext_telluric_corrected,
+                        flux_err_resampled_atm_ext_telluric_corrected,
+                        flux_sky_resampled_atm_ext_telluric_corrected,
+                    )
+
     def create_fits(
         self,
         output="*",
@@ -6154,7 +6488,7 @@ class OneDSpec:
         Parameters
         ----------
         output: String
-            (Default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
+            (Default: '*')
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strings are delimited by "+",
@@ -6189,8 +6523,8 @@ class OneDSpec:
                 flux_atm_ext_telluric_corrected: 3 HDUs
                     Atmospheric extinction and telluric corrected flux, uncertainty, and
                     sky (pixel)
-                sensitivity: 1 HDU
-                    Sensitivity (wavelength)
+                sensitivity_resampled: 1 HDU
+                    Sensitivity in the resampled wavelenth (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
                 flux_resampled_atm_ext_corrected: 3 HDUs
@@ -6290,17 +6624,30 @@ class OneDSpec:
 
             for i in spec_id:
 
+                for j in output_split:
+
+                    if "resampled" in j:
+
+                        self.resample()
+
                 self.science_spectrum_list[i].create_fits(
                     output=output,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu,
                 )
+
                 self.logger.info(
                     "FITS is created for the "
                     "science_spectrum_list for spec_id: {}.".format(i)
                 )
 
         if "standard" in stype_split:
+
+            for j in output_split:
+
+                if "resampled" in j:
+
+                    self.resample()
 
             self.standard_spectrum_list[0].create_fits(
                 output=output,
@@ -6701,7 +7048,7 @@ class OneDSpec:
             )
 
     def modify_wavelength_header(
-        self, idx, method, *args, spec_id=None, stype="science+standard"
+        self, method, *args, spec_id=None, stype="science+standard"
     ):
         """
         Wrapper function to modify the wavelength header.
@@ -6748,7 +7095,7 @@ class OneDSpec:
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_wavelength_header(
-                    idx, method, *args
+                    method, *args
                 )
                 self.logger.info(
                     "wavelength header is moldified for the "
@@ -6758,7 +7105,7 @@ class OneDSpec:
         if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_wavelength_header(
-                idx, method, *args
+                method, *args
             )
             self.logger.info(
                 "wavelength header is moldified for the "
@@ -6766,7 +7113,7 @@ class OneDSpec:
             )
 
     def modify_sensitivity_header(
-        self, idx, method, *args, spec_id=None, stype="science+standard"
+        self, method, *args, spec_id=None, stype="science+standard"
     ):
         """
         Wrapper function to modify the sensitivity header.
@@ -6813,7 +7160,7 @@ class OneDSpec:
             for i in spec_id:
 
                 self.science_spectrum_list[i].modify_sensitivity_header(
-                    idx, method, *args
+                    method, *args
                 )
                 self.logger.info(
                     "sensitivity header is moldified for the "
@@ -6823,7 +7170,7 @@ class OneDSpec:
         if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_sensitivity_header(
-                idx, method, *args
+                method, *args
             )
             self.logger.info(
                 "sensitivity header is moldified for the "
@@ -6895,15 +7242,13 @@ class OneDSpec:
             )
 
     def modify_sensitivity_resampled_header(
-        self, idx, method, *args, spec_id=None, stype="science+standard"
+        self, method, *args, spec_id=None, stype="science+standard"
     ):
         """
         Wrapper function to modify the sensitivity resampled header.
 
         Parameters
         ----------
-        idx: int
-            The HDU number of the sensitivity resampled FITS
         method: str
             The operation to modify the header with
         *args:
@@ -6943,7 +7288,7 @@ class OneDSpec:
 
                 self.science_spectrum_list[
                     i
-                ].modify_sensitivity_resampled_header(idx, method, *args)
+                ].modify_sensitivity_resampled_header(method, *args)
                 self.logger.info(
                     "sensitivity_resampled header is moldified "
                     "for the science_spectrum_list for spec_id: {}.".format(i)
@@ -6952,7 +7297,7 @@ class OneDSpec:
         if "standard" in stype_split:
 
             self.standard_spectrum_list[0].modify_sensitivity_resampled_header(
-                idx, method, *args
+                method, *args
             )
             self.logger.info(
                 "sensitivity_resampled header is moldified for "
@@ -7026,9 +7371,7 @@ class OneDSpec:
 
     def save_fits(
         self,
-        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+"
-        + "flux_atm_ext_corrected+flux_resampled+"
-        + "flux_resampled_atm_ext_corrected",
+        output="*",
         filename="reduced",
         recreate=False,
         empty_primary_hdu=True,
@@ -7078,8 +7421,8 @@ class OneDSpec:
                 flux_atm_ext_telluric_corrected: 3 HDUs
                     Atmospheric extinction and telluric corrected flux, uncertainty, and
                     sky (pixel)
-                sensitivity: 1 HDU
-                    Sensitivity (wavelength)
+                sensitivity_resampled: 1 HDU
+                    Sensitivity in the resampled wavelenth (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
                 flux_resampled_atm_ext_corrected: 3 HDUs
@@ -7217,8 +7560,7 @@ class OneDSpec:
 
     def save_csv(
         self,
-        output="arc_spec+wavecal+wavelength+wavelength_resampled+flux+"
-        + "flux_resampled",
+        output="*",
         filename="reduced",
         recreate=False,
         overwrite=False,
@@ -7269,8 +7611,8 @@ class OneDSpec:
                 flux_atm_ext_telluric_corrected: 3 HDUs
                     Atmospheric extinction and telluric corrected flux, uncertainty, and
                     sky (pixel)
-                sensitivity: 1 HDU
-                    Sensitivity (wavelength)
+                sensitivity_resampled: 1 HDU
+                    Sensitivity in the resampled wavelenth (wavelength)
                 flux_resampled: 4 HDUs
                     Flux, uncertainty, and sky (wavelength)
                 flux_resampled_atm_ext_corrected: 3 HDUs
@@ -7372,6 +7714,12 @@ class OneDSpec:
 
             for i in spec_id:
 
+                for j in output_split:
+
+                    if "resampled" in j:
+
+                        self.resample()
+
                 filename_i = filename + "_science_" + str(i)
 
                 self.science_spectrum_list[i].save_csv(
@@ -7386,6 +7734,12 @@ class OneDSpec:
                 )
 
         if "standard" in stype_split:
+
+            for j in output_split:
+
+                if "resampled" in j:
+
+                    self.resample()
 
             self.standard_spectrum_list[0].save_csv(
                 output=output,

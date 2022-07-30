@@ -222,7 +222,6 @@ class Spectrum1D:
         self.wave_start = None
         self.wave_end = None
         self.wave_resampled = None
-        self.arc_spec_resampled = None
         self.count_resampled = None
         self.count_err_resampled = None
         self.count_sky_resampled = None
@@ -256,8 +255,6 @@ class Spectrum1D:
         # Continuum
         self.count_continuum = None
         self.count_resampled_continuum = None
-        self.flux_continuum = None
-        self.flux_resampled_continuum = None
 
         # Sensitivity curve smoothing properties
         self.smooth = None
@@ -267,22 +264,17 @@ class Spectrum1D:
         # Tellurics
         self.telluric_func = None
         self.telluric_profile = None
-        self.telluric_profile_resampled = None
-        self.telluric_factor = 0.0
-        self.telluric_factor_resampled = 0.0
+        self.telluric_factor = 1.0
+        self.telluric_nudge_factor = 1.0
 
         # Sensitivity curve properties
         self.sensitivity = None
-        self.sensitivity_resampled = None
         self.sensitivity_func = None
         self.wave_literature = None
         self.flux_literature = None
 
         # Atmospheric extinction properties
-        self.standard_flux_extinction_fraction = None
-        self.standard_flux_resampled_extinction_fraction = None
-        self.science_flux_extinction_fraction = None
-        self.science_flux_resampled_extinction_fraction = None
+        self.atmospheric_extinction_fraction = None
 
         # HDU lists for output
         self.trace_hdulist = None
@@ -1892,28 +1884,6 @@ class Spectrum1D:
 
         self.flux_continuum = None
 
-    def add_flux_resampled_continuum(self, flux_resampled_continuum):
-        """
-        Add the continuum flux_resampled value (should be the same size as
-        flux_resampled).
-
-        Parameters
-        ----------
-        flux_resampled_continuum: list or 1-d array
-            The flux of the continuum at the resampled wavelength.
-
-        """
-
-        self.flux_resampled_continuum = flux_resampled_continuum
-
-    def remove_flux_resampled_continuum(self):
-        """
-        Remove the continuum flux_resampled values.
-
-        """
-
-        self.flux_resampled_continuum = None
-
     def add_telluric_func(self, telluric_func):
         """
         Add the Telluric interpolated function.
@@ -2001,28 +1971,53 @@ class Spectrum1D:
 
         self.telluric_factor = None
 
-    def add_telluric_factor_resampled(self, telluric_factor_resampled):
+    def add_telluric_nudge_factor(self, telluric_nudge_factor):
         """
-        Add the Telluric factor found using the resampled flux.
+        Add the Telluric nudge factor.
 
         Parameters
         ----------
-        telluric_factor_resampled: float
+        telluric_nudge_factor: float
+            The multiplier to the telluric profile that minimises the sum
+            of the deviation of corrected spectrum from the continuum
+            spectrum.
+
+        """
+
+        self.telluric_factor = telluric_nudge_factor
+
+    def remove_telluric_nudge_factor(self):
+        """
+        Remove the Telluric nudge factor.
+
+        """
+
+        self.telluric_nudge_factor = None
+
+    def add_telluric_nudge_factor_resampled(
+        self, telluric_nudge_factor_resampled
+    ):
+        """
+        Add the Telluric nudge factor found using the resampled flux.
+
+        Parameters
+        ----------
+        telluric_nudge_factor_resampled: float
             The multiplier to the telluric profile that minimises the sum
             of the deviation of corrected spectrum from the resampled
             continuum spectrum.
 
         """
 
-        self.telluric_factor_resampled = telluric_factor_resampled
+        self.telluric_nudge_factor_resampled = telluric_nudge_factor_resampled
 
-    def remove_telluric_factor_resampled(self):
+    def remove_telluric_nudge_factor_resampled(self):
         """
-        Remove the Telluric factor for the resampled spectrum.
+        Remove the Telluric nudge factor for the resampled spectrum.
 
         """
 
-        self.telluric_factor_resampled = None
+        self.telluric_nudge_factor_resampled = None
 
     def add_flux(self, flux, flux_err, flux_sky):
         """
@@ -4436,7 +4431,7 @@ class Spectrum1D:
                     Resampled Count, uncertainty, and sky (wavelength)
                 sensitivity: 1 HDU
                     Sensitivity (pixel)
-                flux: 4 HDUs
+                flux: 3 HDUs
                     Flux, uncertainty, and sky (pixel)
                 flux_atm_ext_corrected: 3 HDUs
                     Atmospheric extinction corrected flux, uncertainty, and
