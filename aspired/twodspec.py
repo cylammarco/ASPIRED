@@ -1361,6 +1361,16 @@ class TwoDSpec:
             self.arc = arc.data
             self.set_arc_header(arc.header)
 
+        # If it is a CCDData
+        elif isinstance(arc, CCDData):
+
+            self.arc = arc.data
+            if header is None:
+                self.set_arc_header(arc.header)
+            else:
+                self.set_arc_header(header)
+            self.logger.info("A CCDData is loaded as arc data.")
+
         # If a filepath is provided
         elif isinstance(arc, str):
 

@@ -415,6 +415,12 @@ arc_fits = fits.open(
     os.path.join(HERE, "test_data", "v_a_20180810_13_1_0_1.fits.gz")
 )[0]
 
+arc_in_CCDData = CCDData(
+    arc_fits.data,
+    header=arc_fits.header,
+    unit=units.count,
+)
+
 
 def test_add_arc_image_reduction():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
@@ -447,6 +453,13 @@ def test_add_arc_primaryhdu():
 def test_add_arc_hdulist():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_arc(fits.HDUList(arc_fits))
+    assert (twodspec.arc == arc_fits.data).all()
+    assert twodspec.arc_header == arc_fits.header
+
+
+def test_add_arc_hdulist():
+    twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
+    twodspec.add_arc(arc_in_CCDData)
     assert (twodspec.arc == arc_fits.data).all()
     assert twodspec.arc_header == arc_fits.header
 
