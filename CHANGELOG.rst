@@ -1,3 +1,5 @@
+We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
+
 Version 0.5.0-dev
 -----------------
 
@@ -6,6 +8,9 @@ Version 0.5.0-dev
 * New Freatures:
 
   * Atmospheric extinction corrected spectra are stored separately and has become a separate output option.
+  * Telluric corrected spectra are stored separately and has become a separate output option.
+  * Atmospheric extinction AND telluric corrected spectra are stored separately and has become a separate output option.
+  * Resampling is now performed immediately before creating and saving files. All the calibrations are now done in the native pixel/wavelength sampling.
   * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
   * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
 
@@ -86,8 +91,6 @@ Version 0.4.1
 -------------
 
 :Date 6-Nov-2021
-
-We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
 
 * New Features:
 

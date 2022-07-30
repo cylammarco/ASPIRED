@@ -109,6 +109,9 @@ def test_full_run(mock_show):
     lhs6328_twodspec.inspect_line_spread_function(
         spec_id=0, display=False, return_jsonstring=True
     )
+    lhs6328_twodspec.inspect_line_spread_function(
+        display=False, return_jsonstring=True
+    )
 
     # Optimal extraction
     lhs6328_twodspec.ap_extract(
@@ -207,7 +210,14 @@ def test_full_run(mock_show):
     )
 
     # Find the peaks of the arc
+    lhs6328_onedspec.find_arc_lines(display=True, stype="science+standard")
     lhs6328_onedspec.find_arc_lines(display=False, stype="science+standard")
+    lhs6328_onedspec.inspect_arc_lines(
+        spec_id=0, display=True, stype="science+standard"
+    )
+    lhs6328_onedspec.inspect_arc_lines(
+        spec_id=0, display=False, stype="science+standard"
+    )
 
     # Configure the wavelength calibrator
     lhs6328_onedspec.initialise_calibrator(stype="science+standard")
@@ -248,6 +258,8 @@ def test_full_run(mock_show):
     # Get the standard from the library
     lhs6328_onedspec.load_standard(target="hiltner102")
 
+    lhs6328_onedspec.get_continuum()
+
     lhs6328_onedspec.get_sensitivity(
         sens_deg=11, method="polynomial", mask_fit_size=1
     )
@@ -257,14 +269,17 @@ def test_full_run(mock_show):
     )
 
     lhs6328_onedspec.apply_flux_calibration(stype="science+standard")
+    lhs6328_onedspec.inspect_reduced_spectrum()
 
     lhs6328_onedspec.get_telluric_profile()
     lhs6328_onedspec.inspect_telluric_profile(display=False)
     lhs6328_onedspec.apply_telluric_correction()
+    lhs6328_onedspec.inspect_reduced_spectrum()
 
     # Apply atmospheric extinction correction
     lhs6328_onedspec.set_atmospheric_extinction(location="orm")
     lhs6328_onedspec.apply_atmospheric_extinction_correction()
+    lhs6328_onedspec.inspect_reduced_spectrum()
 
     # Create FITS
     lhs6328_onedspec.create_fits(output="trace+count")

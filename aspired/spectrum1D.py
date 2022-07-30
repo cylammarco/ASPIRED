@@ -2216,8 +2216,8 @@ class Spectrum1D:
         """
 
         self.flux_resampled_atm_ext_corrected = None
-        self.flux_resampled_err_atm_ext_corrected = None
-        self.flux_resampled_sky_atm_ext_corrected = None
+        self.flux_err_resampled_atm_ext_corrected = None
+        self.flux_sky_resampled_atm_ext_corrected = None
 
     def add_flux_resampled_telluric_corrected(self, flux, flux_err, flux_sky):
         """
@@ -2250,8 +2250,8 @@ class Spectrum1D:
         """
 
         self.flux_resampled_telluric_corrected = None
-        self.flux_resampled_err_telluric_corrected = None
-        self.flux_resampled_sky_telluric_corrected = None
+        self.flux_err_resampled_telluric_corrected = None
+        self.flux_sky_resampled_telluric_corrected = None
 
     def add_flux_resampled_atm_ext_telluric_corrected(
         self, flux, flux_err, flux_sky
@@ -2287,8 +2287,8 @@ class Spectrum1D:
         """
 
         self.flux_resampled_atm_ext_telluric_corrected = None
-        self.flux_resampled_err_atm_ext_telluric_corrected = None
-        self.flux_resampled_sky_atm_ext_telluric_corrected = None
+        self.flux_err_resampled_atm_ext_telluric_corrected = None
+        self.flux_sky_resampled_atm_ext_telluric_corrected = None
 
     def _modify_imagehdu_data(self, hdulist, idx, method, *args):
         """

@@ -322,6 +322,39 @@ def test_spectrum1D():
     assert spec.flux_err is None
     assert spec.flux_sky is None
 
+    spec.add_flux_atm_ext_corrected(
+        np.arange(100), np.arange(200), np.arange(300)
+    )
+    assert (spec.flux_atm_ext_corrected == np.arange(100)).all()
+    assert (spec.flux_err_atm_ext_corrected == np.arange(200)).all()
+    assert (spec.flux_sky_atm_ext_corrected == np.arange(300)).all()
+    spec.remove_flux_atm_ext_corrected()
+    assert spec.flux_atm_ext_corrected is None
+    assert spec.flux_err_atm_ext_corrected is None
+    assert spec.flux_sky_atm_ext_corrected is None
+
+    spec.add_flux_telluric_corrected(
+        np.arange(100), np.arange(200), np.arange(300)
+    )
+    assert (spec.flux_telluric_corrected == np.arange(100)).all()
+    assert (spec.flux_err_telluric_corrected == np.arange(200)).all()
+    assert (spec.flux_sky_telluric_corrected == np.arange(300)).all()
+    spec.remove_flux_telluric_corrected()
+    assert spec.flux_telluric_corrected is None
+    assert spec.flux_err_telluric_corrected is None
+    assert spec.flux_sky_telluric_corrected is None
+
+    spec.add_flux_atm_ext_telluric_corrected(
+        np.arange(100), np.arange(200), np.arange(300)
+    )
+    assert (spec.flux_atm_ext_telluric_corrected == np.arange(100)).all()
+    assert (spec.flux_err_atm_ext_telluric_corrected == np.arange(200)).all()
+    assert (spec.flux_sky_atm_ext_telluric_corrected == np.arange(300)).all()
+    spec.remove_flux_atm_ext_telluric_corrected()
+    assert spec.flux_atm_ext_telluric_corrected is None
+    assert spec.flux_err_atm_ext_telluric_corrected is None
+    assert spec.flux_sky_atm_ext_telluric_corrected is None
+
     spec.add_flux_resampled(np.arange(100), np.arange(200), np.arange(300))
     assert (spec.flux_resampled == np.arange(100)).all()
     assert (spec.flux_err_resampled == np.arange(200)).all()
@@ -330,3 +363,42 @@ def test_spectrum1D():
     assert spec.flux_resampled is None
     assert spec.flux_err_resampled is None
     assert spec.flux_sky_resampled is None
+
+    spec.add_flux_resampled_atm_ext_corrected(
+        np.arange(100), np.arange(200), np.arange(300)
+    )
+    assert (spec.flux_resampled_atm_ext_corrected == np.arange(100)).all()
+    assert (spec.flux_err_resampled_atm_ext_corrected == np.arange(200)).all()
+    assert (spec.flux_sky_resampled_atm_ext_corrected == np.arange(300)).all()
+    spec.remove_flux_resampled_atm_ext_corrected()
+    assert spec.flux_resampled_atm_ext_corrected is None
+    assert spec.flux_err_resampled_atm_ext_corrected is None
+    assert spec.flux_sky_resampled_atm_ext_corrected is None
+
+    spec.add_flux_resampled_telluric_corrected(
+        np.arange(100), np.arange(200), np.arange(300)
+    )
+    assert (spec.flux_resampled_telluric_corrected == np.arange(100)).all()
+    assert (spec.flux_err_resampled_telluric_corrected == np.arange(200)).all()
+    assert (spec.flux_sky_resampled_telluric_corrected == np.arange(300)).all()
+    spec.remove_flux_resampled_telluric_corrected()
+    assert spec.flux_resampled_telluric_corrected is None
+    assert spec.flux_err_resampled_telluric_corrected is None
+    assert spec.flux_sky_resampled_telluric_corrected is None
+
+    spec.add_flux_resampled_atm_ext_telluric_corrected(
+        np.arange(100), np.arange(200), np.arange(300)
+    )
+    assert (
+        spec.flux_resampled_atm_ext_telluric_corrected == np.arange(100)
+    ).all()
+    assert (
+        spec.flux_err_resampled_atm_ext_telluric_corrected == np.arange(200)
+    ).all()
+    assert (
+        spec.flux_sky_resampled_atm_ext_telluric_corrected == np.arange(300)
+    ).all()
+    spec.remove_flux_resampled_atm_ext_telluric_corrected()
+    assert spec.flux_resampled_atm_ext_telluric_corrected is None
+    assert spec.flux_err_resampled_atm_ext_telluric_corrected is None
+    assert spec.flux_sky_resampled_atm_ext_telluric_corrected is None

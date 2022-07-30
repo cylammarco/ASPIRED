@@ -1777,7 +1777,7 @@ class OneDSpec:
 
                 for i in spec_id:
 
-                    self.inspect_arc_lines(
+                    self.science_wavecal[i].inspect_arc_lines(
                         display=display,
                         width=width,
                         height=height,
@@ -1787,8 +1787,6 @@ class OneDSpec:
                         fig_type=fig_type,
                         filename=filename,
                         open_iframe=open_iframe,
-                        spec_id=spec_id,
-                        stype="science",
                     )
 
             else:
@@ -1799,7 +1797,7 @@ class OneDSpec:
 
             if self.standard_arc_lines_available:
 
-                self.inspect_arc_lines(
+                self.standard_wavecal.inspect_arc_lines(
                     display=display,
                     width=width,
                     height=height,
@@ -1809,8 +1807,6 @@ class OneDSpec:
                     fig_type=fig_type,
                     filename=filename,
                     open_iframe=open_iframe,
-                    spec_id=spec_id,
-                    stype="standard",
                 )
 
             else:

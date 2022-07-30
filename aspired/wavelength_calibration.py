@@ -252,6 +252,129 @@ class WavelengthCalibration:
 
         self.spectrum1D.remove_fit_coeff()
 
+    def inspect_arc_lines(
+        self,
+        display=False,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+
+        """
+
+        Parameters
+        ----------
+        display: bool (Default: False)
+            Set to True to display disgnostic plot.
+        renderer: string (Default: 'default')
+            plotly renderer options.
+        width: int/float (Default: 1280)
+            Number of pixels in the horizontal direction of the outputs.
+        height: int/float (Default: 720)
+            Number of pixels in the vertical direction of the outputs.
+        return_jsonstring: bool (Default: False)
+            set to True to return json string that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str (Default: None)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool (Default: False)
+            Open the iframe in the default browser if set to True. Only used
+            if an iframe is saved.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True.
+
+        """
+
+        arc_spec = getattr(self.spectrum1D, "arc_spec")
+
+        arc_spec = arc_spec - np.nanmin(arc_spec)
+        arc_spec = arc_spec / np.nanmax(arc_spec)
+
+        peaks = getattr(self.spectrum1D, "peaks")
+
+        fig = go.Figure(
+            layout=dict(autosize=False, height=height, width=width)
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=np.arange(len(arc_spec)),
+                y=arc_spec,
+                mode="lines",
+                line=dict(color="royalblue", width=1),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=peaks,
+                y=np.array(arc_spec)[np.rint(peaks).astype("int")],
+                mode="markers",
+                line=dict(color="firebrick", width=1),
+            )
+        )
+
+        fig.update_layout(
+            xaxis=dict(
+                zeroline=False,
+                range=[0, len(arc_spec)],
+                title="Spectral Direction / pixel",
+            ),
+            yaxis=dict(
+                zeroline=False, range=[0, max(arc_spec)], title="e- / s"
+            ),
+            hovermode="closest",
+            showlegend=False,
+        )
+
+        if filename is None:
+
+            filename = "arc_lines"
+
+        if save_fig:
+
+            fig_type_split = fig_type.split("+")
+
+            for t in fig_type_split:
+
+                if t == "iframe":
+
+                    pio.write_html(
+                        fig, filename + "." + t, auto_open=open_iframe
+                    )
+
+                elif t in ["jpg", "png", "svg", "pdf"]:
+
+                    pio.write_image(fig, filename + "." + t)
+
+        if display:
+
+            if renderer == "default":
+
+                fig.show()
+
+            else:
+
+                fig.show(renderer)
+
+        if return_jsonstring:
+
+            return fig.to_json()
+
     def find_arc_lines(
         self,
         arc_spec=None,
@@ -388,73 +511,21 @@ class WavelengthCalibration:
 
         if save_fig or display or return_jsonstring:
 
-            fig = go.Figure(
-                layout=dict(autosize=False, height=height, width=width)
+            to_return = self.inspect_arc_lines(
+                display=display,
+                renderer=renderer,
+                width=width,
+                height=height,
+                return_jsonstring=return_jsonstring,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename,
+                open_iframe=open_iframe,
             )
 
-            fig.add_trace(
-                go.Scatter(
-                    x=np.arange(len(arc_spec)),
-                    y=arc_spec,
-                    mode="lines",
-                    line=dict(color="royalblue", width=1),
-                )
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=peaks,
-                    y=np.array(arc_spec)[np.rint(peaks).astype("int")],
-                    mode="markers",
-                    line=dict(color="firebrick", width=1),
-                )
-            )
+        if return_jsonstring:
 
-            fig.update_layout(
-                xaxis=dict(
-                    zeroline=False,
-                    range=[0, len(arc_spec)],
-                    title="Spectral Direction / pixel",
-                ),
-                yaxis=dict(
-                    zeroline=False, range=[0, max(arc_spec)], title="e- / s"
-                ),
-                hovermode="closest",
-                showlegend=False,
-            )
-
-            if filename is None:
-
-                filename = "arc_lines"
-
-            if save_fig:
-
-                fig_type_split = fig_type.split("+")
-
-                for t in fig_type_split:
-
-                    if t == "iframe":
-
-                        pio.write_html(
-                            fig, filename + "." + t, auto_open=open_iframe
-                        )
-
-                    elif t in ["jpg", "png", "svg", "pdf"]:
-
-                        pio.write_image(fig, filename + "." + t)
-
-            if display:
-
-                if renderer == "default":
-
-                    fig.show()
-
-                else:
-
-                    fig.show(renderer)
-
-            if return_jsonstring:
-
-                return fig.to_json()
+            return to_return
 
     def initialise_calibrator(self, peaks=None, arc_spec=None):
         """
