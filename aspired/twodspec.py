@@ -3023,6 +3023,8 @@ class TwoDSpec:
         self.img_rectified = ndimage.zoom(
             img_tmp, zoom=1.0 / upsample_factor, order=spline_order
         )
+        self.img_residual_rectified = copy.deepcopy(self.img_rectified)
+
         if self.arc is not None:
 
             self.arc_rectified = ndimage.zoom(
@@ -3141,6 +3143,7 @@ class TwoDSpec:
         if self.img_rectified is not None:
 
             self.img = self.img_rectified
+            self.img_residual = self.img_residual_rectified
             self.logger.info("Image rectification is applied")
 
         else:
