@@ -5784,22 +5784,98 @@ class OneDSpec:
         if "standard" in stype_split:
 
             spec = self.standard_spectrum_list[0]
+            standard_telluric = None
 
             if self.standard_wavelength_calibrated:
 
                 standard_wave = spec.wave
 
                 if self.standard_flux_calibrated:
-                    standard_fluxcount = spec.flux
-                    standard_fluxcount_sky = spec.flux_sky
-                    standard_fluxcount_err = spec.flux_err
-                    standard_fluxcount_name = "Flux"
-                    standard_fluxcount_sky_name = "Sky Flux"
-                    standard_fluxcount_err_name = "Flux Uncertainty"
-                    standard_telluric = spec.telluric_profile
-                    standard_telluric_factor = spec.telluric_factor
-                    standard_fluxcount_continuum = spec.flux_continuum
+
+                    if (
+                        atm_ext_corrected
+                        & self.atmospheric_extinction_corrected
+                    ):
+
+                        if (
+                            telluric_corrected
+                            & self.standard_telluric_corrected
+                        ):
+
+                            standard_fluxcount = (
+                                spec.flux_atm_ext_telluric_corrected
+                            )
+                            standard_fluxcount_sky = (
+                                spec.flux_sky_atm_ext_telluric_corrected
+                            )
+                            standard_fluxcount_err = (
+                                spec.flux_err_atm_ext_telluric_corrected
+                            )
+                            standard_fluxcount_name = "Flux"
+                            standard_fluxcount_sky_name = "Sky Flux"
+                            standard_fluxcount_err_name = "Flux Uncertainty"
+                            standard_telluric = spec.telluric_profile
+                            standard_telluric_factor = spec.telluric_factor
+                            standard_telluric_nudge_factor = (
+                                spec.telluric_nudge_factor
+                            )
+                            standard_fluxcount_continuum = spec.flux_continuum
+
+                        else:
+
+                            standard_fluxcount = spec.flux_atm_ext_corrected
+                            standard_fluxcount_sky = (
+                                spec.flux_sky_atm_ext_corrected
+                            )
+                            standard_fluxcount_err = (
+                                spec.flux_err_atm_ext_corrected
+                            )
+                            standard_fluxcount_name = "Flux"
+                            standard_fluxcount_sky_name = "Sky Flux"
+                            standard_fluxcount_err_name = "Flux Uncertainty"
+                            standard_telluric = spec.telluric_profile
+                            standard_telluric_factor = spec.telluric_factor
+                            standard_telluric_nudge_factor = (
+                                spec.telluric_nudge_factor
+                            )
+                            standard_fluxcount_continuum = spec.flux_continuum
+
+                    elif telluric_corrected & self.standard_telluric_corrected:
+
+                        standard_fluxcount = spec.flux_telluric_corrected
+                        standard_fluxcount_sky = (
+                            spec.flux_sky_telluric_corrected
+                        )
+                        standard_fluxcount_err = (
+                            spec.flux_err_telluric_corrected
+                        )
+                        standard_fluxcount_name = "Flux"
+                        standard_fluxcount_sky_name = "Sky Flux"
+                        standard_fluxcount_err_name = "Flux Uncertainty"
+                        standard_telluric = spec.telluric_profile
+                        standard_telluric_factor = spec.telluric_factor
+                        standard_telluric_nudge_factor = (
+                            spec.telluric_nudge_factor
+                        )
+                        standard_fluxcount_continuum = spec.flux_continuum
+
+                    else:
+
+                        standard_fluxcount = spec.flux
+                        standard_fluxcount_sky = spec.flux_sky
+                        standard_fluxcount_err = spec.flux_err
+                        standard_fluxcount_name = "Flux"
+                        standard_fluxcount_sky_name = "Sky Flux"
+                        standard_fluxcount_err_name = "Flux Uncertainty"
+                        standard_telluric = spec.telluric_profile
+                        standard_telluric_factor = spec.telluric_factor
+                        standard_telluric_nudge_factor = (
+                            spec.telluric_nudge_factor
+                        )
+                        standard_fluxcount_continuum = spec.flux_continuum
+
                 else:
+
                     standard_fluxcount = spec.count
                     standard_fluxcount_sky = spec.count_sky
                     standard_fluxcount_err = spec.count_err
@@ -5808,9 +5884,14 @@ class OneDSpec:
                     standard_fluxcount_err_name = (
                         "Count Uncertainty / (e- / s)"
                     )
-                    standard_telluric = spec.telluric_profile
-                    standard_telluric_factor = spec.telluric_factor
                     standard_fluxcount_continuum = spec.count_continuum
+
+            else:
+
+                self.logger.warning(
+                    "Spectrum is not wavelength "
+                    "calibrated, it cannot be plotted."
+                )
 
             standard_wave_mask = (
                 np.array(standard_wave).reshape(-1) > wave_min
