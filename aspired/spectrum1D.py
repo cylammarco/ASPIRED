@@ -1981,7 +1981,7 @@ class Spectrum1D:
 
         """
 
-        self.telluric_factor = telluric_nudge_factor
+        self.telluric_nudge_factor = telluric_nudge_factor
 
     def remove_telluric_nudge_factor(self):
         """
@@ -3256,10 +3256,12 @@ class Spectrum1D:
             # Use the header of the arc
             if self.arc_header is not None:
                 wavelength_resampled_ImageHDU = fits.ImageHDU(
-                    self.wave, header=self.arc_header
+                    self.wave_resampled, header=self.arc_header
                 )
             else:
-                wavelength_resampled_ImageHDU = fits.ImageHDU(self.wave)
+                wavelength_resampled_ImageHDU = fits.ImageHDU(
+                    self.wave_resampled
+                )
 
             # Create an empty HDU list and populate with the ImageHDU
             self.wavelength_resampled_hdulist = fits.HDUList()
@@ -4909,7 +4911,7 @@ class Spectrum1D:
                 if not self.hdu_content["trace"]:
                     self.create_trace_fits()
 
-                if self.trace_hdulist is not None:
+                if self.trace_hdulist[0].data is not None:
 
                     hdu_output += self.trace_hdulist
                     self.hdu_content["trace"] = True
@@ -4919,7 +4921,7 @@ class Spectrum1D:
                 if not self.hdu_content["count"]:
                     self.create_count_fits()
 
-                if self.count_hdulist is not None:
+                if self.count_hdulist[0].data is not None:
 
                     hdu_output += self.count_hdulist
                     self.hdu_content["count"] = True
@@ -4929,7 +4931,7 @@ class Spectrum1D:
                 if not self.hdu_content["weight_map"]:
                     self.create_weight_map_fits()
 
-                if self.weight_map_hdulist is not None:
+                if self.weight_map_hdulist[0].data is not None:
 
                     hdu_output += self.weight_map_hdulist
                     self.hdu_content["weight_map"] = True
@@ -4939,7 +4941,7 @@ class Spectrum1D:
                 if not self.hdu_content["arc_spec"]:
                     self.create_arc_spec_fits()
 
-                if self.arc_spec_hdulist is not None:
+                if self.arc_spec_hdulist[0].data is not None:
 
                     hdu_output += self.arc_spec_hdulist
                     self.hdu_content["arc_spec"] = True
@@ -4949,7 +4951,7 @@ class Spectrum1D:
                 if not self.hdu_content["wavecal"]:
                     self.create_wavecal_fits()
 
-                if self.wavecal_hdulist is not None:
+                if self.wavecal_hdulist[0].data is not None:
 
                     hdu_output += self.wavecal_hdulist
                     self.hdu_content["wavecal"] = True
@@ -4959,7 +4961,7 @@ class Spectrum1D:
                 if not self.hdu_content["wavelength"]:
                     self.create_wavelength_fits()
 
-                if self.wavelength_hdulist is not None:
+                if self.wavelength_hdulist[0].data is not None:
 
                     hdu_output += self.wavelength_hdulist
                     self.hdu_content["wavelength"] = True
@@ -4969,7 +4971,7 @@ class Spectrum1D:
                 if not self.hdu_content["wavelength_resampled"]:
                     self.create_wavelength_resampled_fits()
 
-                if self.wavelength_resampled_hdulist is None:
+                if self.wavelength_resampled_hdulist[0].data is not None:
 
                     hdu_output += self.wavelength_resampled_hdulist
                     self.hdu_content["wavelength_resampled"] = True
@@ -4979,7 +4981,7 @@ class Spectrum1D:
                 if not self.hdu_content["count_resampled"]:
                     self.create_count_resampled_fits()
 
-                if self.count_resampled_hdulist is not None:
+                if self.count_resampled_hdulist[0].data is not None:
 
                     hdu_output += self.count_resampled_hdulist
                     self.hdu_content["count_resampled"] = True
@@ -4989,7 +4991,7 @@ class Spectrum1D:
                 if not self.hdu_content["sensitivity"]:
                     self.create_sensitivity_fits()
 
-                if self.sensitivity_hdulist is not None:
+                if self.sensitivity_hdulist[0].data is not None:
 
                     hdu_output += self.sensitivity_hdulist
                     self.hdu_content["sensitivity"] = True
@@ -4999,7 +5001,7 @@ class Spectrum1D:
                 if not self.hdu_content["flux"]:
                     self.create_flux_fits()
 
-                if self.flux_hdulist is not None:
+                if self.flux_hdulist[0].data is not None:
 
                     hdu_output += self.flux_hdulist
                     self.hdu_content["flux"] = True
@@ -5009,7 +5011,7 @@ class Spectrum1D:
                 if not self.hdu_content["atm_ext"]:
                     self.create_atm_ext_fits()
 
-                if self.atm_ext_hdulist is not None:
+                if self.atm_ext_hdulist[0].data is not None:
 
                     hdu_output += self.atm_ext_hdulist
                     self.hdu_content["atm_ext"] = True
@@ -5019,7 +5021,7 @@ class Spectrum1D:
                 if not self.hdu_content["flux_atm_ext_corrected"]:
                     self.create_flux_atm_ext_corrected_fits()
 
-                if self.flux_atm_ext_corrected_hdulist is not None:
+                if self.flux_atm_ext_corrected_hdulist[0].data is not None:
 
                     hdu_output += self.flux_atm_ext_corrected_hdulist
                     self.hdu_content["flux_atm_ext_corrected"] = True
@@ -5029,7 +5031,7 @@ class Spectrum1D:
                 if not self.hdu_content["telluric_profile"]:
                     self.create_telluric_profile_fits()
 
-                if self.telluric_profile_hdulist is not None:
+                if self.telluric_profile_hdulist[0].data is not None:
 
                     hdu_output += self.telluric_profile_hdulist
                     self.hdu_content["telluric_profile"] = True
@@ -5039,7 +5041,7 @@ class Spectrum1D:
                 if not self.hdu_content["flux_telluric_corrected"]:
                     self.create_flux_telluric_corrected_fits()
 
-                if self.flux_telluric_corrected_hdulist is not None:
+                if self.flux_telluric_corrected_hdulist[0].data is not None:
 
                     hdu_output += self.flux_telluric_corrected_hdulist
                     self.hdu_content["flux_telluric_corrected"] = True
@@ -5049,7 +5051,10 @@ class Spectrum1D:
                 if not self.hdu_content["flux_atm_ext_telluric_corrected"]:
                     self.create_flux_atm_ext_telluric_corrected_fits()
 
-                if self.flux_atm_ext_telluric_corrected_hdulist:
+                if (
+                    self.flux_atm_ext_telluric_corrected_hdulist[0].data
+                    is not None
+                ):
 
                     hdu_output += self.flux_atm_ext_telluric_corrected_hdulist
                     self.hdu_content["flux_atm_ext_telluric_corrected"] = True
@@ -5059,7 +5064,7 @@ class Spectrum1D:
                 if not self.hdu_content["sensitivity_resampled"]:
                     self.create_sensitivity_resampled_fits()
 
-                if self.sensitivity_resampled_hdulist:
+                if self.sensitivity_resampled_hdulist[0].data is not None:
 
                     hdu_output += self.sensitivity_resampled_hdulist
                     self.hdu_content["sensitivity_resampled"] = True
@@ -5069,7 +5074,7 @@ class Spectrum1D:
                 if not self.hdu_content["flux_resampled"]:
                     self.create_flux_resampled_fits()
 
-                if self.flux_resampled_hdulist is not None:
+                if self.flux_resampled_hdulist[0].data is not None:
 
                     hdu_output += self.flux_resampled_hdulist
                     self.hdu_content["flux_resampled"] = True
@@ -5079,7 +5084,7 @@ class Spectrum1D:
                 if not self.hdu_content["atm_ext_resampled"]:
                     self.create_atm_ext_resampled_fits()
 
-                if self.atm_ext_resampled_hdulist is not None:
+                if self.atm_ext_resampled_hdulist[0].data is not None:
 
                     hdu_output += self.atm_ext_resampled_hdulist
                     self.hdu_content["atm_ext_resampled"] = True
@@ -5089,7 +5094,10 @@ class Spectrum1D:
                 if not self.hdu_content["flux_resampled_atm_ext_corrected"]:
                     self.create_flux_resampled_atm_ext_corrected_fits()
 
-                if self.flux_resampled_atm_ext_corrected_hdulist is not None:
+                if (
+                    self.flux_resampled_atm_ext_corrected_hdulist[0].data
+                    is not None
+                ):
 
                     hdu_output += self.flux_resampled_atm_ext_corrected_hdulist
                     self.hdu_content["flux_resampled_atm_ext_corrected"] = True
@@ -5099,7 +5107,7 @@ class Spectrum1D:
                 if not self.hdu_content["telluric_profile_resampled"]:
                     self.create_telluric_profile_resampled_fits()
 
-                if self.telluric_profile_resampled_hdulist is not None:
+                if self.telluric_profile_resampled_hdulist[0].data is not None:
 
                     hdu_output += self.telluric_profile_resampled_hdulist
                     self.hdu_content["telluric_profile_resampled"] = True
@@ -5109,7 +5117,10 @@ class Spectrum1D:
                 if not self.hdu_content["flux_resampled_telluric_corrected"]:
                     self.create_flux_resampled_telluric_corrected_fits()
 
-                if self.flux_resampled_telluric_corrected_hdulist is not None:
+                if (
+                    self.flux_resampled_telluric_corrected_hdulist[0].data
+                    is not None
+                ):
 
                     hdu_output += (
                         self.flux_resampled_telluric_corrected_hdulist
@@ -5126,7 +5137,9 @@ class Spectrum1D:
                     self.create_flux_resampled_atm_ext_telluric_corrected_fits()
 
                 if (
-                    self.flux_resampled_atm_ext_telluric_corrected_hdulist
+                    self.flux_resampled_atm_ext_telluric_corrected_hdulist[
+                        0
+                    ].data
                     is not None
                 ):
 
@@ -5330,9 +5343,14 @@ class Spectrum1D:
 
         for output_type in self.hdu_order.keys():
 
-            if output_type in output_split:
+            if (output_type in output_split) & self.hdu_content[output_type]:
 
+                logging.info("Exporting {} to CSV.".format(output_type))
                 end = start + self.n_hdu[output_type]
+
+                logging.info(
+                    "The HDU index is from {} to {}.".format(start, end - 1)
+                )
 
                 if output_type != "arc_spec":
 
@@ -5430,3 +5448,6 @@ class Spectrum1D:
                         )
 
                 start = end
+                logging.info(
+                    "Exported {} to CSV successfully.".format(output_type)
+                )

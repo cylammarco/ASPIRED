@@ -183,11 +183,12 @@ class OneDSpec:
         # This concerns the extinction itself
         self.atmospheric_extinction_correction_available = False
         self.telluric_profile_available = False
-        self.telluric_strnegth_available = False
+        self.telluric_strength_available = False
 
         # This concerns the spectrum being corrected or not
         self.atmospheric_extinction_corrected = False
-        self.telluric_corrected = False
+        self.science_telluric_corrected = False
+        self.standard_telluric_corrected = False
         self.extinction_fraction = 1.0
 
         self.sensitivity_curve_available = False
@@ -4357,6 +4358,7 @@ class OneDSpec:
             self.science_spectrum_list[i].add_telluric_profile(
                 telluric_profile
             )
+            self.science_spectrum_list[i].add_telluric_factor(telluric_factor)
 
         # Add the telluric profile from fluxcal to standard onedspec
         self.standard_spectrum_list[0].add_telluric_func(telluric_func)
@@ -4488,7 +4490,7 @@ class OneDSpec:
             science_spec.add_telluric_factor(telluric_factor)
             self.logger.info("telluric_factor is {}.".format(telluric_factor))
 
-            self.telluric_strnegth_available = True
+            self.telluric_strength_available = True
 
         if self.standard_wavelength_calibrated:
 
@@ -4654,7 +4656,7 @@ class OneDSpec:
             )
             raise ValueError(error_msg)
 
-        if not self.telluric_strnegth_available:
+        if not self.telluric_strength_available:
 
             error_msg = (
                 "Telluric strength is not available. executing "
@@ -4899,7 +4901,7 @@ class OneDSpec:
             )
             raise ValueError(error_msg)
 
-        if not self.telluric_strnegth_available:
+        if not self.telluric_strength_available:
 
             error_msg = (
                 "Telluric strength is not available. executing "
@@ -4947,16 +4949,16 @@ class OneDSpec:
                 else:
 
                     case_a = (
-                        self.telluric_corrected
+                        self.science_telluric_corrected
                         & self.atmospheric_extinction_corrected
                     )
                     case_b = (
-                        not self.telluric_corrected
+                        not self.science_telluric_corrected
                     ) & self.atmospheric_extinction_corrected
-                    # case_c = self.telluric_corrected & (
+                    # case_c = self.science_telluric_corrected & (
                     #    not self.atmospheric_extinction_corrected
                     # )
-                    # case_d = (not self.telluric_corrected) & (
+                    # case_d = (not self.science_telluric_corrected) & (
                     #    not self.atmospheric_extinction_corrected
                     # )
 
@@ -4988,13 +4990,18 @@ class OneDSpec:
                             + science_spec.telluric_profile
                             * science_spec.telluric_factor
                             * factor
-                            * self.extinction_fraction
                         )
                         science_spec.add_flux_atm_ext_telluric_corrected(
                             flux_atm_ext_telluric_corrected,
                             science_spec.flux_err_atm_ext_corrected,
                             science_spec.flux_sky_atm_ext_corrected,
                         )
+
+            # Flag it as corrected
+            self.science_telluric_corrected = True
+            self.logger.info(
+                "Telluric absorption in the science spectrum is corrected."
+            )
 
         if "standard" in stype_split:
 
@@ -5019,16 +5026,16 @@ class OneDSpec:
                     standard_spec.add_telluric_nudge_factor(factor)
 
                 case_a = (
-                    self.telluric_corrected
+                    self.standard_telluric_corrected
                     & self.atmospheric_extinction_corrected
                 )
                 case_b = (
-                    not self.telluric_corrected
+                    not self.standard_telluric_corrected
                 ) & self.atmospheric_extinction_corrected
-                # case_c = self.telluric_corrected & (
+                # case_c = self.standard_telluric_corrected & (
                 #    not self.atmospheric_extinction_corrected
                 # )
-                # case_d = (not self.telluric_corrected) & (
+                # case_d = (not self.standard_telluric_corrected) & (
                 #    not self.atmospheric_extinction_corrected
                 # )
 
@@ -5053,13 +5060,19 @@ class OneDSpec:
                         + standard_spec.telluric_profile
                         * standard_spec.telluric_factor
                         * factor
-                        * self.extinction_fraction
                     )
                     standard_spec.add_flux_atm_ext_telluric_corrected(
                         flux_atm_ext_telluric_corrected,
                         standard_spec.flux_err_atm_ext_corrected,
                         standard_spec.flux_sky_atm_ext_corrected,
                     )
+
+                # Flag it as corrected
+                self.standard_telluric_corrected = True
+                self.logger.info(
+                    "Telluric absorption in the standard spectrum "
+                    "is corrected."
+                )
 
     def set_atmospheric_extinction(
         self,
@@ -5315,14 +5328,15 @@ class OneDSpec:
             self.science_spectrum_list[i].add_atm_ext(self.extinction_fraction)
 
             case_a = (
-                self.telluric_corrected & self.atmospheric_extinction_corrected
+                self.science_telluric_corrected
+                & self.atmospheric_extinction_corrected
             )
-            # case_b = (not self.telluric_corrected) &
+            # case_b = (not self.science_telluric_corrected) &
             #  self.atmospheric_extinction_corrected
-            case_c = self.telluric_corrected & (
+            case_c = self.science_telluric_corrected & (
                 not self.atmospheric_extinction_corrected
             )
-            # case_d = (not self.telluric_corrected) &
+            # case_d = (not self.science_telluric_corrected) &
             # (not self.atmospheric_extinction_corrected)
 
             # Apply the correction
@@ -5343,6 +5357,13 @@ class OneDSpec:
                 science_flux_sky_atm_ext_corrected,
             )
 
+            # Add the corrected spectra to the spectrum1D
+            standard_spec.add_flux_atm_ext_corrected(
+                standard_spec.flux,
+                standard_spec.flux_err,
+                standard_spec.flux_sky,
+            )
+
             if case_a or case_c:
 
                 # Apply the correction
@@ -5355,7 +5376,7 @@ class OneDSpec:
                     / self.extinction_fraction
                 )
                 science_flux_sky_atm_ext_telluric_corrected = (
-                    copy.deepcopy(science_spec.flux_sk_telluric_correctedy)
+                    copy.deepcopy(science_spec.flux_sky_telluric_corrected)
                     / self.extinction_fraction
                 )
 
@@ -5364,6 +5385,13 @@ class OneDSpec:
                     science_flux_atm_ext_telluric_corrected,
                     science_flux_err_atm_ext_telluric_corrected,
                     science_flux_sky_atm_ext_telluric_corrected,
+                )
+
+                # Add the corrected spectra to the spectrum1D
+                standard_spec.add_flux_atm_ext_telluric_corrected(
+                    standard_spec.flux_telluric_corrected,
+                    standard_spec.flux_err_telluric_corrected,
+                    standard_spec.flux_sky_telluric_corrected,
                 )
 
         # Flag it as corrected
@@ -5470,7 +5498,10 @@ class OneDSpec:
                             & self.atmospheric_extinction_corrected
                         ):
 
-                            if telluric_corrected & self.telluric_corrected:
+                            if (
+                                telluric_corrected
+                                & self.science_telluric_corrected
+                            ):
 
                                 fluxcount = (
                                     spec.flux_atm_ext_telluric_corrected
@@ -5506,7 +5537,10 @@ class OneDSpec:
                                 )
                                 fluxcount_continuum = spec.flux_continuum
 
-                        elif telluric_corrected & self.telluric_corrected:
+                        elif (
+                            telluric_corrected
+                            & self.science_telluric_corrected
+                        ):
 
                             fluxcount = spec.flux_telluric_corrected
                             fluxcount_sky = spec.flux_sky_telluric_corrected
@@ -6077,6 +6111,7 @@ class OneDSpec:
 
                     wave_resampled = np.arange(wave_start, wave_end, wave_bin)
                     spec.add_wavelength_resampled(wave_resampled)
+                    self.science_wavelength_resampled = True
 
                     if spec.count is not None:
 
@@ -6231,10 +6266,7 @@ class OneDSpec:
                             "spec_id: {}.".format(i)
                         )
 
-                    if (
-                        spec.flux_resampled_atm_ext_telluric_corrected
-                        is not None
-                    ):
+                    if spec.flux_atm_ext_telluric_corrected is not None:
 
                         flux_resampled_atm_ext_telluric_corrected = spectres(
                             np.array(wave_resampled).reshape(-1),
@@ -6334,7 +6366,7 @@ class OneDSpec:
 
                 self.logger.info(
                     "Wavelength calibration is applied for the "
-                    "science_spectrum_list for spec_id: {}.".format(i)
+                    "standard_spectrum_list."
                 )
 
                 if spec.sensitivity is not None:
@@ -6437,7 +6469,7 @@ class OneDSpec:
                         flux_sky_resampled_telluric_corrected,
                     )
 
-                if spec.flux_resampled_atm_ext_telluric_corrected is not None:
+                if spec.flux_atm_ext_telluric_corrected is not None:
 
                     flux_resampled_atm_ext_telluric_corrected = spectres(
                         np.array(wave_resampled).reshape(-1),
@@ -6640,13 +6672,14 @@ class OneDSpec:
 
             for i in spec_id:
 
+                spec = self.science_spectrum_list[i]
                 for j in output_split:
 
-                    if "resampled" in j:
+                    if ("resampled" in j) and (not spec.hdu_content[j]):
 
-                        self.resample()
+                        self.resample(stype="science")
 
-                self.science_spectrum_list[i].create_fits(
+                spec.create_fits(
                     output=output,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu,
@@ -6659,13 +6692,15 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
+            spec = self.standard_spectrum_list[0]
+
             for j in output_split:
 
-                if "resampled" in j:
+                if ("resampled" in j) & (not spec.hdu_content[j]):
 
-                    self.resample()
+                    self.resample(stype="standard")
 
-            self.standard_spectrum_list[0].create_fits(
+            spec.create_fits(
                 output=output,
                 recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu,
@@ -8294,9 +8329,17 @@ class OneDSpec:
             for i in spec_id:
 
                 filename_i = filename + "_science_" + str(i)
+                spec = self.science_spectrum_list[i]
+                output_filtered = []
 
-                self.science_spectrum_list[i].save_fits(
-                    output=output,
+                for j in output_split:
+
+                    if spec.hdu_content[j]:
+
+                        output_filtered.append(j)
+
+                spec.save_fits(
+                    output="+".join(output_filtered),
                     filename=filename_i,
                     overwrite=overwrite,
                     recreate=recreate,
@@ -8309,8 +8352,17 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            self.standard_spectrum_list[0].save_fits(
-                output=output,
+            spec = self.standard_spectrum_list[0]
+            output_filtered = []
+
+            for j in output_split:
+
+                if spec.hdu_content[j]:
+
+                    output_filtered.append(j)
+
+            spec.save_fits(
+                output="+".join(output_filtered),
                 filename=filename + "_standard",
                 overwrite=overwrite,
                 recreate=recreate,
@@ -8417,8 +8469,8 @@ class OneDSpec:
             output = (
                 "trace+count+weight_map+arc_spec+wavecal+wavelength+"
                 + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "atm_ext+flux_atm_ext_corrected+flux_telluric_corrected+"
-                + "telluric_profile+flux_atm_ext_telluric_corrected+"
+                + "atm_ext+flux_atm_ext_corrected+telluric_profile+"
+                + "flux_telluric_corrected+flux_atm_ext_telluric_corrected+"
                 + "sensitivity_resampled+"
                 + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
@@ -8493,16 +8545,23 @@ class OneDSpec:
 
             for i in spec_id:
 
+                spec = self.science_spectrum_list[i]
+                output_filtered = []
+
                 for j in output_split:
 
-                    if "resampled" in j:
+                    if ("resampled" in j) and (not spec.hdu_content[j]):
 
-                        self.resample()
+                        self.resample(stype="science")
+
+                    if spec.hdu_content[j]:
+
+                        output_filtered.append(j)
 
                 filename_i = filename + "_science_" + str(i)
 
-                self.science_spectrum_list[i].save_csv(
-                    output=output,
+                spec.save_csv(
+                    output="+".join(output_filtered),
                     filename=filename_i,
                     recreate=recreate,
                     overwrite=overwrite,
@@ -8514,14 +8573,21 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
+            spec = self.standard_spectrum_list[0]
+            output_filtered = []
+
             for j in output_split:
 
-                if "resampled" in j:
+                if ("resampled" in j) and (not spec.hdu_content[j]):
 
-                    self.resample()
+                    self.resample(stype="standard")
 
-            self.standard_spectrum_list[0].save_csv(
-                output=output,
+                if spec.hdu_content[j]:
+
+                    output_filtered.append(j)
+
+            spec.save_csv(
+                output="+".join(output_filtered),
                 filename=filename + "_standard",
                 recreate=recreate,
                 overwrite=overwrite,
