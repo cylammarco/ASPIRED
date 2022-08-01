@@ -8,6 +8,7 @@ from plotly import graph_objects as go
 from plotly import io as pio
 from rascal.calibrator import Calibrator
 from rascal.util import refine_peaks
+from rascal.atlas import Atlas
 from scipy import signal
 
 from .spectrum1D import Spectrum1D
@@ -595,6 +596,7 @@ class WavelengthCalibration:
         self.spectrum1D.add_calibrator(
             Calibrator(peaks=peaks, spectrum=arc_spec)
         )
+        self.spectrum1D.calibrator.atlas = Atlas()
 
     def set_calibrator_properties(
         self,
@@ -843,21 +845,23 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.add_user_atlas(
+        self.spectrum1D.calibrator.atlas.add_user_atlas(
             elements=elements,
             wavelengths=wavelengths,
             intensities=intensities,
-            candidate_tolerance=candidate_tolerance,
-            constrain_poly=constrain_poly,
             vacuum=vacuum,
             pressure=pressure,
             temperature=temperature,
             relative_humidity=relative_humidity,
         )
+        self.spectrum1D.calibrator.constrain_poly = constrain_poly
+        self.spectrum1D.calibrator.candidate_tolerance = candidate_tolerance
 
         self.spectrum1D.add_weather_condition(
             pressure, temperature, relative_humidity
         )
+
+        self.spectrum1D.calibrator._generate_pairs()
 
     def add_atlas(
         self,
@@ -923,19 +927,19 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.add_atlas(
+        self.spectrum1D.calibrator.atlas.add(
             elements=elements,
             min_atlas_wavelength=min_atlas_wavelength,
             max_atlas_wavelength=max_atlas_wavelength,
             min_intensity=min_intensity,
             min_distance=min_distance,
-            candidate_tolerance=candidate_tolerance,
-            constrain_poly=constrain_poly,
             vacuum=vacuum,
             pressure=pressure,
             temperature=temperature,
             relative_humidity=relative_humidity,
         )
+        self.spectrum1D.calibrator.constrain_poly = constrain_poly
+        self.spectrum1D.calibrator.candidate_tolerance = candidate_tolerance
 
         self.spectrum1D.add_atlas_wavelength_range(
             min_atlas_wavelength, max_atlas_wavelength
@@ -948,6 +952,7 @@ class WavelengthCalibration:
         self.spectrum1D.add_weather_condition(
             pressure, temperature, relative_humidity
         )
+        self.spectrum1D.calibrator._generate_pairs()
 
     def remove_atlas_lines_range(self, wavelength, tolerance=10.0):
         """
@@ -965,6 +970,7 @@ class WavelengthCalibration:
         self.spectrum1D.calibrator.remove_atlas_lines_range(
             wavelength, tolerance=tolerance
         )
+        self.spectrum1D.calibrator._generate_pairs()
 
     def list_atlas(self):
         """
@@ -981,6 +987,7 @@ class WavelengthCalibration:
         """
 
         self.spectrum1D.calibrator.clear_atlas()
+        self.spectrum1D.calibrator._generate_pairs()
 
     def do_hough_transform(self, brute_force=False):
         """
