@@ -1,6 +1,2 @@
 recursive-include aspired/standards *
 recursive-include aspired/extinction *
-include LICENSE
-include README.md
-include CHANGELOG.rst
-include pyproject.toml
