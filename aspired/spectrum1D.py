@@ -3180,8 +3180,12 @@ class Spectrum1D:
             self.modify_wavecal_header("set", "W8ED", self.weighted)
             self.modify_wavecal_header("set", "FILTER", self.filter_close)
             self.modify_wavecal_header("set", "PUSAGE", self.peak_utilisation)
-            self.modify_wavecal_header("set", "EXTNAME", "Peak Electron Count")
-            self.modify_wavecal_header("set", "LABEL", "Peak Electron Count")
+            self.modify_wavecal_header(
+                "set", "EXTNAME", "Wavelength Clibration Coefficients"
+            )
+            self.modify_wavecal_header(
+                "set", "LABEL", "Wavelength Clibration Coefficients"
+            )
             self.modify_wavecal_header("set", "CRPIX1", 1.00e00)
             self.modify_wavecal_header("set", "CDELT1", self.wave_bin)
             self.modify_wavecal_header("set", "CRVAL1", self.wave_start)

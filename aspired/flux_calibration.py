@@ -322,6 +322,7 @@ class StandardLibrary:
         """
 
         # Load the list of targets in the requested library
+        # Only works in case of exact match
         try:
 
             libraries = self.uname_to_lib[target.lower()]
@@ -362,6 +363,55 @@ class StandardLibrary:
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
+    def lookup_closet_match_in_library(self, target, library):
+        """
+        Check if the requested standard and library exist. Only if the
+        similarity is better than 0.5 a target name will be returned. See
+
+            https://docs.python.org/3.7/library/difflib.html
+
+        Parameters
+        ----------
+        target: str
+            Name of the standard star
+        library: str
+            Name of the library
+
+        Return:
+        -------
+        The closest names to the target in that (closet) library.
+
+        """
+
+        # Load the list of targets in the requested library
+        library_name = difflib.get_close_matches(
+            library,
+            list(self.lib_to_uname.keys()),
+            n=1,
+        )
+
+        if library_name == []:
+
+            return None, None
+
+        else:
+
+            library_name = library_name[0]
+
+        # difflib uses Gestalt pattern matching.
+        target_name = difflib.get_close_matches(
+            target.lower(), self.lib_to_uname[library_name], n=1, cutoff=0.3
+        )
+        if target_name == []:
+
+            target_name = None
+
+        else:
+
+            target_name = target_name[0]
+
+        return target_name, library_name
+
     def load_standard(self, target, library=None, ftype="flux", cutoff=0.4):
         """
         Read the standard flux/magnitude file. And return the wavelength and
@@ -388,36 +438,54 @@ class StandardLibrary:
         self.ftype = ftype.lower()
         self.cutoff = cutoff
 
-        libraries, success = self.lookup_standard_libraries(self.target)
+        # If there is a close match from the user-provided library, use
+        # that first, it will only accept the library and target if the
+        # similarity is above 0.5
+        if library is not None:
 
-        if success:
+            (
+                _target,
+                _library,
+            ) = self.lookup_closet_match_in_library(self.target, library)
 
-            if np.in1d([library], libraries):
+            if _target is not None:
 
-                self.library = library
+                self.target = _target
+                self.library = _library
+
+        # If not, search again with the first one returned from lookup.
+        else:
+
+            libraries, success = self.lookup_standard_libraries(self.target)
+
+            if success:
+
+                if np.in1d([library], libraries):
+
+                    self.library = library
+
+                else:
+
+                    self.library = libraries[0]
+
+                    self.logger.warning(
+                        "The requested standard star cannot be found in the "
+                        "given library,  or the library is not specified. "
+                        "ASPIRED is using " + self.library + "."
+                    )
 
             else:
 
+                # When success is Flase, the libraries is a list of standards
+                self.target = libraries[0]
+                libraries, _ = self.lookup_standard_libraries(self.target)
                 self.library = libraries[0]
 
                 self.logger.warning(
-                    "The requested standard star cannot be found in the "
-                    "given library,  or the library is not specified. "
-                    "ASPIRED is using " + self.library + "."
+                    "The requested library does not exist, "
+                    + self.library
+                    + " is used because it has the closest matching name."
                 )
-
-        else:
-
-            # If not, search again with the first one returned from lookup.
-            self.target = libraries[0]
-            libraries, _ = self.lookup_standard_libraries(self.target)
-            self.library = libraries[0]
-
-            self.logger.warning(
-                "The requested library does not exist, "
-                + self.library
-                + " is used because it has the closest matching name."
-            )
 
         if not self.verbose:
 
