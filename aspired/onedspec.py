@@ -5121,7 +5121,8 @@ class OneDSpec:
         else:
 
             filename = pkg_resources.resource_filename(
-                "aspired", "extinction/{}_atm_extinct.txt".format(location)
+                "aspired",
+                "extinction/{}_atm_extinct.txt".format(location.lower()),
             )
             extinction_table = np.loadtxt(filename, delimiter=",")
             self.extinction_func = interp1d(
@@ -5132,7 +5133,9 @@ class OneDSpec:
                 **kwargs
             )
             self.logger.info(
-                "{} extinction correction function is loaded.".format(location)
+                "{} extinction correction function is loaded.".format(
+                    location.lower()
+                )
             )
 
         self.atmospheric_extinction_correction_available = True
