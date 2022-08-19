@@ -20,7 +20,7 @@ from spectres import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .image_reduction import ImageReduction
-from .spectrum1D import Spectrum1D
+from .spectrum_oneD import SpectrumOneD
 from .util import create_bad_pixel_mask, bfixpix
 
 __all__ = ["TwoDSpec"]
@@ -2354,7 +2354,7 @@ class TwoDSpec:
                 "{} pix.".format(ap_sigma)
             )
 
-            self.spectrum_list[i] = Spectrum1D(
+            self.spectrum_list[i] = SpectrumOneD(
                 spec_id=i,
                 verbose=self.verbose,
                 logger_name=self.logger_name,
@@ -2584,7 +2584,7 @@ class TwoDSpec:
 
             else:
 
-                self.spectrum_list[i] = Spectrum1D(
+                self.spectrum_list[i] = SpectrumOneD(
                     spec_id=i,
                     verbose=self.verbose,
                     logger_name=self.logger_name,

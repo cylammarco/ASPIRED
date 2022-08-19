@@ -13,7 +13,7 @@ from scipy import signal
 from scipy import interpolate as itp
 from spectres import spectres
 
-from .spectrum1D import Spectrum1D
+from .spectrum_oneD import SpectrumOneD
 from .util import get_continuum
 
 base_dir = os.path.dirname(__file__)
@@ -741,7 +741,7 @@ class FluxCalibration(StandardLibrary):
             log_file_name=self.log_file_name,
         )
         self.verbose = verbose
-        self.spectrum1D = Spectrum1D(
+        self.spectrum1D = SpectrumOneD(
             spec_id=0,
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -765,15 +765,15 @@ class FluxCalibration(StandardLibrary):
 
         By default, this is passing object by reference by default, so it
         directly modifies the spectrum1D supplied. By setting merger to True,
-        it copies the data into the Spectrum1D in the FluxCalibration object.
+        it copies the data into the SpectrumOneD in the FluxCalibration object.
 
         Parameters
         ----------
-        spectrum1D: Spectrum1D object
-            The Spectrum1D to be referenced or copied.
+        spectrum1D: SpectrumOneD object
+            The SpectrumOneD to be referenced or copied.
         merge: bool (Default: False)
-            Set to True to copy everything over to the local Spectrum1D,
-            hence FluxCalibration will not be acting on the Spectrum1D
+            Set to True to copy everything over to the local SpectrumOneD,
+            hence FluxCalibration will not be acting on the SpectrumOneD
             outside.
 
         """
@@ -790,7 +790,7 @@ class FluxCalibration(StandardLibrary):
 
     def remove_spectrum1D(self):
 
-        self.spectrum1D = Spectrum1D(
+        self.spectrum1D = SpectrumOneD(
             spec_id=0,
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -1260,7 +1260,7 @@ class FluxCalibration(StandardLibrary):
             standard_wave_masked, standard_flux_masked
         )
 
-        # Add to each Spectrum1D object
+        # Add to each SpectrumOneD object
         self.spectrum1D.add_sensitivity_func(sensitivity_func)
         self.spectrum1D.add_count_continuum(count)
         self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
@@ -1515,7 +1515,7 @@ class FluxCalibration(StandardLibrary):
 
         Parameters
         ----------
-        target_spectrum1D: Spectrum1D object
+        target_spectrum1D: SpectrumOneD object
             The spectrum to be flux calibrated.
         inspect: bool (Default: False)
             Set to True to create/display/save figure
@@ -1817,7 +1817,7 @@ class FluxCalibration(StandardLibrary):
     ):
         """
         Save the reduced data to disk, with a choice of any combination of
-        the data that are already present in the Spectrum1D, see below the
+        the data that are already present in the SpectrumOneD, see below the
         'output' parameters for details.
 
         Parameters
@@ -1875,7 +1875,7 @@ class FluxCalibration(StandardLibrary):
     ):
         """
         Save the reduced data to disk, with a choice of any combination of
-        the data that are already present in the Spectrum1D, see below the
+        the data that are already present in the SpectrumOneD, see below the
         'output' parameters for details.
 
         Parameters

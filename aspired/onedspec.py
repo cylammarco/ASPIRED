@@ -14,7 +14,7 @@ from scipy.interpolate import interp1d
 
 from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
-from .spectrum1D import Spectrum1D
+from .spectrum_oneD import SpectrumOneD
 from .util import get_continuum
 
 __all__ = ["OneDSpec"]
@@ -132,7 +132,7 @@ class OneDSpec:
         # Create empty dictionary
         self.science_spectrum_list = {}
         self.standard_spectrum_list = {
-            0: Spectrum1D(
+            0: SpectrumOneD(
                 spec_id=0,
                 verbose=self.verbose,
                 logger_name=self.logger_name,
@@ -201,8 +201,8 @@ class OneDSpec:
 
     def add_science_spectrum1D(self, spec_id):
         """
-        Add a new Spectrum1D with the ID spec_id. This overwrite the existing
-        Spectrum1D object if it already exists.
+        Add a new SpectrumOneD with the ID spec_id. This overwrite the existing
+        SpectrumOneD object if it already exists.
 
         Parameters
         ----------
@@ -224,10 +224,10 @@ class OneDSpec:
             }
         )
 
-        # Create the Spectrum1D object for the given spec_id
+        # Create the SpectrumOneD object for the given spec_id
         self.science_spectrum_list.update(
             {
-                spec_id: Spectrum1D(
+                spec_id: SpectrumOneD(
                     spec_id=spec_id,
                     verbose=self.verbose,
                     logger_name=self.logger_name,
@@ -238,7 +238,7 @@ class OneDSpec:
             }
         )
 
-        # Reference the wavecal to the Spectrum1D object just created
+        # Reference the wavecal to the SpectrumOneD object just created
         self.science_wavecal[spec_id].from_spectrum1D(
             self.science_spectrum_list[spec_id]
         )
@@ -1500,7 +1500,7 @@ class OneDSpec:
                 ].spectrum1D
 
                 self.logger.info(
-                    "Referenced Spectrum1D of the"
+                    "Referenced SpectrumOneD of the"
                     "science_spectrum_list for spec_id: {}.".format(i)
                     + "to the corresponding science_wavecal."
                 )
@@ -1524,7 +1524,7 @@ class OneDSpec:
             self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
 
             self.logger.info(
-                "Referenced Spectrum1D of the"
+                "Referenced SpectrumOneD of the"
                 "standard_spectrum_list to the standard_wavecal."
             )
 

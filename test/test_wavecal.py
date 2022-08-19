@@ -8,7 +8,7 @@ import pytest
 from astropy.io import fits
 
 from aspired.wavelength_calibration import WavelengthCalibration
-from aspired.spectrum1D import Spectrum1D
+from aspired.spectrum_oneD import SpectrumOneD
 from aspired import spectral_reduction
 
 HERE = os.path.dirname(os.path.realpath(__file__))
@@ -71,7 +71,7 @@ np.random.seed(0)
 
 def test_wavecal():
 
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Science arc_spec
@@ -136,7 +136,7 @@ def test_wavecal():
 
 def test_setting_a_known_pair():
 
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum1D.add_arc_spec(arc_spec)
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
@@ -159,7 +159,7 @@ def test_setting_a_known_pair():
 @patch("plotly.graph_objects.Figure.show")
 def test_setting_known_pairs(mock_show):
 
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum1D.add_arc_spec(arc_spec)
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
@@ -182,7 +182,7 @@ def test_setting_known_pairs(mock_show):
 @pytest.mark.xfail()
 def test_setting_a_none_to_known_pairs_expect_fail():
 
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum1D.add_arc_spec(arc_spec)
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
@@ -203,7 +203,7 @@ def test_setting_a_none_to_known_pairs_expect_fail():
 @pytest.mark.xfail()
 def test_setting_nones_to_known_pairs_expect_fail():
 
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum1D.add_arc_spec(arc_spec)
     wavecal.from_spectrum1D(lhs6328_spectrum1D)
@@ -329,7 +329,7 @@ def test_user_supplied_arc_spec_arc_lines_from_at_initilisation():
 
 def test_overwritten_copy_of_spectrum1Ds_are_different():
 
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
     wavecal_1 = WavelengthCalibration(log_file_name=None)
     wavecal_1.from_spectrum1D(lhs6328_spectrum1D)
     memory_1 = id(wavecal_1.spectrum1D)

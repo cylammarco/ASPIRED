@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 
 from aspired.flux_calibration import FluxCalibration
-from aspired.spectrum1D import Spectrum1D
+from aspired.spectrum_oneD import SpectrumOneD
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 
@@ -43,7 +43,7 @@ def test_standard_return_suggestion2():
 @patch("plotly.graph_objects.Figure.show")
 def test_sensitivity(mock_show):
 
-    hiltner_spectrum1D = Spectrum1D(log_file_name=None)
+    hiltner_spectrum1D = SpectrumOneD(log_file_name=None)
     sens = FluxCalibration(log_file_name=None)
 
     # Standard count
@@ -97,8 +97,8 @@ def test_sensitivity(mock_show):
 @patch("plotly.graph_objects.Figure.show")
 def test_fluxcalibration(mock_show):
 
-    hiltner_spectrum1D = Spectrum1D(log_file_name=None)
-    lhs6328_spectrum1D = Spectrum1D(log_file_name=None)
+    hiltner_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
 
     fluxcalibrator = FluxCalibration(log_file_name=None)
 

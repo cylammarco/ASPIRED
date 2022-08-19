@@ -11,7 +11,7 @@ from rascal.util import refine_peaks
 from rascal.atlas import Atlas
 from scipy import signal
 
-from .spectrum1D import Spectrum1D
+from .spectrum_oneD import SpectrumOneD
 
 __all__ = ["WavelengthCalibration"]
 
@@ -118,7 +118,7 @@ class WavelengthCalibration:
         self.log_file_folder = log_file_folder
         self.log_file_name = log_file_name
 
-        self.spectrum1D = Spectrum1D(
+        self.spectrum1D = SpectrumOneD(
             spec_id=0,
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -142,15 +142,15 @@ class WavelengthCalibration:
 
         By default, this is passing object by reference by default, so it
         directly modifies the spectrum1D supplied. By setting merger to True,
-        it copies the data into the Spectrum1D in the FluxCalibration object.
+        it copies the data into the SpectrumOneD in the FluxCalibration object.
 
         Parameters
         ----------
-        spectrum1D: Spectrum1D object
-            The Spectrum1D to be referenced or copied.
+        spectrum1D: SpectrumOneD object
+            The SpectrumOneD to be referenced or copied.
         merge: bool (Default: False)
-            Set to True to copy everything over to the local Spectrum1D,
-            hence FluxCalibration will not be acting on the Spectrum1D
+            Set to True to copy everything over to the local SpectrumOneD,
+            hence FluxCalibration will not be acting on the SpectrumOneD
             outside.
         overwrite: bool (Default: False)
             Set to True to make a complete copy of the spectrum1D to the
@@ -1481,7 +1481,7 @@ class WavelengthCalibration:
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
-        data that are already present in the Spectrum1D. Because a
+        data that are already present in the SpectrumOneD. Because a
         WavelengthCalibration only requires a subset of all the data, only
         'wavecal' is guaranteed to exist.
 
@@ -1523,7 +1523,7 @@ class WavelengthCalibration:
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
-        data that are already present in the Spectrum1D. Because a
+        data that are already present in the SpectrumOneD. Because a
         WavelengthCalibration only requires a subset of all the data, only
         'wavecal' is guaranteed to exist.
 

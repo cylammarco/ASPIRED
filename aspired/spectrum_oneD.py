@@ -7,10 +7,10 @@ import numpy as np
 from astropy.io import fits
 from scipy import interpolate as itp
 
-__all__ = ["Spectrum1D"]
+__all__ = ["SpectrumOneD"]
 
 
-class Spectrum1D:
+class SpectrumOneD:
     """
     Base class of a 1D spectral object to hold the information of each
     extracted spectrum and the raw headers if was provided during the
@@ -22,7 +22,7 @@ class Spectrum1D:
         self,
         spec_id=None,
         verbose=True,
-        logger_name="Spectrum1D",
+        logger_name="SpectrumOneD",
         log_level="INFO",
         log_file_folder="default",
         log_file_name=None,
@@ -38,7 +38,7 @@ class Spectrum1D:
         verbose: boolean (Default: True)
             Set to False to suppress all verbose warnings, except for
             critical failure.
-        logger_name: str (Default: Spectrum1D)
+        logger_name: str (Default: SpectrumOneD)
             This will set the name of the logger, if the name is used already,
             it will reference to the existing logger. This will be the
             first part of the default log file name unless log_file_name is
@@ -409,10 +409,10 @@ class Spectrum1D:
 
         Parameters
         ----------
-        spectrum1D: Spectrum1D object
-            The source Spectrum1D to be deep copied over.
+        spectrum1D: SpectrumOneD object
+            The source SpectrumOneD to be deep copied over.
         overwrite: boolean (Default: False)
-            Set to True to overwrite all the data in this Spectrum1D.
+            Set to True to overwrite all the data in this SpectrumOneD.
 
         """
 

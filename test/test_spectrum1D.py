@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
-from aspired import spectrum1D
+from aspired import spectrum_oneD
 
 
 def test_spectrum1D():
-    spec = spectrum1D.Spectrum1D(log_file_name=None)
+    spec = spectrum_oneD.SpectrumOneD(log_file_name=None)
 
     spec.add_count(count=np.arange(10))
     assert (spec.count == np.arange(10)).all()
