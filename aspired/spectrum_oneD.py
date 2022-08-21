@@ -4931,7 +4931,7 @@ class SpectrumOneD:
                     self.create_weight_map_fits()
 
                 if (self.weight_map_hdulist is not None) and (
-                    self.weight_map is not None
+                    self.var is not None
                 ):
 
                     hdu_output += self.weight_map_hdulist
