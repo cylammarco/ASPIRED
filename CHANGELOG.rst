@@ -14,6 +14,7 @@ Version 0.5.0-dev
   * Resampling is now performed immediately before creating and saving files. All the calibrations are now done in the native pixel/wavelength sampling.
   * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
   * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
+  * Added recompute_continuum when generating sensitivity curve.
 
 * Minor bug fixes:
 
@@ -23,6 +24,7 @@ Version 0.5.0-dev
   * Fixed a few typos when exporting FITS files with `spectrum1D`.
   * Fixed typo relating to logging of the setting of airmass.
   * Fixed a bug in sorting peaks by prominence
+  * Exporting FITS and CSV will check if data exist to avoid outputting empty files.
 
 * (API) changes:
 

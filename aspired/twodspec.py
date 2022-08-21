@@ -2314,7 +2314,8 @@ class TwoDSpec:
                     [
                         (x, y)
                         for (x, y) in zip(
-                            np.arange(self.spec_size) * self.resample_factor,
+                            np.arange(self.spec_size)[::100]
+                            * self.resample_factor,
                             ap,
                         )
                     ]
@@ -5692,7 +5693,6 @@ class TwoDSpec:
             spec = self.spectrum_list[i]
 
             len_trace = len(spec.trace)
-            trace = np.nanmean(spec.trace)
 
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width)

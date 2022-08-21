@@ -3782,6 +3782,7 @@ class OneDSpec:
         sorder=3,
         return_function=False,
         sens_deg=7,
+        recompute_continuum=True,
         **kwargs
     ):
         """
@@ -3815,6 +3816,8 @@ class OneDSpec:
         sens_deg: int (Default: 7)
             The degree of polynomial of the sensitivity curve, only used if
             the method is 'polynomial'.
+        recompute_continuum: bool (Default: True)
+            Recompute the continuum before computing the sensitivity function.
         **kwargs:
             keyword arguments for passing to the LOWESS function, see
             `statsmodels.nonparametric.smoothers_lowess.lowess()`
@@ -3834,6 +3837,7 @@ class OneDSpec:
                 sorder=sorder,
                 return_function=return_function,
                 sens_deg=sens_deg,
+                recompute_continuum=recompute_continuum,
                 **kwargs
             )
             self.logger.info("Sensitivity curve computed.")
@@ -5638,7 +5642,7 @@ class OneDSpec:
                                                 args=[
                                                     {"visible": [True, True]},
                                                     {
-                                                        "title": "Log scale",
+                                                        "title": "Log",
                                                         "yaxis": {
                                                             "type": "log"
                                                         },
@@ -5651,7 +5655,7 @@ class OneDSpec:
                                                 args=[
                                                     {"visible": [True, False]},
                                                     {
-                                                        "title": "Linear scale",
+                                                        "title": "Linear",
                                                         "yaxis": {
                                                             "type": "linear"
                                                         },
@@ -6033,7 +6037,9 @@ class OneDSpec:
                 fig_standard.add_trace(
                     go.Scatter(
                         x=standard_wave,
-                        y=standard_telluric * standard_telluric_factor,
+                        y=standard_telluric
+                        * standard_telluric_factor
+                        * standard_telluric_nudge_factor,
                         line=dict(color="grey"),
                         name="Telluric Correction",
                     )
@@ -7752,8 +7758,8 @@ class OneDSpec:
                     idx, method, *args
                 )
                 self.logger.info(
-                    "flux_atm_ext_telluric_corrected header is moldified for the "
-                    "science_spectrum_list for spec_id: {}.".format(i)
+                    "flux_atm_ext_telluric_corrected header is moldified for "
+                    "the science_spectrum_list for spec_id: {}.".format(i)
                 )
 
         if "standard" in stype_split:
@@ -8219,8 +8225,8 @@ class OneDSpec:
                     idx, method, *args
                 )
                 self.logger.info(
-                    "flux_resampled_atm_ext_telluric header is moldified for the "
-                    "science_spectrum_list for spec_id: {}.".format(i)
+                    "flux_resampled_atm_ext_telluric header is moldified for "
+                    "the science_spectrum_list for spec_id: {}.".format(i)
                 )
 
         if "standard" in stype_split:

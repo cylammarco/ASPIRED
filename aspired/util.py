@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import logging
 import numpy as np
 from scipy import interpolate as itp
@@ -306,6 +307,11 @@ def get_continuum(x, y, **kwargs):
     if "lowess_frac" not in kwargs:
 
         kwargs["frac"] = 0.15
+
+    else:
+
+        kwargs["frac"] = copy.deepcopy(kwargs["lowess_frac"])
+        kwargs.pop("lowess_frac")
 
     if "return_sorted" not in kwargs:
 

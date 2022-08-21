@@ -1049,6 +1049,7 @@ class FluxCalibration(StandardLibrary):
         sorder=3,
         return_function=True,
         sens_deg=7,
+        recompute_continuum=True,
         **kwargs
     ):
         """
@@ -1092,6 +1093,8 @@ class FluxCalibration(StandardLibrary):
         sens_deg: int (Default: 7)
             The degree of polynomial of the sensitivity curve, only used if
             the method is 'polynomial'.
+        recompute_continuum: bool (Default: True)
+            Recompute the continuum before computing the sensitivity function.
         **kwargs:
             keyword arguments for passing to the LOWESS functionj for getting
             the continuum, see
@@ -1114,7 +1117,9 @@ class FluxCalibration(StandardLibrary):
         if exptime is None:
             exptime = 1.0
 
-        if getattr(self.spectrum1D, "count_continuum") is None:
+        if (
+            getattr(self.spectrum1D, "count_continuum") is None
+        ) or recompute_continuum:
 
             self.spectrum1D.add_count_continuum(
                 get_continuum(wave, count, **kwargs)
