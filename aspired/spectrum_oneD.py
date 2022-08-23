@@ -310,34 +310,46 @@ class SpectrumOneD:
         self.header = {
             "trace": "Pixel positions of the trace in the spatial direction, "
             + "Width of the trace",
-            "count": "Count, Count Uncertainty, Sky Count",
+            "count": "Count, Count uncertainty, Sky count",
             "weight_map": "Weight map of the extration (variance)",
-            "arc_spec": "1D Arc Spectrum, Arc Line Position, Arc Line "
-            + "Effective Position",
+            "arc_spec": "1D Arc spectrum, Arc line position, Arc line "
+            + "effective position",
             "wavecal": "Polynomial coefficients for wavelength calibration",
             "wavelength": "The pixel-to-wavelength mapping",
             "wavelength_resampled": "The pixel-to-wavelength mapping at",
-            "count_resampled": "Resampled Count, "
-            + "Resampled Count Uncertainty, Resampled Sky Count",
-            "sensitivity": "Sensitivity Curve",
-            "flux": "Flux, Flux Uncertainty, Sky Flux",
-            "atm_ext": "Atmospheric Extinction correction factor",
-            "flux_atm_ext_corrected": "Flux, Flux Uncertainty, Sky Flux",
+            "count_resampled": "Resampled count, "
+            + "Resampled count uncertainty, Resampled sky count",
+            "sensitivity": "Sensitivity curve",
+            "flux": "Flux, Flux uncertainty, Sky flux",
+            "atm_ext": "Atmospheric extinction correction factor",
+            "flux_atm_ext_corrected": "Flux (atmospheric extinction corrected), "
+            + "Flux uncertainty (atmospheric extinction corrected), "
+            + "Sky flux (atmospheric extinction corrected)",
             "telluric_profile": "Telluric absorption profile",
-            "flux_telluric_corrected": "Flux, Flux Uncertainty, " + "Sky Flux",
-            "flux_atm_ext_telluric_corrected": "Flux, Flux Uncertainty, "
-            + "Sky Flux",
-            "sensitivity_resampled": "Resampled Sensitivity Curve",
-            "flux_resampled": "Resampled Flux, Resampled Flux Uncertainty, "
-            + "Resampled Sky Flux",
-            "atm_ext_resampled": "Atmospheric Extinction correction factor",
-            "flux_resampled_atm_ext_corrected": "Flux, Flux Uncertainty, "
-            + "Sky Flux",
-            "telluric_profile_resampled": "Telluric absorption profile",
-            "flux_resampled_telluric_corrected": "Flux, Flux Uncertainty, "
-            + "Sky Flux",
-            "flux_resampled_atm_ext_telluric_corrected": "Flux, "
-            + "Flux Uncertainty, Sky Flux",
+            "flux_telluric_corrected": "Flux (telluric absorption corrected), "
+            + "Flux Uncertainty (telluric absorption corrected), "
+            + "Sky Flux (telluric absorption corrected)",
+            "flux_atm_ext_telluric_corrected": "Flux (atmospheric extinction and telluric absorption corrected), "
+            + "Flux Uncertainty (atmospheric extinction and telluric "
+            + "absorption corrected), "
+            + "Sky flux (atmospheric extinction and telluric absorption "
+            + "corrected)",
+            "sensitivity_resampled": "Resampled sensitivity curve",
+            "flux_resampled": "Resampled flux, Resampled flux uncertainty, "
+            + "Resampled sky flux",
+            "atm_ext_resampled": "Atmospheric extinction correction factor (resampled)",
+            "flux_resampled_atm_ext_corrected": "Flux (resampled, atmospheric extinction), "
+            + "Flux uncertainty (resampled, atmospheric extinction), "
+            + "Sky flux (resampled, atmospheric extinction)",
+            "telluric_profile_resampled": "Telluric absorption profile (resampled)",
+            "flux_resampled_telluric_corrected": "Flux (resampled, telluric absorption corrected), "
+            + "Flux uncertainty (resampled, telluric absorption corrected), "
+            + "Sky flux (resampled, telluric absorption corrected)",
+            "flux_resampled_atm_ext_telluric_corrected": "Flux (atmospheric extinction and telluric absorption corrected), "
+            + "Flux uncertainty (atmospheric extinction and telluric "
+            + "absorption corrected), "
+            + "Sky flux (atmospheric extinction and telluric absorption "
+            + "corrected)",
         }
 
         self.n_hdu = {
