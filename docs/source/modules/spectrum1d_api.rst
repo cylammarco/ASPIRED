@@ -1,5 +1,5 @@
 Spectrum1D API
 ==============
 
-.. autoclass:: aspired.spectral_reduction.Spectrum1D
+.. autoclass:: aspired.spectral_reduction.SpectrumOneD
    :members:
