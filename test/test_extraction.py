@@ -155,7 +155,7 @@ def test_gausian_spectral_extraction():
         fit_deg=0,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert np.isclose(trace, 35), (
+    assert np.isclose(trace, 35, atol=0.5), (
         "Trace is at row "
         + str(trace)
         + ", but it is expected to be at row 35."

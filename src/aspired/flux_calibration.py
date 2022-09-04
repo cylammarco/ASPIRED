@@ -1117,6 +1117,11 @@ class FluxCalibration(StandardLibrary):
         if exptime is None:
             exptime = 1.0
 
+        self.logger.info(
+            "The exposure time used for computing sensitivity curve "
+            "is {} seconds.".format(exptime)
+        )
+
         if (
             getattr(self.spectrum1D, "count_continuum") is None
         ) or recompute_continuum:
@@ -1133,7 +1138,7 @@ class FluxCalibration(StandardLibrary):
             np.array(np.ediff1d(self.standard_wave_true))
         ):
 
-            standard_flux, _ = spectres(
+            standard_count, _ = spectres(
                 np.array(self.standard_wave_true).reshape(-1),
                 np.array(wave).reshape(-1),
                 np.array(count).reshape(-1),
@@ -1147,7 +1152,7 @@ class FluxCalibration(StandardLibrary):
         # the literature one
         else:
 
-            standard_flux = count
+            standard_count = count
             # standard_flux_err = count_err
             standard_flux_true = spectres(
                 np.array(wave).reshape(-1),
@@ -1160,14 +1165,14 @@ class FluxCalibration(StandardLibrary):
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
 
-            standard_flux = signal.savgol_filter(
-                standard_flux, slength, sorder
+            standard_count = signal.savgol_filter(
+                standard_count, slength, sorder
             )
             # Set the smoothing parameters
             self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
         # Get the sensitivity curve and convert the unit to per second
-        sensitivity = standard_flux_true / (standard_flux / exptime)
+        sensitivity = standard_flux_true / (standard_count / exptime)
         sensitivity_masked = sensitivity.copy()
 
         if mask_range is not None:
@@ -1567,6 +1572,11 @@ class FluxCalibration(StandardLibrary):
         exptime = getattr(target_spectrum1D, "exptime")
         if exptime is None:
             exptime = 1.0
+
+        self.logger.info(
+            "The exposure time used for flux calibration "
+            "is {} seconds.".format(exptime)
+        )
 
         if getattr(target_spectrum1D, "count_continuum") is None:
 

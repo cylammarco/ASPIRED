@@ -160,7 +160,7 @@ class TwoDSpec:
         self.readnoise_is_default_value = True
         self.gain_is_default_value = True
         self.seeing_is_default_value = True
-        self.Exptime_is_default_value = True
+        self.exptime_is_default_value = True
 
         self.zmin = None
         self.zmax = None
@@ -230,7 +230,7 @@ class TwoDSpec:
 
             self.img = data
             self.logger.info("An numpy array is loaded as data.")
-            self.header = header
+            self.set_header(header)
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
 
         # If it is a fits.hdu.hdulist.HDUList object
@@ -238,9 +238,9 @@ class TwoDSpec:
 
             self.img = data[0].data
             if header is None:
-                self.header = data[0].header
+                self.set_header(data[0].header)
             else:
-                self.header = header
+                self.set_header(header)
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.warning(
                 "An HDU list is provided, only the first " "HDU will be read."
@@ -253,9 +253,9 @@ class TwoDSpec:
 
             self.img = data.data
             if header is None:
-                self.header = data.header
+                self.set_header(data.header)
             else:
-                self.header = header
+                self.set_header(header)
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.info("A PrimaryHDU is loaded as data.")
 
@@ -264,9 +264,9 @@ class TwoDSpec:
 
             self.img = data.data
             if header is None:
-                self.header = data.header
+                self.set_header(data.header)
             else:
-                self.header = header
+                self.set_header(header)
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.info("A CCDData is loaded as data.")
 
@@ -282,10 +282,9 @@ class TwoDSpec:
             self.img = data.image_fits.data
 
             if header is None:
-                self.header = data.image_fits.header
+                self.set_header(data.image_fits.header)
             else:
-                self.header = header
-
+                self.set_header(header)
             if data.arc_main is not None:
 
                 self.arc = data.arc_main
@@ -319,7 +318,7 @@ class TwoDSpec:
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
             self.img = copy.deepcopy(fitsfile_tmp.data)
-            self.header = copy.deepcopy(fitsfile_tmp.header)
+            self.set_header(copy.deepcopy(fitsfile_tmp.header))
             logging.info(
                 "Loaded data from: {}, with hdunum: {}".format(
                     filepath, hdunum
@@ -1908,22 +1907,33 @@ class TwoDSpec:
 
         """
 
-        # If it is a fits.hdu.header.Header object
-        if isinstance(header, fits.header.Header):
+        if header is not None:
 
-            self.header = header
+            # If it is a fits.hdu.header.Header object
+            if isinstance(header, fits.header.Header):
 
-        elif isinstance(header[0], fits.header.Header):
+                self.header = header
 
-            self.header = header[0]
+            elif isinstance(header[0], fits.header.Header):
+
+                self.header = header[0]
+
+            else:
+
+                error_msg = (
+                    "Please provide an "
+                    + "astropy.io.fits.header.Header object."
+                )
+                self.logger.critical(error_msg)
+                raise TypeError(error_msg)
 
         else:
 
-            error_msg = (
-                "Please provide an " + "astropy.io.fits.header.Header object."
-            )
-            self.logger.critical(error_msg)
-            raise TypeError(error_msg)
+            self.logger.info('The "header" provided is None. Doing nothing.')
+
+        if self.exptime_is_default_value:
+
+            self.set_exptime()
 
         if self.airmass_is_default_value:
 
