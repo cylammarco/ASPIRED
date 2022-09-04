@@ -10,20 +10,59 @@ from aspired import image_reduction
 HERE = os.path.dirname(os.path.realpath(__file__))
 
 
-def test_spectral_extraction():
-    # Prepare dummy data
-    # total signal should be [2 * (2 + 5 + 10) + 20] - [1 * 7] = 47
-    dummy_data = np.ones((100, 1000))
-    dummy_noise = np.random.random((100, 1000)) * 0.1 - 0.05
+def gaussian(pixels, central_pixel):
+    """
+    Parameters
+    ----------
+    log_age: array
+        the age to return the SFH.
+    peak_age: float
+        the time of the maximum star formation.
+    Returns
+    -------
+    The relative SFH at the given log_age location.
+    """
+    stdv = 1.0
+    variance = stdv**2.0
+    g = (
+        np.exp(-((pixels - central_pixel) ** 2.0) / 2 / variance)
+        / np.sqrt(2 * np.pi)
+        / stdv
+    )
+    return g
 
-    dummy_data[47] += 2.0
-    dummy_data[48] += 5.0
-    dummy_data[49] += 10.0
-    dummy_data[50] += 20.0
-    dummy_data[51] += 10.0
-    dummy_data[52] += 5.0
-    dummy_data[53] += 2.0
-    dummy_data += dummy_noise
+
+# background noise
+bg_level = 5.0
+
+# Prepare dummy data
+# total signal should be [2 * (2 + 5 + 10) + 20] - [1 * 7] = 47
+dummy_data = np.ones((100, 1000)) * bg_level
+
+dummy_data[47] += 2.0
+dummy_data[48] += 5.0
+dummy_data[49] += 10.0
+dummy_data[50] += 20.0
+dummy_data[51] += 10.0
+dummy_data[52] += 5.0
+dummy_data[53] += 2.0
+dummy_data = np.random.normal(dummy_data)
+
+
+# Prepare dummy gaussian data
+dummy_gaussian_data = (
+    np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
+).T * 10000.0 + bg_level
+dummy_gaussian_data = np.random.normal(dummy_gaussian_data)
+
+# Prepare faint dummy gaussian data
+dummy_gaussian_data_faint = (
+    np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
+).T * 100.0 + bg_level
+dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint)
+
+
+def test_spectral_extraction():
 
     # masking
     spec_mask = np.arange(10, 90)
@@ -73,7 +112,7 @@ def test_spectral_extraction():
     )
 
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    assert np.round(count).astype("int") == 54, (
+    assert np.isclose(count, 54, atol=1.0), (
         "Extracted count is " + str(count) + " but it should be 54."
     )
 
@@ -85,6 +124,164 @@ def test_spectral_extraction():
         save_fig=True,
         fig_type="iframe+png",
         return_jsonstring=True,
+    )
+
+
+def test_gausian_spectral_extraction():
+    # masking
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_gaussian_data,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        cosmicray_sigma=5.0,
+        readnoise=0.1,
+        gain=1.0,
+        seeing=1.0,
+        exptime=1.0,
+    )
+
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
+    dummy_twodspec.ap_trace(
+        rescale=True,
+        fit_deg=0,
+    )
+    trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
+    assert np.isclose(trace, 35, atol=1.0), (
+        "Trace is at row "
+        + str(trace)
+        + ", but it is expected to be at row 35."
+    )
+
+    # Direct extraction by summing over the aperture along the trace
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=False,
+    )
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_tophat = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+    # Optimal extraction (Horne86 gauss)
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="gauss")
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_horne = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+    # Optimal extraction (Horne86 lowess)
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=True,
+        model="lowess",
+        lowess_frac=0.05,
+    )
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_horne = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+    # Optimal extraction (Marsh89)
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="marsh89")
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_marsh = count / count_err
+    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~10000."
+    )
+
+
+def test_gaussian_spectral_extraction_low_signal():
+    # masking
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_gaussian_data_faint,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        cosmicray_sigma=5.0,
+        readnoise=0.1,
+        gain=1.0,
+        seeing=1.0,
+        exptime=1.0,
+    )
+
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
+    dummy_twodspec.ap_trace(
+        rescale=True,
+        fit_deg=0,
+    )
+    trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
+    assert np.isclose(trace, 35, atol=1.0), (
+        "Trace is at row "
+        + str(trace)
+        + ", but it is expected to be at row 35."
+    )
+
+    # Direct extraction by summing over the aperture along the trace
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=False,
+    )
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_tophat = count / count_err
+    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~100."
+    )
+
+    # Optimal extraction (Horne86 gauss)
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="gauss")
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_horne = count / count_err
+    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~100."
+    )
+
+    # Optimal extraction (Horne86 lowess)
+    dummy_twodspec.ap_extract(
+        apwidth=5,
+        optimal=True,
+        model="lowess",
+        lowess_frac=0.05,
+    )
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_horne = count / count_err
+    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~100."
+    )
+
+    # Optimal extraction (Marsh89)
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="marsh89")
+    count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    snr_marsh = count / count_err
+    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
+        "Extracted count is " + str(count) + " but it should be ~100."
     )
 
 

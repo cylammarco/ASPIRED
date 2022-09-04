@@ -1054,7 +1054,7 @@ class FluxCalibration(StandardLibrary):
             np.array(np.ediff1d(self.standard_wave_true))
         ):
 
-            standard_flux, _ = spectres(
+            standard_count, _ = spectres(
                 np.array(self.standard_wave_true).reshape(-1),
                 np.array(wave).reshape(-1),
                 np.array(count).reshape(-1),
@@ -1068,7 +1068,7 @@ class FluxCalibration(StandardLibrary):
         # the literature one
         else:
 
-            standard_flux = count
+            standard_count = count
             # standard_flux_err = count_err
             standard_flux_true = spectres(
                 np.array(wave).reshape(-1),
@@ -1081,14 +1081,14 @@ class FluxCalibration(StandardLibrary):
         # apply a Savitzky-Golay filter to remove noise and Telluric lines
         if smooth:
 
-            standard_flux = signal.savgol_filter(
-                standard_flux, slength, sorder
+            standard_count = signal.savgol_filter(
+                standard_count, slength, sorder
             )
             # Set the smoothing parameters
             self.spectrum1D.add_smoothing(smooth, slength, sorder)
 
         # Get the sensitivity curve
-        sensitivity = standard_flux_true / standard_flux
+        sensitivity = standard_flux_true / standard_count
         sensitivity_masked = sensitivity.copy()
 
         if mask_range is not None:
