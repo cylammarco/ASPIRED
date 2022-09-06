@@ -2103,6 +2103,7 @@ class TwoDSpec:
         start_window_idx = nwindow // 2
 
         lines_ref_init = np.nanmedian(img_split[start_window_idx], axis=1)
+        lines_ref_init -= np.nanmin(lines_ref_init)
         lines_ref_init[np.isnan(lines_ref_init)] = 0.0
 
         # linear scaling limits
@@ -2269,13 +2270,13 @@ class TwoDSpec:
             for j in range(nwindow):
 
                 # rounding
-                idx = int(np.round(spec_idx[i][j] + 0.5))
+                idx = int(np.round(spec_idx[i][j] + 0.5)) * resample_factor
                 subspec_cleaned = sigma_clip(
                     img_split[j], sigma=3, masked=True
                 ).data
                 ap_val[j] = np.nansum(
-                    np.nansum(subspec_cleaned, axis=1)[idx - 2 : idx + 2]
-                ) / 5 - np.nanmedian(subspec_cleaned)
+                    np.nansum(subspec_cleaned, axis=1)[idx - 3 : idx + 3]
+                ) / 7 - np.nanmedian(subspec_cleaned)
 
             # Mask out the faintest ap_faint percent of trace
             n_faint = int(np.round(len(ap_val) * ap_faint / 100))

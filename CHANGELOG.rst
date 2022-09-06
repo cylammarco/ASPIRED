@@ -1,3 +1,20 @@
+Version 0.4.X
+-------------
+
+* Major bug fixes
+
+  * Fixed a rounding-like error wwhen finding trace.
+  * Fixed a bug leading to wrong background estimation when finding trace.
+
+Version 0.4.6
+-------------
+
+:Date 26-July-2022
+
+* Minor bug fixes
+
+  * Fixed a bug leading to failing in re-creating FITS file in the background when it should.
+
 Version 0.4.5
 -------------
 
