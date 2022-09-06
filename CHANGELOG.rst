@@ -49,6 +49,33 @@ Version 0.5.0-dev
   * OneDSpec and spectrum1D expanded to accommodate wavelength_resampled
   * spectrum1D exapanded to handle atmospheric extinction corrected spectrum as an independent data list
 
+Version 0.4.X
+-------------
+
+* Major bug fixes
+
+  * Fixed a rounding-like error wwhen finding trace.
+  * Fixed a bug leading to wrong background estimation when finding trace.
+
+Version 0.4.6
+-------------
+
+:Date 26-July-2022
+
+* Minor bug fixes
+
+  * Fixed a bug leading to failing in re-creating FITS file in the background when it should.
+
+Version 0.4.5
+-------------
+
+:Date 18-July-2022
+
+* Minor bug fixes
+
+  * Fixed typo relating to logging of the setting of airmass.
+  * Fixed a bug in sorting peaks by prominence
+
 Version 0.4.4
 -------------
 
