@@ -16,6 +16,12 @@ Version 0.5.0-dev
   * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
   * Added recompute_continuum when generating sensitivity curve.
 
+* Major bug fixes:
+
+  * `ap_trace` trace suffers from a rounding-like error which is now fixed
+  * `ap_trace` sub-sprectra cleaning was referencing pre-upsampled pixel location instead of the upsampled pixel location
+  * Occasional wrong flux calibration is fixed as the sensitivity function switched to the unit of flux/mag per electron
+
 * Minor bug fixes:
 
   * Fixed a bug that caused some standard star names are never matched
@@ -25,11 +31,13 @@ Version 0.5.0-dev
   * Fixed typo relating to logging of the setting of airmass.
   * Fixed a bug in sorting peaks by prominence
   * Exporting FITS and CSV will check if data exist to avoid outputting empty files.
+  * Header information should be grabbed when data are manually provided.
 
 * (API) changes:
 
   * get_telluric_correction() to get_telluric_strength() as the function only get the multiplication factor to the template telluric absorption profile.
   * `lowess_frac` is used throughout the woftware to denote the `frac` argument for the `lowess()` function.
+  * spectrum1D is now spectrumOneD to avoid confusion with Astropy Specutil spectrum1D
 
 * Other changes:
 
