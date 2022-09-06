@@ -4701,7 +4701,7 @@ class OneDSpec:
             fluxcount_name = "Flux"
             fluxcount_continuum = spec.flux_continuum
             telluric_factor = spec.telluric_factor
-            telluric_profile = spec.telluric_profile
+            telluric_func = spec.telluric_func
             spec.add_telluric_nudge_factor(factor)
 
             flux_low = (
@@ -4795,7 +4795,8 @@ class OneDSpec:
                 go.Scatter(
                     x=wave,
                     y=(
-                        fluxcount + telluric_profile * telluric_factor * factor
+                        fluxcount
+                        + telluric_func(wave) * telluric_factor * factor
                     ),
                     line=dict(color="orange"),
                     name="Telluric Corrected Spectrum",
@@ -4805,7 +4806,7 @@ class OneDSpec:
             fig_sci.add_trace(
                 go.Scatter(
                     x=wave,
-                    y=(telluric_profile * telluric_factor * factor),
+                    y=(telluric_func(wave) * telluric_factor * factor),
                     line=dict(color="grey"),
                     name="Telluric Profile",
                 )
@@ -4977,7 +4978,7 @@ class OneDSpec:
                     # in all cases
                     flux_telluric_corrected = (
                         science_spec.flux
-                        + science_spec.telluric_profile
+                        + science_spec.telluric_func(science_spec.wave)
                         * science_spec.telluric_factor
                         * factor
                     )
@@ -4991,7 +4992,7 @@ class OneDSpec:
 
                         flux_atm_ext_telluric_corrected = (
                             science_spec.flux_atm_ext_corrected
-                            + science_spec.telluric_profile
+                            + science_spec.telluric_func(science_spec.wave)
                             * science_spec.telluric_factor
                             * factor
                         )
@@ -5046,7 +5047,7 @@ class OneDSpec:
                 # in all cases
                 flux_telluric_corrected = (
                     standard_spec.flux
-                    + standard_spec.telluric_profile
+                    + standard_spec.telluric_func(standard_spec.wave)
                     * standard_spec.telluric_factor
                     * factor
                 )
@@ -5061,7 +5062,7 @@ class OneDSpec:
                     # standard doesn't require atmospheic extinction correction
                     flux_atm_ext_telluric_corrected = (
                         standard_spec.flux
-                        + standard_spec.telluric_profile
+                        + standard_spec.telluric_func(standard_spec.wave)
                         * standard_spec.telluric_factor
                         * factor
                     )

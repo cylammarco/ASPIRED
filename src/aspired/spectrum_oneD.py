@@ -5192,7 +5192,7 @@ class SpectrumOneD:
             if not empty_primary_hdu:
 
                 # Convert the first HDU to PrimaryHDU
-                hdu_output = fits.PrimaryHDU(
+                hdu_output[0] = fits.PrimaryHDU(
                     hdu_output[0].data, hdu_output[0].header
                 )
                 hdu_output.update_extend()
