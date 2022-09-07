@@ -1,2 +1,2 @@
-recursive-include aspired/standards *
-recursive-include aspired/extinction *
+recursive-include src/aspired/standards *
+recursive-include src/aspired/extinction *

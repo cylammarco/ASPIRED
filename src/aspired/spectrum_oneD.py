@@ -234,8 +234,8 @@ class SpectrumOneD:
         self.flux_err_atm_ext_corrected = None
         self.flux_sky_atm_ext_corrected = None
         self.flux_telluric_corrected = None
-        self.flux_ext_telluric_corrected = None
-        self.flux_ext_telluric_corrected = None
+        self.flux_err_telluric_corrected = None
+        self.flux_sky_telluric_corrected = None
         self.flux_atm_ext_telluric_corrected = None
         self.flux_err_atm_ext_telluric_corrected = None
         self.flux_sky_atm_ext_telluric_corrected = None
@@ -4795,7 +4795,7 @@ class SpectrumOneD:
     def create_fits(
         self,
         output,
-        recreate=False,
+        recreate=True,
         empty_primary_hdu=True,
         return_hdu_list=False,
     ):
@@ -4873,7 +4873,11 @@ class SpectrumOneD:
 
         output_split = output.split("+")
 
+        # If to recreate the FITS, set all contents to False
         if recreate:
+
+            self.logger.info("HDUList is cleared.")
+
             for k, v in self.hdu_content.items():
                 self.hdu_content[k] = False
 
@@ -4881,6 +4885,8 @@ class SpectrumOneD:
         if set([k for k, v in self.hdu_content.items() if v]) == set(
             output_split
         ):
+
+            self.logger.info("HDUList is ready to go.")
 
             # If there is an empty primary HDU, but requested without
             if self.empty_primary_hdu & (not empty_primary_hdu):
@@ -4903,6 +4909,8 @@ class SpectrumOneD:
         else:
 
             self.hdu_output = None
+
+            self.logger.info("Populating the HDUList now.")
 
             # Empty list for appending HDU lists
             hdu_output = fits.HDUList()
@@ -5214,7 +5222,7 @@ class SpectrumOneD:
         output,
         filename,
         overwrite=False,
-        recreate=False,
+        recreate=True,
         empty_primary_hdu=True,
     ):
         """
