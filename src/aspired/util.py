@@ -306,7 +306,7 @@ def get_continuum(x, y, **kwargs):
 
     if "lowess_frac" not in kwargs:
 
-        kwargs["frac"] = 0.15
+        kwargs["frac"] = 0.01
 
     else:
 

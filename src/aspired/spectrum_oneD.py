@@ -3528,7 +3528,7 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_atm_ext_corrected_header(
-                0, "set", "EXTNAME", "Flux"
+                0, "set", "EXTNAME", "Flux atm ext corrected"
             )
             self.modify_flux_atm_ext_corrected_header(
                 0, "set", "LABEL", "Flux"
@@ -3714,7 +3714,7 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux"
+                0, "set", "EXTNAME", "Flux telluric corrected"
             )
             self.modify_flux_telluric_corrected_header(
                 0, "set", "LABEL", "Flux"
@@ -3846,7 +3846,7 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_atm_ext_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux"
+                0, "set", "EXTNAME", "Flux atm ext telluric corrected"
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 0, "set", "LABEL", "Flux"
@@ -4017,7 +4017,9 @@ class SpectrumOneD:
             self.flux_resampled_hdulist += [flux_sky_resampled_ImageHDU]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_flux_resampled_header(0, "set", "EXTNAME", "Flux")
+            self.modify_flux_resampled_header(
+                0, "set", "EXTNAME", "Flux resampled"
+            )
             self.modify_flux_resampled_header(0, "set", "LABEL", "Flux")
             self.modify_flux_resampled_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
@@ -4186,7 +4188,7 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_atm_ext_corrected_header(
-                0, "set", "EXTNAME", "Flux"
+                0, "set", "EXTNAME", "Flux resampled atm ext corrected"
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 0, "set", "LABEL", "Flux"
@@ -4386,7 +4388,7 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux"
+                0, "set", "EXTNAME", "Flux resampled telluric corrected"
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 0, "set", "LABEL", "Flux"
@@ -4539,7 +4541,10 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux"
+                0,
+                "set",
+                "EXTNAME",
+                "Flux resampled atm ext telluric corrected",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 0, "set", "LABEL", "Flux"
@@ -4870,6 +4875,20 @@ class SpectrumOneD:
             Set to True to return the HDU List.
 
         """
+
+        if output == "*":
+
+            output = (
+                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
+                "wavelength_resampled+count_resampled+sensitivity+"
+                "flux+atm_ext+flux_atm_ext_corrected+telluric_profile+"
+                "flux_telluric_corrected+flux_atm_ext_telluric_corrected+"
+                "sensitivity_resampled+flux_resampled+atm_ext_resampled+"
+                "flux_resampled_atm_ext_corrected+"
+                "telluric_profile_resampled+"
+                "flux_resampled_telluic_corrected+"
+                "flux_resampled_atm_ext_telluric_corrected"
+            )
 
         output_split = output.split("+")
 
@@ -5305,7 +5324,9 @@ class SpectrumOneD:
         )
 
         # Save file to disk
-        self.hdu_output.writeto(filename + ".fits", overwrite=overwrite)
+        self.hdu_output.writeto(
+            filename + ".fits", overwrite=overwrite, output_verify="fix+ignore"
+        )
 
     def save_csv(self, output, filename, overwrite, recreate):
         """

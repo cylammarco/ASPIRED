@@ -908,6 +908,12 @@ class FluxCalibration(StandardLibrary):
         # normalise the profile
         telluric_factor = np.ptp(telluric_profile)
         telluric_profile /= telluric_factor
+
+        # If the spectrum doesn't cover any given telluric mask regions
+        if np.isnan(telluric_profile).all():
+
+            telluric_profile = np.zeros_like(telluric_profile)
+
         telluric_func = itp.interp1d(
             wave, telluric_profile, fill_value="extrapolate"
         )

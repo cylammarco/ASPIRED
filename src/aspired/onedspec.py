@@ -4272,7 +4272,7 @@ class OneDSpec:
 
             spec_id = list(self.science_spectrum_list.keys())
 
-        # Get the telluric profile
+        # Get the continuum here
         for i in spec_id:
 
             science_spec = self.science_spectrum_list[i]
@@ -4906,17 +4906,17 @@ class OneDSpec:
             )
             raise ValueError(error_msg)
 
-        if not self.telluric_strength_available:
-
-            error_msg = (
-                "Telluric strength is not available. executing "
-                "get_telluric_strength()."
-            )
-            self.get_telluric_strength()
-
         stype_split = stype.split("+")
 
         if "science" in stype_split:
+
+            if not self.telluric_strength_available:
+
+                error_msg = (
+                    "Telluric strength is not available. executing "
+                    "get_telluric_strength()."
+                )
+                self.get_telluric_strength()
 
             if isinstance(spec_id, int):
 
