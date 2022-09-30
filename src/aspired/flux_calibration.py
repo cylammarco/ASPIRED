@@ -441,12 +441,13 @@ class StandardLibrary:
         # If there is a close match from the user-provided library, use
         # that first, it will only accept the library and target if the
         # similarity is above 0.5
-        if library is not None:
+        self.library = library
+        if self.library is not None:
 
             (
                 _target,
                 _library,
-            ) = self.lookup_closet_match_in_library(self.target, library)
+            ) = self.lookup_closet_match_in_library(self.target, self.library)
 
             if _target is not None:
 
@@ -489,7 +490,7 @@ class StandardLibrary:
 
         if not self.verbose:
 
-            if library is None:
+            if self.library is None:
 
                 # Use the default library order
                 self.logger.warning(
