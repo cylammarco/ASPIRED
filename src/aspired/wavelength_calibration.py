@@ -118,7 +118,7 @@ class WavelengthCalibration:
         self.log_file_folder = log_file_folder
         self.log_file_name = log_file_name
 
-        self.spectrum1D = SpectrumOneD(
+        self.spectrum_oned = SpectrumOneD(
             spec_id=0,
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -133,39 +133,39 @@ class WavelengthCalibration:
             "cheb": np.polynomial.chebyshev.chebval,
         }
 
-    def from_spectrum1D(self, spectrum1D, merge=False, overwrite=False):
+    def from_spectrum_oned(self, spectrum_oned, merge=False, overwrite=False):
         """
-        This function copies all the info from the spectrum1D, because users
+        This function copies all the info from the spectrum_oned, because users
         may supply different level/combination of reduction, everything is
-        copied from the spectrum1D even though in most cases only a None
+        copied from the spectrum_oned even though in most cases only a None
         will be passed.
 
         By default, this is passing object by reference by default, so it
-        directly modifies the spectrum1D supplied. By setting merger to True,
+        directly modifies the spectrum_oned supplied. By setting merger to True,
         it copies the data into the SpectrumOneD in the FluxCalibration object.
 
         Parameters
         ----------
-        spectrum1D: SpectrumOneD object
+        spectrum_oned: SpectrumOneD object
             The SpectrumOneD to be referenced or copied.
         merge: bool (Default: False)
             Set to True to copy everything over to the local SpectrumOneD,
             hence FluxCalibration will not be acting on the SpectrumOneD
             outside.
         overwrite: bool (Default: False)
-            Set to True to make a complete copy of the spectrum1D to the
-            target spectrum1D, that includes all the Nones and other settings.
+            Set to True to make a complete copy of the spectrum_oned to the
+            target spectrum_oned, that includes all the Nones and other settings.
             Use with caution, as it removes the properties set before this
             function call.
 
         """
 
-        # This DOES NOT modify the spectrum1D outside of WavelengthCalibration
+        # This DOES NOT modify the spectrum_oned outside of WavelengthCalibration
         if merge:
-            self.spectrum1D.merge(spectrum1D, overwrite=overwrite)
-        # This DOES modify the spectrum1D outside of WavelengthCalibration
+            self.spectrum_oned.merge(spectrum_oned, overwrite=overwrite)
+        # This DOES modify the spectrum_oned outside of WavelengthCalibration
         else:
-            self.spectrum1D = spectrum1D
+            self.spectrum_oned = spectrum_oned
 
     def add_arc_lines(self, peaks):
         """
@@ -179,7 +179,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.add_peaks_refined(peaks)
+        self.spectrum_oned.add_peaks_refined(peaks)
 
     def remove_arc_lines(self):
         """
@@ -187,7 +187,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.remove_peaks_refined()
+        self.spectrum_oned.remove_peaks_refined()
 
     def add_arc_spec(self, arc_spec):
         """
@@ -200,7 +200,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.add_arc_spec(arc_spec)
+        self.spectrum_oned.add_arc_spec(arc_spec)
 
     def remove_arc_spec(self):
         """
@@ -208,7 +208,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.remove_arc_spec()
+        self.spectrum_oned.remove_arc_spec()
 
     def add_fit_type(self, fit_type):
         """
@@ -222,7 +222,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.add_fit_type(fit_type)
+        self.spectrum_oned.add_fit_type(fit_type)
 
     def remove_fit_type(self):
         """
@@ -230,7 +230,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.remove_fit_type()
+        self.spectrum_oned.remove_fit_type()
 
     def add_fit_coeff(self, fit_coeff):
         """
@@ -243,7 +243,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.add_fit_coeff(fit_coeff)
+        self.spectrum_oned.add_fit_coeff(fit_coeff)
 
     def remove_fit_coeff(self):
         """
@@ -251,7 +251,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.remove_fit_coeff()
+        self.spectrum_oned.remove_fit_coeff()
 
     def inspect_arc_lines(
         self,
@@ -301,12 +301,12 @@ class WavelengthCalibration:
 
         """
 
-        arc_spec = getattr(self.spectrum1D, "arc_spec")
+        arc_spec = getattr(self.spectrum_oned, "arc_spec")
 
         arc_spec = arc_spec - np.nanmin(arc_spec)
         arc_spec = arc_spec / np.nanmax(arc_spec)
 
-        peaks = getattr(self.spectrum1D, "peaks")
+        peaks = getattr(self.spectrum_oned, "peaks")
 
         fig = go.Figure(
             layout=dict(autosize=False, height=height, width=width)
@@ -407,7 +407,7 @@ class WavelengthCalibration:
         Parameters
         ----------
         arc_spec: list, array or None (Default: None)
-            If not provided, it will look for the arc_spec in the spectrum1D.
+            If not provided, it will look for the arc_spec in the spectrum_oned.
             Otherwise, the input arc_spec will be used.
         prominence: float (Default: 5.)
             The minimum prominence to be considered as a peak (% of max).
@@ -454,11 +454,11 @@ class WavelengthCalibration:
 
         if arc_spec is None:
 
-            if getattr(self.spectrum1D, "arc_spec") is None:
+            if getattr(self.spectrum_oned, "arc_spec") is None:
 
                 error_msg = (
                     "arc_spec is not provided. Either provide when "
-                    + "executing this function or provide a spectrum1D that "
+                    + "executing this function or provide a spectrum_oned that "
                     + "contains an arc_spec."
                 )
                 self.logger.critical(error_msg)
@@ -466,13 +466,13 @@ class WavelengthCalibration:
 
         else:
 
-            if getattr(self.spectrum1D, "arc_spec") is not None:
+            if getattr(self.spectrum_oned, "arc_spec") is not None:
 
                 self.logger.warning("arc_spec is replaced with the new one.")
 
-            setattr(self.spectrum1D, "arc_spec", arc_spec)
+            setattr(self.spectrum_oned, "arc_spec", arc_spec)
 
-        arc_spec = getattr(self.spectrum1D, "arc_spec")
+        arc_spec = getattr(self.spectrum_oned, "arc_spec")
 
         arc_spec = arc_spec - np.nanmin(arc_spec)
         arc_spec = arc_spec / np.nanmax(arc_spec)
@@ -487,28 +487,28 @@ class WavelengthCalibration:
 
             peaks = np.sort(peaks[prom_sorted_arg][: int(top_n_peaks)])
 
-        self.spectrum1D.add_peaks(peaks)
+        self.spectrum_oned.add_peaks(peaks)
 
         # Fine tuning
         if refine:
 
             peaks = refine_peaks(
                 arc_spec,
-                getattr(self.spectrum1D, "peaks"),
+                getattr(self.spectrum_oned, "peaks"),
                 window_width=int(refine_window_width),
             )
-            self.spectrum1D.add_peaks(peaks)
+            self.spectrum_oned.add_peaks(peaks)
 
         # Adjust for chip gaps
-        if getattr(self.spectrum1D, "pixel_mapping_itp") is not None:
+        if getattr(self.spectrum_oned, "pixel_mapping_itp") is not None:
 
-            self.spectrum1D.add_peaks_refined(
-                getattr(self.spectrum1D, "pixel_mapping_itp")(peaks)
+            self.spectrum_oned.add_peaks_refined(
+                getattr(self.spectrum_oned, "pixel_mapping_itp")(peaks)
             )
 
         else:
 
-            self.spectrum1D.add_peaks_refined(peaks)
+            self.spectrum_oned.add_peaks_refined(peaks)
 
         if save_fig or display or return_jsonstring:
 
@@ -543,60 +543,60 @@ class WavelengthCalibration:
 
         if peaks is None:
 
-            if getattr(self.spectrum1D, "peaks_refined") is not None:
+            if getattr(self.spectrum_oned, "peaks_refined") is not None:
 
-                peaks = getattr(self.spectrum1D, "peaks_refined")
+                peaks = getattr(self.spectrum_oned, "peaks_refined")
 
-            elif getattr(self.spectrum1D, "peaks") is not None:
+            elif getattr(self.spectrum_oned, "peaks") is not None:
 
-                peaks = getattr(self.spectrum1D, "peaks")
+                peaks = getattr(self.spectrum_oned, "peaks")
 
             else:
 
                 error_msg = (
                     "arc_spec is not provided. Either provide when "
-                    + "executing this function or provide a spectrum1D that "
+                    + "executing this function or provide a spectrum_oned that "
                     + "contains a peaks_refined."
                 )
                 self.logger.warning(error_msg)
 
         else:
 
-            if getattr(self.spectrum1D, "peaks_refined") is not None:
+            if getattr(self.spectrum_oned, "peaks_refined") is not None:
 
                 self.logger.warning(
                     "peaks_refined is replaced with the new one."
                 )
 
-            self.spectrum1D.add_peaks_refined(peaks)
+            self.spectrum_oned.add_peaks_refined(peaks)
 
         if arc_spec is None:
 
-            if getattr(self.spectrum1D, "arc_spec") is not None:
+            if getattr(self.spectrum_oned, "arc_spec") is not None:
 
-                arc_spec = getattr(self.spectrum1D, "arc_spec")
+                arc_spec = getattr(self.spectrum_oned, "arc_spec")
 
             else:
 
                 error_msg = (
                     "arc_spec is not provided. Either provide when "
-                    + "executing this function or provide a spectrum1D that "
+                    + "executing this function or provide a spectrum_oned that "
                     + "contains an arc_spec."
                 )
                 self.logger.warning(error_msg)
 
         else:
 
-            if getattr(self.spectrum1D, "arc_spec") is not None:
+            if getattr(self.spectrum_oned, "arc_spec") is not None:
 
                 self.logger.warning("arc_spec is replaced with the new one.")
 
-            self.spectrum1D.add_arc_spec(arc_spec)
+            self.spectrum_oned.add_arc_spec(arc_spec)
 
-        self.spectrum1D.add_calibrator(
+        self.spectrum_oned.add_calibrator(
             Calibrator(peaks=peaks, spectrum=arc_spec)
         )
-        self.spectrum1D.calibrator.atlas = Atlas()
+        self.spectrum_oned.calibrator.atlas = Atlas()
 
     def set_calibrator_properties(
         self,
@@ -626,7 +626,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.set_calibrator_properties(
+        self.spectrum_oned.calibrator.set_calibrator_properties(
             num_pix=num_pix,
             pixel_list=pixel_list,
             plotting_library=plotting_library,
@@ -634,11 +634,11 @@ class WavelengthCalibration:
             log_level=log_level,
         )
 
-        self.spectrum1D.add_calibrator_properties(
-            self.spectrum1D.calibrator.num_pix,
-            self.spectrum1D.calibrator.pixel_list,
-            self.spectrum1D.calibrator.plotting_library,
-            self.spectrum1D.calibrator.log_level,
+        self.spectrum_oned.add_calibrator_properties(
+            self.spectrum_oned.calibrator.num_pix,
+            self.spectrum_oned.calibrator.pixel_list,
+            self.spectrum_oned.calibrator.plotting_library,
+            self.spectrum_oned.calibrator.log_level,
         )
 
     def set_hough_properties(
@@ -677,7 +677,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.set_hough_properties(
+        self.spectrum_oned.calibrator.set_hough_properties(
             num_slopes=num_slopes,
             xbins=xbins,
             ybins=ybins,
@@ -687,7 +687,7 @@ class WavelengthCalibration:
             linearity_tolerance=linearity_tolerance,
         )
 
-        self.spectrum1D.add_hough_properties(
+        self.spectrum_oned.add_hough_properties(
             num_slopes,
             xbins,
             ybins,
@@ -746,7 +746,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.set_ransac_properties(
+        self.spectrum_oned.calibrator.set_ransac_properties(
             sample_size=sample_size,
             top_n_candidate=top_n_candidate,
             linear=linear,
@@ -759,7 +759,7 @@ class WavelengthCalibration:
             minimum_fit_error=minimum_fit_error,
         )
 
-        self.spectrum1D.add_ransac_properties(
+        self.spectrum_oned.add_ransac_properties(
             sample_size=sample_size,
             top_n_candidate=top_n_candidate,
             linear=linear,
@@ -793,7 +793,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.set_known_pairs(pix=pix, wave=wave)
+        self.spectrum_oned.calibrator.set_known_pairs(pix=pix, wave=wave)
 
     def add_user_atlas(
         self,
@@ -845,7 +845,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.atlas.add_user_atlas(
+        self.spectrum_oned.calibrator.atlas.add_user_atlas(
             elements=elements,
             wavelengths=wavelengths,
             intensities=intensities,
@@ -854,14 +854,14 @@ class WavelengthCalibration:
             temperature=temperature,
             relative_humidity=relative_humidity,
         )
-        self.spectrum1D.calibrator.constrain_poly = constrain_poly
-        self.spectrum1D.calibrator.candidate_tolerance = candidate_tolerance
+        self.spectrum_oned.calibrator.constrain_poly = constrain_poly
+        self.spectrum_oned.calibrator.candidate_tolerance = candidate_tolerance
 
-        self.spectrum1D.add_weather_condition(
+        self.spectrum_oned.add_weather_condition(
             pressure, temperature, relative_humidity
         )
 
-        self.spectrum1D.calibrator._generate_pairs()
+        self.spectrum_oned.calibrator._generate_pairs()
 
     def add_atlas(
         self,
@@ -927,7 +927,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.atlas.add(
+        self.spectrum_oned.calibrator.atlas.add(
             elements=elements,
             min_atlas_wavelength=min_atlas_wavelength,
             max_atlas_wavelength=max_atlas_wavelength,
@@ -938,21 +938,21 @@ class WavelengthCalibration:
             temperature=temperature,
             relative_humidity=relative_humidity,
         )
-        self.spectrum1D.calibrator.constrain_poly = constrain_poly
-        self.spectrum1D.calibrator.candidate_tolerance = candidate_tolerance
+        self.spectrum_oned.calibrator.constrain_poly = constrain_poly
+        self.spectrum_oned.calibrator.candidate_tolerance = candidate_tolerance
 
-        self.spectrum1D.add_atlas_wavelength_range(
+        self.spectrum_oned.add_atlas_wavelength_range(
             min_atlas_wavelength, max_atlas_wavelength
         )
 
-        self.spectrum1D.add_min_atlas_intensity(min_intensity)
+        self.spectrum_oned.add_min_atlas_intensity(min_intensity)
 
-        self.spectrum1D.add_min_atlas_distance(min_distance)
+        self.spectrum_oned.add_min_atlas_distance(min_distance)
 
-        self.spectrum1D.add_weather_condition(
+        self.spectrum_oned.add_weather_condition(
             pressure, temperature, relative_humidity
         )
-        self.spectrum1D.calibrator._generate_pairs()
+        self.spectrum_oned.calibrator._generate_pairs()
 
     def remove_atlas_lines_range(self, wavelength, tolerance=10.0):
         """
@@ -967,10 +967,10 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.remove_atlas_lines_range(
+        self.spectrum_oned.calibrator.remove_atlas_lines_range(
             wavelength, tolerance=tolerance
         )
-        self.spectrum1D.calibrator._generate_pairs()
+        self.spectrum_oned.calibrator._generate_pairs()
 
     def list_atlas(self):
         """
@@ -978,7 +978,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.list_atlas()
+        self.spectrum_oned.calibrator.list_atlas()
 
     def clear_atlas(self):
         """
@@ -986,8 +986,8 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.clear_atlas()
-        self.spectrum1D.calibrator._generate_pairs()
+        self.spectrum_oned.calibrator.clear_atlas()
+        self.spectrum_oned.calibrator._generate_pairs()
 
     def do_hough_transform(self, brute_force=False):
         """
@@ -1009,7 +1009,9 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.do_hough_transform(brute_force=brute_force)
+        self.spectrum_oned.calibrator.do_hough_transform(
+            brute_force=brute_force
+        )
 
     def plot_search_space(
         self,
@@ -1061,7 +1063,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.plot_search_space(
+        self.spectrum_oned.calibrator.plot_search_space(
             fit_coeff=fit_coeff,
             top_n_candidate=top_n_candidate,
             weighted=weighted,
@@ -1143,7 +1145,7 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
-        ) = self.spectrum1D.calibrator.fit(
+        ) = self.spectrum_oned.calibrator.fit(
             max_tries=max_tries,
             fit_deg=fit_deg,
             fit_coeff=fit_coeff,
@@ -1166,9 +1168,9 @@ class WavelengthCalibration:
 
             fit_type_rascal = "cheb"
 
-        self.spectrum1D.add_fit_type(fit_type_rascal)
+        self.spectrum_oned.add_fit_type(fit_type_rascal)
 
-        self.spectrum1D.add_fit_output_rascal(
+        self.spectrum_oned.add_fit_output_rascal(
             fit_coeff,
             matched_peaks,
             matched_atlas,
@@ -1180,7 +1182,7 @@ class WavelengthCalibration:
 
         if display or return_jsonstring or save_fig:
 
-            self.spectrum1D.calibrator.plot_fit(
+            self.spectrum_oned.calibrator.plot_fit(
                 fit_coeff=fit_coeff,
                 plot_atlas=True,
                 log_spectrum=False,
@@ -1296,7 +1298,7 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
-        ) = self.spectrum1D.calibrator.match_peaks(
+        ) = self.spectrum_oned.calibrator.match_peaks(
             fit_coeff,
             n_delta=n_delta,
             refine=refine,
@@ -1311,7 +1313,7 @@ class WavelengthCalibration:
 
         if display:
 
-            self.spectrum1D.calibrator.plot_fit(
+            self.spectrum_oned.calibrator.plot_fit(
                 fit_coeff=fit_coeff,
                 plot_atlas=True,
                 log_spectrum=False,
@@ -1324,7 +1326,7 @@ class WavelengthCalibration:
                 filename=filename,
             )
 
-        self.spectrum1D.add_fit_output_refine(
+        self.spectrum_oned.add_fit_output_refine(
             fit_coeff,
             matched_peaks,
             matched_atlas,
@@ -1359,7 +1361,7 @@ class WavelengthCalibration:
 
         """
 
-        pw_pairs = self.spectrum1D.calibrator.get_pix_wave_pairs()
+        pw_pairs = self.spectrum_oned.calibrator.get_pix_wave_pairs()
 
         return pw_pairs
 
@@ -1378,7 +1380,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.add_pix_wave_pair(pix, wave)
+        self.spectrum_oned.calibrator.add_pix_wave_pair(pix, wave)
 
     def remove_pix_wave_pair(self, arg):
         """
@@ -1392,7 +1394,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.calibrator.remove_pix_wave_pair(arg)
+        self.spectrum_oned.calibrator.remove_pix_wave_pair(arg)
 
     def manual_refit(
         self,
@@ -1441,7 +1443,7 @@ class WavelengthCalibration:
             self.matched_atlas,
             self.rms,
             self.residuals,
-        ) = self.spectrum1D.calibrator.manual_refit(
+        ) = self.spectrum_oned.calibrator.manual_refit(
             matched_peaks, matched_atlas, degree, x0
         )
 
@@ -1461,15 +1463,15 @@ class WavelengthCalibration:
 
         """
 
-        return getattr(self.spectrum1D, "calibrator")
+        return getattr(self.spectrum_oned, "calibrator")
 
-    def get_spectrum1D(self):
+    def get_spectrum_oned(self):
         """
-        Get the spectrum1D object.
+        Get the spectrum_oned object.
 
         """
 
-        return self.spectrum1D
+        return self.spectrum_oned
 
     def save_fits(
         self,
@@ -1506,7 +1508,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.save_fits(
+        self.spectrum_oned.save_fits(
             output=output,
             filename=filename,
             overwrite=overwrite,
@@ -1546,7 +1548,7 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum1D.save_csv(
+        self.spectrum_oned.save_csv(
             output=output,
             filename=filename,
             overwrite=overwrite,

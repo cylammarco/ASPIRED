@@ -3,7 +3,7 @@ import numpy as np
 from aspired import spectrum_oneD
 
 
-def test_spectrum1D():
+def test_spectrum_oned():
     spec = spectrum_oneD.SpectrumOneD(log_file_name=None)
 
     spec.add_count(count=np.arange(10))

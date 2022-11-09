@@ -33,7 +33,7 @@ class SpectrumOneD:
         Parameters
         ----------
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object. Note that this
+            The ID corresponding to the spectrum_oned object. Note that this
             ID is unique in each reduction only.
         verbose: boolean (Default: True)
             Set to False to suppress all verbose warnings, except for
@@ -427,14 +427,14 @@ class SpectrumOneD:
             "flux_resampled_atm_ext_telluric_corrected": False,
         }
 
-    def merge(self, spectrum1D, overwrite=False):
+    def merge(self, spectrum_oned, overwrite=False):
         """
-        This function copies all the info from the supplied spectrum1D to
+        This function copies all the info from the supplied spectrum_oned to
         this one, including the spec_id.
 
         Parameters
         ----------
-        spectrum1D: SpectrumOneD object
+        spectrum_oned: SpectrumOneD object
             The source SpectrumOneD to be deep copied over.
         overwrite: boolean (Default: False)
             Set to True to overwrite all the data in this SpectrumOneD.
@@ -445,17 +445,17 @@ class SpectrumOneD:
 
             if attr == "spec_id":
 
-                if getattr(spectrum1D, attr) != 0:
+                if getattr(spectrum_oned, attr) != 0:
 
                     setattr(self, attr, value)
 
             if getattr(self, attr) is None or []:
 
-                setattr(self, attr, getattr(spectrum1D, attr))
+                setattr(self, attr, getattr(spectrum_oned, attr))
 
             if overwrite:
 
-                setattr(self, attr, getattr(spectrum1D, attr))
+                setattr(self, attr, getattr(spectrum_oned, attr))
 
             else:
 

@@ -64,19 +64,19 @@ wavecal.add_arc_spec(arc_spec)
 # Find the peaks of the arc
 wavecal.find_arc_lines()
 
-arc_lines = wavecal.spectrum1D.peaks
+arc_lines = wavecal.spectrum_oned.peaks
 
 np.random.seed(0)
 
 
 def test_wavecal():
 
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Science arc_spec
-    lhs6328_spectrum1D.add_arc_spec(arc_spec)
-    wavecal.from_spectrum1D(lhs6328_spectrum1D)
+    lhs6328_spectrum_oned.add_arc_spec(arc_spec)
+    wavecal.from_spectrum_oned(lhs6328_spectrum_oned)
 
     # Find the peaks of the arc
     wavecal.find_arc_lines(
@@ -127,7 +127,7 @@ def test_wavecal():
     )
 
     # Getting the calibrator
-    wavecal.get_spectrum1D()
+    wavecal.get_spectrum_oned()
 
     wavecal.list_atlas()
     wavecal.clear_atlas()
@@ -136,10 +136,10 @@ def test_wavecal():
 
 def test_setting_a_known_pair():
 
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
-    lhs6328_spectrum1D.add_arc_spec(arc_spec)
-    wavecal.from_spectrum1D(lhs6328_spectrum1D)
+    lhs6328_spectrum_oned.add_arc_spec(arc_spec)
+    wavecal.from_spectrum_oned(lhs6328_spectrum_oned)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
         save_fig=True,
@@ -152,17 +152,17 @@ def test_setting_a_known_pair():
     )
     wavecal.initialise_calibrator()
     wavecal.set_known_pairs(123, 456)
-    assert wavecal.spectrum1D.calibrator.pix_known == 123
-    assert wavecal.spectrum1D.calibrator.wave_known == 456
+    assert wavecal.spectrum_oned.calibrator.pix_known == 123
+    assert wavecal.spectrum_oned.calibrator.wave_known == 456
 
 
 @patch("plotly.graph_objects.Figure.show")
 def test_setting_known_pairs(mock_show):
 
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
-    lhs6328_spectrum1D.add_arc_spec(arc_spec)
-    wavecal.from_spectrum1D(lhs6328_spectrum1D)
+    lhs6328_spectrum_oned.add_arc_spec(arc_spec)
+    wavecal.from_spectrum_oned(lhs6328_spectrum_oned)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
         save_fig=True,
@@ -175,17 +175,17 @@ def test_setting_known_pairs(mock_show):
     )
     wavecal.initialise_calibrator()
     wavecal.set_known_pairs([123, 234], [456, 567])
-    assert len(wavecal.spectrum1D.calibrator.pix_known) == 2
-    assert len(wavecal.spectrum1D.calibrator.wave_known) == 2
+    assert len(wavecal.spectrum_oned.calibrator.pix_known) == 2
+    assert len(wavecal.spectrum_oned.calibrator.wave_known) == 2
 
 
 @pytest.mark.xfail()
 def test_setting_a_none_to_known_pairs_expect_fail():
 
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
-    lhs6328_spectrum1D.add_arc_spec(arc_spec)
-    wavecal.from_spectrum1D(lhs6328_spectrum1D)
+    lhs6328_spectrum_oned.add_arc_spec(arc_spec)
+    wavecal.from_spectrum_oned(lhs6328_spectrum_oned)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
         save_fig=True,
@@ -203,10 +203,10 @@ def test_setting_a_none_to_known_pairs_expect_fail():
 @pytest.mark.xfail()
 def test_setting_nones_to_known_pairs_expect_fail():
 
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
-    lhs6328_spectrum1D.add_arc_spec(arc_spec)
-    wavecal.from_spectrum1D(lhs6328_spectrum1D)
+    lhs6328_spectrum_oned.add_arc_spec(arc_spec)
+    wavecal.from_spectrum_oned(lhs6328_spectrum_oned)
     # Find the peaks of the arc
     wavecal.find_arc_lines(
         save_fig=True,
@@ -327,14 +327,16 @@ def test_user_supplied_arc_spec_arc_lines_from_at_initilisation():
     )
 
 
-def test_overwritten_copy_of_spectrum1Ds_are_different():
+def test_overwritten_copy_of_spectrum_oneds_are_different():
 
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal_1 = WavelengthCalibration(log_file_name=None)
-    wavecal_1.from_spectrum1D(lhs6328_spectrum1D)
-    memory_1 = id(wavecal_1.spectrum1D)
-    wavecal_1.from_spectrum1D(copy.copy(lhs6328_spectrum1D), overwrite=True)
-    memory_2 = id(wavecal_1.spectrum1D)
+    wavecal_1.from_spectrum_oned(lhs6328_spectrum_oned)
+    memory_1 = id(wavecal_1.spectrum_oned)
+    wavecal_1.from_spectrum_oned(
+        copy.copy(lhs6328_spectrum_oned), overwrite=True
+    )
+    memory_2 = id(wavecal_1.spectrum_oned)
 
     assert memory_1 != memory_2
 

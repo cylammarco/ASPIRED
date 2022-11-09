@@ -43,7 +43,7 @@ def test_standard_return_suggestion2():
 @patch("plotly.graph_objects.Figure.show")
 def test_sensitivity(mock_show):
 
-    hiltner_spectrum1D = SpectrumOneD(log_file_name=None)
+    hiltner_spectrum_oned = SpectrumOneD(log_file_name=None)
     sens = FluxCalibration(log_file_name=None)
 
     # Standard count
@@ -59,9 +59,9 @@ def test_sensitivity(mock_show):
         skiprows=1,
     )
 
-    hiltner_spectrum1D.add_count(count)
-    hiltner_spectrum1D.add_wavelength(wavelength)
-    sens.from_spectrum1D(hiltner_spectrum1D)
+    hiltner_spectrum_oned.add_count(count)
+    hiltner_spectrum_oned.add_wavelength(wavelength)
+    sens.from_spectrum_oned(hiltner_spectrum_oned)
 
     # Load standard star from literature
     sens.load_standard("hiltner102")
@@ -76,8 +76,8 @@ def test_sensitivity(mock_show):
 
     sens.get_sensitivity()
 
-    # Get back the spectrum1D and merge
-    hiltner_spectrum1D.merge(sens.get_spectrum1D())
+    # Get back the spectrum_oned and merge
+    hiltner_spectrum_oned.merge(sens.get_spectrum_oned())
 
     # Save a FITS file
     sens.save_fits(
@@ -97,8 +97,8 @@ def test_sensitivity(mock_show):
 @patch("plotly.graph_objects.Figure.show")
 def test_fluxcalibration(mock_show):
 
-    hiltner_spectrum1D = SpectrumOneD(log_file_name=None)
-    lhs6328_spectrum1D = SpectrumOneD(log_file_name=None)
+    hiltner_spectrum_oned = SpectrumOneD(log_file_name=None)
+    lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
 
     fluxcalibrator = FluxCalibration(log_file_name=None)
 
@@ -120,22 +120,22 @@ def test_fluxcalibration(mock_show):
         skiprows=1,
     )
 
-    hiltner_spectrum1D.add_count(standard_count)
-    hiltner_spectrum1D.add_wavelength(wavelength)
+    hiltner_spectrum_oned.add_count(standard_count)
+    hiltner_spectrum_oned.add_wavelength(wavelength)
 
-    lhs6328_spectrum1D.add_count(science_count)
-    lhs6328_spectrum1D.add_wavelength(wavelength)
+    lhs6328_spectrum_oned.add_count(science_count)
+    lhs6328_spectrum_oned.add_wavelength(wavelength)
 
-    # Add the standard spectrum1D to the flux calibrator
-    fluxcalibrator.from_spectrum1D(hiltner_spectrum1D)
+    # Add the standard spectrum_oned to the flux calibrator
+    fluxcalibrator.from_spectrum_oned(hiltner_spectrum_oned)
 
     # Load standard star from literature
     fluxcalibrator.load_standard("hiltner102")
     fluxcalibrator.get_sensitivity()
 
-    # Get back the spectrum1D and merge
+    # Get back the spectrum_oned and merge
     fluxcalibrator.apply_flux_calibration(
-        lhs6328_spectrum1D,
+        lhs6328_spectrum_oned,
         inspect=True,
         display=False,
         return_jsonstring=True,
@@ -143,4 +143,4 @@ def test_fluxcalibration(mock_show):
         fig_type="iframe+png",
         filename=os.path.join(HERE, "test_output", "fluxcal_flux_calibration"),
     )
-    fluxcalibrator.apply_flux_calibration(lhs6328_spectrum1D, display=True)
+    fluxcalibrator.apply_flux_calibration(lhs6328_spectrum_oned, display=True)

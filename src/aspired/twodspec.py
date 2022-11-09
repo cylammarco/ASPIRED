@@ -324,6 +324,7 @@ class TwoDSpec:
                     filepath, hdunum
                 )
             )
+            self.bad_mask = create_bad_pixel_mask(self.img)[0]
 
             fitsfile_tmp = None
 
@@ -2560,7 +2561,7 @@ class TwoDSpec:
         trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 
@@ -2618,7 +2619,7 @@ class TwoDSpec:
         Parameters
         ----------
         spec_id: int
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 
@@ -2673,7 +2674,7 @@ class TwoDSpec:
         Parameters
         ----------
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         upsample_factor: float (Default: 10)
             The upsampling rate for the correlation (10 times means
             precise to 1/10 of a pixel). The upsampling uses cubic
@@ -3353,7 +3354,7 @@ class TwoDSpec:
         skydeg: int (Default: 1)
             The polynomial order to fit between the sky windows.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         optimal: bool (Default: True)
             Set optimal extraction. (Default is True)
         algorithm: str (Default: 'horne86')
@@ -5033,7 +5034,7 @@ class TwoDSpec:
         Parameters
         ----------
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         display: bool
             Set to True to display disgnostic plot.
         renderer: str
@@ -5192,7 +5193,7 @@ class TwoDSpec:
         Parameters
         ----------
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         display: bool
             Set to True to display disgnostic plot.
         renderer: str
@@ -5549,7 +5550,7 @@ class TwoDSpec:
         open_iframe: bool
             Open the iframe in the default browser if set to True.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 
@@ -5669,7 +5670,7 @@ class TwoDSpec:
         open_iframe: bool
             Open the iframe in the default browser if set to True.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 

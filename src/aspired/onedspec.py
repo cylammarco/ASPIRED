@@ -142,12 +142,16 @@ class OneDSpec:
             )
         }
 
-        self.add_science_spectrum1D(0)
+        self.add_science_spectrum_oned(0)
 
         # Link them up
-        self.science_wavecal[0].from_spectrum1D(self.science_spectrum_list[0])
-        self.standard_wavecal.from_spectrum1D(self.standard_spectrum_list[0])
-        self.fluxcal.from_spectrum1D(self.standard_spectrum_list[0])
+        self.science_wavecal[0].from_spectrum_oned(
+            self.science_spectrum_list[0]
+        )
+        self.standard_wavecal.from_spectrum_oned(
+            self.standard_spectrum_list[0]
+        )
+        self.fluxcal.from_spectrum_oned(self.standard_spectrum_list[0])
 
         # Tracking data availability
         self.science_data_available = False
@@ -199,7 +203,7 @@ class OneDSpec:
         self.science_flux_resampled = False
         self.standard_flux_calibrated = False
 
-    def add_science_spectrum1D(self, spec_id):
+    def add_science_spectrum_oned(self, spec_id):
         """
         Add a new SpectrumOneD with the ID spec_id. This overwrite the existing
         SpectrumOneD object if it already exists.
@@ -207,7 +211,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 
@@ -239,7 +243,7 @@ class OneDSpec:
         )
 
         # Reference the wavecal to the SpectrumOneD object just created
-        self.science_wavecal[spec_id].from_spectrum1D(
+        self.science_wavecal[spec_id].from_spectrum_oned(
             self.science_spectrum_list[spec_id]
         )
 
@@ -281,7 +285,7 @@ class OneDSpec:
             The WavelengthPolyFit object for the science target, flux will
             not be calibrated if this is not provided.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -399,7 +403,7 @@ class OneDSpec:
         wave : numeric value, list or numpy 1D array (N)
             The wavelength of each pixels of the spectrum.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -544,7 +548,7 @@ class OneDSpec:
         wave_resampled:
             The wavelength of the resampled spectrum.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -704,7 +708,7 @@ class OneDSpec:
             The integrated sky values along each column, suitable for
             subtracting from the output of ap_extract
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -782,11 +786,11 @@ class OneDSpec:
 
                         if i not in list(self.science_spectrum_list.keys()):
 
-                            self.add_science_spectrum1D(i)
+                            self.add_science_spectrum_oned(i)
 
                             self.logger.warning(
                                 "The given spec_id, {}, does not exist. A new "
-                                "spectrum1D is created. Please check you are "
+                                "spectrum_oned is created. Please check you are "
                                 "providing the correct spec_id.".format(
                                     spec_id
                                 )
@@ -907,7 +911,7 @@ class OneDSpec:
         arc_spec: 1-d array
             The count of the summed 1D arc spec
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -944,11 +948,11 @@ class OneDSpec:
 
                         if i not in list(self.science_spectrum_list.keys()):
 
-                            self.add_science_spectrum1D(i)
+                            self.add_science_spectrum_oned(i)
 
                             self.logger.warning(
                                 "The given spec_id, {}, does not "
-                                "exist. A new spectrum1D is created. "
+                                "exist. A new spectrum_oned is created. "
                                 "Please check you are providing the "
                                 "correct spec_id.".format(spec_id)
                             )
@@ -1017,7 +1021,7 @@ class OneDSpec:
             The pixel locations of the arc lines. Multiple traces of the arc
             can be provided as list of list or list of arrays.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1055,11 +1059,11 @@ class OneDSpec:
 
                         if i not in list(self.science_spectrum_list.keys()):
 
-                            self.add_science_spectrum1D(i)
+                            self.add_science_spectrum_oned(i)
 
                             self.logger.warning(
                                 "The given spec_id, {}, does not "
-                                "exist. A new spectrum1D is created. "
+                                "exist. A new spectrum_oned is created. "
                                 "Please check you are providing the "
                                 "correct spec_id.".format(spec_id)
                             )
@@ -1127,7 +1131,7 @@ class OneDSpec:
             for chip gaps (10 pixels) in a 3-CCD setting, you should provide
             [0,1,2,...90, 100,101,...190, 200,201,...290]
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1179,11 +1183,11 @@ class OneDSpec:
 
                         if i not in list(self.science_spectrum_list.keys()):
 
-                            self.add_science_spectrum1D(i)
+                            self.add_science_spectrum_oned(i)
 
                             self.logger.warning(
                                 "The given spec_id, {}, does not "
-                                "exist. A new spectrum1D is created. "
+                                "exist. A new spectrum_oned is created. "
                                 "Please check you are providing the "
                                 "correct spec_id.".format(spec_id)
                             )
@@ -1277,7 +1281,7 @@ class OneDSpec:
             Strings starting with 'poly', 'leg' or 'cheb' for polynomial,
             legendre and chebyshev fits. Case insensitive.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1450,7 +1454,7 @@ class OneDSpec:
             TwoDSpec of the science image containin the trace(s) and
             trace_sigma(s).
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1479,10 +1483,10 @@ class OneDSpec:
                 # if spec_id is None, calibrators are initialised to all
                 spec_id = list(twodspec.spectrum_list.keys())
 
-            # reference the spectrum1D to the WavelengthCalibration
+            # reference the spectrum_oned to the WavelengthCalibration
             for i in spec_id:
 
-                self.add_science_spectrum1D(i)
+                self.add_science_spectrum_oned(i)
                 self.science_wavecal[i] = WavelengthCalibration(
                     verbose=self.verbose,
                     logger_name=self.logger_name,
@@ -1492,12 +1496,12 @@ class OneDSpec:
                 )
 
                 # By reference
-                self.science_wavecal[i].from_spectrum1D(
+                self.science_wavecal[i].from_spectrum_oned(
                     twodspec.spectrum_list[i]
                 )
                 self.science_spectrum_list[i] = self.science_wavecal[
                     i
-                ].spectrum1D
+                ].spectrum_oned
 
                 self.logger.info(
                     "Referenced SpectrumOneD of the"
@@ -1519,9 +1523,11 @@ class OneDSpec:
                 log_file_folder=self.log_file_folder,
                 log_file_name=self.log_file_name,
             )
-            self.standard_wavecal.from_spectrum1D(twodspec.spectrum_list[0])
-            self.fluxcal.from_spectrum1D(twodspec.spectrum_list[0])
-            self.standard_spectrum_list[0] = self.standard_wavecal.spectrum1D
+            self.standard_wavecal.from_spectrum_oned(twodspec.spectrum_list[0])
+            self.fluxcal.from_spectrum_oned(twodspec.spectrum_list[0])
+            self.standard_spectrum_list[
+                0
+            ] = self.standard_wavecal.spectrum_oned
 
             self.logger.info(
                 "Referenced SpectrumOneD of the"
@@ -1596,7 +1602,7 @@ class OneDSpec:
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1741,7 +1747,7 @@ class OneDSpec:
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1830,7 +1836,7 @@ class OneDSpec:
         spectrum: list, numpy.ndarray or None (Default: None)
             The spectral intensity as a function of pixel.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -1854,11 +1860,11 @@ class OneDSpec:
 
                         if i not in list(self.science_spectrum_list.keys()):
 
-                            self.add_science_spectrum1D(i)
+                            self.add_science_spectrum_oned(i)
 
                             self.logger.warning(
                                 "The given spec_id, {}, does not "
-                                "exist. A new spectrum1D is created. "
+                                "exist. A new spectrum_oned is created. "
                                 "Please check you are providing the "
                                 "correct spec_id.".format(spec_id)
                             )
@@ -1874,7 +1880,7 @@ class OneDSpec:
 
             for i in spec_id:
 
-                self.science_wavecal[i].from_spectrum1D(
+                self.science_wavecal[i].from_spectrum_oned(
                     self.science_spectrum_list[i]
                 )
                 self.science_wavecal[i].initialise_calibrator(
@@ -1891,7 +1897,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            self.standard_wavecal.from_spectrum1D(
+            self.standard_wavecal.from_spectrum_oned(
                 self.standard_spectrum_list[0]
             )
             self.standard_wavecal.initialise_calibrator(
@@ -1936,7 +1942,7 @@ class OneDSpec:
         log_level : str (Default: 'info')
             Choose {critical, error, warning, info, debug, notset}.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2027,7 +2033,7 @@ class OneDSpec:
             range tolerance to allow for non-linearity. This should be the
             maximum expected excursion from linearity.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2139,7 +2145,7 @@ class OneDSpec:
         minimum_fit_error: float (Default 1e-4)
             Set to remove overfitted/unrealistic fits.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2217,7 +2223,7 @@ class OneDSpec:
         wave : numeric value, list or numpy 1D array (N) (Default: None)
             The matching wavelength for each of the pix.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2311,7 +2317,7 @@ class OneDSpec:
         relative_humidity: float (Default: 0.)
             In percentage.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2446,7 +2452,7 @@ class OneDSpec:
         relative_humidity: float (Default: 0)
             In percentage.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2536,7 +2542,7 @@ class OneDSpec:
         tolerance: float (Default: 10.)
             Tolerance around this wavelength where atlas lines will be removed
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2606,7 +2612,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2673,7 +2679,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2746,7 +2752,7 @@ class OneDSpec:
             Set to true to compute the gradient and intercept between
             every two data points
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2843,7 +2849,7 @@ class OneDSpec:
         display: boolean (Default: False)
             Set to True to display disgnostic plot.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -2981,7 +2987,7 @@ class OneDSpec:
             Filename for the output, all of them will share the same name but
             will have different extension.
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3147,7 +3153,7 @@ class OneDSpec:
             Filename for the output, all of them will share the same name but
             will have different extension.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3187,7 +3193,7 @@ class OneDSpec:
 
                         fit_coeff = self.science_wavecal[
                             i
-                        ].spectrum1D.calibrator.fit_coeff
+                        ].spectrum_oned.calibrator.fit_coeff
 
                     solution_science.append(
                         self.science_wavecal[i].robust_refit(
@@ -3225,7 +3231,7 @@ class OneDSpec:
 
                     fit_coeff = self.standard_wavecal[
                         0
-                    ].spectrum1D.calibrator.fit_coeff
+                    ].spectrum_oned.calibrator.fit_coeff
 
                 solution["standard"] = self.standard_wavecal.robust_refit(
                     fit_coeff=fit_coeff,
@@ -3263,7 +3269,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3337,7 +3343,7 @@ class OneDSpec:
         wave: float
             wavelength
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3389,7 +3395,7 @@ class OneDSpec:
         arg: int
             The position of the pairs in the arrays.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3470,7 +3476,7 @@ class OneDSpec:
         return_solution: bool (Default: False)
             Set to True to return the best fit polynomial coefficients.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3564,7 +3570,9 @@ class OneDSpec:
             for i in spec_id:
 
                 calibrator_science.append(
-                    getattr(self.science_wavecal[i].spectrum1D, "calibrator")
+                    getattr(
+                        self.science_wavecal[i].spectrum_oned, "calibrator"
+                    )
                 )
 
             calibrators["science"] = calibrator_science
@@ -3572,7 +3580,7 @@ class OneDSpec:
         if "standard" in stype_split:
 
             calibrators["standard"] = getattr(
-                self.standard_wavecal.spectrum1D, "calibrator"
+                self.standard_wavecal.spectrum_oned, "calibrator"
             )
 
         return calibrators
@@ -3588,7 +3596,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str or None (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -3968,7 +3976,7 @@ class OneDSpec:
         match the highest resolution (the smallest wavelength bin) part of the
         spectrum.
 
-        Note: This function directly modify the *target_spectrum1D*.
+        Note: This function directly modify the *target_spectrum_oned*.
 
         Parameters
         ----------
@@ -4002,7 +4010,7 @@ class OneDSpec:
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -4037,7 +4045,7 @@ class OneDSpec:
                 for i in spec_id:
 
                     self.fluxcal.apply_flux_calibration(
-                        target_spectrum1D=self.science_spectrum_list[i],
+                        target_spectrum_oned=self.science_spectrum_list[i],
                         inspect=inspect,
                         wave_min=wave_min,
                         wave_max=wave_max,
@@ -4064,7 +4072,7 @@ class OneDSpec:
             if "standard" in stype_split:
 
                 self.fluxcal.apply_flux_calibration(
-                    target_spectrum1D=self.standard_spectrum_list[0],
+                    target_spectrum_oned=self.standard_spectrum_list[0],
                     inspect=inspect,
                     wave_min=wave_min,
                     wave_max=wave_max,
@@ -4137,7 +4145,7 @@ class OneDSpec:
             A function that gives the absorption profile as a function
             of wavelength.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -4247,7 +4255,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         **kwargs: dictionary
             The keyword arguments to be passed to the lowess function
             for generating the continuum.
@@ -4310,7 +4318,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         mask_range: list of list
             list of lists with 2 values indicating the range marked by each
             of the Telluric regions.
@@ -4334,7 +4342,7 @@ class OneDSpec:
 
         self.logger.info(
             "Copying the telluric absorption profile to "
-            "the science spectrum1D(s)."
+            "the science spectrum_oned(s)."
         )
 
         if isinstance(spec_id, int):
@@ -4410,7 +4418,7 @@ class OneDSpec:
             automatically, which is currently an irresversible process through
             the public API.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 
@@ -4643,7 +4651,7 @@ class OneDSpec:
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         Returns
         -------
@@ -4891,7 +4899,7 @@ class OneDSpec:
             The extra fudge factor multiplied to the telluric profile to
             manally adjust the strength.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -5170,7 +5178,7 @@ class OneDSpec:
         standard_airmass: float, str or None (Default: None)
             The same as science_airmass.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
 
         """
 
@@ -5358,14 +5366,14 @@ class OneDSpec:
                 copy.deepcopy(science_spec.flux_sky) / self.extinction_fraction
             )
 
-            # Add the corrected spectra to the spectrum1D
+            # Add the corrected spectra to the spectrum_oned
             science_spec.add_flux_atm_ext_corrected(
                 science_flux_atm_ext_corrected,
                 science_flux_err_atm_ext_corrected,
                 science_flux_sky_atm_ext_corrected,
             )
 
-            # Add the corrected spectra to the spectrum1D
+            # Add the corrected spectra to the spectrum_oned
             standard_spec.add_flux_atm_ext_corrected(
                 standard_spec.flux,
                 standard_spec.flux_err,
@@ -5388,14 +5396,14 @@ class OneDSpec:
                     / self.extinction_fraction
                 )
 
-                # Add the corrected spectra to the spectrum1D
+                # Add the corrected spectra to the spectrum_oned
                 science_spec.add_flux_atm_ext_telluric_corrected(
                     science_flux_atm_ext_telluric_corrected,
                     science_flux_err_atm_ext_telluric_corrected,
                     science_flux_sky_atm_ext_telluric_corrected,
                 )
 
-                # Add the corrected spectra to the spectrum1D
+                # Add the corrected spectra to the spectrum_oned
                 standard_spec.add_flux_atm_ext_telluric_corrected(
                     standard_spec.flux_telluric_corrected,
                     standard_spec.flux_err_telluric_corrected,
@@ -5460,7 +5468,7 @@ class OneDSpec:
             set to True to return JSON-string that can be rendered by Plotly
             in any support language.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -6148,7 +6156,7 @@ class OneDSpec:
         wave_bin: None (Deafult to median of the wavelength bin size)
             Provide the resampling bin size
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str or None (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -6673,7 +6681,7 @@ class OneDSpec:
         empty_primary_hdu: bool (Default: True)
             Set to True to leave the Primary HDU blank
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -6816,7 +6824,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -6880,7 +6888,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -6944,7 +6952,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7009,7 +7017,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7074,7 +7082,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7139,7 +7147,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7204,7 +7212,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7269,7 +7277,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7334,7 +7342,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7399,7 +7407,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7463,7 +7471,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7526,7 +7534,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7591,7 +7599,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7656,7 +7664,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7721,7 +7729,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7786,7 +7794,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7851,7 +7859,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7917,7 +7925,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -7983,7 +7991,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -8052,7 +8060,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -8118,7 +8126,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -8188,7 +8196,7 @@ class OneDSpec:
         *args:
             Extra arguments for the method
         spec_id: int (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -8326,7 +8334,7 @@ class OneDSpec:
         overwrite: bool (Default: False)
             Default is False.
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
 
@@ -8480,7 +8488,7 @@ class OneDSpec:
         Parameters
         ----------
         spec_id: int or None (Default: None)
-            The ID corresponding to the spectrum1D object
+            The ID corresponding to the spectrum_oned object
         output: String
             (Default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
             Type of data to be saved, the order is fixed (in the order of

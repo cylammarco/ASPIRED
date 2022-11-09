@@ -194,7 +194,7 @@ def test_add_wavelengthcalibration_science_two_spec():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
-    onedspec.add_science_spectrum1D(1)
+    onedspec.add_science_spectrum_oned(1)
     onedspec.add_wavelengthcalibration(
         dummy_wavecal, spec_id=[0, 1], stype="science"
     )
@@ -1031,7 +1031,9 @@ def test_calibrator_science():
 
     assert (
         len(
-            onedspec.science_wavecal[0].spectrum1D.calibrator.atlas.atlas_lines
+            onedspec.science_wavecal[
+                0
+            ].spectrum_oned.calibrator.atlas.atlas_lines
         )
         == 20
     )
@@ -1040,27 +1042,33 @@ def test_calibrator_science():
     )
     assert (
         len(
-            onedspec.science_wavecal[0].spectrum1D.calibrator.atlas.atlas_lines
+            onedspec.science_wavecal[
+                0
+            ].spectrum_oned.calibrator.atlas.atlas_lines
         )
         == 18
     )
     assert (
         len(
-            onedspec.science_wavecal[1].spectrum1D.calibrator.atlas.atlas_lines
+            onedspec.science_wavecal[
+                1
+            ].spectrum_oned.calibrator.atlas.atlas_lines
         )
         == 20
     )
     onedspec.remove_atlas_lines_range(wavelength=5000.0, tolerance=1.5)
     assert (
         len(
-            onedspec.science_wavecal[1].spectrum1D.calibrator.atlas.atlas_lines
+            onedspec.science_wavecal[
+                1
+            ].spectrum_oned.calibrator.atlas.atlas_lines
         )
         == 18
     )
 
     onedspec.clear_atlas()
     assert (
-        onedspec.science_wavecal[0].spectrum1D.calibrator.atlas.atlas_lines
+        onedspec.science_wavecal[0].spectrum_oned.calibrator.atlas.atlas_lines
         == []
     )
 

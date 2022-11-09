@@ -22,6 +22,45 @@ __all__ = ["StandardLibrary", "FluxCalibration"]
 
 
 class StandardLibrary:
+    """
+    This class handles flux calibration by comparing the extracted and
+    wavelength-calibrated standard observation to the "ground truth"
+    from
+
+    https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstandards
+    https://www.eso.org/sci/observing/tools/standards/spectra.html
+
+    See explanation notes at those links for details.
+
+    Parameters
+    ----------
+    verbose: bool (Default: True)
+        Set to False to suppress all verbose warnings, except for
+        critical failure.
+    logger_name: str (Default: StandardLibrary)
+        This will set the name of the logger, if the name is used already,
+        it will reference to the existing logger. This will be the
+        first part of the default log file name unless log_file_name is
+        provided.
+    log_level: str (Default: 'INFO')
+        Four levels of logging are available, in decreasing order of
+        information and increasing order of severity: (1) DEBUG, (2) INFO,
+        (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
+        there is suboptimal operations in some parts of that step. ERROR
+        means that the requested operation cannot be performed, but the
+        software can handle it by either using the default setting or
+        skipping the operation. CRITICAL means that the requested
+        operation cannot be resolved without human interaction, this is
+        most usually coming from missing data.
+    log_file_folder: None or str (Default: "default")
+        Folder in which the file is save, set to default to save to the
+        current path.
+    log_file_name: None or str (Default: None)
+        File name of the log, set to None to logging.warning to screen
+        only.
+
+    """
+
     def __init__(
         self,
         verbose=True,
@@ -30,44 +69,6 @@ class StandardLibrary:
         log_file_folder="default",
         log_file_name=None,
     ):
-        """
-        This class handles flux calibration by comparing the extracted and
-        wavelength-calibrated standard observation to the "ground truth"
-        from
-
-        https://github.com/iraf-community/iraf/tree/master/noao/lib/onedstandards
-        https://www.eso.org/sci/observing/tools/standards/spectra.html
-
-        See explanation notes at those links for details.
-
-        Parameters
-        ----------
-        verbose: bool (Default: True)
-            Set to False to suppress all verbose warnings, except for
-            critical failure.
-        logger_name: str (Default: StandardLibrary)
-            This will set the name of the logger, if the name is used already,
-            it will reference to the existing logger. This will be the
-            first part of the default log file name unless log_file_name is
-            provided.
-        log_level: str (Default: 'INFO')
-            Four levels of logging are available, in decreasing order of
-            information and increasing order of severity: (1) DEBUG, (2) INFO,
-            (3) WARNING, (4) ERROR and (5) CRITICAL. WARNING means that
-            there is suboptimal operations in some parts of that step. ERROR
-            means that the requested operation cannot be performed, but the
-            software can handle it by either using the default setting or
-            skipping the operation. CRITICAL means that the requested
-            operation cannot be resolved without human interaction, this is
-            most usually coming from missing data.
-        log_file_folder: None or str (Default: "default")
-            Folder in which the file is save, set to default to save to the
-            current path.
-        log_file_name: None or str (Default: None)
-            File name of the log, set to None to logging.warning to screen
-            only.
-
-        """
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
@@ -113,6 +114,16 @@ class StandardLibrary:
         self.logger.addHandler(self.handler)
 
         self.verbose = verbose
+
+        self.standard_fluxmag_true = False
+        self.standard_wave_true = False
+
+        self.library = None
+        self.target = None
+        self.ftype = "flux"
+        self.cutoff = 0.4
+
+        self.spectrum_oned_imported = False
 
         self._load_standard_dictionary()
 
@@ -162,10 +173,10 @@ class StandardLibrary:
 
         filepath = os.path.join(base_dir, "standards", folder, filename)
 
-        f = np.loadtxt(filepath)
+        _f = np.loadtxt(filepath)
 
-        self.standard_wave_true = f[:, 0]
-        self.standard_fluxmag_true = f[:, 1]
+        self.standard_wave_true = _f[:, 0]
+        self.standard_fluxmag_true = _f[:, 1]
 
         if self.ftype == "flux":
 
@@ -212,10 +223,10 @@ class StandardLibrary:
 
         filepath = os.path.join(base_dir, "standards", folder, filename)
 
-        f = open(filepath)
+        _f = open(filepath)
         wave = []
         fluxmag = []
-        for line in f.readlines():
+        for line in _f.readlines():
 
             if line[0] in ["*", "S"]:
 
@@ -228,11 +239,11 @@ class StandardLibrary:
 
             else:
 
-                li = line.strip().strip(":").split()
-                wave.append(li[0])
-                fluxmag.append(li[1])
+                _li = line.strip().strip(":").split()
+                wave.append(_li[0])
+                fluxmag.append(_li[1])
 
-        f.close()
+        _f.close()
         self.standard_wave_true = np.array(wave).astype("float")
         self.standard_fluxmag_true = np.array(fluxmag).astype("float")
 
@@ -288,10 +299,10 @@ class StandardLibrary:
 
         filepath = os.path.join(base_dir, "standards", folder, filename)
 
-        f = np.loadtxt(filepath, skiprows=1)
+        _f = np.loadtxt(filepath, skiprows=1)
 
-        self.standard_wave_true = f[:, 0]
-        self.standard_fluxmag_true = f[:, 1]
+        self.standard_wave_true = _f[:, 0]
+        self.standard_fluxmag_true = _f[:, 1]
 
         # iraf is always in AB magnitude
         if self.ftype == "flux":
@@ -328,9 +339,9 @@ class StandardLibrary:
             libraries = self.uname_to_lib[target.lower()]
             return libraries, True
 
-        except Exception as e:
+        except Exception as err:
 
-            self.logger.warning(str(e))
+            self.logger.warning(str(err))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
@@ -627,17 +638,17 @@ class StandardLibrary:
 
             fig_type_split = fig_type.split("+")
 
-            for t in fig_type_split:
+            for _t in fig_type_split:
 
-                if t == "iframe":
+                if _t == "iframe":
 
                     pio.write_html(
-                        fig, filename + "." + t, auto_open=open_iframe
+                        fig, filename + "." + _t, auto_open=open_iframe
                     )
 
-                elif t in ["jpg", "png", "svg", "pdf"]:
+                elif _t in ["jpg", "png", "svg", "pdf"]:
 
-                    pio.write_image(fig, filename + "." + t)
+                    pio.write_image(fig, filename + "." + _t)
 
         if display:
 
@@ -742,7 +753,7 @@ class FluxCalibration(StandardLibrary):
             log_file_name=self.log_file_name,
         )
         self.verbose = verbose
-        self.spectrum1D = SpectrumOneD(
+        self.spectrum_oned = SpectrumOneD(
             spec_id=0,
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -757,20 +768,20 @@ class FluxCalibration(StandardLibrary):
         self.count_continuum = None
         self.flux_continuum = None
 
-    def from_spectrum1D(self, spectrum1D, merge=False, overwrite=False):
+    def from_spectrum_oned(self, spectrum_oned, merge=False, overwrite=False):
         """
-        This function copies all the info from the spectrum1D, because users
+        This function copies all the info from the spectrum_oned, because users
         may supply different level/combination of reduction, everything is
-        copied from the spectrum1D even though in most cases only a None
+        copied from the spectrum_oned even though in most cases only a None
         will be passed.
 
         By default, this is passing object by reference by default, so it
-        directly modifies the spectrum1D supplied. By setting merger to True,
+        directly modifies the spectrum_oned supplied. By setting merger to True,
         it copies the data into the SpectrumOneD in the FluxCalibration object.
 
         Parameters
         ----------
-        spectrum1D: SpectrumOneD object
+        spectrum_oned: SpectrumOneD object
             The SpectrumOneD to be referenced or copied.
         merge: bool (Default: False)
             Set to True to copy everything over to the local SpectrumOneD,
@@ -781,17 +792,17 @@ class FluxCalibration(StandardLibrary):
 
         if merge:
 
-            self.spectrum1D.merge(spectrum1D, overwrite=overwrite)
+            self.spectrum_oned.merge(spectrum_oned, overwrite=overwrite)
 
         else:
 
-            self.spectrum1D = spectrum1D
+            self.spectrum_oned = spectrum_oned
 
-        self.spectrum1D_imported = True
+        self.spectrum_oned_imported = True
 
-    def remove_spectrum1D(self):
+    def remove_spectrum_oned(self):
 
-        self.spectrum1D = SpectrumOneD(
+        self.spectrum_oned = SpectrumOneD(
             spec_id=0,
             verbose=self.verbose,
             logger_name=self.logger_name,
@@ -799,7 +810,7 @@ class FluxCalibration(StandardLibrary):
             log_file_folder=self.log_file_folder,
             log_file_name=self.log_file_name,
         )
-        self.spectrum1D_imported = False
+        self.spectrum_oned_imported = False
 
     def load_standard(self, target, library=None, ftype="flux", cutoff=0.4):
         """
@@ -828,7 +839,7 @@ class FluxCalibration(StandardLibrary):
             target=target, library=library, ftype=ftype, cutoff=cutoff
         )
         # the best target and library found can be different from the input
-        self.spectrum1D.add_standard_star(
+        self.spectrum_oned.add_standard_star(
             library=self.library, target=self.target
         )
 
@@ -850,8 +861,8 @@ class FluxCalibration(StandardLibrary):
 
         """
 
-        self.spectrum1D.add_wavelength(wavelength)
-        self.spectrum1D.add_count(count, count_err, count_sky)
+        self.spectrum_oned.add_wavelength(wavelength)
+        self.spectrum_oned.add_count(count, count_err, count_sky)
 
     def get_telluric_profile(
         self,
@@ -919,9 +930,9 @@ class FluxCalibration(StandardLibrary):
             wave, telluric_profile, fill_value="extrapolate"
         )
 
-        self.spectrum1D.add_telluric_func(telluric_func)
-        self.spectrum1D.add_telluric_profile(telluric_profile)
-        self.spectrum1D.add_telluric_factor(telluric_factor)
+        self.spectrum_oned.add_telluric_func(telluric_func)
+        self.spectrum_oned.add_telluric_profile(telluric_profile)
+        self.spectrum_oned.add_telluric_factor(telluric_factor)
 
         if return_function:
 
@@ -979,12 +990,12 @@ class FluxCalibration(StandardLibrary):
             )
         )
         # show the image on the top
-        self.logger.info(np.asarray(self.spectrum1D.wave))
+        self.logger.info(np.asarray(self.spectrum_oned.wave))
         fig.add_trace(
             go.Scatter(
-                x=np.asarray(self.spectrum1D.wave),
-                y=self.spectrum1D.telluric_func(
-                    np.asarray(self.spectrum1D.wave)
+                x=np.asarray(self.spectrum_oned.wave),
+                y=self.spectrum_oned.telluric_func(
+                    np.asarray(self.spectrum_oned.wave)
                 ),
                 line=dict(color="royalblue", width=4),
                 name="Count / s (Observed)",
@@ -1117,10 +1128,10 @@ class FluxCalibration(StandardLibrary):
         # resampling both the observed and the database standard spectra
         # in unit of flux per second. The higher resolution spectrum is
         # resampled to match the lower resolution one.
-        count = np.asarray(getattr(self.spectrum1D, "count"))
-        count_err = np.asarray(getattr(self.spectrum1D, "count_err"))
-        wave = np.asarray(getattr(self.spectrum1D, "wave"))
-        exptime = getattr(self.spectrum1D, "exptime")
+        count = np.asarray(getattr(self.spectrum_oned, "count"))
+        count_err = np.asarray(getattr(self.spectrum_oned, "count_err"))
+        wave = np.asarray(getattr(self.spectrum_oned, "wave"))
+        exptime = getattr(self.spectrum_oned, "exptime")
         if exptime is None:
             exptime = 1.0
 
@@ -1129,15 +1140,72 @@ class FluxCalibration(StandardLibrary):
             "is {} seconds.".format(exptime)
         )
 
+        # Mask regions before smoothing and avoiding telluric absorptions
+        if mask_range is not None:
+
+            for m in mask_range:
+
+                # If the mask is partially outside the spectrum, ignore
+                if (m[0] < min(wave)) or (m[1] > max(wave)):
+
+                    continue
+
+                # Get the indices for the two sides of the masking region
+                left_end = int(max(np.where(wave <= m[0])[0])) + 1
+                left_start = int(left_end - mask_fit_size)
+                right_start = int(min(np.where(wave >= m[1])[0]))
+                right_end = int(right_start + mask_fit_size) + 1
+
+                # Get the wavelengths of the two sides
+                wave_temp = np.concatenate(
+                    (
+                        wave[left_start:left_end],
+                        wave[right_start:right_end],
+                    )
+                )
+
+                # Get the count of the two sides
+                count_temp = np.concatenate(
+                    (
+                        count[left_start:left_end],
+                        count[right_start:right_end],
+                    )
+                )
+
+                finite_mask = (
+                    ~np.isnan(count_temp)
+                    & (count_temp > 0.0)
+                    & np.isfinite(count_temp)
+                )
+
+                # Fit the polynomial across the masked region
+                coeff = np.polynomial.polynomial.polyfit(
+                    wave_temp[finite_mask],
+                    count_temp[finite_mask],
+                    mask_fit_order,
+                )
+
+                # Replace the snsitivity values with the fitted values
+                count[left_end:right_start] = np.polynomial.polynomial.polyval(
+                    wave[left_end:right_start], coeff
+                )
+
+        # apply a Savitzky-Golay filter
+        if smooth:
+
+            count = signal.savgol_filter(count, slength, sorder)
+            # Set the smoothing parameters
+            self.spectrum_oned.add_smoothing(smooth, slength, sorder)
+
         if (
-            getattr(self.spectrum1D, "count_continuum") is None
+            getattr(self.spectrum_oned, "count_continuum") is None
         ) or recompute_continuum:
 
-            self.spectrum1D.add_count_continuum(
+            self.spectrum_oned.add_count_continuum(
                 get_continuum(wave, count, **kwargs)
             )
 
-        count = np.asarray(getattr(self.spectrum1D, "count_continuum"))
+        count = np.asarray(getattr(self.spectrum_oned, "count_continuum"))
 
         # If the median resolution of the observed spectrum is higher than
         # the literature one
@@ -1169,81 +1237,13 @@ class FluxCalibration(StandardLibrary):
             )
             standard_wave_true = wave
 
-        # apply a Savitzky-Golay filter to remove noise and Telluric lines
-        if smooth:
-
-            standard_count = signal.savgol_filter(
-                standard_count, slength, sorder
-            )
-            # Set the smoothing parameters
-            self.spectrum1D.add_smoothing(smooth, slength, sorder)
-
         # Get the sensitivity curve and convert the unit to per second
         sensitivity = standard_flux_true / (standard_count / exptime)
-        sensitivity_masked = sensitivity.copy()
 
-        if mask_range is not None:
-
-            for m in mask_range:
-
-                # If the mask is partially outside the spectrum, ignore
-                if (
-                    (m[0] < min(standard_wave_true))
-                    or (m[0] < min(wave))
-                    or (m[1] > max(standard_wave_true))
-                    or (m[1] > max(wave))
-                ):
-
-                    continue
-
-                # Get the indices for the two sides of the masking region
-                left_end = (
-                    int(max(np.where(standard_wave_true <= m[0])[0])) + 1
-                )
-                left_start = int(left_end - mask_fit_size)
-                right_start = int(min(np.where(standard_wave_true >= m[1])[0]))
-                right_end = int(right_start + mask_fit_size) + 1
-
-                # Get the wavelengths of the two sides
-                wave_temp = np.concatenate(
-                    (
-                        standard_wave_true[left_start:left_end],
-                        standard_wave_true[right_start:right_end],
-                    )
-                )
-
-                # Get the sensitivity of the two sides
-                sensitivity_temp = np.concatenate(
-                    (
-                        sensitivity[left_start:left_end],
-                        sensitivity[right_start:right_end],
-                    )
-                )
-
-                finite_mask = (
-                    ~np.isnan(sensitivity_temp)
-                    & (sensitivity_temp > 0.0)
-                    & np.isfinite(sensitivity_temp)
-                )
-
-                # Fit the polynomial across the masked region
-                coeff = np.polynomial.polynomial.polyfit(
-                    wave_temp[finite_mask],
-                    sensitivity_temp[finite_mask],
-                    mask_fit_order,
-                )
-
-                # Replace the snsitivity values with the fitted values
-                sensitivity_masked[
-                    left_end:right_start
-                ] = np.polynomial.polynomial.polyval(
-                    standard_wave_true[left_end:right_start], coeff
-                )
-
-        mask = np.isfinite(np.log10(sensitivity_masked)) & ~np.isnan(
-            np.log10(sensitivity_masked)
+        mask = np.isfinite(np.log10(sensitivity)) & ~np.isnan(
+            np.log10(sensitivity)
         )
-        sensitivity_masked = sensitivity_masked[mask]
+        sensitivity_masked = sensitivity.copy()[mask]
         standard_wave_masked = standard_wave_true[mask]
         standard_flux_masked = standard_flux_true[mask]
 
@@ -1272,15 +1272,15 @@ class FluxCalibration(StandardLibrary):
             self.logger.critical(error_msg)
             raise NotImplementedError(error_msg)
 
-        self.spectrum1D.add_sensitivity(sensitivity_masked)
-        self.spectrum1D.add_literature_standard(
+        self.spectrum_oned.add_sensitivity(sensitivity_masked)
+        self.spectrum_oned.add_literature_standard(
             standard_wave_masked, standard_flux_masked
         )
 
         # Add to each SpectrumOneD object
-        self.spectrum1D.add_sensitivity_func(sensitivity_func)
-        self.spectrum1D.add_count_continuum(count)
-        self.spectrum1D.add_flux_continuum(count * sensitivity_func(wave))
+        self.spectrum_oned.add_sensitivity_func(sensitivity_func)
+        self.spectrum_oned.add_count_continuum(count)
+        self.spectrum_oned.add_flux_continuum(count * sensitivity_func(wave))
 
         (
             telluric_func,
@@ -1288,15 +1288,16 @@ class FluxCalibration(StandardLibrary):
             telluric_factor,
         ) = self.get_telluric_profile(
             wave,
-            getattr(self.spectrum1D, "count") * 10.0 ** sensitivity_func(wave),
+            getattr(self.spectrum_oned, "count")
+            * 10.0 ** sensitivity_func(wave),
             count * 10.0 ** sensitivity_func(wave),
             mask_range=mask_range,
             return_function=True,
         )
 
-        self.spectrum1D.add_telluric_func(telluric_func)
-        self.spectrum1D.add_telluric_profile(telluric_profile)
-        self.spectrum1D.add_telluric_factor(telluric_factor)
+        self.spectrum_oned.add_telluric_func(telluric_func)
+        self.spectrum_oned.add_telluric_profile(telluric_profile)
+        self.spectrum_oned.add_telluric_factor(telluric_factor)
 
         if return_function:
 
@@ -1312,8 +1313,10 @@ class FluxCalibration(StandardLibrary):
         """
 
         # Add to both science and standard spectrum_list
-        self.spectrum1D.add_sensitivity_func(sensitivity_func=sensitivity_func)
-        self.spectrum1D.add_literature_standard(
+        self.spectrum_oned.add_sensitivity_func(
+            sensitivity_func=sensitivity_func
+        )
+        self.spectrum_oned.add_literature_standard(
             self.standard_wave_true, self.standard_fluxmag_true
         )
 
@@ -1367,13 +1370,13 @@ class FluxCalibration(StandardLibrary):
 
         """
 
-        wave_literature = getattr(self.spectrum1D, "wave_literature")
-        flux_literature = getattr(self.spectrum1D, "flux_literature")
-        sensitivity = getattr(self.spectrum1D, "sensitivity")
-        sensitivity_func = getattr(self.spectrum1D, "sensitivity_func")
+        wave_literature = getattr(self.spectrum_oned, "wave_literature")
+        flux_literature = getattr(self.spectrum_oned, "flux_literature")
+        sensitivity = getattr(self.spectrum_oned, "sensitivity")
+        sensitivity_func = getattr(self.spectrum_oned, "sensitivity_func")
 
-        library = getattr(self.spectrum1D, "library")
-        target = getattr(self.spectrum1D, "target")
+        library = getattr(self.spectrum_oned, "library")
+        target = getattr(self.spectrum_oned, "target")
 
         fig = go.Figure(
             layout=dict(
@@ -1507,7 +1510,7 @@ class FluxCalibration(StandardLibrary):
 
     def apply_flux_calibration(
         self,
-        target_spectrum1D,
+        target_spectrum_oned,
         inspect=False,
         wave_min=None,
         wave_max=None,
@@ -1526,13 +1529,13 @@ class FluxCalibration(StandardLibrary):
         match the highest resolution (the smallest wavelength bin) part of the
         spectrum.
 
-        Note: This function directly modify the *target_spectrum1D*.
+        Note: This function directly modify the *target_spectrum_oned*.
 
         Note 2: the wave_min and wave_max are for DISPLAY purpose only.
 
         Parameters
         ----------
-        target_spectrum1D: SpectrumOneD object
+        target_spectrum_oned: SpectrumOneD object
             The spectrum to be flux calibrated.
         inspect: bool (Default: False)
             Set to True to create/display/save figure
@@ -1570,13 +1573,13 @@ class FluxCalibration(StandardLibrary):
 
         """
 
-        self.target_spec_id = getattr(target_spectrum1D, "spec_id")
+        self.target_spec_id = getattr(target_spectrum_oned, "spec_id")
 
-        wave = getattr(target_spectrum1D, "wave")
-        count = getattr(target_spectrum1D, "count")
-        count_err = getattr(target_spectrum1D, "count_err")
-        count_sky = getattr(target_spectrum1D, "count_sky")
-        exptime = getattr(target_spectrum1D, "exptime")
+        wave = getattr(target_spectrum_oned, "wave")
+        count = getattr(target_spectrum_oned, "count")
+        count_err = getattr(target_spectrum_oned, "count_err")
+        count_sky = getattr(target_spectrum_oned, "count_sky")
+        exptime = getattr(target_spectrum_oned, "exptime")
         if exptime is None:
             exptime = 1.0
 
@@ -1585,14 +1588,16 @@ class FluxCalibration(StandardLibrary):
             "is {} seconds.".format(exptime)
         )
 
-        if getattr(target_spectrum1D, "count_continuum") is None:
+        if getattr(target_spectrum_oned, "count_continuum") is None:
 
-            target_spectrum1D.add_count_continuum(get_continuum(wave, count))
+            target_spectrum_oned.add_count_continuum(
+                get_continuum(wave, count)
+            )
 
-        count_continuum = getattr(target_spectrum1D, "count_continuum")
+        count_continuum = getattr(target_spectrum_oned, "count_continuum")
 
         # apply the flux calibration
-        sensitivity_func = getattr(self.spectrum1D, "sensitivity_func")
+        sensitivity_func = getattr(self.spectrum_oned, "sensitivity_func")
         sensitivity = 10.0 ** sensitivity_func(wave) / exptime
 
         flux = sensitivity * count
@@ -1607,13 +1612,13 @@ class FluxCalibration(StandardLibrary):
 
         flux_continuum = sensitivity * count_continuum
 
-        target_spectrum1D.add_flux_continuum(flux_continuum)
+        target_spectrum_oned.add_flux_continuum(flux_continuum)
 
-        target_spectrum1D.add_flux(flux, flux_err, flux_sky)
-        target_spectrum1D.add_sensitivity(sensitivity)
+        target_spectrum_oned.add_flux(flux, flux_err, flux_sky)
+        target_spectrum_oned.add_sensitivity(sensitivity)
 
         # Add the rest of the flux calibration parameters
-        target_spectrum1D.merge(self.spectrum1D)
+        target_spectrum_oned.merge(self.spectrum_oned)
 
         if wave_min is None:
 
@@ -1823,7 +1828,7 @@ class FluxCalibration(StandardLibrary):
         """
 
         # If flux is calibrated
-        self.spectrum1D.create_fits(
+        self.spectrum_oned.create_fits(
             output=output,
             empty_primary_hdu=empty_primary_hdu,
             recreate=recreate,
@@ -1880,7 +1885,7 @@ class FluxCalibration(StandardLibrary):
         else:
             filename = os.path.splitext(filename)[0]
 
-        self.spectrum1D.save_fits(
+        self.spectrum_oned.save_fits(
             output=output,
             filename=filename,
             overwrite=overwrite,
@@ -1937,17 +1942,17 @@ class FluxCalibration(StandardLibrary):
         else:
             filename = os.path.splitext(filename)[0]
 
-        self.spectrum1D.save_csv(
+        self.spectrum_oned.save_csv(
             output=output,
             filename=filename,
             overwrite=overwrite,
             recreate=recreate,
         )
 
-    def get_spectrum1D(self):
+    def get_spectrum_oned(self):
         """
-        Return the spectrum1D object.
+        Return the spectrum_oned object.
 
         """
 
-        return self.spectrum1D
+        return self.spectrum_oned
