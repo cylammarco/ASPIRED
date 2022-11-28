@@ -1,6 +1,6 @@
 astropy>=4.0
 astroscrappy>=1.0.8
-ccdproc>=2.1
+ccdproc<=2.4
 Cython>=0.29.23
 numpy>=1.18
 plotly>=5.0
