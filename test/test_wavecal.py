@@ -339,6 +339,9 @@ def test_overwritten_copy_of_spectrum1Ds_are_different():
     assert memory_1 != memory_2
 
 
+@pytest.mark.skip(
+    reason="rascal plotting bug, need to wait for rascal update."
+)
 @patch("plotly.graph_objects.Figure.show")
 def test_user_supplied_arc_lines(mock_show):
 

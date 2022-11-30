@@ -1,10 +1,17 @@
-Version 0.4.X
+Version 0.4.7
 -------------
+
+:Date X-X-2022
 
 * Major bug fixes
 
   * Fixed a rounding-like error wwhen finding trace.
   * Fixed a bug leading to wrong background estimation when finding trace.
+  * Calibrator is initialised defaulting to plotting with plotly
+
+* Other changes
+
+  * source code is moved to the folder `src`
 
 Version 0.4.6
 -------------
