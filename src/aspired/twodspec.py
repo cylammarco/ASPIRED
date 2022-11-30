@@ -4812,6 +4812,164 @@ class TwoDSpec:
             variance0,
         )
 
+    def inspect_line_spread_function(
+        self,
+        spec_id=None,
+        display=True,
+        renderer="default",
+        width=1280,
+        height=720,
+        return_jsonstring=False,
+        save_fig=False,
+        fig_type="iframe+png",
+        filename=None,
+        open_iframe=False,
+    ):
+        """
+        Call this method to inspect the line spread function used to extract
+        the spectrum.
+        Parameters
+        ----------
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum_oned object
+        display: bool
+            Set to True to display disgnostic plot.
+        renderer: str
+            plotly renderer options.
+        width: int/float
+            Number of pixels in the horizontal direction of the outputs
+        height: int/float
+            Number of pixels in the vertical direction of the outputs
+        return_jsonstring: bool
+            set to True to return json str that can be rendered by Plotly
+            in any support language.
+        save_fig: bool (default: False)
+            Save an image if set to True. Plotly uses the pio.write_html()
+            or pio.write_image(). The support format types should be provided
+            in fig_type.
+        fig_type: string (default: 'iframe+png')
+            Image type to be saved, choose from:
+            jpg, png, svg, pdf and iframe. Delimiter is '+'.
+        filename: str
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        open_iframe: bool
+            Open the iframe in the default browser if set to True.
+        """
+
+        if isinstance(spec_id, int):
+
+            spec_id = [spec_id]
+
+        if spec_id is not None:
+
+            assert np.in1d(
+                spec_id, list(self.spectrum_list.keys())
+            ).all(), "Some "
+            "spec_id provided are not in the spectrum_list."
+
+        else:
+
+            spec_id = list(self.spectrum_list.keys())
+
+        to_return = []
+
+        for j in spec_id:
+
+            spec = self.spectrum_list[j]
+            profile = self.spectrum_list[j].profile
+
+            len_trace = len(spec.trace)
+            # plot 10 LSFs
+            lsf_dist = len_trace // 10
+            lsf_idx = (
+                np.arange(0, len_trace - lsf_dist + 1, lsf_dist)
+                + lsf_dist // 2
+            )
+
+            fig = go.Figure(
+                layout=dict(autosize=False, height=height, width=width)
+            )
+
+            for i in lsf_idx:
+                # plot the SNR
+                fig.add_trace(
+                    go.Scatter(
+                        x=np.arange(len(profile[i])),
+                        y=profile[i],
+                        name="Pixel {}".format(i),
+                    )
+                )
+
+            # Decorative stuff
+            fig.update_layout(
+                yaxis=dict(
+                    range=[
+                        np.nanmin(
+                            sigma_clip(profile, sigma=5.0, masked=False)
+                        ),
+                        np.nanmax(
+                            sigma_clip(profile, sigma=10.0, masked=False)
+                        ),
+                    ],
+                    zeroline=False,
+                    domain=[0, 1.0],
+                    showgrid=True,
+                    title="Count / s",
+                ),
+                legend=go.layout.Legend(
+                    traceorder="normal",
+                    font=dict(family="sans-serif", size=12, color="black"),
+                    bgcolor="rgba(0,0,0,0)",
+                ),
+                bargap=0,
+                hovermode="closest",
+                showlegend=True,
+            )
+
+            if filename is None:
+
+                filename = "extraction_profile"
+
+            if save_fig:
+
+                fig_type_split = fig_type.split("+")
+
+                for t in fig_type_split:
+
+                    save_path = filename + "_" + str(j) + "." + t
+
+                    if t == "iframe":
+
+                        pio.write_html(fig, save_path, auto_open=open_iframe)
+
+                    elif t in ["jpg", "png", "svg", "pdf"]:
+
+                        pio.write_image(fig, save_path)
+
+                    self.logger.info(
+                        "Figure is saved to {} ".format(save_path)
+                        + "for spec_id: {}.".format(j)
+                    )
+
+            if display:
+
+                if renderer == "default":
+
+                    fig.show()
+
+                else:
+
+                    fig.show(renderer)
+
+            if return_jsonstring:
+
+                to_return.append(fig.to_json())
+
+        if return_jsonstring:
+
+            return to_return
+
     def inspect_extracted_spectrum(
         self,
         spec_id=None,
