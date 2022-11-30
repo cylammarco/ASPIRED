@@ -33,7 +33,7 @@ def gaussian(pixels, central_pixel):
 
 
 # background noise
-bg_level = 5.0
+bg_level = 0.5
 
 # Prepare dummy data
 # total signal should be [2 * (2 + 5 + 10) + 20] - [1 * 7] = 47
@@ -112,7 +112,7 @@ def test_spectral_extraction():
     )
 
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    assert np.isclose(count, 54, atol=1.0), (
+    assert np.isclose(count, 55, atol=1.0), (
         "Extracted count is " + str(count) + " but it should be 54."
     )
 

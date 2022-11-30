@@ -3,6 +3,8 @@ Version 0.4.7
 
 :Date X-X-2022
 
+Last release of the v0.4series unless there are blocking bugs.
+
 * Major bug fixes
 
   * Fixed a rounding-like error wwhen finding trace.
@@ -12,6 +14,7 @@ Version 0.4.7
 * Minor bug fixes
 
   * `onedspec.get_telluric_correction()` was using a wrong index for standard
+  * `get_continuum()` is not propagating the keyword argument lowess_frac properly
 
 * Other changes
 

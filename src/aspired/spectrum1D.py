@@ -3103,7 +3103,7 @@ class Spectrum1D:
     def create_fits(
         self,
         output,
-        recreate=False,
+        recreate=True,
         empty_primary_hdu=True,
         return_hdu_list=False,
     ):
