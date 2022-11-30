@@ -1,7 +1,7 @@
 Version 0.4.7
 -------------
 
-:Date X-X-2022
+:Date 1-12-2022
 
 Last release of the v0.4series unless there are blocking bugs.
 
