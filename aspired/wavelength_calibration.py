@@ -524,6 +524,9 @@ class WavelengthCalibration:
         self.spectrum1D.add_calibrator(
             Calibrator(peaks=peaks, spectrum=arc_spec)
         )
+        self.set_calibrator_properties()
+        self.set_hough_properties()
+        self.set_ransac_properties()
 
     def set_calibrator_properties(
         self,
