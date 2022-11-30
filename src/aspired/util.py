@@ -297,9 +297,15 @@ def get_continuum(x, y, **kwargs):
 
     """
 
-    if "frac" not in kwargs:
+    if "lowess_frac" not in kwargs:
 
-        kwargs["frac"] = 0.15
+        kwargs["frac"] = 0.01
+
+    else:
+
+        kwargs["frac"] = kwargs["lowess_frac"]
+        # dictionary pass by value so it's safe to pop
+        kwargs.pop("lowess_frac")
 
     if "return_sorted" not in kwargs:
 

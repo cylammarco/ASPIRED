@@ -9,9 +9,14 @@ Version 0.4.7
   * Fixed a bug leading to wrong background estimation when finding trace.
   * Calibrator is initialised defaulting to plotting with plotly
 
+* Minor bug fixes
+
+  * `onedspec.get_telluric_correction()` was using a wrong index for standard
+
 * Other changes
 
   * source code is moved to the folder `src`
+  * Slight tidy-up of header EXTNAME and LABEL.
 
 Version 0.4.6
 -------------

@@ -2562,8 +2562,12 @@ class Spectrum1D:
             self.arc_spec_hdulist += [peaks_refined_ImageHDU]
 
             # Add the arc spectrum
-            self.modify_arc_spec_header(0, "set", "EXTNAME", "Electron Count")
-            self.modify_arc_spec_header(0, "set", "LABEL", "Electron Count")
+            self.modify_arc_spec_header(
+                0, "set", "EXTNAME", "Arc Electron Count"
+            )
+            self.modify_arc_spec_header(
+                0, "set", "LABEL", "Arc Electron Count"
+            )
             self.modify_arc_spec_header(0, "set", "CRPIX1", 1)
             self.modify_arc_spec_header(0, "set", "CDELT1", 1)
             self.modify_arc_spec_header(0, "set", "CRVAL1", self.pixel_list[0])
@@ -2864,10 +2868,10 @@ class Spectrum1D:
             ]
 
             self.modify_sensitivity_resampled_header(
-                "set", "EXTNAME", "Sensitivity"
+                "set", "EXTNAME", "Resampled Sensitivity"
             )
             self.modify_sensitivity_resampled_header(
-                "set", "LABEL", "Sensitivity"
+                "set", "LABEL", "Resampled Sensitivity"
             )
             self.modify_sensitivity_resampled_header("set", "CRPIX1", 1.00e00)
             self.modify_sensitivity_resampled_header("set", "CDELT1", 1)
@@ -2943,8 +2947,12 @@ class Spectrum1D:
             self.flux_resampled_hdulist += [flux_sky_resampled_ImageHDU]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_flux_resampled_header(0, "set", "EXTNAME", "Flux")
-            self.modify_flux_resampled_header(0, "set", "LABEL", "Flux")
+            self.modify_flux_resampled_header(
+                0, "set", "EXTNAME", "Resampled Flux"
+            )
+            self.modify_flux_resampled_header(
+                0, "set", "LABEL", "Resampled Flux"
+            )
             self.modify_flux_resampled_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
                 0, "set", "CDELT1", self.wave_bin
@@ -2959,10 +2967,10 @@ class Spectrum1D:
             )
 
             self.modify_flux_resampled_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1, "set", "EXTNAME", "Resampled Flux (Uncertainty)"
             )
             self.modify_flux_resampled_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1, "set", "LABEL", "Resampled Flux (Uncertainty)"
             )
             self.modify_flux_resampled_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
@@ -2978,9 +2986,11 @@ class Spectrum1D:
             )
 
             self.modify_flux_resampled_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2, "set", "EXTNAME", "Resampled Flux (Sky)"
             )
-            self.modify_flux_resampled_header(2, "set", "LABEL", "Flux (Sky)")
+            self.modify_flux_resampled_header(
+                2, "set", "LABEL", "Resampled Flux (Sky)"
+            )
             self.modify_flux_resampled_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
                 2, "set", "CDELT1", self.wave_bin

@@ -4547,7 +4547,7 @@ class OneDSpec:
 
         if self.standard_wavelength_resampled:
 
-            standard_spec = self.standard_spectrum_list[i]
+            standard_spec = self.standard_spectrum_list[0]
             wave_standard_resampled = standard_spec.wave_resampled
 
             if (standard_spec.telluric_profile_resampled is None) or (
