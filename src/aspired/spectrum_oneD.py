@@ -2812,8 +2812,8 @@ class SpectrumOneD:
             self.modify_trace_header(0, "set", "BUNIT", "Pixel (Spatial)")
 
             # Add the trace_sigma
-            self.modify_trace_header(1, "set", "EXTNAME", "Trace width/sigma")
-            self.modify_trace_header(1, "set", "LABEL", "Trace width/sigma")
+            self.modify_trace_header(1, "set", "EXTNAME", "Trace width")
+            self.modify_trace_header(1, "set", "LABEL", "Trace width")
             self.modify_trace_header(1, "set", "CRPIX1", 1)
             self.modify_trace_header(1, "set", "CDELT1", 1)
             self.modify_trace_header(1, "set", "CRVAL1", self.pixel_list[0])
@@ -2867,8 +2867,8 @@ class SpectrumOneD:
             self.modify_count_header(0, "set", "SKYDN", self.skywidthdn)
             self.modify_count_header(0, "set", "SKYUP", self.skywidthup)
             self.modify_count_header(0, "set", "XTYPE", self.extraction_type)
-            self.modify_count_header(0, "set", "EXTNAME", "Electron Count")
-            self.modify_count_header(0, "set", "LABEL", "Electron Count")
+            self.modify_count_header(0, "set", "EXTNAME", "Electron count")
+            self.modify_count_header(0, "set", "LABEL", "Electron count")
             self.modify_count_header(0, "set", "CRPIX1", 1)
             self.modify_count_header(0, "set", "CDELT1", 1)
             self.modify_count_header(0, "set", "CRVAL1", self.pixel_list[0])
@@ -2878,10 +2878,10 @@ class SpectrumOneD:
 
             # Add the uncertainty count
             self.modify_count_header(
-                1, "set", "EXTNAME", "Electron Count (Uncertainty)"
+                1, "set", "EXTNAME", "Electron count (Uncertainty)"
             )
             self.modify_count_header(
-                1, "set", "LABEL", "Electron Count (Uncertainty)"
+                1, "set", "LABEL", "Electron count (Uncertainty)"
             )
             self.modify_count_header(1, "set", "CRPIX1", 1)
             self.modify_count_header(1, "set", "CDELT1", 1)
@@ -2892,9 +2892,9 @@ class SpectrumOneD:
 
             # Add the sky count
             self.modify_count_header(
-                2, "set", "EXTNAME", "Electron Count (Sky)"
+                2, "set", "EXTNAME", "Electron count (Sky)"
             )
-            self.modify_count_header(2, "set", "LABEL", "Electron Count (Sky)")
+            self.modify_count_header(2, "set", "LABEL", "Electron count (Sky)")
             self.modify_count_header(2, "set", "CRPIX1", 1)
             self.modify_count_header(2, "set", "CDELT1", 1)
             self.modify_count_header(2, "set", "CRVAL1", self.pixel_list[0])
@@ -2932,10 +2932,10 @@ class SpectrumOneD:
 
             # Add the extraction weights
             self.modify_weight_map_header(
-                "set", "EXTNAME", "Optimal Extraction Profile"
+                "set", "EXTNAME", "Optimal extraction profile"
             )
             self.modify_weight_map_header(
-                "set", "LABEL", "Optimal Extraction Profile"
+                "set", "LABEL", "Optimal extraction profile"
             )
             if self.var is not None:
                 self.modify_weight_map_header("set", "CRVAL1", len(self.var))
@@ -2996,10 +2996,10 @@ class SpectrumOneD:
 
             # Add the resampled count
             self.modify_count_resampled_header(
-                0, "set", "EXTNAME", "Resampled Electron Count"
+                0, "set", "EXTNAME", "Resampled electron count"
             )
             self.modify_count_resampled_header(
-                0, "set", "LABEL", "Resampled Electron Count"
+                0, "set", "LABEL", "Resampled electron count"
             )
             self.modify_count_resampled_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_count_resampled_header(
@@ -3016,10 +3016,10 @@ class SpectrumOneD:
 
             # Add the resampled uncertainty count
             self.modify_count_resampled_header(
-                1, "set", "EXTNAME", "Resampled Electron Count (Uncertainty)"
+                1, "set", "EXTNAME", "Resampled electron count (Uncertainty)"
             )
             self.modify_count_resampled_header(
-                1, "set", "LABEL", "Resampled Electron Count (Uncertainty)"
+                1, "set", "LABEL", "Resampled electron count (Uncertainty)"
             )
             self.modify_count_resampled_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_count_resampled_header(
@@ -3036,10 +3036,10 @@ class SpectrumOneD:
 
             # Add the resampled sky count
             self.modify_count_resampled_header(
-                2, "set", "EXTNAME", "Resampled Electron Count (Sky)"
+                2, "set", "EXTNAME", "Resampled electron count (Sky)"
             )
             self.modify_count_resampled_header(
-                2, "set", "LABEL", "Resampled Electron Count (Sky)"
+                2, "set", "LABEL", "Resampled electron count (Sky)"
             )
             self.modify_count_resampled_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_count_resampled_header(
@@ -3093,8 +3093,12 @@ class SpectrumOneD:
             self.arc_spec_hdulist += [peaks_refined_ImageHDU]
 
             # Add the arc spectrum
-            self.modify_arc_spec_header(0, "set", "EXTNAME", "Electron Count")
-            self.modify_arc_spec_header(0, "set", "LABEL", "Electron Count")
+            self.modify_arc_spec_header(
+                0, "set", "EXTNAME", "Electron count (Arc)"
+            )
+            self.modify_arc_spec_header(
+                0, "set", "LABEL", "Electron count (Arc)"
+            )
             self.modify_arc_spec_header(0, "set", "CRPIX1", 1)
             self.modify_arc_spec_header(0, "set", "CDELT1", 1)
             self.modify_arc_spec_header(0, "set", "CRVAL1", self.pixel_list[0])
@@ -3106,19 +3110,19 @@ class SpectrumOneD:
 
             # Add the peaks in native pixel value
             self.modify_arc_spec_header(
-                1, "set", "EXTNAME", "Peaks (Detector Pixel)"
+                1, "set", "EXTNAME", "Peaks (Detector pixel)"
             )
             self.modify_arc_spec_header(
-                1, "set", "LABEL", "Peaks (Detector Pixel)"
+                1, "set", "LABEL", "Peaks (Detector pixel)"
             )
             self.modify_arc_spec_header(1, "set", "BUNIT", "Pixel")
 
             # Add the peaks in effective pixel value
             self.modify_arc_spec_header(
-                2, "set", "EXTNAME", "Peaks (Effective Pixel)"
+                2, "set", "EXTNAME", "Peaks (Effective pixel)"
             )
             self.modify_arc_spec_header(
-                2, "set", "LABEL", "Peaks (Effective Pixel)"
+                2, "set", "LABEL", "Peaks (Effective pixel)"
             )
             self.modify_arc_spec_header(2, "set", "BUNIT", "Pixel")
 
@@ -3184,10 +3188,10 @@ class SpectrumOneD:
             self.modify_wavecal_header("set", "FILTER", self.filter_close)
             self.modify_wavecal_header("set", "PUSAGE", self.peak_utilisation)
             self.modify_wavecal_header(
-                "set", "EXTNAME", "Wavelength Clibration Coefficients"
+                "set", "EXTNAME", "Wavelength calibration coefficients"
             )
             self.modify_wavecal_header(
-                "set", "LABEL", "Wavelength Clibration Coefficients"
+                "set", "LABEL", "Wavelength calibration coefficients"
             )
             self.modify_wavecal_header("set", "CRPIX1", 1.00e00)
             self.modify_wavecal_header("set", "CDELT1", self.wave_bin)
@@ -3228,10 +3232,10 @@ class SpectrumOneD:
 
             # Add the calibrated wavelength
             self.modify_wavelength_header(
-                "set", "EXTNAME", "Pixel-Wavelength Mapping"
+                "set", "EXTNAME", "Pixel-wavelength mapping"
             )
             self.modify_wavelength_header(
-                "set", "LABEL", "Pixel-Wavelength Mapping"
+                "set", "LABEL", "Pixel-wavelength mapping"
             )
             self.modify_wavelength_header("set", "CRPIX1", 1)
             self.modify_wavelength_header("set", "CDELT1", 1)
@@ -3278,10 +3282,10 @@ class SpectrumOneD:
 
             # Add the calibrated wavelength
             self.modify_wavelength_resampled_header(
-                "set", "EXTNAME", "Wavelength At Resampled Position"
+                "set", "EXTNAME", "Wavelength at resampled position"
             )
             self.modify_wavelength_resampled_header(
-                "set", "LABEL", "Wavelength At Resampled Position"
+                "set", "LABEL", "Wavelength at resampled position"
             )
             self.modify_wavelength_resampled_header("set", "CRPIX1", 1)
             self.modify_wavelength_resampled_header("set", "CDELT1", 1)
@@ -3454,10 +3458,10 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_atm_ext_header(
-                "set", "EXTNAME", "Atmopheric Extinction Correction Factor"
+                "set", "EXTNAME", "Atmopheric extinction correction factor"
             )
             self.modify_atm_ext_header(
-                "set", "LABEL", "Atmopheric Extinction Correction Factor"
+                "set", "LABEL", "Atmopheric extinction correction factor"
             )
             self.modify_atm_ext_header("set", "CRPIX1", 1.00e00)
             self.modify_atm_ext_header("set", "CDELT1", self.wave_bin)
@@ -3528,10 +3532,10 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_atm_ext_corrected_header(
-                0, "set", "EXTNAME", "Flux atm ext corrected"
+                0, "set", "EXTNAME", "Flux atmospheric extinction corrected"
             )
             self.modify_flux_atm_ext_corrected_header(
-                0, "set", "LABEL", "Flux"
+                0, "set", "LABEL", "Flux atmospheric extinction corrected"
             )
             self.modify_flux_atm_ext_corrected_header(
                 0, "set", "CRPIX1", 1.00e00
@@ -3551,10 +3555,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_atm_ext_corrected_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1,
+                "set",
+                "EXTNAME",
+                "Flux atmospheric extinction corrected (Uncertainty)",
             )
             self.modify_flux_atm_ext_corrected_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1,
+                "set",
+                "LABEL",
+                "Flux atmospheric extinction corrected (Uncertainty)",
             )
             self.modify_flux_atm_ext_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -3574,10 +3584,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_atm_ext_corrected_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2,
+                "set",
+                "EXTNAME",
+                "Flux atmospheric extinction corrected (Sky)",
             )
             self.modify_flux_atm_ext_corrected_header(
-                2, "set", "LABEL", "Flux (Sky)"
+                2,
+                "set",
+                "LABEL",
+                "Flux atmospheric extinction corrected (Sky)",
             )
             self.modify_flux_atm_ext_corrected_header(
                 2, "set", "CRPIX1", 1.00e00
@@ -3638,10 +3654,10 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_telluric_profile_header(
-                "set", "EXTNAME", "Telluric Absorption Profile"
+                "set", "EXTNAME", "Telluric absorption profile"
             )
             self.modify_telluric_profile_header(
-                "set", "LABEL", "Telluric Absorption Profile"
+                "set", "LABEL", "Telluric absorption profile"
             )
             self.modify_telluric_profile_header("set", "CRPIX1", 1.00e00)
             self.modify_telluric_profile_header("set", "CDELT1", self.wave_bin)
@@ -3717,7 +3733,7 @@ class SpectrumOneD:
                 0, "set", "EXTNAME", "Flux telluric corrected"
             )
             self.modify_flux_telluric_corrected_header(
-                0, "set", "LABEL", "Flux"
+                0, "set", "LABEL", "Flux telluric corrected"
             )
             self.modify_flux_telluric_corrected_header(
                 0, "set", "CRPIX1", 1.00e00
@@ -3737,10 +3753,10 @@ class SpectrumOneD:
             )
 
             self.modify_flux_telluric_corrected_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1, "set", "EXTNAME", "Flux telluric correct (Uncertainty)"
             )
             self.modify_flux_telluric_corrected_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1, "set", "LABEL", "Flux telluric correct (Uncertainty)"
             )
             self.modify_flux_telluric_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -3760,10 +3776,10 @@ class SpectrumOneD:
             )
 
             self.modify_flux_telluric_corrected_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2, "set", "EXTNAME", "Flux telluric corrected (Sky)"
             )
             self.modify_flux_telluric_corrected_header(
-                2, "set", "LABEL", "Flux (Sky)"
+                2, "set", "LABEL", "Flux telluric corrected (Sky)"
             )
             self.modify_flux_telluric_corrected_header(
                 2, "set", "CRPIX1", 1.00e00
@@ -3846,10 +3862,16 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_atm_ext_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux atm ext telluric corrected"
+                0,
+                "set",
+                "EXTNAME",
+                "Flux atmospheric extinction telluric corrected",
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
-                0, "set", "LABEL", "Flux"
+                0,
+                "set",
+                "LABEL",
+                "Flux atmospheric extinction telluric corrected",
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 0, "set", "CRPIX1", 1.00e00
@@ -3871,10 +3893,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_atm_ext_telluric_corrected_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1,
+                "set",
+                "EXTNAME",
+                "Flux atmospheric extinction telluric corrected (Uncertainty)",
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1,
+                "set",
+                "LABEL",
+                "Flux atmospheric extinction telluric corrected (Uncertainty)",
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -3896,10 +3924,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_atm_ext_corrected_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2,
+                "set",
+                "EXTNAME",
+                "Flux atmospheric extinction telluric corrected (Sky)",
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
-                2, "set", "LABEL", "Flux (Sky)"
+                2,
+                "set",
+                "LABEL",
+                "Flux atmospheric extinction telluric corrected (Sky)",
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 2, "set", "CRPIX1", 1.00e00
@@ -4020,7 +4054,9 @@ class SpectrumOneD:
             self.modify_flux_resampled_header(
                 0, "set", "EXTNAME", "Flux resampled"
             )
-            self.modify_flux_resampled_header(0, "set", "LABEL", "Flux")
+            self.modify_flux_resampled_header(
+                0, "set", "LABEL", "Flux resampled"
+            )
             self.modify_flux_resampled_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
                 0, "set", "CDELT1", self.wave_bin
@@ -4035,10 +4071,10 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1, "set", "EXTNAME", "Flux resampled (Uncertainty)"
             )
             self.modify_flux_resampled_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1, "set", "LABEL", "Flux resampled (Uncertainty)"
             )
             self.modify_flux_resampled_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
@@ -4054,9 +4090,11 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2, "set", "EXTNAME", "Flux resampled (Sky)"
             )
-            self.modify_flux_resampled_header(2, "set", "LABEL", "Flux (Sky)")
+            self.modify_flux_resampled_header(
+                2, "set", "LABEL", "Flux resampled (Sky)"
+            )
             self.modify_flux_resampled_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_resampled_header(
                 2, "set", "CDELT1", self.wave_bin
@@ -4110,10 +4148,10 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_atm_ext_resampled_header(
-                "set", "EXTNAME", "Atmopheric Extinction Correction Factor"
+                "set", "EXTNAME", "Atmopheric extinction correction factor"
             )
             self.modify_atm_ext_resampled_header(
-                "set", "LABEL", "Atmopheric Extinction Correction Factor"
+                "set", "LABEL", "Atmopheric extinction correction factor"
             )
             self.modify_atm_ext_resampled_header("set", "CRPIX1", 1.00e00)
             self.modify_atm_ext_resampled_header(
@@ -4188,10 +4226,16 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_atm_ext_corrected_header(
-                0, "set", "EXTNAME", "Flux resampled atm ext corrected"
+                0,
+                "set",
+                "EXTNAME",
+                "Flux resampled atmospheric extinction corrected",
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
-                0, "set", "LABEL", "Flux"
+                0,
+                "set",
+                "LABEL",
+                "Flux resampled atmospheric extinction corrected",
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 0, "set", "CRPIX1", 1.00e00
@@ -4213,10 +4257,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_atm_ext_corrected_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1,
+                "set",
+                "EXTNAME",
+                "Flux resampled atmospheric extinction corrected (Uncertainty)",
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1,
+                "set",
+                "LABEL",
+                "Flux resampled atmospheric extinction corrected (Uncertainty)",
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -4238,10 +4288,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_atm_ext_corrected_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2,
+                "set",
+                "EXTNAME",
+                "Flux resampled atmospheric extinction corrected (Sky)",
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
-                2, "set", "LABEL", "Flux (Sky)"
+                2,
+                "set",
+                "LABEL",
+                "Flux resampled atmospheric extinction corrected (Sky)",
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 2, "set", "CRPIX1", 1.00e00
@@ -4306,10 +4362,10 @@ class SpectrumOneD:
 
             # Note that wave_start is the centre of the starting bin
             self.modify_telluric_profile_resampled_header(
-                "set", "EXTNAME", "Telluric Absorption Profile"
+                "set", "EXTNAME", "Telluric absorption profile"
             )
             self.modify_telluric_profile_resampled_header(
-                "set", "LABEL", "Telluric Absorption Profile"
+                "set", "LABEL", "Telluric absorption profile"
             )
             self.modify_telluric_profile_resampled_header(
                 "set", "CRPIX1", 1.00e00
@@ -4391,7 +4447,7 @@ class SpectrumOneD:
                 0, "set", "EXTNAME", "Flux resampled telluric corrected"
             )
             self.modify_flux_resampled_telluric_corrected_header(
-                0, "set", "LABEL", "Flux"
+                0, "set", "LABEL", "Flux resampled telluric corrected"
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 0, "set", "CRPIX1", 1.00e00
@@ -4413,10 +4469,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_telluric_corrected_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1,
+                "set",
+                "EXTNAME",
+                "Flux resampled telluric corrected (Uncertainty)",
             )
             self.modify_flux_resampled_telluric_corrected_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1,
+                "set",
+                "LABEL",
+                "Flux resampled telluric corrected (Uncertainty)",
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -4438,10 +4500,10 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_telluric_corrected_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2, "set", "EXTNAME", "Flux resampled telluric corrected (Sky)"
             )
             self.modify_flux_resampled_telluric_corrected_header(
-                2, "set", "LABEL", "Flux (Sky)"
+                2, "set", "LABEL", "Flux resampled telluric corrected (Sky)"
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 2, "set", "CRPIX1", 1.00e00
@@ -4544,10 +4606,13 @@ class SpectrumOneD:
                 0,
                 "set",
                 "EXTNAME",
-                "Flux resampled atm ext telluric corrected",
+                "Flux resampled atmospheric extinction telluric corrected",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
-                0, "set", "LABEL", "Flux"
+                0,
+                "set",
+                "LABEL",
+                "Flux resampled atmospheric extinction telluric corrected",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 0, "set", "CRPIX1", 1.00e00
@@ -4569,10 +4634,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
-                1, "set", "EXTNAME", "Flux (Uncertainty)"
+                1,
+                "set",
+                "EXTNAME",
+                "Flux resampled atmospheric extinction telluric corrected (Uncertainty)",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
-                1, "set", "LABEL", "Flux (Uncertainty)"
+                1,
+                "set",
+                "LABEL",
+                "Flux resampled atmospheric extinction telluric corrected (Uncertainty)",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -4594,10 +4665,16 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
-                2, "set", "EXTNAME", "Flux (Sky)"
+                2,
+                "set",
+                "EXTNAME",
+                "Flux resampled atmospheric extinction telluric corrected (Sky)",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
-                2, "set", "LABEL", "Flux (Sky)"
+                2,
+                "set",
+                "LABEL",
+                "Flux resampled atmospheric extinction telluric corrected (Sky)",
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 2, "set", "CRPIX1", 1.00e00

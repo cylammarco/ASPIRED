@@ -49,13 +49,28 @@ Version 0.5.0-dev
   * OneDSpec and spectrum1D expanded to accommodate wavelength_resampled
   * spectrum1D exapanded to handle atmospheric extinction corrected spectrum as an independent data list
 
-Version 0.4.X
+Version 0.4.7
 -------------
+
+:Date 1-12-2022
+
+Last release of the v0.4series unless there are blocking bugs.
 
 * Major bug fixes
 
   * Fixed a rounding-like error wwhen finding trace.
   * Fixed a bug leading to wrong background estimation when finding trace.
+  * Calibrator is initialised defaulting to plotting with plotly
+
+* Minor bug fixes
+
+  * `onedspec.get_telluric_correction()` was using a wrong index for standard
+  * `get_continuum()` is not propagating the keyword argument lowess_frac properly
+
+* Other changes
+
+  * source code is moved to the folder `src`
+  * Slight tidy-up of header EXTNAME and LABEL.
 
 Version 0.4.6
 -------------
@@ -129,6 +144,8 @@ Version 0.4.1
 -------------
 
 :Date 6-Nov-2021
+
+We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
 
 * New Features:
 
