@@ -11,7 +11,12 @@ from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import signal
 from scipy import interpolate as itp
-from spectres import spectres
+
+try:
+    from spectres import spectres_numba as spectres
+except ImportError as err:
+    print(err)
+    from spectres import spectres
 
 from .spectrum_oneD import SpectrumOneD
 from .util import get_continuum

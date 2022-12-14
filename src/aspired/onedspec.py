@@ -8,7 +8,12 @@ import pkg_resources
 import numpy as np
 from plotly import graph_objects as go
 from plotly import io as pio
-from spectres import spectres
+
+try:
+    from spectres import spectres_numba as spectres
+except ImportError as err:
+    print(err)
+    from spectres import spectres
 from scipy import optimize
 from scipy.interpolate import interp1d
 

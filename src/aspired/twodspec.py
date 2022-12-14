@@ -16,7 +16,12 @@ from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.special import erf
-from spectres import spectres
+
+try:
+    from spectres import spectres_numba as spectres
+except ImportError as err:
+    print(err)
+    from spectres import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .image_reduction import ImageReduction
