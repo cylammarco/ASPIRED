@@ -597,6 +597,7 @@ class WavelengthCalibration:
             Calibrator(peaks=peaks, spectrum=arc_spec)
         )
         self.spectrum_oned.calibrator.atlas = Atlas()
+        self.set_calibrator_properties()
 
     def set_calibrator_properties(
         self,

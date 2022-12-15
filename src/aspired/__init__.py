@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""ASPIRED"""
+
 from pkg_resources import get_distribution, DistributionNotFound
 
 try:
@@ -10,8 +12,9 @@ except DistributionNotFound:
 
 __status__ = "Production"
 __credits__ = [
+    "Marco C Lam",
+    "Robert J Smith",
     "Iair Arcavi",
-    "Paul R McWhirter",
     "Iain A Steele",
     "Josh Veitch-Michaelis",
     "Lukasz Wyrzykowski",

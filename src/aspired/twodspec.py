@@ -24,7 +24,7 @@ except ImportError as err:
     from spectres import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
-from .image_reduction import ImageReduction
+from .image_reduction import Reducer, ImageReduction
 from .spectrum_oneD import SpectrumOneD
 from .util import create_bad_pixel_mask, bfixpix
 
@@ -192,8 +192,11 @@ class TwoDSpec:
             "SEEDIMM",
             "DSEEING",
         ]
+        # AEPOSURE is the average exposure time computed in Reducer
+        # it is the effective exposure time suitable for computing
+        # the sensitivity curve.
         self.exptime_keyword = [
-            "XPOSURE",
+            "AXPOSURE" "XPOSURE",
             "EXPOSURE",
             "EXPTIME",
             "EXPOSED",
@@ -216,7 +219,7 @@ class TwoDSpec:
     def add_data(self, data, header=None):
         """
         Adding the 2D image data to be processed. The data can be a 2D numpy
-        array, an AstroPy ImageHDU/Primary HDU object or an ImageReduction
+        array, an AstroPy ImageHDU/Primary HDU object or an Reducer
         object.
 
         parameters
@@ -275,11 +278,11 @@ class TwoDSpec:
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.info("A CCDData is loaded as data.")
 
-        # If it is an ImageReduction object
-        elif isinstance(data, ImageReduction):
+        # If it is an Reducer object
+        elif isinstance(data, (Reducer, ImageReduction)):
 
             # If the data is not reduced, reduce it here. Error handling is
-            # done by the ImageReduction class
+            # done by the Reducer class
             if data.image_fits is None:
 
                 data._create_image_fits()
@@ -298,7 +301,7 @@ class TwoDSpec:
             else:
 
                 self.logger.warning(
-                    "Arc frame is not in the ImageReduction "
+                    "Arc frame is not in the Reducer "
                     "object, please supplied manually if you wish to perform "
                     "wavelength calibration."
                 )
@@ -342,7 +345,7 @@ class TwoDSpec:
             error_msg = (
                 "Please provide a numpy array, an "
                 + "astropy.io.fits.hdu.image.PrimaryHDU object "
-                + "or an ImageReduction object."
+                + "or an Reducer object."
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
@@ -1229,7 +1232,7 @@ class TwoDSpec:
 
         Parameters
         ----------
-        bad_mask: numpy.ndarray, PrimaryHDU/ImageHDU, ImageReduction, str
+        bad_mask: numpy.ndarray, PrimaryHDU/ImageHDU, Reducer, str
             The bad pixel mask of the image, make sure it is of the same size
             as the image and the right orientation.
 
@@ -1335,7 +1338,7 @@ class TwoDSpec:
 
         Parameters
         ----------
-        arc: numpy.ndarray, PrimaryHDU/ImageHDU, ImageReduction, str
+        arc: numpy.ndarray, PrimaryHDU/ImageHDU, Reducer, str
             The image of the arc image.
         header: FITS header (deafult: None)
             An astropy.io.fits.Header object. This is not used if arc is
@@ -1451,7 +1454,7 @@ class TwoDSpec:
                 + "astropy.io.fits.hdu.image.PrimaryHDU object, an "
                 + "astropy.io.fits.hdu.image.ImageHDU object, an "
                 + "astropy.io.fits.HDUList object, or an "
-                + "aspired.ImageReduction object."
+                + "aspired.Reducer object."
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)

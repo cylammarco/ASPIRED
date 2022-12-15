@@ -286,8 +286,9 @@ def test_set_all_properties():
     assert twodspec.gain == 2.45
     # The seeing is now read from the header, so it's 0.712134
     assert twodspec.seeing == 0.712134
-    # The *total* exposure time is now read from the header, so it's 240.
-    assert twodspec.exptime == 240.0
+    # The effective exposure time (the average time) is now read from the
+    # header, so it's 120.
+    assert twodspec.exptime == 120.0
     # The airmass is now read from the header, so it's 1.250338
     assert twodspec.airmass == 1.250338
     assert twodspec.verbose

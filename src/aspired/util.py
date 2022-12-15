@@ -1,13 +1,18 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""some helper functions"""
+
 import copy
 import logging
+
 import numpy as np
 from scipy import interpolate as itp
 from scipy import ndimage
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
-def bfixpix(data, badmask, n=4, retdat=False):
+def bfixpix(data, badmask, n_nearest=4, retdat=False):
     """
     Replace pixels flagged as nonzero in a bad-pixel mask with the
     average of their nearest four good neighboring pixels.
@@ -21,7 +26,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
 
     badmask: numpy array (N, M)
         Bad pixel mask.
-    n: int
+    n_nearest: int
         number of nearby, good pixels to average over
     retdat: bool
         If True, return an array instead of replacing-in-place and do
@@ -34,7 +39,7 @@ def bfixpix(data, badmask, n=4, retdat=False):
 
     """
 
-    nx, ny = data.shape
+    n_x, n_y = data.shape
 
     badx, bady = np.nonzero(badmask)
     nbad = len(badx)
@@ -45,36 +50,36 @@ def bfixpix(data, badmask, n=4, retdat=False):
 
     for i in range(nbad):
         rad = 0
-        numNearbyGoodPixels = 0
+        num_nearby_good_pixels = 0
 
-        while numNearbyGoodPixels < n:
+        while num_nearby_good_pixels < n_nearest:
 
             rad += 1
             xmin = max(0, badx[i] - rad)
-            xmax = min(nx, badx[i] + rad)
+            xmax = min(n_x, badx[i] + rad)
             ymin = max(0, bady[i] - rad)
-            ymax = min(ny, bady[i] + rad)
-            x = np.arange(nx)[xmin : xmax + 1]
-            y = np.arange(ny)[ymin : ymax + 1]
+            ymax = min(n_y, bady[i] + rad)
+            x = np.arange(n_x)[xmin : xmax + 1]
+            y = np.arange(n_y)[ymin : ymax + 1]
             yy, xx = np.meshgrid(y, x)
 
             rr = abs(xx + 1j * yy) * (
                 1.0 - badmask[xmin : xmax + 1, ymin : ymax + 1]
             )
-            numNearbyGoodPixels = (rr > 0).sum()
+            num_nearby_good_pixels = (rr > 0).sum()
 
-        closestDistances = np.unique(np.sort(rr[rr > 0])[0:n])
-        numDistances = len(closestDistances)
-        localSum = 0.0
-        localDenominator = 0.0
+        closest_distances = np.unique(np.sort(rr[rr > 0])[0:n_nearest])
+        num_distances = len(closest_distances)
+        local_sum = 0.0
+        local_denominator = 0.0
 
-        for j in range(numDistances):
-            localSum += data[xmin : xmax + 1, ymin : ymax + 1][
-                rr == closestDistances[j]
+        for j in range(num_distances):
+            local_sum += data[xmin : xmax + 1, ymin : ymax + 1][
+                rr == closest_distances[j]
             ].sum()
-            localDenominator += (rr == closestDistances[j]).sum()
+            local_denominator += (rr == closest_distances[j]).sum()
 
-        data[badx[i], bady[i]] = 1.0 * localSum / localDenominator
+        data[badx[i], bady[i]] = 1.0 * local_sum / local_denominator
 
     if retdat:
 
@@ -111,7 +116,7 @@ def create_cutoff_mask(
     Return
     ------
     cutoff_mask: numpy.ndarray
-        Any pixel outside the cutoff values will be masked as True (bad).
+        An_y pixel outside the cutoff values will be masked as True (bad).
 
     """
 
@@ -125,10 +130,8 @@ def create_cutoff_mask(
         else:
 
             err_msg = (
-                "Please supply a list or array for the cutoff. "
-                + "The given cutoff is {} and and a size of {}.".format(
-                    cutoff, len(cutoff)
-                )
+                "Please supply a list or array for the cutoff. The "
+                f"given cutoff is {cutoff} and and a size of {len(cutoff)}."
             )
             logging.error(err_msg)
             raise RuntimeError(err_msg)
@@ -142,7 +145,7 @@ def create_cutoff_mask(
 
         err_msg = (
             "Please supply a numeric value for the cutoff. "
-            + "The given cutoff is {} of type {}.".format(cutoff, type(cutoff))
+            f"The given cutoff is {cutoff} of type {type(cutoff)}."
         )
         logging.error(err_msg)
         raise RuntimeError(err_msg)
@@ -184,7 +187,7 @@ def create_bad_pixel_mask(data, grow=False, iterations=1, diagonal=False):
     Return
     ------
     bad_pixel_mask: numpy.ndarray
-        Any pixel outside the cutoff values will be masked as True (bad).
+        An_y pixel outside the cutoff values will be masked as True (bad).
 
     """
 
@@ -284,8 +287,8 @@ def get_continuum(x, y, **kwargs):
     This is a wrapper function of the lowess function from statsmodels that
     uses a different lowess_frac default value that is more appropriate in
     getting a first guess continuum which reject "outliers" much more
-    aggressively. This function also takes in values in a Pythonic way that of
-    providing arguments: "first x then y".
+    aggressively. This function also takes in values in a Pythonic way that
+    of providing arguments: "first x then y".
 
     Parameters
     ----------
@@ -300,8 +303,8 @@ def get_continuum(x, y, **kwargs):
 
     assert np.shape(x) == np.shape(y), (
         "x and y must be in the same shape "
-        + "x is in shape {} and ".format(np.shape(x))
-        + "y is in shape {}.".format(np.shape(y))
+        f"x is in shape {np.shape(x)} and "
+        f"y is in shape {np.shape(y)}."
     )
 
     if "lowess_frac" not in kwargs:
