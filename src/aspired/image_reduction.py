@@ -3301,7 +3301,9 @@ class Reducer:
 
 
 class ImageReduction(Reducer):
-    from warnings import warn
-
     def __init_subclass__(self):
-        warn("Class has been renamed `Reducer`", DeprecationWarning, 2)
+        import warnings
+
+        warnings.warn(
+            "Class has been renamed `Reducer`", DeprecationWarning, 2
+        )
