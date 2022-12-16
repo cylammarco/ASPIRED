@@ -1,4 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""For Two Dimensional operations"""
+
 import copy
 import datetime
 import logging
@@ -46,7 +50,7 @@ class TwoDSpec:
         log_level="INFO",
         log_file_folder="default",
         log_file_name=None,
-        **kwargs
+        **kwargs,
     ):
         """
         The constructor takes the data and the header, and the the header
@@ -115,10 +119,8 @@ class TwoDSpec:
             self.handler = logging.StreamHandler()
         else:
             if log_file_name == "default":
-                log_file_name = "{}_{}.log".format(
-                    logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
-                )
+                d_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                log_file_name = f"{logger_name}_{d_str}.log"
             # Save log to file
             if log_file_folder == "default":
                 log_file_folder = ""
@@ -134,20 +136,28 @@ class TwoDSpec:
 
         self.img = None
         self.img_residual = None
+        self.img_rectified = None
+        self.img_residual_rectified = None
         self.header = None
         self.arc = None
+        self.arc_rectified = None
         self.arc_header = None
         self.bad_mask = None
 
         self.saxis = 1
         self.waxis = 0
 
-        self.spatial_mask = (1,)
-        self.spec_mask = (1,)
-        self.flip = False
+        # Cosmic ray removal properties
         self.cosmicray = False
         self.fsmode = None
         self.psfmodel = None
+        self.cosmicray_sigma = None
+
+        self.spatial_mask = (1,)
+        self.spec_mask = (1,)
+        self.flip = False
+        self.spec_size = None
+        self.spatial_size = None
 
         self.spatial_mask_applied = False
         self.spec_mask_applied = False
@@ -175,6 +185,18 @@ class TwoDSpec:
         self.spec_pix = None
         self.resample_factor = 1.0
 
+        self.nspec_traced = 0
+
+        # rectification parameters
+        self.rec_coeff = None
+        self.rec_n_down = None
+        self.rec_n_up = None
+        self.rec_upsample_factor = None
+        self.rec_bin_size = None
+        self.rec_n_bin = None
+        self.rec_spline_order = None
+        self.rec_order = None
+
         self.verbose = verbose
         self.logger_name = logger_name
         self.log_level = log_level
@@ -196,7 +218,8 @@ class TwoDSpec:
         # it is the effective exposure time suitable for computing
         # the sensitivity curve.
         self.exptime_keyword = [
-            "AXPOSURE" "XPOSURE",
+            "AXPOSURE",
+            "XPOSURE",
             "EXPOSURE",
             "EXPTIME",
             "EXPOSED",
@@ -204,9 +227,6 @@ class TwoDSpec:
             "ELAPSED",
         ]
         self.airmass_keyword = ["AIRMASS", "AMASS", "AIRM", "AIR"]
-
-        self.img_rectified = None
-        self.arc_rectified = None
 
         self.add_data(data, header)
         self.spectrum_list = {}
@@ -251,7 +271,7 @@ class TwoDSpec:
                 self.set_header(header)
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.warning(
-                "An HDU list is provided, only the first " "HDU will be read."
+                "An HDU list is provided, only the first HDU will be read."
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
@@ -285,7 +305,7 @@ class TwoDSpec:
             # done by the Reducer class
             if data.image_fits is None:
 
-                data._create_image_fits()
+                data.create_image_fits()
 
             self.img = data.image_fits.data
 
@@ -328,9 +348,7 @@ class TwoDSpec:
             self.img = copy.deepcopy(fitsfile_tmp.data)
             self.set_header(copy.deepcopy(fitsfile_tmp.header))
             logging.info(
-                "Loaded data from: {}, with hdunum: {}".format(
-                    filepath, hdunum
-                )
+                "Loaded data from: %s, with hdunum: %s", filepath, hdunum
             )
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
 
@@ -379,7 +397,7 @@ class TwoDSpec:
         exptime=-1,
         airmass=-1,
         verbose=None,
-        **kwargs
+        **kwargs,
     ):
         """
         The read noise, detector gain, seeing and exposure time will be
@@ -505,8 +523,8 @@ class TwoDSpec:
 
                 self.saxis = 0
                 self.logger.error(
-                    "saxis can only be 0 or 1, {} is ".format(saxis)
-                    + "given. It is set to 0."
+                    "saxis can only be 0 or 1, %s is given. It is set to 0.",
+                    saxis,
                 )
 
         if spatial_mask is not None:
@@ -558,9 +576,7 @@ class TwoDSpec:
         # cosmic ray rejection
         if self.cosmicray:
 
-            self.logger.info(
-                "Removing cosmic rays in mode: {}.".format(psfmodel)
-            )
+            self.logger.info("Removing cosmic rays in mode: %s.", psfmodel)
 
             if self.fsmode == "convolve":
 
@@ -572,7 +588,7 @@ class TwoDSpec:
                         readnoise=self.readnoise,
                         fsmode="convolve",
                         psfmodel="gaussy",
-                        **kwargs
+                        **kwargs,
                     )[1]
 
                     self.img = detect_cosmics(
@@ -581,7 +597,7 @@ class TwoDSpec:
                         readnoise=self.readnoise,
                         fsmode="convolve",
                         psfmodel="gaussx",
-                        **kwargs
+                        **kwargs,
                     )[1]
 
                 elif psfmodel == "gaussxy":
@@ -592,7 +608,7 @@ class TwoDSpec:
                         readnoise=self.readnoise,
                         fsmode="convolve",
                         psfmodel="gaussx",
-                        **kwargs
+                        **kwargs,
                     )[1]
 
                     self.img = detect_cosmics(
@@ -601,7 +617,7 @@ class TwoDSpec:
                         readnoise=self.readnoise,
                         fsmode="convolve",
                         psfmodel="gaussy",
-                        **kwargs
+                        **kwargs,
                     )[1]
 
                 else:
@@ -612,7 +628,7 @@ class TwoDSpec:
                         readnoise=self.readnoise,
                         fsmode="convolve",
                         psfmodel=self.psfmodel,
-                        **kwargs
+                        **kwargs,
                     )[1]
 
             else:
@@ -623,7 +639,7 @@ class TwoDSpec:
                     readnoise=self.readnoise,
                     fsmode=self.fsmode,
                     psfmodel=self.psfmodel,
-                    **kwargs
+                    **kwargs,
                 )[1]
 
         if verbose is not None:
@@ -754,10 +770,8 @@ class TwoDSpec:
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(self.img)[1]
         self.spatial_size = np.shape(self.img)[0]
-        self.logger.info("spec_size is found to be {}.".format(self.spec_size))
-        self.logger.info(
-            "spatial_size is found to be " "{}.".format(self.spatial_size)
-        )
+        self.logger.info("spec_size is found to be %s.", self.spec_size)
+        self.logger.info("spatial_size is found to be %s.", self.spatial_size)
 
     def _get_image_zminmax(self):
 
@@ -766,8 +780,8 @@ class TwoDSpec:
         img_log_finite = img_log[np.isfinite(img_log)]
         self.zmin = np.nanpercentile(img_log_finite, 5)
         self.zmax = np.nanpercentile(img_log_finite, 95)
-        self.logger.info("zmin is set to {}.".format(self.zmin))
-        self.logger.info("zmax is set to {}.".format(self.zmax))
+        self.logger.info("zmin is set to %s.", self.zmin)
+        self.logger.info("zmax is set to %s.", self.zmax)
 
     # Get the readnoise
     def set_readnoise(self, readnoise=None):
@@ -791,7 +805,7 @@ class TwoDSpec:
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
                 self.logger.info(
-                    "readnoise is found to be {}.".format(self.readnoise)
+                    "readnoise is found to be %s.", self.readnoise
                 )
                 self.readnoise_is_default_value = False
 
@@ -805,20 +819,16 @@ class TwoDSpec:
 
                     # use the given readnoise value
                     self.readnoise = float(readnoise)
-                    self.logger.info(
-                        "readnoise is set to {}.".format(self.readnoise)
-                    )
+                    self.logger.info("readnoise is set to %s.", self.readnoise)
                     self.readnoise_is_default_value = False
 
             else:
 
                 self.readnoise = 0.0
                 self.logger.warning(
-                    "readnoise has to be None, a numeric value or the "
-                    + "FITS header keyword, "
-                    + str(readnoise)
-                    + " is "
-                    + "given. It is set to 0."
+                    "readnoise has to be None, a numeric value or the FITS "
+                    "header keyword, %s is  given. It is set to 0.",
+                    readnoise,
                 )
                 self.readnoise_is_default_value = True
 
@@ -840,7 +850,7 @@ class TwoDSpec:
                         ]
                     ]
                     self.logger.info(
-                        "readnoise is found to be {}.".format(self.readnoise)
+                        "readnoise is found to be %s.", self.readnoise
                     )
                     self.readnoise_is_default_value = False
 
@@ -849,7 +859,7 @@ class TwoDSpec:
                     self.readnoise = 0.0
                     self.logger.warning(
                         "Readnoise value cannot be identified. "
-                        + "It is set to 0."
+                        "It is set to 0."
                     )
                     self.readnoise_is_default_value = True
 
@@ -858,7 +868,7 @@ class TwoDSpec:
                 self.readnoise = 0.0
                 self.logger.warning(
                     "Header is not provided. Readnoise value "
-                    + "is not provided. It is set to 0."
+                    "is not provided. It is set to 0."
                 )
                 self.readnoise_is_default_value = True
 
@@ -883,7 +893,7 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
-                self.logger.info("gain is found to be {}.".format(self.gain))
+                self.logger.info("gain is found to be %s.", self.gain)
                 self.gain_is_default_value = False
 
             elif isinstance(gain, (float, int)) & (~np.isnan(gain)):
@@ -896,7 +906,7 @@ class TwoDSpec:
 
                     # use the given gain value
                     self.gain = float(gain)
-                    self.logger.info("gain is set to {}.".format(self.gain))
+                    self.logger.info("gain is set to %s.", self.gain)
                     self.gain_is_default_value = False
 
             else:
@@ -904,10 +914,8 @@ class TwoDSpec:
                 self.gain = 1.0
                 self.logger.warning(
                     "Gain has to be None, a numeric value or the FITS "
-                    + "header keyword, "
-                    + str(gain)
-                    + " is given. It is "
-                    + "set to 1."
+                    "header keyword, %s is given. It is set to 1.",
+                    gain,
                 )
                 self.gain_is_default_value = True
         else:
@@ -923,16 +931,14 @@ class TwoDSpec:
                     self.gain = self.header[
                         self.gain_keyword[np.where(gain_keyword_matched)[0][0]]
                     ]
-                    self.logger.info(
-                        "gain is found to be {}.".format(self.gain)
-                    )
+                    self.logger.info("gain is found to be %s.", self.gain)
                     self.gain_is_default_value = False
 
                 else:
 
                     self.gain = 1.0
                     self.logger.warning(
-                        "Gain value cannot be identified. " + "It is set to 1."
+                        "Gain value cannot be identified. It is set to 1."
                     )
                     self.gain_is_default_value = True
 
@@ -940,8 +946,8 @@ class TwoDSpec:
 
                 self.gain = 1.0
                 self.logger.warning(
-                    "Header is not provide. Gain value is not "
-                    + "provided. It is set to 1."
+                    "Header is not provide. Gain value is not provided. It "
+                    "is set to 1."
                 )
                 self.gain_is_default_value = True
 
@@ -966,9 +972,7 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
-                self.logger.info(
-                    "seeing is found to be {}.".format(self.seeing)
-                )
+                self.logger.info("seeing is found to be %s.", self.seeing)
                 self.seeing_is_default_value = False
 
             elif isinstance(seeing, (float, int)) & (~np.isnan(seeing)):
@@ -981,9 +985,7 @@ class TwoDSpec:
 
                     # use the given seeing value
                     self.seeing = float(seeing)
-                    self.logger.info(
-                        "seeing is set to {}.".format(self.seeing)
-                    )
+                    self.logger.info("seeing is set to %s.", self.seeing)
                     self.seeing_is_default_value = False
 
             else:
@@ -991,10 +993,8 @@ class TwoDSpec:
                 self.seeing = 1.0
                 self.logger.warning(
                     "Seeing has to be None, a numeric value or the FITS "
-                    + "header keyword, "
-                    + str(seeing)
-                    + " is given. It is "
-                    + "set to 1."
+                    "header keyword, %s is given. It is set to 1.",
+                    seeing,
                 )
                 self.seeing_is_default_value = True
 
@@ -1015,17 +1015,14 @@ class TwoDSpec:
                             np.where(seeing_keyword_matched)[0][0]
                         ]
                     ]
-                    self.logger.info(
-                        "seeing is found to be {}.".format(self.seeing)
-                    )
+                    self.logger.info("seeing is found to be %s.", self.seeing)
                     self.seeing_is_default_value = False
 
                 else:
 
                     self.seeing = 1.0
                     self.logger.warning(
-                        "Seeing value cannot be identified. "
-                        + "It is set to 1."
+                        "Seeing value cannot be identified. It is set to 1."
                     )
                     self.seeing_is_default_value = True
 
@@ -1033,8 +1030,8 @@ class TwoDSpec:
 
                 self.seeing = 1.0
                 self.logger.warning(
-                    "Header is not provided. Seeing value is "
-                    + "not provided. It is set to 1."
+                    "Header is not provided. Seeing value is not provided. "
+                    "It is set to 1."
                 )
                 self.seeing_is_default_value = True
 
@@ -1059,9 +1056,7 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
-                self.logger.info(
-                    "exptime is found to be {}.".format(self.exptime)
-                )
+                self.logger.info("exptime is found to be %s.", self.exptime)
                 self.exptime_is_default_value = False
 
             elif isinstance(exptime, (float, int)) & (~np.isnan(exptime)):
@@ -1074,9 +1069,7 @@ class TwoDSpec:
 
                     # use the given exptime value
                     self.exptime = float(exptime)
-                    self.logger.info(
-                        "exptime is set to {}.".format(self.exptime)
-                    )
+                    self.logger.info("exptime is set to %s.", self.exptime)
                     self.exptime_is_default_value = False
 
             else:
@@ -1084,10 +1077,8 @@ class TwoDSpec:
                 self.exptime = 1.0
                 self.logger.warning(
                     "Exposure Time has to be None, a numeric value or the "
-                    + "FITS header keyword, "
-                    + str(exptime)
-                    + " is given. "
-                    + "It is set to 1."
+                    "FITS header keyword, %s is given. It is set to 1.",
+                    exptime,
                 )
                 self.exptime_is_default_value = True
 
@@ -1109,7 +1100,7 @@ class TwoDSpec:
                         ]
                     ]
                     self.logger.info(
-                        "exptime is found to be {}.".format(self.exptime)
+                        "exptime is found to be %s.", self.exptime
                     )
                     self.exptime_is_default_value = False
 
@@ -1117,8 +1108,8 @@ class TwoDSpec:
 
                     self.exptime = 1.0
                     self.logger.warning(
-                        "Exposure Time value cannot be identified. "
-                        + "It is set to 1."
+                        "Exposure Time value cannot be identified. It is set "
+                        "to 1."
                     )
                     self.exptime_is_default_value = True
 
@@ -1126,9 +1117,8 @@ class TwoDSpec:
 
                 self.exptime = 1.0
                 self.logger.warning(
-                    "Header is not provided. "
-                    + "Exposure Time value is not provided. "
-                    + "It is set to 1."
+                    "Header is not provided. Exposure Time value is not "
+                    "provided. It is set to 1."
                 )
                 self.exptime_is_default_value = True
 
@@ -1153,9 +1143,7 @@ class TwoDSpec:
 
                 # use the supplied keyword
                 self.airmass = float(self.header[airmass])
-                self.logger.info(
-                    "Airmass is found to be {}.".format(self.airmass)
-                )
+                self.logger.info("Airmass is found to be %s.", self.airmass)
                 self.airmass_is_default_value = False
 
             elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
@@ -1168,19 +1156,15 @@ class TwoDSpec:
 
                     # use the given airmass value
                     self.airmass = float(airmass)
-                    self.logger.info(
-                        "Airmass is set to {}.".format(self.airmass)
-                    )
+                    self.logger.info("Airmass is set to %s.", self.airmass)
                     self.airmass_is_default_value = False
 
             else:
 
                 self.logger.warning(
-                    "Airmass has to be None, a numeric value or the "
-                    + "FITS header keyword, "
-                    + str(airmass)
-                    + " is "
-                    + "given. It is set to 1."
+                    "Airmass has to be None, a numeric value or the FITS "
+                    "header keyword, %s is given. It is set to 1.",
+                    airmass,
                 )
                 self.airmass = 1.0
                 self.airmass_is_default_value = True
@@ -1203,7 +1187,7 @@ class TwoDSpec:
                         ]
                     ]
                     self.logger.info(
-                        "Airmass is found to be {}.".format(self.airmass)
+                        "Airmass is found to be %s.", self.airmass
                     )
                     self.airmass_is_default_value = False
 
@@ -1211,8 +1195,7 @@ class TwoDSpec:
 
                     self.airmass = 1.0
                     self.logger.warning(
-                        "Airmass value cannot be identified. "
-                        + "It is set to 1."
+                        "Airmass value cannot be identified. It is set to 1."
                     )
                     self.airmass_is_default_value = True
 
@@ -1220,9 +1203,8 @@ class TwoDSpec:
 
                 self.airmass = 1.0
                 self.logger.warning(
-                    "Header is not provided. "
-                    + "Airmass value is not provided. "
-                    + "It is set to 1."
+                    "Header is not provided. Airmass value is not provided. "
+                    "It is set to 1."
                 )
                 self.airmass_is_default_value = True
 
@@ -1248,7 +1230,7 @@ class TwoDSpec:
 
             self.bad_mask = bad_mask[0].data
             self.logger.warning(
-                "An HDU list is provided, only the first " "HDU will be read."
+                "An HDU list is provided, only the first HDU will be read."
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
@@ -1274,7 +1256,7 @@ class TwoDSpec:
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
-            if type(fitsfile_tmp) == "astropy.io.fits.hdu.hdulist.HDUList":
+            if isinstance(fitsfile_tmp, fits.hdu.hdulist.HDUList):
 
                 fitsfile_tmp = fitsfile_tmp[0]
                 self.logger.warning(
@@ -1358,7 +1340,7 @@ class TwoDSpec:
             self.arc = arc[0].data
             self.set_arc_header(arc[0].header)
             self.logger.warning(
-                "An HDU list is provided, only the first " "HDU will be read."
+                "An HDU list is provided, only the first HDU will be read."
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
@@ -1396,7 +1378,7 @@ class TwoDSpec:
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
-            if type(fitsfile_tmp) == "astropy.io.fits.hdu.hdulist.HDUList":
+            if isinstance(fitsfile_tmp, fits.hdu.hdulist.HDUList):
 
                 fitsfile_tmp = fitsfile_tmp[0]
                 self.logger.warning(
@@ -1440,9 +1422,9 @@ class TwoDSpec:
             else:
 
                 error_msg = (
-                    "Please check the shape/dimension of the "
-                    + "input light frame, it is probably empty "
-                    + "or has an atypical output format."
+                    "Please check the shape/dimension of the input light "
+                    "frame, it is probably empty or has an atypical output "
+                    "format."
                 )
                 self.logger.critical(error_msg)
                 raise RuntimeError(error_msg)
@@ -1451,10 +1433,10 @@ class TwoDSpec:
 
             error_msg = (
                 "Please provide a numpy array, an "
-                + "astropy.io.fits.hdu.image.PrimaryHDU object, an "
-                + "astropy.io.fits.hdu.image.ImageHDU object, an "
-                + "astropy.io.fits.HDUList object, or an "
-                + "aspired.Reducer object."
+                "astropy.io.fits.hdu.image.PrimaryHDU object, an "
+                "astropy.io.fits.hdu.image.ImageHDU object, an "
+                "astropy.io.fits.HDUList object, or an "
+                "aspired.Reducer object."
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
@@ -1634,16 +1616,14 @@ class TwoDSpec:
 
             self.readnoise_keyword += keyword_list
             self.logger.info(
-                "{} is appended to ".format(keyword_list)
-                + "the readnoise_keyword list."
+                "%s is appended to the readnoise_keyword list.", keyword_list
             )
 
         else:
 
             self.readnoise_keyword = keyword_list
             self.logger.info(
-                "{} is used as ".format(keyword_list)
-                + "the readnoise_keyword list."
+                "%s is used as the readnoise_keyword list.", keyword_list
             )
 
         if update:
@@ -1696,16 +1676,14 @@ class TwoDSpec:
 
             self.gain_keyword += keyword_list
             self.logger.info(
-                "{} is appended to ".format(keyword_list)
-                + "the gain_keyword list."
+                "%s is appended to the gain_keyword list.", keyword_list
             )
 
         else:
 
             self.gain_keyword = keyword_list
             self.logger.info(
-                "{} is used as ".format(keyword_list)
-                + "the gain_keyword list."
+                "%s is used as the gain_keyword list.", keyword_list
             )
 
         if update:
@@ -1758,16 +1736,14 @@ class TwoDSpec:
 
             self.seeing_keyword += keyword_list
             self.logger.info(
-                "{} is appended to ".format(keyword_list)
-                + "the seeing_keyword list."
+                "%s is appended to the seeing_keyword list.", keyword_list
             )
 
         else:
 
             self.seeing_keyword = keyword_list
             self.logger.info(
-                "{} is used as ".format(keyword_list)
-                + "the seeing_keyword list."
+                "%s is used as the seeing_keyword list.", keyword_list
             )
 
         if update:
@@ -1820,16 +1796,14 @@ class TwoDSpec:
 
             self.exptime_keyword += keyword_list
             self.logger.info(
-                "{} is appended to ".format(keyword_list)
-                + "the exptime_keyword list."
+                "%s is appended to the exptime_keyword list.", keyword_list
             )
 
         else:
 
             self.exptime_keyword = keyword_list
             self.logger.info(
-                "{} is used as ".format(keyword_list)
-                + "the exptime_keyword list."
+                "%s is used as the exptime_keyword list.", keyword_list
             )
 
         if update:
@@ -1882,16 +1856,14 @@ class TwoDSpec:
 
             self.airmass_keyword += keyword_list
             self.logger.info(
-                "{} is appended to ".format(keyword_list)
-                + "the airmass_keyword list."
+                "%s is appended to the airmass_keyword list.", keyword_list
             )
 
         else:
 
             self.airmass_keyword = keyword_list
             self.logger.info(
-                "{} is used as ".format(keyword_list)
-                + "the airmass_keyword list."
+                "%s is used as the airmass_keyword list.", keyword_list
             )
 
         if update:
@@ -2164,7 +2136,7 @@ class TwoDSpec:
             range(self.start_window_idx - 1, -1, -1),
         ):
 
-            self.logger.info("Correlating the {}-th window.".format(i))
+            self.logger.info("Correlating the %s-th window.", i)
 
             # smooth by taking the median
             lines = np.nanmedian(img_split[i], axis=1)
@@ -2249,9 +2221,7 @@ class TwoDSpec:
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
         self.nspec_traced = min(len(peaks[0]), nspec)
-        self.logger.info(
-            "{} spectra are identified.".format(self.nspec_traced)
-        )
+        self.logger.info("%s spectra are identified.", self.nspec_traced)
 
         # Sort the positions by the prominences, and return to the original
         # scale (i.e. with subpixel position)
@@ -2302,7 +2272,7 @@ class TwoDSpec:
                 / self.resample_factor
             )
 
-        for i in range(len(self.spec_idx)):
+        for i, spec_i in enumerate(self.spec_idx):
 
             # Get the median of the subspectrum and then get the Count at the
             # central 5 pixels of the aperture
@@ -2311,7 +2281,7 @@ class TwoDSpec:
             for j in range(nwindow):
 
                 # rounding
-                idx = int(np.round(self.spec_idx[i][j])) * resample_factor
+                idx = int(np.round(spec_i[j])) * resample_factor
                 subspec_cleaned = sigma_clip(
                     img_split[j], sigma=3, masked=True
                 ).data
@@ -2323,30 +2293,29 @@ class TwoDSpec:
             n_faint = int(np.round(len(ap_val) * ap_faint / 100))
             mask = np.argsort(ap_val)[n_faint:]
             self.logger.info(
-                "The faintest {} subspectra are ".format(n_faint)
-                + "going to be ignored in the tracing. They are {}.".format(
-                    np.argsort(ap_val)[:n_faint]
-                )
+                "The faintest %s subspectra are going to be ignored in the "
+                "tracing. They are %s.",
+                n_faint,
+                np.argsort(ap_val)[:n_faint],
             )
 
             # fit the trace
-            ap_p = np.polyfit(
-                self.spec_pix[mask], self.spec_idx[i][mask], int(fit_deg)
+            aper_p = np.polyfit(
+                self.spec_pix[mask], spec_i[mask], int(fit_deg)
             )
-            ap = np.polyval(
-                ap_p, np.arange(self.spec_size) * self.resample_factor
+            aper = np.polyval(
+                aper_p, np.arange(self.spec_size) * self.resample_factor
             )
             self.logger.info(
-                "The trace is found at {}.".format(
-                    [
-                        (x, y)
-                        for (x, y) in zip(
-                            np.arange(self.spec_size)[::100]
-                            * self.resample_factor,
-                            ap,
-                        )
-                    ]
-                )
+                "The trace is found at %s.",
+                [
+                    (x, y)
+                    for (x, y) in zip(
+                        np.arange(self.spec_size)[::100]
+                        * self.resample_factor,
+                        aper,
+                    )
+                ],
             )
 
             # Get the centre of the upsampled spectrum
@@ -2378,8 +2347,8 @@ class TwoDSpec:
             ap_sigma = abs(popt[3]) / self.resample_factor
 
             self.logger.info(
-                "Aperture is fitted with a Gaussian sigma of "
-                "{} pix.".format(ap_sigma)
+                "Aperture is fitted with a Gaussian sigma of %s pix.",
+                ap_sigma,
             )
 
             self.spectrum_list[i] = SpectrumOneD(
@@ -2390,7 +2359,7 @@ class TwoDSpec:
                 log_file_folder=self.log_file_folder,
                 log_file_name=self.log_file_name,
             )
-            self.spectrum_list[i].add_trace(list(ap), [ap_sigma] * len(ap))
+            self.spectrum_list[i].add_trace(list(aper), [ap_sigma] * len(aper))
             self.spectrum_list[i].add_gain(self.gain)
             self.spectrum_list[i].add_readnoise(self.readnoise)
             self.spectrum_list[i].add_exptime(self.exptime)
@@ -2478,7 +2447,7 @@ class TwoDSpec:
             )
         )
 
-        for i in range(len(self.spec_idx)):
+        for i, spec_i in enumerate(self.spec_idx):
 
             fig.add_trace(
                 go.Scatter(
@@ -2490,7 +2459,7 @@ class TwoDSpec:
             fig.add_trace(
                 go.Scatter(
                     x=self.spec_pix / self.resample_factor,
-                    y=self.spec_idx[i],
+                    y=spec_i,
                     mode="markers",
                     marker=dict(color="grey"),
                 )
@@ -2525,21 +2494,20 @@ class TwoDSpec:
 
             fig_type_split = fig_type.split("+")
 
-            for t in fig_type_split:
+            for f_type in fig_type_split:
 
-                if t == "iframe":
+                if f_type == "iframe":
 
                     pio.write_html(
-                        fig, filename + "." + t, auto_open=open_iframe
+                        fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
-                elif t in ["jpg", "png", "svg", "pdf"]:
+                elif f_type in ["jpg", "png", "svg", "pdf"]:
 
-                    pio.write_image(fig, filename + "." + t)
+                    pio.write_image(fig, filename + "." + f_type)
 
                 self.logger.info(
-                    "Figure is saved to {} for the ".format(filename + "." + t)
-                    + "spectrum_list for spec_id: {}.".format(i)
+                    "Figure is saved to %s", filename + "." + f_type
                 )
 
         if display:
@@ -2601,8 +2569,9 @@ class TwoDSpec:
         assert isinstance(
             trace_sigma, (list, np.ndarray)
         ), "trace_sigma has to be a list or an array."
-        assert len(trace) == len(trace_sigma), "trace and trace_sigma have to "
-        "be the same size."
+        assert len(trace) == len(trace_sigma), (
+            "trace and trace_sigma have " "to be the same size."
+        )
 
         for i in spec_id:
 
@@ -2639,8 +2608,7 @@ class TwoDSpec:
 
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
-            ).all(), "Some "
-            "spec_id provided are not in the spectrum_list."
+            ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -2792,7 +2760,8 @@ class TwoDSpec:
 
             self.logger.info(
                 "Polynomial coefficients for rectifying in the spatial "
-                "direction is given as: {}.".format(coeff)
+                "direction is given as: %s.",
+                coeff,
             )
 
         else:
@@ -2811,9 +2780,8 @@ class TwoDSpec:
 
                 self.logger.error(
                     "The given n_bin is not numeric or a list/array of "
-                    "size 2: {}. Using the default value to proceed.".format(
-                        n_bin
-                    )
+                    "size 2: %s. Using the default value to proceed.",
+                    n_bin,
                 )
                 n_down = 5
                 n_up = 5
@@ -2967,7 +2935,7 @@ class TwoDSpec:
             s_all = s_down[::-1] + s + s_up
 
             self.logger.info(
-                "{} subspectra is used for cross-correlation.".format(s_all)
+                "%s subspectra is used for cross-correlation.", s_all
             )
 
             y_trace_upsampled = (
@@ -2995,17 +2963,17 @@ class TwoDSpec:
             shift_upsampled -= shift_upsampled[n_down]
 
             self.logger.info(
-                "The upsampled y-coordinates of subspectra "
-                "are: {} ".format(y_trace_upsampled)
-                + "and the corresponding upsampled shifts "
-                "are: {}.".format(shift_upsampled)
+                "The upsampled y-coordinates of subspectra are: %s and the "
+                "corresponding upsampled shifts are: %s.",
+                y_trace_upsampled,
+                shift_upsampled,
             )
 
             self.logger.info(
-                "The y-coordinates of subspectra "
-                "are: {} ".format(y_trace_upsampled / upsample_factor)
-                + "and the corresponding shifts "
-                "are: {}.".format(shift_upsampled / upsample_factor)
+                "The y-coordinates of subspectra are: %s and the "
+                "corresponding shifts are: {}.",
+                y_trace_upsampled / upsample_factor,
+                shift_upsampled / upsample_factor,
             )
 
             # fit the distortion in the spectral direction as a function
@@ -3019,22 +2987,22 @@ class TwoDSpec:
             )
             self.logger.info(
                 "Best fit polynomial for rectifying in the spatial direction."
-                "is {}.".format(coeff)
+                "is %s.",
+                coeff,
             )
 
         # shift in the spectral direction, the shift is as a function
         # of distance from the trace at ref
         # For each row j (sort of a line of spectrum...)
-        for j in range(len(img_tmp)):
+        for j, img_j in enumerate(img_tmp):
 
             shift_j = np.polynomial.polynomial.polyval(j, coeff)
 
             if j % 10 == 0:
-                self.logger.info(
-                    "The shift at line j = {} is {}.".format(j, shift_j)
-                )
 
-            img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
+                self.logger.info("The shift at line j = %s is %s.", j, shift_j)
+
+            img_j = np.roll(img_j, int(np.round(shift_j)))
 
             if self.arc is not None:
 
@@ -3143,9 +3111,7 @@ class TwoDSpec:
                         pio.write_image(fig, filename + "." + t)
 
                     self.logger.info(
-                        "Figure is saved to {} for the ".format(
-                            filename + "." + t
-                        )
+                        "Figure is saved as %s.", filename + "." + t
                     )
 
             if display:
@@ -3272,8 +3238,7 @@ class TwoDSpec:
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
             self.logger.debug(
-                "Background sky flux is "
-                "{}.".format(count_sky_extraction_slice)
+                "Background sky flux is %s.", count_sky_extraction_slice
             )
 
         else:
@@ -3281,7 +3246,7 @@ class TwoDSpec:
             # get the indexes of the sky regions
             count_sky_extraction_slice = np.zeros_like(extraction_slice)
             self.logger.debug(
-                "Sky region is not provided, backgound is set " "to zero."
+                "Sky region is not provided, backgound is set to zero."
             )
 
         return count_sky_extraction_slice
@@ -3447,8 +3412,7 @@ class TwoDSpec:
 
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
-            ).all(), "Some "
-            "spec_id provided are not in the spectrum_list."
+            ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -3474,9 +3438,8 @@ class TwoDSpec:
             else:
 
                 self.logger.error(
-                    "apwidth can only be an int or a list "
-                    + "of two ints. It is set to the default "
-                    + "value to continue the extraction."
+                    "apwidth can only be an int or a list of two ints. It is "
+                    "set to the default value to continue the extraction."
                 )
                 width_dn = 7
                 width_up = 7
@@ -3495,9 +3458,8 @@ class TwoDSpec:
             else:
 
                 self.logger.error(
-                    "skysep can only be an int or a list of "
-                    + "two ints. It is set to the default "
-                    + "value to continue the extraction."
+                    "skysep can only be an int or a list of two ints. It is "
+                    "set to the default value to continue the extraction."
                 )
                 sep_dn = 3
                 sep_up = 3
@@ -3516,9 +3478,8 @@ class TwoDSpec:
             else:
 
                 self.logger.error(
-                    "skywidth can only be an int or a list of "
-                    + "two ints. It is set to the default value "
-                    + "to continue the extraction."
+                    "skywidth can only be an int or a list of two ints. It "
+                    "is set to the default value to continue the extraction."
                 )
                 sky_width_dn = 5
                 sky_width_up = 5
@@ -3550,10 +3511,10 @@ class TwoDSpec:
 
                     self.logger.info(
                         "Extration is over the upper edge of the detector "
-                        "plane. Fixing indices. width_up is changed "
-                        "from {} to {}.".format(
-                            width_up, self.spatial_size - itrace - 1
-                        )
+                        "plane. Fixing indices. width_up is changed from "
+                        "%s to %s.",
+                        width_up,
+                        self.spatial_size - itrace - 1,
                     )
                     # ending at the last pixel
                     width_up = self.spatial_size - itrace - 3
@@ -3632,7 +3593,7 @@ class TwoDSpec:
                 ] = count_sky_source_slice.copy()
 
                 self.logger.debug(
-                    "count_sky at pixel {} is {}.".format(i, count_sky[i])
+                    "count_sky at pixel %s is %s.", i, count_sky[i]
                 )
 
                 # if not optimal extraction or using marsh89, perform a
@@ -3803,7 +3764,7 @@ class TwoDSpec:
             spec.optimal_pixel = is_optimal
             spec.add_spectrum_header(self.header)
 
-            self.logger.info("Spectrum extracted for spec_id: {}.".format(j))
+            self.logger.info("Spectrum extracted for spec_id: %s.", j)
 
             if optimal & (algorithm == "horne86"):
 
@@ -3897,8 +3858,7 @@ class TwoDSpec:
 
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
-            ).all(), "Some "
-            "spec_id provided are not in the spectrum_list."
+            ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -4205,8 +4165,7 @@ class TwoDSpec:
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
-                        "Figure is saved to {} ".format(save_path)
-                        + "for spec_id: {}.".format(j)
+                        "Figure is saved to %s for spec_id: %s.", save_path, j
                     )
 
             if display:
@@ -4311,15 +4270,17 @@ class TwoDSpec:
         # All the counts are in per second already, so need to
         # multiply by the exposure time when computing the
         # uncertainty
-        signal = source_plus_sky - sky
-        noise = np.sqrt(signal / gain + (nA + nA**2.0 / nB) * var_sky)
+        _signal = source_plus_sky - sky
+        _noise = np.sqrt(_signal / gain + (nA + nA**2.0 / nB) * var_sky)
 
         self.logger.debug(
             "The signal and noise from the tophat extraction "
-            "are {} and {}.".format(signal, noise)
+            "are %s and %s.",
+            _signal,
+            _noise,
         )
 
-        return signal, noise, False
+        return _signal, _noise, False
 
     def _optimal_extraction_horne86(
         self,
@@ -4427,7 +4388,8 @@ class TwoDSpec:
 
             self.logger.error(
                 "The provided model has to be gauss or lowess, "
-                "{} is given. lowess is used.".format(model)
+                "%s is given. lowess is used.",
+                model,
             )
             model = "lowess"
 
@@ -4510,27 +4472,29 @@ class TwoDSpec:
                 is_optimal = False
                 break
 
-        signal = f1
-        noise = np.sqrt(v1)
+        _signal = f1
+        _noise = np.sqrt(v1)
 
         if model == "gauss":
 
-            signal /= correction
-            noise /= correction
+            _signal /= correction
+            _noise /= correction
 
         self.logger.debug(
             "The signal and noise from the horne86 extraction "
-            "are {} and {}.".format(signal, noise)
+            "are %s and %s.",
+            _signal,
+            _noise,
         )
 
         if model == "gauss":
 
             self.logger.debug(
-                "The correction factor of the gaussian profile "
-                "is {}.".format(correction)
+                "The correction factor of the gaussian profile is %s.",
+                correction,
             )
 
-        return signal, noise, is_optimal, P, var_f
+        return _signal, _noise, is_optimal, P, var_f
 
     def _optimal_extraction_marsh89(
         self,
@@ -4633,9 +4597,8 @@ class TwoDSpec:
         else:
 
             self.logger.error(
-                "apwidth can only be an int or a list "
-                + "of two ints. It is set to the default "
-                + "value to continue the extraction."
+                "apwidth can only be an int or a list of two ints. It is set "
+                "to the default value to continue the extraction."
             )
             width_dn = 7
             width_up = 7
@@ -4656,18 +4619,17 @@ class TwoDSpec:
         residual_frame[bad_residual_frame_mask] = 0.0
         if np.any(bad_residual_frame_mask.nonzero()):
             self.logger.warning(
-                "Found bad residual_frame values at: {}".format(
-                    bad_residual_frame_mask.nonzero()
-                )
+                "Found bad residual_frame values at: %s",
+                bad_residual_frame_mask.nonzero(),
             )
 
-        skysubFrame = frame - residual_frame
-        """
+        sky_subframe = frame - residual_frame
         # Interpolate and fix bad pixels for extraction of standard
         # spectrum -- otherwise there can be 'holes' in the spectrum from
         # ill-placed bad pixels.
-        fixSkysubFrame = bfixpix(skysubFrame, ~goodpixelmask, n=8, retdat=True)
-        """
+        sky_subframe = bfixpix(
+            sky_subframe, ~goodpixelmask, n_nearest=8, retdat=True
+        )
 
         # Define new indices (in Marsh's appendix):
         N = pord + 1
@@ -4850,53 +4812,42 @@ class TwoDSpec:
 
         # Some quick math to find out which dat columns are important, and
         # which contain no useful spectral information:
-        Qmask = Q.sum(0).transpose() > 0
-        Qind = Qmask.transpose().nonzero()
-        Q_cols = [Qind[0].min(), Qind[0].max()]
-        Qsm = Q[:, Q_cols[0] : Q_cols[1] + 1, :]
+        q_mask = Q.sum(0).transpose() > 0
+        q_ind = q_mask.transpose().nonzero()
+        q_cols = [q_ind[0].min(), q_ind[0].max()]
+        q_sm = Q[:, q_cols[0] : q_cols[1] + 1, :]
 
         # Prepar to iteratively clip outliers
         self.logger.info("Looking for bad pixel outliers.")
-        newBadPixels = True
+        new_bad_pixels = True
         i = -1
-        while newBadPixels:
+        while new_bad_pixels:
             i += 1
-            self.logger.debug("Beginning iteration {}.".format(i))
+            self.logger.debug("Beginning iteration %s.", i)
 
             # Compute pixel fractions (Marsh Eq. 5):
             #     (Note that values outside the desired polynomial region
             #     have Q=0, and so do not contribute to the fit)
-            invEvariance = (
+            inv_e_variance = (
                 np.array(spectrum).reshape(spectral_size, 1) ** 2 / variance
             ).transpose()
-            weightedE = (
-                skysubFrame
+            weighted_e = (
+                sky_subframe
                 * np.array(spectrum).reshape(spectral_size, 1)
                 / variance
             ).transpose()  # E / var_E
-            invEvariance_subset = invEvariance[Q_cols[0] : Q_cols[1] + 1, :]
+            inv_e_variance_subset = inv_e_variance[
+                q_cols[0] : q_cols[1] + 1, :
+            ]
 
             # Define X vector (Marsh Eq. A3):
             X = np.zeros(N * npoly)
             for q in qq:
                 X[q] = (
-                    weightedE[Q_cols[0] : Q_cols[1] + 1, :]
-                    * Qsm[kk[q], :, :]
+                    weighted_e[q_cols[0] : q_cols[1] + 1, :]
+                    * q_sm[kk[q], :, :]
                     * jjnorm_pow[nn[q]]
                 ).sum()
-            """
-            # The unoptimised way to compute the X vector:
-            X2 = np.zeros(N * npoly)
-            for n in nn:
-                for k in kk:
-                    q = N * k + n
-                    xtot = 0.
-                    for i in ii:
-                        for j in jj:
-                            xtot += E[i, j] * Q[k, i, j] * (
-                                jjnorm[j]**n) / Evariance[i, j]
-                    X2[q] = xtot
-            """
 
             # Define C matrix (Marsh Eq. A3)
             C = np.zeros((N * npoly, N * npoly))
@@ -4906,41 +4857,41 @@ class TwoDSpec:
 
             # Compute *every* element of C (though most equal zero!)
             for p in pp:
-                qp = Qsm[ll[p], :, :]
+                qp = q_sm[ll[p], :, :]
                 for q in qq:
                     #  Check that we need to compute C:
                     if np.abs(kk[q] - ll[p]) <= (1.0 / polyspacing + buffer):
                         if q >= p:
                             # Only compute over non-zero columns:
                             C[q, p] = (
-                                Qsm[kk[q], :, :]
+                                q_sm[kk[q], :, :]
                                 * qp
                                 * jjnorm_pow[nn[q] + mm[p]]
-                                * invEvariance_subset
+                                * inv_e_variance_subset
                             ).sum()
                         if q > p:
                             C[p, q] = C[q, p]
 
             # Solve for the profile-polynomial coefficients (Marsh Eq. A4):
             if np.abs(np.linalg.det(C)) < 1e-10:
-                Bsoln = np.dot(np.linalg.pinv(C), X)
+                b_soln = np.dot(np.linalg.pinv(C), X)
             else:
-                Bsoln = np.linalg.solve(C, X)
+                b_soln = np.linalg.solve(C, X)
 
-            Asoln = Bsoln.reshape(N, npoly).transpose()
+            a_soln = b_soln.reshape(N, npoly).transpose()
 
             # Define G_kj, the profile-defining polynomial profiles
             # (Marsh Eq. 8)
-            Gsoln = np.zeros((npoly, spectral_size))
+            g_soln = np.zeros((npoly, spectral_size))
             for n in range(npoly):
-                Gsoln[n] = np.polyval(
-                    Asoln[n, ::-1], jjnorm
+                g_soln[n] = np.polyval(
+                    a_soln[n, ::-1], jjnorm
                 )  # reorder polynomial coef.
 
             # Compute the profile (Marsh eq. 6) and normalize it:
             profile = np.zeros((spatial_size, spectral_size))
             for i in range(spatial_size):
-                profile[i, :] = (Q[:, i, :] * Gsoln).sum(0)
+                profile[i, :] = (Q[:, i, :] * g_soln).sum(0)
 
             self.logger.debug(profile)
             if profile.min() < 0:
@@ -4949,36 +4900,36 @@ class TwoDSpec:
             profile[~np.isfinite(profile)] = 0.0
 
             # Step6: Revise variance estimates
-            modelSpectrum = (
+            model_spectrum = (
                 np.array(spectrum).reshape(spectral_size, 1)
                 * profile.transpose()
             )
-            modelData = modelSpectrum + residual_frame
-            variance0 = np.abs(modelData) + readnoise**2
+            model_data = model_spectrum + residual_frame
+            variance0 = np.abs(model_data) + readnoise**2
             variance = variance0 / (
                 goodpixelmask + 1e-9
             )  # De-weight bad pixels, avoiding infinite variance
 
-            outlierVariances = (frame - modelData) ** 2 / variance
+            outlier_variances = (frame - model_data) ** 2 / variance
 
-            if outlierVariances.max() > cosmicray_sigma**2:
-                newBadPixels = True
+            if outlier_variances.max() > cosmicray_sigma**2:
+                new_bad_pixels = True
                 # nreject-counting on pixels within the spectral trace
-                maxRejectedValue = max(
+                max_rejected_value = max(
                     cosmicray_sigma**2,
-                    np.sort(outlierVariances[Qmask])[-nreject],
+                    np.sort(outlier_variances[q_mask])[-nreject],
                 )
-                worstOutliers = (
-                    outlierVariances >= maxRejectedValue
+                worst_outliers = (
+                    outlier_variances >= max_rejected_value
                 ).nonzero()
-                goodpixelmask[worstOutliers] = False
-                numberRejected = len(worstOutliers[0])
+                goodpixelmask[worst_outliers] = False
+                number_rejected = len(worst_outliers[0])
             else:
-                newBadPixels = False
-                numberRejected = 0
+                new_bad_pixels = False
+                number_rejected = 0
 
             self.logger.info(
-                "Rejected {} pixels in this iteration.".format(numberRejected)
+                "Rejected %s pixels in this iteration.", number_rejected
             )
 
             # Optimal Spectral Extraction: (Horne, Step 8)
@@ -4994,7 +4945,7 @@ class TwoDSpec:
                 # Horne86 notation
                 P = profile[aperture, i]
                 V = variance0[i, aperture]
-                D = skysubFrame[i, aperture]
+                D = sky_subframe[i, aperture]
 
                 denom = np.nansum(P**2.0 / V)
 
@@ -5006,12 +4957,11 @@ class TwoDSpec:
                     spectrum_err_marsh[i] = np.sqrt(np.nansum(P) / denom)
                     is_optimal[i] = True
 
-        spectrum_marsh = spectrum_marsh
-        spectrum_err_marsh = spectrum_err_marsh
-
         self.logger.debug(
             "The signal and noise from the tophat extraction "
-            "are {} and {}.".format(spectrum_marsh, spectrum_err_marsh)
+            "are %s and %s.",
+            spectrum_marsh,
+            spectrum_err_marsh,
         )
 
         return (
@@ -5077,8 +5027,7 @@ class TwoDSpec:
 
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
-            ).all(), "Some "
-            "spec_id provided are not in the spectrum_list."
+            ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -5109,7 +5058,7 @@ class TwoDSpec:
                     go.Scatter(
                         x=np.arange(len(profile[i])),
                         y=profile[i],
-                        name="Pixel {}".format(i),
+                        name=f"Pixel {i}",
                     )
                 )
 
@@ -5147,21 +5096,20 @@ class TwoDSpec:
 
                 fig_type_split = fig_type.split("+")
 
-                for t in fig_type_split:
+                for f_type in fig_type_split:
 
-                    save_path = filename + "_" + str(j) + "." + t
+                    save_path = filename + "_" + str(j) + "." + f_type
 
-                    if t == "iframe":
+                    if f_type == "iframe":
 
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
-                    elif t in ["jpg", "png", "svg", "pdf"]:
+                    elif f_type in ["jpg", "png", "svg", "pdf"]:
 
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
-                        "Figure is saved to {} ".format(save_path)
-                        + "for spec_id: {}.".format(j)
+                        "Figure is saved to %s for spec_id: %s.", save_path, j
                     )
 
             if display:
@@ -5236,8 +5184,7 @@ class TwoDSpec:
 
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
-            ).all(), "Some "
-            "spec_id provided are not in the spectrum_list."
+            ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
 
@@ -5356,21 +5303,20 @@ class TwoDSpec:
 
                 fig_type_split = fig_type.split("+")
 
-                for t in fig_type_split:
+                for f_type in fig_type_split:
 
-                    save_path = filename + "_" + str(j) + "." + t
+                    save_path = filename + "_" + str(j) + "." + f_type
 
-                    if t == "iframe":
+                    if f_type == "iframe":
 
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
-                    elif t in ["jpg", "png", "svg", "pdf"]:
+                    elif f_type in ["jpg", "png", "svg", "pdf"]:
 
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
-                        "Figure is saved to {} ".format(save_path)
-                        + "for spec_id: {}.".format(j)
+                        "Figure is saved to %s for spec_id: %s.", save_path, j
                     )
 
             if display:
@@ -5478,17 +5424,17 @@ class TwoDSpec:
 
             fig_type_split = fig_type.split("+")
 
-            for t in fig_type_split:
+            for f_type in fig_type_split:
 
-                if t == "iframe":
+                if f_type == "iframe":
 
                     pio.write_html(
-                        fig, filename + "." + t, auto_open=open_iframe
+                        fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
-                elif t in ["jpg", "png", "svg", "pdf"]:
+                elif f_type in ["jpg", "png", "svg", "pdf"]:
 
-                    pio.write_image(fig, filename + "." + t)
+                    pio.write_image(fig, filename + "." + f_type)
 
         if display:
 
@@ -5691,9 +5637,10 @@ class TwoDSpec:
             if not set(spec_id).issubset(list(self.spectrum_list.keys())):
 
                 error_msg = (
-                    "The given spec_id(s): {} do(es) ".format(spec_id)
-                    + "not exist. The twodspec object has "
-                    + "{}.".format(list(self.spectrum_list.keys()))
+                    "The given spec_id(s): %s do(es) not exist. The twodspec "
+                    "object has %s.",
+                    spec_id,
+                    list(self.spectrum_list.keys()),
                 )
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
@@ -5751,27 +5698,26 @@ class TwoDSpec:
 
             if filename is None:
 
-                filename = "arc_spec_{}".format(i)
+                filename = f"arc_spec_{i}"
 
             if save_fig:
 
                 fig_type_split = fig_type.split("+")
 
-                for t in fig_type_split:
+                for f_type in fig_type_split:
 
-                    save_path = filename + "_" + str(i) + "." + t
+                    save_path = filename + "_" + str(i) + "." + f_type
 
-                    if t == "iframe":
+                    if f_type == "iframe":
 
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
-                    elif t in ["jpg", "png", "svg", "pdf"]:
+                    elif f_type in ["jpg", "png", "svg", "pdf"]:
 
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
-                        "Figure is saved to {} ".format(save_path)
-                        + "for spec_id: {}.".format(i)
+                        "Figure is saved to %s for spec_id: %s.", save_path, i
                     )
 
             if display:
@@ -5822,19 +5768,19 @@ class TwoDSpec:
 
             if i not in ["trace", "count"]:
 
-                error_msg = "{} is not a valid output.".format(i)
+                error_msg = f"{i} is not a valid output."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file
-        for i in range(len(self.spectrum_list)):
+        for i, spec_i in self.spectrum_list.items():
 
-            self.spectrum_list[i].create_fits(
+            spec_i.create_fits(
                 output=output,
                 recreate=recreate,
                 empty_primary_hdu=empty_primary_hdu,
             )
-            self.logger.info("FITS file is created for spec_id: {}.".format(i))
+            self.logger.info("FITS file is created for spec_id: %s.", i)
 
     def save_fits(
         self,
@@ -5882,16 +5828,16 @@ class TwoDSpec:
 
             if i not in ["trace", "count"]:
 
-                error_msg = "{} is not a valid output.".format(i)
+                error_msg = f"{i} is not a valid output."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file
-        for i in range(len(self.spectrum_list)):
+        for i, spec_i in self.spectrum_list.items():
 
             filename_i = filename + "_" + output + "_" + str(i)
 
-            self.spectrum_list[i].save_fits(
+            spec_i.save_fits(
                 output=output,
                 filename=filename_i,
                 overwrite=overwrite,
@@ -5899,6 +5845,5 @@ class TwoDSpec:
                 empty_primary_hdu=empty_primary_hdu,
             )
             self.logger.info(
-                "FITS file is saved to {} ".format(filename_i)
-                + "for spec_id: {}.".format(i)
+                "FITS file is saved to %s for spec_id: %s.", filename_i, i
             )

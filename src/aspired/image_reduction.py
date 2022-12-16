@@ -172,12 +172,12 @@ class Reducer:
         self.clip_low_arc_default = 5.0
         self.clip_high_arc_default = 5.0
 
-        self.cosmicray_default = False
+        self.cosmicray_default = True
         self.gain_default = 1.0
         self.readnoise_default = 0.0
         self.fsmode_default = "convolve"
         self.psfmodel_default = "gaussy"
-        self.cr_kwargs_default = None
+        self.cr_kwargs_default = {}
 
         self.heal_pixels_default = False
         self.cutoff_default = 60000.0
@@ -344,7 +344,8 @@ class Reducer:
             Set the delimiter. This overrides ftype.
         auto_load: bool (Default: True)
             Set to load the files automatically, this will overwrite the
-            filepath and data that are already loaded.
+            filepath and data that are already loaded. This will also skip
+            the set_properties().
 
         """
 
@@ -2319,7 +2320,7 @@ class Reducer:
         clip_high_light: Union[int, float] = None,
     ):
         """
-        Combine the light frames. The parameters provide here OVERRIDE those
+        Combine the light frameself.light_ccddatas. The parameters provide here OVERRIDE those
         set previously. Use with caution.
 
         """
@@ -2844,7 +2845,7 @@ class Reducer:
         bfixpix(self.light_reduced, self.bad_mask, n_nearest)
         self.pixel_healed = True
 
-    def _create_image_fits(self):
+    def create_image_fits(self):
         """
         Put the reduced data in FITS format with an image header.
 
@@ -3126,7 +3127,7 @@ class Reducer:
         if filename[-4:] == ".fit":
             filename = filename[:-4]
 
-        self._create_image_fits()
+        self.create_image_fits()
         self.image_fits = fits.PrimaryHDU(
             self.image_fits.data, self.image_fits.header
         )
@@ -3301,7 +3302,10 @@ class Reducer:
 
 
 class ImageReduction(Reducer):
+    """Wrapper class of ImageReduction that will be deprecated in the next release."""
+
     def __init_subclass__(self):
+
         import warnings
 
         warnings.warn(

@@ -1,4 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""For Flux Calibration"""
+
 import datetime
 import difflib
 import json
@@ -101,10 +105,8 @@ class StandardLibrary:
             self.handler = logging.StreamHandler()
         else:
             if log_file_name == "default":
-                log_file_name = "{}_{}.log".format(
-                    logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
-                )
+                d_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                log_file_name = f"{logger_name}_{d_str}.log"
             # Save log to file
             if log_file_folder == "default":
                 log_file_folder = ""
@@ -142,14 +144,16 @@ class StandardLibrary:
             open(
                 pkg_resources.resource_filename(
                     "aspired", "standards/lib_to_uname.json"
-                )
+                ),
+                encoding="ascii",
             )
         )
         self.uname_to_lib = json.load(
             open(
                 pkg_resources.resource_filename(
                     "aspired", "standards/uname_to_lib.json"
-                )
+                ),
+                encoding="ascii",
             )
         )
 
@@ -228,7 +232,7 @@ class StandardLibrary:
 
         filepath = os.path.join(base_dir, "standards", folder, filename)
 
-        _f = open(filepath)
+        _f = open(filepath, encoding="ascii")
         wave = []
         fluxmag = []
         for line in _f.readlines():
@@ -344,9 +348,9 @@ class StandardLibrary:
             libraries = self.uname_to_lib[target.lower()]
             return libraries, True
 
-        except Exception as err:
+        except Exception as _err:
 
-            self.logger.warning(str(err))
+            self.logger.warning(str(_err))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
@@ -361,20 +365,19 @@ class StandardLibrary:
             if len(target_list) > 0:
 
                 self.logger.warning(
-                    "Requested standard star cannot be found, a list of "
-                    + "the closest matching names are returned: {}".format(
-                        target_list
-                    )
+                    "Requested standard star cannot be found, a list of the "
+                    "closest matching names are returned: %s",
+                    target_list,
                 )
 
                 return target_list, False
 
             else:
+
                 error_msg = (
-                    "Please check the name of your standard "
-                    + "star, nothing share a similarity above {}.".format(
-                        cutoff
-                    )
+                    "Please check the name of your standard star, nothing "
+                    "share a similarity above %s.",
+                    cutoff,
                 )
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
@@ -488,7 +491,8 @@ class StandardLibrary:
                     self.logger.warning(
                         "The requested standard star cannot be found in the "
                         "given library,  or the library is not specified. "
-                        "ASPIRED is using " + self.library + "."
+                        "ASPIRED is using %s.",
+                        self.library,
                     )
 
             else:
@@ -499,9 +503,9 @@ class StandardLibrary:
                 self.library = libraries[0]
 
                 self.logger.warning(
-                    "The requested library does not exist, "
-                    + self.library
-                    + " is used because it has the closest matching name."
+                    "The requested library does not exist, %s is used "
+                    "because it has the closest matching name.",
+                    self.library,
                 )
 
         if not self.verbose:
@@ -510,9 +514,7 @@ class StandardLibrary:
 
                 # Use the default library order
                 self.logger.warning(
-                    "Standard library is not given, "
-                    + self.library
-                    + " is used."
+                    "Standard library is not given, %s is used.", self.library
                 )
 
         if self.library.startswith("iraf"):
@@ -671,6 +673,11 @@ class StandardLibrary:
 
 
 class FluxCalibration(StandardLibrary):
+    """
+    For flux calibration using iraf, ING and ESO standards.
+
+    """
+
     def __init__(
         self,
         verbose=True,
@@ -728,10 +735,8 @@ class FluxCalibration(StandardLibrary):
             handler = logging.StreamHandler()
         else:
             if log_file_name == "default":
-                log_file_name = "{}_{}.log".format(
-                    logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
-                )
+                d_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                log_file_name = f"{logger_name}_{d_str}.log"
             # Save log to file
             if log_file_folder == "default":
                 log_file_folder = ""
@@ -775,14 +780,15 @@ class FluxCalibration(StandardLibrary):
 
     def from_spectrum_oned(self, spectrum_oned, merge=False, overwrite=False):
         """
-        This function copies all the info from the spectrum_oned, because users
-        may supply different level/combination of reduction, everything is
-        copied from the spectrum_oned even though in most cases only a None
-        will be passed.
+        This function copies all the info from the spectrum_oned, because
+        users may supply different level/combination of reduction, everything
+        is copied from the spectrum_oned even though in most cases only a
+        None will be passed.
 
         By default, this is passing object by reference by default, so it
-        directly modifies the spectrum_oned supplied. By setting merger to True,
-        it copies the data into the SpectrumOneD in the FluxCalibration object.
+        directly modifies the spectrum_oned supplied. By setting merger to
+        True, it copies the data into the SpectrumOneD in the FluxCalibration
+        object.
 
         Parameters
         ----------
@@ -806,6 +812,10 @@ class FluxCalibration(StandardLibrary):
         self.spectrum_oned_imported = True
 
     def remove_spectrum_oned(self):
+        """
+        Delete the spectrum_oned object.
+
+        """
 
         self.spectrum_oned = SpectrumOneD(
             spec_id=0,
@@ -904,12 +914,12 @@ class FluxCalibration(StandardLibrary):
         # This should give the POSITIVE values over the telluric region
         residual = continuum - flux
 
-        for m in mask_range:
+        for m_range in mask_range:
 
             # Get the indices for the two sides of the masking region
             # at the native pixel scale
-            left_of_mask = np.where(wave <= m[0])[0]
-            right_of_mask = np.where(wave >= m[1])[0]
+            left_of_mask = np.where(wave <= m_range[0])[0]
+            right_of_mask = np.where(wave >= m_range[1])[0]
 
             if (len(left_of_mask) == 0) or (len(right_of_mask) == 0):
 
@@ -1031,17 +1041,17 @@ class FluxCalibration(StandardLibrary):
 
             fig_type_split = fig_type.split("+")
 
-            for t in fig_type_split:
+            for f_type in fig_type_split:
 
-                if t == "iframe":
+                if f_type == "iframe":
 
                     pio.write_html(
-                        fig, filename + "." + t, auto_open=open_iframe
+                        fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
-                elif t in ["jpg", "png", "svg", "pdf"]:
+                elif f_type in ["jpg", "png", "svg", "pdf"]:
 
-                    pio.write_image(fig, filename + "." + t)
+                    pio.write_image(fig, filename + "." + f_type)
 
         if display:
 
@@ -1073,7 +1083,7 @@ class FluxCalibration(StandardLibrary):
         return_function=True,
         sens_deg=7,
         recompute_continuum=True,
-        **kwargs
+        **kwargs,
     ):
         """
         The sensitivity curve is computed by dividing the true values by the
@@ -1142,7 +1152,8 @@ class FluxCalibration(StandardLibrary):
 
         self.logger.info(
             "The exposure time used for computing sensitivity curve "
-            "is {} seconds.".format(exptime)
+            "is %s seconds.",
+            exptime,
         )
 
         # Mask regions before smoothing and avoiding telluric absorptions
@@ -1257,8 +1268,8 @@ class FluxCalibration(StandardLibrary):
                 standard_wave_masked, np.log10(sensitivity_masked), k=k
             )
 
-            def sensitivity_func(x):
-                return itp.splev(x, tck)
+            def sensitivity_func(_x):
+                return itp.splev(_x, tck)
 
         elif method == "polynomial":
 
@@ -1273,7 +1284,7 @@ class FluxCalibration(StandardLibrary):
 
         else:
 
-            error_msg = "{} is not implemented.".format(method)
+            error_msg = "{method} is not implemented."
             self.logger.critical(error_msg)
             raise NotImplementedError(error_msg)
 
@@ -1326,6 +1337,11 @@ class FluxCalibration(StandardLibrary):
         )
 
     def save_sensitivity_func(self):
+        """
+        Saving the sensitivity function to disk, to be implemented.
+
+        """
+
         pass
 
     def inspect_sensitivity(
@@ -1487,17 +1503,17 @@ class FluxCalibration(StandardLibrary):
 
             fig_type_split = fig_type.split("+")
 
-            for t in fig_type_split:
+            for f_type in fig_type_split:
 
-                if t == "iframe":
+                if f_type == "iframe":
 
                     pio.write_html(
-                        fig, filename + "." + t, auto_open=open_iframe
+                        fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
-                elif t in ["jpg", "png", "svg", "pdf"]:
+                elif f_type in ["jpg", "png", "svg", "pdf"]:
 
-                    pio.write_image(fig, filename + "." + t)
+                    pio.write_image(fig, filename + "." + f_type)
 
         if display:
 
@@ -1589,8 +1605,8 @@ class FluxCalibration(StandardLibrary):
             exptime = 1.0
 
         self.logger.info(
-            "The exposure time used for flux calibration "
-            "is {} seconds.".format(exptime)
+            "The exposure time used for flux calibration is %s seconds.",
+            exptime,
         )
 
         if getattr(target_spectrum_oned, "count_continuum") is None:
@@ -1776,17 +1792,17 @@ class FluxCalibration(StandardLibrary):
 
                 fig_type_split = fig_type.split("+")
 
-                for t in fig_type_split:
+                for f_type in fig_type_split:
 
-                    if t == "iframe":
+                    if f_type == "iframe":
 
                         pio.write_html(
-                            fig, filename + "." + t, auto_open=open_iframe
+                            fig, filename + "." + f_type, auto_open=open_iframe
                         )
 
-                    elif t in ["jpg", "png", "svg", "pdf"]:
+                    elif f_type in ["jpg", "png", "svg", "pdf"]:
 
-                        pio.write_image(fig, filename + "." + t)
+                        pio.write_image(fig, filename + "." + f_type)
 
             if display:
 

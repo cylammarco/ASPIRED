@@ -32,7 +32,7 @@ def test_iraf_standard():
 
 def test_standard_return_suggection1():
     fluxcal = FluxCalibration(log_file_name=None)
-    fluxcal.load_standard(target="sun")
+    fluxcal.load_standard(target="hiltner")
 
 
 def test_standard_return_suggestion2():

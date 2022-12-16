@@ -23,7 +23,7 @@ img.load_data()
 img.reduce()
 
 img_with_fits = copy.copy(img)
-img_with_fits._create_image_fits()
+img_with_fits.create_image_fits()
 
 img_in_hdulist = fits.HDUList(img_with_fits.image_fits)
 
