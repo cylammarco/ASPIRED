@@ -2947,8 +2947,8 @@ class TwoDSpec:
 
                 # Note: indice n_down is s
                 corr = signal.correlate(
-                    10.0 ** s_all[i][one_fifth:-one_fifth],
-                    10.0 ** s_all[i - 1][one_fifth:-one_fifth],
+                    5.0 ** s_all[i][one_fifth:-one_fifth],
+                    5.0 ** s_all[i - 1][one_fifth:-one_fifth],
                 )
                 shift_upsampled[i - 1 :] += (
                     spec_size_tmp
