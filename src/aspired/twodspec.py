@@ -2795,7 +2795,7 @@ class TwoDSpec:
                 s = [
                     np.nansum(
                         [
-                            arc_tmp[
+                            (img_tmp + arc_tmp)[
                                 int(np.round(ref - bin_half_size)) : int(
                                     np.round(ref + bin_half_size) + 1
                                 ),
@@ -2845,7 +2845,7 @@ class TwoDSpec:
                     s_down.append(
                         np.nansum(
                             [
-                                arc_tmp[
+                                (img_tmp + arc_tmp)[
                                     int(np.round(ref - end)) : int(
                                         np.round(ref - start) + 1
                                     ),
@@ -2893,7 +2893,7 @@ class TwoDSpec:
                     s_up.append(
                         np.nansum(
                             [
-                                arc_tmp[
+                                (img_tmp + arc_tmp)[
                                     int(np.round(ref + start)) : int(
                                         np.round(ref + end) + 1
                                     ),
@@ -3096,20 +3096,20 @@ class TwoDSpec:
 
                 fig_type_split = fig_type.split("+")
 
-                for t in fig_type_split:
+                for f_type in fig_type_split:
 
-                    if t == "iframe":
+                    if f_type == "iframe":
 
                         pio.write_html(
-                            fig, filename + "." + t, auto_open=open_iframe
+                            fig, filename + "." + f_type, auto_open=open_iframe
                         )
 
-                    elif t in ["jpg", "png", "svg", "pdf"]:
+                    elif f_type in ["jpg", "png", "svg", "pdf"]:
 
-                        pio.write_image(fig, filename + "." + t)
+                        pio.write_image(fig, filename + "." + f_type)
 
                     self.logger.info(
-                        "Figure is saved as %s.", filename + "." + t
+                        "Figure is saved as %s.", filename + "." + f_type
                     )
 
             if display:
