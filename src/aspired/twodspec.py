@@ -2795,7 +2795,13 @@ class TwoDSpec:
                 s = [
                     np.nansum(
                         [
-                            (img_tmp + arc_tmp)[
+                            img_tmp[
+                                int(np.round(ref - bin_half_size)) : int(
+                                    np.round(ref + bin_half_size) + 1
+                                ),
+                                i,
+                            ]
+                            + arc_tmp[
                                 int(np.round(ref - bin_half_size)) : int(
                                     np.round(ref + bin_half_size) + 1
                                 ),
@@ -2845,7 +2851,13 @@ class TwoDSpec:
                     s_down.append(
                         np.nansum(
                             [
-                                (img_tmp + arc_tmp)[
+                                arc_tmp[
+                                    int(np.round(ref - end)) : int(
+                                        np.round(ref - start) + 1
+                                    ),
+                                    i,
+                                ]
+                                + img_tmp[
                                     int(np.round(ref - end)) : int(
                                         np.round(ref - start) + 1
                                     ),
@@ -2893,7 +2905,13 @@ class TwoDSpec:
                     s_up.append(
                         np.nansum(
                             [
-                                (img_tmp + arc_tmp)[
+                                arc_tmp[
+                                    int(np.round(ref + start)) : int(
+                                        np.round(ref + end) + 1
+                                    ),
+                                    i,
+                                ]
+                                + img_tmp[
                                     int(np.round(ref + start)) : int(
                                         np.round(ref + end) + 1
                                     ),
