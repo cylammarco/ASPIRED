@@ -2829,8 +2829,8 @@ class TwoDSpec:
             s[0] -= lowess(
                 s[0], np.arange(spec_size_tmp), frac=0.05, return_sorted=False
             )
-            s[0] -= min(s[0][one_fifth:-one_fifth])
-            s[0] /= max(s[0][one_fifth:-one_fifth])
+            s[0] -= min(s[0][one_fifth : -one_fifth + 1])
+            s[0] /= max(s[0][one_fifth : -one_fifth + 1])
             s_down = []
             s_up = []
 
@@ -2880,8 +2880,8 @@ class TwoDSpec:
                     frac=0.05,
                     return_sorted=False,
                 )
-                s_down[k] -= min(s_down[k][one_fifth:-one_fifth])
-                s_down[k] /= max(s_down[k][one_fifth:-one_fifth])
+                s_down[k] -= min(s_down[k][one_fifth : -one_fifth + 1])
+                s_down[k] /= max(s_down[k][one_fifth : -one_fifth + 1])
 
             # Loop through the spectra above the trace
             for k in range(n_up):
@@ -2927,8 +2927,8 @@ class TwoDSpec:
                     frac=0.05,
                     return_sorted=False,
                 )
-                s_up[k] -= min(s_up[k][one_fifth:-one_fifth])
-                s_up[k] /= max(s_up[k][one_fifth:-one_fifth])
+                s_up[k] -= min(s_up[k][one_fifth : -one_fifth + 1])
+                s_up[k] /= max(s_up[k][one_fifth : -one_fifth + 1])
 
             s_all = s_down[::-1] + s + s_up
 
@@ -2947,8 +2947,8 @@ class TwoDSpec:
 
                 # Note: indice n_down is s
                 corr = signal.correlate(
-                    10.0 ** s_all[i][one_fifth:-one_fifth],
-                    10.0 ** s_all[i - 1][one_fifth:-one_fifth],
+                    10.0 ** s_all[i][one_fifth : -one_fifth + 1],
+                    10.0 ** s_all[i - 1][one_fifth : -one_fifth + 1],
                 )
                 shift_upsampled[i - 1 :] += (
                     spec_size_tmp
