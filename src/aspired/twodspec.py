@@ -2718,9 +2718,7 @@ class TwoDSpec:
                 "will be rectified."
             )
 
-            if use_arc:
-
-                use_arc = False
+            use_arc = False
 
         elif isinstance(self.arc, CCDData):
 
@@ -2826,13 +2824,13 @@ class TwoDSpec:
                     )
                 ]
 
-            one_tenth = len(s[0]) // 10
+            one_fifth = int(np.round(len(s[0]) / 10))
 
             s[0] -= lowess(
                 s[0], np.arange(spec_size_tmp), frac=0.05, return_sorted=False
             )
-            s[0] -= min(s[0][one_tenth:-one_tenth])
-            s[0] /= max(s[0][one_tenth:-one_tenth])
+            s[0] -= min(s[0][one_fifth:-one_fifth])
+            s[0] /= max(s[0][one_fifth:-one_fifth])
             s_down = []
             s_up = []
 
@@ -2882,8 +2880,8 @@ class TwoDSpec:
                     frac=0.05,
                     return_sorted=False,
                 )
-                s_down[k] -= min(s_down[k][one_tenth:-one_tenth])
-                s_down[k] /= max(s_down[k][one_tenth:-one_tenth])
+                s_down[k] -= min(s_down[k][one_fifth:-one_fifth])
+                s_down[k] /= max(s_down[k][one_fifth:-one_fifth])
 
             # Loop through the spectra above the trace
             for k in range(n_up):
@@ -2929,8 +2927,8 @@ class TwoDSpec:
                     frac=0.05,
                     return_sorted=False,
                 )
-                s_up[k] -= min(s_up[k][one_tenth:-one_tenth])
-                s_up[k] /= max(s_up[k][one_tenth:-one_tenth])
+                s_up[k] -= min(s_up[k][one_fifth:-one_fifth])
+                s_up[k] /= max(s_up[k][one_fifth:-one_fifth])
 
             s_all = s_down[::-1] + s + s_up
 
@@ -2949,12 +2947,12 @@ class TwoDSpec:
 
                 # Note: indice n_down is s
                 corr = signal.correlate(
-                    10.0 ** s_all[i][one_tenth:-one_tenth],
-                    10.0 ** s_all[i - 1][one_tenth:-one_tenth],
+                    10.0 ** s_all[i][one_fifth:-one_fifth],
+                    10.0 ** s_all[i - 1][one_fifth:-one_fifth],
                 )
                 shift_upsampled[i - 1 :] += (
                     spec_size_tmp
-                    - 2 * one_tenth
+                    - 2 * one_fifth
                     - np.argwhere(corr == corr[np.argmax(corr)])[0]
                     - 1
                 )
@@ -2971,7 +2969,7 @@ class TwoDSpec:
 
             self.logger.info(
                 "The y-coordinates of subspectra are: %s and the "
-                "corresponding shifts are: {}.",
+                "corresponding shifts are: %s.",
                 y_trace_upsampled / upsample_factor,
                 shift_upsampled / upsample_factor,
             )
