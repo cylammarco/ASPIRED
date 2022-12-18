@@ -2620,7 +2620,7 @@ class TwoDSpec:
 
     def get_rectification(
         self,
-        upsample_factor=5,
+        upsample_factor=1,
         bin_size=6,
         n_bin=15,
         spline_order=3,
@@ -2651,7 +2651,7 @@ class TwoDSpec:
         ----------
         spec_id: int (Default: None)
             The ID corresponding to the spectrum_oned object
-        upsample_factor: float (Default: 10)
+        upsample_factor: float (Default: 1)
             The upsampling rate for the correlation (10 times means
             precise to 1/10 of a pixel). The upsampling uses cubic
             spline that is adopted in the scipy.ndimage.zoom() function.
