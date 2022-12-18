@@ -2797,13 +2797,13 @@ class TwoDSpec:
                         [
                             img_tmp[
                                 int(np.round(ref - bin_half_size)) : int(
-                                    np.round(ref + bin_half_size) + 1
+                                    np.round(ref + bin_half_size)
                                 ),
                                 i,
                             ]
                             + arc_tmp[
                                 int(np.round(ref - bin_half_size)) : int(
-                                    np.round(ref + bin_half_size) + 1
+                                    np.round(ref + bin_half_size)
                                 ),
                                 i,
                             ]
@@ -2820,7 +2820,7 @@ class TwoDSpec:
                         [
                             img_tmp[
                                 int(np.round(ref - bin_half_size)) : int(
-                                    np.round(ref + bin_half_size) + 1
+                                    np.round(ref + bin_half_size)
                                 ),
                                 i,
                             ]
@@ -2830,13 +2830,13 @@ class TwoDSpec:
                     )
                 ]
 
-            one_fifth = int(np.round(len(s[0]) / 10))
+            # Get the length of 10% of the dispersion direction
+            # Do not use the first and last 10% for cross-correlation
+            one_tenth = len(s[0]) // 10
 
-            s[0] -= lowess(
-                s[0], np.arange(spec_size_tmp), frac=0.05, return_sorted=False
-            )
-            s[0] -= min(s[0][one_fifth:-one_fifth])
-            s[0] /= max(s[0][one_fifth:-one_fifth])
+            s[0] -= np.nanpercentile(s[0], 5.0)
+            s[0] -= min(s[0][one_tenth:-one_tenth])
+            s[0] /= max(s[0][one_tenth:-one_tenth])
             s_down = []
             s_up = []
 
@@ -2853,13 +2853,13 @@ class TwoDSpec:
                             [
                                 arc_tmp[
                                     int(np.round(ref - end)) : int(
-                                        np.round(ref - start) + 1
+                                        np.round(ref - start)
                                     ),
                                     i,
                                 ]
                                 + img_tmp[
                                     int(np.round(ref - end)) : int(
-                                        np.round(ref - start) + 1
+                                        np.round(ref - start)
                                     ),
                                     i,
                                 ]
@@ -2876,7 +2876,7 @@ class TwoDSpec:
                             [
                                 img_tmp[
                                     int(np.round(ref - end)) : int(
-                                        np.round(ref - start) + 1
+                                        np.round(ref - start)
                                     ),
                                     i,
                                 ]
@@ -2886,14 +2886,9 @@ class TwoDSpec:
                         )
                     )
 
-                s_down[k] -= lowess(
-                    s_down[k],
-                    np.arange(spec_size_tmp),
-                    frac=0.05,
-                    return_sorted=False,
-                )
-                s_down[k] -= min(s_down[k][one_fifth:-one_fifth])
-                s_down[k] /= max(s_down[k][one_fifth:-one_fifth])
+                s_down[k] -= np.nanpercentile(s_down[k], 5.0)
+                s_down[k] -= min(s_down[k][one_tenth:-one_tenth])
+                s_down[k] /= max(s_down[k][one_tenth:-one_tenth])
 
             # Loop through the spectra above the trace
             for k in range(n_up):
@@ -2907,13 +2902,13 @@ class TwoDSpec:
                             [
                                 arc_tmp[
                                     int(np.round(ref + start)) : int(
-                                        np.round(ref + end) + 1
+                                        np.round(ref + end)
                                     ),
                                     i,
                                 ]
                                 + img_tmp[
                                     int(np.round(ref + start)) : int(
-                                        np.round(ref + end) + 1
+                                        np.round(ref + end)
                                     ),
                                     i,
                                 ]
@@ -2930,7 +2925,7 @@ class TwoDSpec:
                             [
                                 img_tmp[
                                     int(np.round(ref + start)) : int(
-                                        np.round(ref + end) + 1
+                                        np.round(ref + end)
                                     ),
                                     i,
                                 ]
@@ -2939,19 +2934,14 @@ class TwoDSpec:
                             axis=1,
                         )
                     )
-                s_up[k] -= lowess(
-                    s_up[k],
-                    np.arange(spec_size_tmp),
-                    frac=0.05,
-                    return_sorted=False,
-                )
-                s_up[k] -= min(s_up[k][one_fifth:-one_fifth])
-                s_up[k] /= max(s_up[k][one_fifth:-one_fifth])
+                s_up[k] -= np.nanpercentile(s_up[k], 5.0)
+                s_up[k] -= min(s_up[k][one_tenth:-one_tenth])
+                s_up[k] /= max(s_up[k][one_tenth:-one_tenth])
 
             s_all = s_down[::-1] + s + s_up
 
             self.logger.info(
-                "%s subspectra is used for cross-correlation.", s_all
+                "%s subspectra are used for cross-correlation.", s_all
             )
 
             y_trace_upsampled = (
@@ -2965,12 +2955,13 @@ class TwoDSpec:
 
                 # Note: indice n_down is s
                 corr = signal.correlate(
-                    5.0 ** s_all[i][one_fifth:-one_fifth],
-                    5.0 ** s_all[i - 1][one_fifth:-one_fifth],
+                    s_all[i][one_tenth:-one_tenth],
+                    s_all[i - 1][one_tenth:-one_tenth],
                 )
+                # spec_size_tmp is the number of pixel in the upsampled axis
                 shift_upsampled[i - 1 :] += (
                     spec_size_tmp
-                    - 2 * one_fifth
+                    - 2 * one_tenth
                     - np.argwhere(corr == corr[np.argmax(corr)])[0]
                     - 1
                 )
@@ -3010,7 +3001,7 @@ class TwoDSpec:
         # shift in the spectral direction, the shift is as a function
         # of distance from the trace at ref
         # For each row j (sort of a line of spectrum...)
-        for j, img_j in enumerate(img_tmp):
+        for j, _ in enumerate(img_tmp):
 
             shift_j = np.polynomial.polynomial.polyval(j, coeff)
 
@@ -3018,7 +3009,7 @@ class TwoDSpec:
 
                 self.logger.info("The shift at line j = %s is %s.", j, shift_j)
 
-            img_j = np.roll(img_j, int(np.round(shift_j)))
+            img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
 
             if self.arc is not None:
 

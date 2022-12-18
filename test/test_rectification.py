@@ -122,3 +122,69 @@ def test_rectify_3():
         bin_size=6, n_bin=7, apply=True, display=False, return_jsonstring=True
     )
     assert np.sum(twodspec.img) == np.sum(twodspec.img_rectified)
+
+
+simulated_image = np.ones((100, 1000))
+
+simulated_image[46] = 2.0
+simulated_image[47] = 5.0
+simulated_image[48] = 10.0
+simulated_image[49] = 30.0
+simulated_image[50] = 50.0
+simulated_image[51] = 30.0
+simulated_image[52] = 10.0
+simulated_image[53] = 5.0
+simulated_image[54] = 2.0
+
+for i in range(100):
+    simulated_image[i, 223 + i] += 100.0
+    simulated_image[i, 671 + i] += 150.0
+
+
+# test simulated 2D spectrum
+def test_rectify_simulated_spectrum():
+    # add the frame
+    simulated_twodspec = spectral_reduction.TwoDSpec(
+        simulated_image,
+        log_level="DEBUG",
+        log_file_folder=os.path.join(HERE, "test_output"),
+    )
+    simulated_twodspec.ap_trace(nspec=1, display=False)
+
+    simulated_twodspec.get_rectification(
+        order=1, upsample_factor=1, use_arc=False
+    )
+    reconstructed_x1 = simulated_twodspec.img_rectified.copy()
+    simulated_twodspec.get_rectification(
+        order=1, upsample_factor=2, use_arc=False
+    )
+    reconstructed_x2 = simulated_twodspec.img_rectified.copy()
+    simulated_twodspec.get_rectification(
+        order=1, upsample_factor=3, use_arc=False
+    )
+    reconstructed_x3 = simulated_twodspec.img_rectified.copy()
+    simulated_twodspec.get_rectification(
+        order=1, upsample_factor=4, use_arc=False
+    )
+    reconstructed_x4 = simulated_twodspec.img_rectified.copy()
+    simulated_twodspec.get_rectification(
+        order=1, upsample_factor=5, use_arc=False
+    )
+    reconstructed_x5 = simulated_twodspec.img_rectified.copy()
+    simulated_twodspec.get_rectification(
+        order=1, upsample_factor=10, use_arc=False
+    )
+    reconstructed_x10 = simulated_twodspec.img_rectified.copy()
+
+    max_x1 = np.argmax(np.sum(reconstructed_x1, axis=0))
+    max_x2 = np.argmax(np.sum(reconstructed_x2, axis=0))
+    max_x3 = np.argmax(np.sum(reconstructed_x3, axis=0))
+    max_x4 = np.argmax(np.sum(reconstructed_x4, axis=0))
+    max_x5 = np.argmax(np.sum(reconstructed_x5, axis=0))
+    max_x10 = np.argmax(np.sum(reconstructed_x10, axis=0))
+
+    assert np.isclose(max_x1, max_x2)
+    assert np.isclose(max_x1, max_x3)
+    assert np.isclose(max_x1, max_x4)
+    assert np.isclose(max_x1, max_x5)
+    assert np.isclose(max_x1, max_x10)

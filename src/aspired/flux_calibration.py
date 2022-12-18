@@ -348,9 +348,9 @@ class StandardLibrary:
             libraries = self.uname_to_lib[target.lower()]
             return libraries, True
 
-        except Exception as _err:
+        except Exception as _warn:
 
-            self.logger.warning(str(_err))
+            self.logger.warning(str(_warn))
 
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
