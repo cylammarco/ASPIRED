@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import ndimage
 from scipy import signal
-
+from matplotlib import pyplot as plt
 
 # 1D
 a = np.ones(100)
@@ -27,7 +27,7 @@ one_tenth_x3 = len(a_x3) // 10
 one_tenth_x4 = len(a_x4) // 10
 one_tenth_x5 = len(a_x5) // 10
 
-(
+print(
     len(a)
     - 2 * one_tenth
     - np.argmax(
@@ -35,7 +35,7 @@ one_tenth_x5 = len(a_x5) // 10
     )
     - 1
 )
-(
+print(
     len(a_x2)
     - 2 * one_tenth_x2
     - np.argmax(
@@ -45,7 +45,7 @@ one_tenth_x5 = len(a_x5) // 10
     )
     - 1
 )
-(
+print(
     len(a_x3)
     - 2 * one_tenth_x3
     - np.argmax(
@@ -55,7 +55,7 @@ one_tenth_x5 = len(a_x5) // 10
     )
     - 1
 )
-(
+print(
     len(a_x4)
     - 2 * one_tenth_x4
     - np.argmax(
@@ -65,7 +65,7 @@ one_tenth_x5 = len(a_x5) // 10
     )
     - 1
 )
-(
+print(
     len(a_x5)
     - 2 * one_tenth_x5
     - np.argmax(
@@ -77,9 +77,7 @@ one_tenth_x5 = len(a_x5) // 10
 )
 
 
-### 2D
-
-
+# 2D
 simulated_image = np.ones((100, 1000))
 
 simulated_image[46] = 2.0
@@ -116,7 +114,7 @@ y_tmp = (
     * upsample_factor
 )
 
-figure(1)
+plt.figure(1)
 
 ref = y_tmp[len(y_tmp) // 2]
 
@@ -140,7 +138,7 @@ s = [
     )
 ]
 
-plot([n_bin // 2, n_bin // 2], [ref + start, ref + end])
+plt.plot([n_bin // 2, n_bin // 2], [ref + start, ref + end])
 
 # Get the length of 10% of the dispersion direction
 # Do not use the first and last 10% for cross-correlation
@@ -174,7 +172,7 @@ for k in range(n_down):
     s_down[k] -= np.nanpercentile(s_down[k], 5.0)
     s_down[k] -= min(s_down[k][one_tenth:-one_tenth])
     s_down[k] /= max(s_down[k][one_tenth:-one_tenth])
-    plot(
+    plt.plot(
         [n_bin // 2 - k - 1, n_bin // 2 - k - 1],
         [ref - end, ref - start],
         ls="dotted",
@@ -201,7 +199,7 @@ for k in range(n_up):
     s_up[k] -= np.nanpercentile(s_up[k], 5.0)
     s_up[k] -= min(s_up[k][one_tenth:-one_tenth])
     s_up[k] /= max(s_up[k][one_tenth:-one_tenth])
-    plot(
+    plt.plot(
         [n_bin // 2 + k + 1, n_bin // 2 + k + 1],
         [ref + start, ref + end],
         ls="dashed",
@@ -232,8 +230,6 @@ for i in range(1, len(s_all)):
 # Turn the shift to relative to the spectrum
 shift_upsampled -= shift_upsampled[n_down]
 
-shift_upsampled
-
 coeff = np.polynomial.polynomial.polyfit(
     y_trace_upsampled,
     shift_upsampled,
@@ -247,6 +243,6 @@ for j, _ in enumerate(img_tmp):
     img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
 
 
-figure(3)
-clf()
-imshow(img_tmp)
+plt.figure(3)
+plt.clf()
+plt.imshow(img_tmp)
