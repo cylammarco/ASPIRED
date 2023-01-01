@@ -331,3 +331,29 @@ def get_continuum(x, y, **kwargs):
     return itp.interp1d(
         x_smoothed, y_smoothed, kind="cubic", fill_value="extrapolate"
     )(x)
+
+
+def gaus(x, a, b, x0, sigma):
+    """
+    Simple Gaussian function.
+
+    Parameters
+    ----------
+    x: float or 1-d numpy array
+        The data to evaluate the Gaussian over
+    a: float
+        the amplitude
+    b: float
+        the constant offset
+    x0: float
+        the center of the Gaussian
+    sigma: float
+        the width of the Gaussian
+
+    Returns
+    -------
+    Array or float of same type as input (x).
+
+    """
+
+    return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + b

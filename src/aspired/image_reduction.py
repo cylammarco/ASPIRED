@@ -38,7 +38,7 @@ class Reducer:
     def __init__(
         self,
         verbose: bool = True,
-        logger_name: str = "ImageReduction",
+        logger_name: str = "Reducer",
         log_level: str = "info",
         log_file_folder: str = "default",
         log_file_name: str = None,
