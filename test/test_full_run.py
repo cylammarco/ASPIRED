@@ -334,7 +334,7 @@ def test_full_run(mock_show):
 
     # save as CSV
     lhs6328_onedspec.save_csv(
-        output="trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+"
+        output="trace+count+arc_spec+arc_lines+wavecal+wavelength+count_resampled+flux+"
         "flux_resampled",
         filename=os.path.join(HERE, "test_output", "test_full_run"),
         stype="science+standard",

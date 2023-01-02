@@ -7072,6 +7072,71 @@ class OneDSpec:
                 "standard_spectrum_list."
             )
 
+    def modify_arc_lines_header(
+        self, idx, method, *args, spec_id=None, stype="science+standard"
+    ):
+        """
+        Wrapper function to modify the arc lines header.
+
+        Parameters
+        ----------
+        idx: int
+            The HDU number of the arc lines FITS
+        method: str
+            The operation to modify the header with
+        *args:
+            Extra arguments for the method
+        spec_id: int (Default: None)
+            The ID corresponding to the spectrum_oned object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        # Split the string into strings
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_spectrum_list[i].modify_arc_lines_header(
+                    idx, method, *args
+                )
+                self.logger.info(
+                    "arc_lines header is moldified for the "
+                    "science_spectrum_list for spec_id: {}.".format(i)
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].modify_arc_lines_header(
+                idx, method, *args
+            )
+            self.logger.info(
+                "arc_lines header is moldified for the "
+                "standard_spectrum_list."
+            )
+
     def modify_wavecal_header(
         self, idx, method, *args, spec_id=None, stype="science+standard"
     ):
@@ -8272,7 +8337,7 @@ class OneDSpec:
         Parameters
         ----------
         output: String
-            (Default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
+            (Default: '*')
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strings are delimited by "+",
@@ -8283,8 +8348,10 @@ class OneDSpec:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line position (pixel), and arc
+                arc_spec: 1 HDU
+                    1D arc spectrum
+                arc_lines: 2 HDUs
+                    arc line position (pixel), and arc
                     line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
@@ -8352,11 +8419,11 @@ class OneDSpec:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-                + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "atm_ext+flux_atm_ext_corrected+flux_telluric_corrected+"
-                + "telluric_profile+flux_atm_ext_telluric_corrected+"
-                + "sensitivity_resampled+"
+                "trace+count+weight_map+arc_spec+arc_lines+wavecal+"
+                + "wavelength+wavelength_resampled+count_resampled+"
+                + "sensitivity+flux+atm_ext+flux_atm_ext_corrected+"
+                + "flux_telluric_corrected+telluric_profile+"
+                + "flux_atm_ext_telluric_corrected+sensitivity_resampled+"
                 + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
                 + "telluric_profile_resampled+"
@@ -8375,6 +8442,7 @@ class OneDSpec:
                 "count",
                 "weight_map",
                 "arc_spec",
+                "arc_lines",
                 "wavecal",
                 "wavelength",
                 "wavelength_resampled",
@@ -8495,7 +8563,7 @@ class OneDSpec:
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum_oned object
         output: String
-            (Default: 'arc_spec+wavecal+wavelength+flux+flux_resampled')
+            (Default: '*')
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strings are delimited by "+",
@@ -8506,8 +8574,10 @@ class OneDSpec:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line position (pixel), and arc
+                arc_spec: 1 HDU
+                    1D arc spectrum
+                arc_lines: 2 HDUs
+                    arc line position (pixel), and arc
                     line effective position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
@@ -8571,11 +8641,11 @@ class OneDSpec:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-                + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "atm_ext+flux_atm_ext_corrected+telluric_profile+"
-                + "flux_telluric_corrected+flux_atm_ext_telluric_corrected+"
-                + "sensitivity_resampled+"
+                "trace+count+weight_map+arc_spec+arc_lines+wavecal+"
+                + "wavelength+wavelength_resampled+count_resampled+"
+                + "sensitivity+flux+atm_ext+flux_atm_ext_corrected+"
+                + "telluric_profile+flux_telluric_corrected+"
+                + "flux_atm_ext_telluric_corrected+sensitivity_resampled+"
                 + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
                 + "telluric_profile_resampled+"
@@ -8594,6 +8664,7 @@ class OneDSpec:
                 "count",
                 "weight_map",
                 "arc_spec",
+                "arc_lines",
                 "wavecal",
                 "wavelength",
                 "wavelength_resampled",

@@ -4982,11 +4982,11 @@ class TwoDSpec:
 
             return to_return
 
-    def create_fits(self, output, recreate=False, empty_primary_hdu=True):
+    def create_fits(self, output="*", recreate=False, empty_primary_hdu=True):
         """
         Parameters
         ----------
-        output: String
+        output: String (Default: "*")
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strs are delimited by "+",
@@ -5008,9 +5008,13 @@ class TwoDSpec:
 
         """
 
+        if output == "*":
+
+            output = "trace+count+weight_map+arc_spec"
+
         for i in output.split("+"):
 
-            if i not in ["trace", "count"]:
+            if i not in ["trace", "count", "weight_map", "arc_spec"]:
 
                 error_msg = f"{i} is not a valid output."
                 self.logger.critical(error_msg)
@@ -5028,7 +5032,7 @@ class TwoDSpec:
 
     def save_fits(
         self,
-        output="trace+count",
+        output="*",
         filename="TwoDSpecExtracted",
         overwrite=False,
         recreate=False,
@@ -5039,7 +5043,7 @@ class TwoDSpec:
 
         Parameters
         ----------
-        output: String
+        output: String (Default: "*")
             Type of data to be saved, the order is fixed (in the order of
             the following description), but the options are flexible. The
             input strs are delimited by "+",
@@ -5068,9 +5072,13 @@ class TwoDSpec:
 
         filename = os.path.splitext(filename)[0]
 
+        if output == "*":
+
+            output = "trace+count+weight_map+arc_spec"
+
         for i in output.split("+"):
 
-            if i not in ["trace", "count"]:
+            if i not in ["trace", "count", "weight_map", "arc_spec"]:
 
                 error_msg = f"{i} is not a valid output."
                 self.logger.critical(error_msg)

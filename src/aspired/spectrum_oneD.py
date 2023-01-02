@@ -284,6 +284,7 @@ class SpectrumOneD:
         self.count_hdulist = None
         self.weight_map_hdulist = None
         self.arc_spec_hdulist = None
+        self.arc_lines_hdulist = None
         self.wavecal_hdulist = None
         self.wavelength_hdulist = None
         self.wavelength_resampled_hdulist = None
@@ -312,8 +313,8 @@ class SpectrumOneD:
             + "Width of the trace",
             "count": "Count, Count uncertainty, Sky count",
             "weight_map": "Weight map of the extration (variance)",
-            "arc_spec": "1D Arc spectrum, Arc line position, Arc line "
-            + "effective position",
+            "arc_spec": "1D Arc spectrum",
+            "arc_lines": "Arc line position, Arc line effective position",
             "wavecal": "Polynomial coefficients for wavelength calibration",
             "wavelength": "The pixel-to-wavelength mapping",
             "wavelength_resampled": "The pixel-to-wavelength mapping at",
@@ -356,7 +357,8 @@ class SpectrumOneD:
             "trace": 2,
             "count": 3,
             "weight_map": 1,
-            "arc_spec": 3,
+            "arc_spec": 1,
+            "arc_lines": 2,
             "wavecal": 1,
             "wavelength": 1,
             "wavelength_resampled": 1,
@@ -382,24 +384,25 @@ class SpectrumOneD:
             "count": 1,
             "weight_map": 2,
             "arc_spec": 3,
-            "wavecal": 4,
-            "wavelength": 5,
-            "wavelength_resampled": 6,
-            "count_resampled": 7,
-            "sensitivity": 8,
-            "flux": 9,
-            "atm_ext": 10,
-            "flux_atm_ext_corrected": 11,
-            "telluric_profile": 12,
-            "flux_telluric_corrected": 13,
-            "flux_atm_ext_telluric_corrected": 14,
-            "sensitivity_resampled": 15,
-            "flux_resampled": 16,
-            "atm_ext_resampled": 17,
-            "flux_resampled_atm_ext_corrected": 18,
-            "telluric_profile_resampled": 19,
-            "flux_resampled_telluric_corrected": 20,
-            "flux_resampled_atm_ext_telluric_corrected": 21,
+            "arc_lines": 4,
+            "wavecal": 5,
+            "wavelength": 6,
+            "wavelength_resampled": 7,
+            "count_resampled": 8,
+            "sensitivity": 9,
+            "flux": 10,
+            "atm_ext": 11,
+            "flux_atm_ext_corrected": 12,
+            "telluric_profile": 13,
+            "flux_telluric_corrected": 14,
+            "flux_atm_ext_telluric_corrected": 15,
+            "sensitivity_resampled": 16,
+            "flux_resampled": 17,
+            "atm_ext_resampled": 18,
+            "flux_resampled_atm_ext_corrected": 19,
+            "telluric_profile_resampled": 20,
+            "flux_resampled_telluric_corrected": 21,
+            "flux_resampled_atm_ext_telluric_corrected": 22,
         }
 
         self.hdu_content = {
@@ -407,6 +410,7 @@ class SpectrumOneD:
             "count": False,
             "weight_map": False,
             "arc_spec": False,
+            "arc_lines": False,
             "wavecal": False,
             "wavelength": False,
             "wavelength_resampled": False,
@@ -2438,13 +2442,29 @@ class SpectrumOneD:
         | HDU | Data              |
         +-----+-------------------+
         |  0  | Arc spectrum      |
-        |  1  | Peaks (pixel)     |
-        |  2  | Peaks (sub-pixel) |
         +-----+-------------------+
 
         """
 
         self._modify_imagehdu_header(self.arc_spec_hdulist, idx, method, *args)
+
+    def modify_arc_lines_header(self, idx, method, *args):
+        """
+        for method 'set', it takes
+        keyword, value=None, comment=None, before=None, after=None
+
+        +-----+-------------------+
+        | HDU | Data              |
+        +-----+-------------------+
+        |  0  | Peaks (pixel)     |
+        |  1  | Peaks (sub-pixel) |
+        +-----+-------------------+
+
+        """
+
+        self._modify_imagehdu_header(
+            self.arc_lines_hdulist, idx, method, *args
+        )
 
     def modify_wavecal_header(self, method, *args):
         """
@@ -3075,22 +3095,12 @@ class SpectrumOneD:
                 arc_spec_ImageHDU = fits.ImageHDU(
                     self.arc_spec, header=self.arc_header
                 )
-                peaks_ImageHDU = fits.ImageHDU(
-                    self.peaks, header=self.arc_header
-                )
-                peaks_refined_ImageHDU = fits.ImageHDU(
-                    self.peaks_refined, header=self.arc_header
-                )
             else:
                 arc_spec_ImageHDU = fits.ImageHDU(self.arc_spec)
-                peaks_ImageHDU = fits.ImageHDU(self.peaks)
-                peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.arc_spec_hdulist = fits.HDUList()
             self.arc_spec_hdulist += [arc_spec_ImageHDU]
-            self.arc_spec_hdulist += [peaks_ImageHDU]
-            self.arc_spec_hdulist += [peaks_refined_ImageHDU]
 
             # Add the arc spectrum
             self.modify_arc_spec_header(
@@ -3108,24 +3118,6 @@ class SpectrumOneD:
             self.modify_arc_spec_header(0, "set", "CUNIT1", "Pixel")
             self.modify_arc_spec_header(0, "set", "BUNIT", "electron")
 
-            # Add the peaks in native pixel value
-            self.modify_arc_spec_header(
-                1, "set", "EXTNAME", "Peaks (Detector pixel)"
-            )
-            self.modify_arc_spec_header(
-                1, "set", "LABEL", "Peaks (Detector pixel)"
-            )
-            self.modify_arc_spec_header(1, "set", "BUNIT", "Pixel")
-
-            # Add the peaks in effective pixel value
-            self.modify_arc_spec_header(
-                2, "set", "EXTNAME", "Peaks (Effective pixel)"
-            )
-            self.modify_arc_spec_header(
-                2, "set", "LABEL", "Peaks (Effective pixel)"
-            )
-            self.modify_arc_spec_header(2, "set", "BUNIT", "Pixel")
-
         except Exception as e:
 
             self.logger.error(str(e))
@@ -3133,6 +3125,57 @@ class SpectrumOneD:
             # Set it to None if the above failed
             self.logger.error("arc_spec ImageHDU cannot be created.")
             self.arc_spec_hdulist = None
+
+    def create_arc_lines_fits(self):
+        """
+        Create an ImageHDU for the spectrum of the arc lamp.
+
+        """
+
+        try:
+
+            # Use the header of the arc
+            if self.arc_header is not None:
+                peaks_ImageHDU = fits.ImageHDU(
+                    self.peaks, header=self.arc_header
+                )
+                peaks_refined_ImageHDU = fits.ImageHDU(
+                    self.peaks_refined, header=self.arc_header
+                )
+            else:
+                peaks_ImageHDU = fits.ImageHDU(self.peaks)
+                peaks_refined_ImageHDU = fits.ImageHDU(self.peaks_refined)
+
+            # Create an empty HDU list and populate with ImageHDUs
+            self.arc_lines_hdulist = fits.HDUList()
+            self.arc_lines_hdulist += [peaks_ImageHDU]
+            self.arc_lines_hdulist += [peaks_refined_ImageHDU]
+
+            # Add the peaks in native pixel value
+            self.modify_arc_lines_header(
+                0, "set", "EXTNAME", "Peaks (Detector pixel)"
+            )
+            self.modify_arc_lines_header(
+                0, "set", "LABEL", "Peaks (Detector pixel)"
+            )
+            self.modify_arc_lines_header(0, "set", "BUNIT", "Pixel")
+
+            # Add the peaks in effective pixel value
+            self.modify_arc_lines_header(
+                1, "set", "EXTNAME", "Peaks (Effective pixel)"
+            )
+            self.modify_arc_lines_header(
+                1, "set", "LABEL", "Peaks (Effective pixel)"
+            )
+            self.modify_arc_lines_header(1, "set", "BUNIT", "Pixel")
+
+        except Exception as e:
+
+            self.logger.error(str(e))
+
+            # Set it to None if the above failed
+            self.logger.error("arc_lines ImageHDU cannot be created.")
+            self.arc_lines_hdulist = None
 
     def create_wavecal_fits(self):
         """
@@ -4956,8 +4999,8 @@ class SpectrumOneD:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-                "wavelength_resampled+count_resampled+sensitivity+"
+                "trace+count+weight_map+arc_spec+arc_lines+wavecal+"
+                "wavelength+wavelength_resampled+count_resampled+sensitivity+"
                 "flux+atm_ext+flux_atm_ext_corrected+telluric_profile+"
                 "flux_telluric_corrected+flux_atm_ext_telluric_corrected+"
                 "sensitivity_resampled+flux_resampled+atm_ext_resampled+"
@@ -5064,6 +5107,18 @@ class SpectrumOneD:
 
                     hdu_output += self.arc_spec_hdulist
                     self.hdu_content["arc_spec"] = True
+
+            if "arc_lines" in output_split:
+
+                if not self.hdu_content["arc_lines"]:
+                    self.create_arc_lines_fits()
+
+                if (self.arc_lines_hdulist is not None) and (
+                    self.arc_lines is not None
+                ):
+
+                    hdu_output += self.arc_lines_hdulist
+                    self.hdu_content["arc_lines"] = True
 
             if "wavecal" in output_split:
 
@@ -5338,9 +5393,11 @@ class SpectrumOneD:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line position (pixel), and arc
-                    line effective position (pixel)
+                arc_spec: 1 HDU
+                    1D arc spectrum
+                arc_lines: 2 HDUs
+                    Arc line position (pixel), and arc line effective
+                    position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -5423,9 +5480,11 @@ class SpectrumOneD:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line position (pixel), and arc
-                    line effective position (pixel)
+                arc_spec: 1 HDU
+                    1D arc spectrum
+                arc_lines: 2 HDUs
+                    Arc line position (pixel), and arc line effective
+                    position (pixel)
                 wavecal: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
@@ -5496,7 +5555,7 @@ class SpectrumOneD:
                     "The HDU index is from {} to {}.".format(start, end - 1)
                 )
 
-                if output_type != "arc_spec":
+                if output_type != "arc_lines":
 
                     output_data = np.column_stack(
                         [hdu.data for hdu in self.hdu_output[start:end]]
@@ -5527,30 +5586,10 @@ class SpectrumOneD:
 
                 else:
 
-                    output_data_arc_spec = self.hdu_output[start].data
-                    output_data_arc_peaks = self.hdu_output[start + 1].data
+                    output_data_arc_peaks = self.hdu_output[start].data
                     output_data_arc_peaks_refined = self.hdu_output[
-                        start + 2
+                        start + 1
                     ].data
-
-                    if overwrite or (
-                        not os.path.exists(filename + "_arc_spec.csv")
-                    ):
-
-                        np.savetxt(
-                            filename + "_arc_spec.csv",
-                            output_data_arc_spec,
-                            delimiter=",",
-                            header=self.header[output_type],
-                        )
-
-                    else:
-
-                        self.logger.warning(
-                            filename
-                            + "_arc_spec.csv cannot be saved to disk. Please "
-                            + "check the path and/or set overwrite to True."
-                        )
 
                     if overwrite or (
                         not os.path.exists(filename + "_arc_peaks.csv")

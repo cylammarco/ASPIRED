@@ -32,12 +32,14 @@ Version 0.5.0-dev
   * Fixed a bug in sorting peaks by prominence
   * Exporting FITS and CSV will check if data exist to avoid outputting empty files.
   * Header information should be grabbed when data are manually provided.
+  * `TwoDSpec()` allows saving `weight_map` and `arc_spec`.
 
 * (API) changes:
 
   * get_telluric_correction() to get_telluric_strength() as the function only get the multiplication factor to the template telluric absorption profile.
   * `lowess_frac` is used throughout the woftware to denote the `frac` argument for the `lowess()` function.
   * spectrum1D is now spectrumOneD to avoid confusion with Astropy Specutil spectrum1D
+  * `arc_spec` output is split into `arc_spec` and `arc_lines` where the former is an output from `TwoDSpec` and the latter is an output from `OneDSpec`.
 
 * Other changes:
 
