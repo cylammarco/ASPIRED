@@ -980,7 +980,10 @@ def test_calibrator_science():
     )
     onedspec.set_calibrator_properties(
         spec_id=[11, 75],
-        pixel_list=np.arange(100),
+        effective_pixel=np.arange(100),
+        stype="science",
+    )
+    onedspec.set_calibrator_logger(
         log_level="debug",
         stype="science",
     )
@@ -1367,7 +1370,7 @@ def test_calibrator_science_fail_refine_fit_spec_id():
     onedspec.set_ransac_properties(stype="science")
     onedspec.add_atlas(elements=["Xe"], stype="science")
     onedspec.do_hough_transform(stype="science")
-    onedspec.science_wavecal_polynomial_available = True
+    onedspec.science_wavecal_coefficients_available = True
     onedspec.robust_refit(spec_id=7, stype="science")
 
 
@@ -1687,13 +1690,13 @@ def test_miscellaneous(mock_show):
     )
 
     global_onedspec.create_fits(
-        output="trace+count+weight_map+arc_spec+wavecal+"
+        output="trace+count+weight_map+arc_spec+wavecal_coefficients+"
         "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
         "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
         empty_primary_hdu=False,
     )
     global_onedspec.create_fits(
-        output="trace+count+weight_map+arc_spec+wavecal+"
+        output="trace+count+weight_map+arc_spec+wavecal_coefficients+"
         "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
         "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
         recreate=True,
@@ -1944,6 +1947,7 @@ def test_linear_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec.robust_refit(
@@ -1957,6 +1961,7 @@ def test_linear_fit():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
 
     assert np.abs(best_p_robust[1] - 5.0) / 5.0 < 0.01
@@ -2010,6 +2015,7 @@ def test_manual_refit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec.robust_refit(
@@ -2023,16 +2029,20 @@ def test_manual_refit():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
     result_manual = onedspec.manual_refit(
         matched_peaks_robust, matched_atlas_robust, return_solution=True
     )
     (
         best_p_manual,
+        matched_peaks_manual,
+        matched_atlas_manual,
         rms_manual,
         residual_manual,
         peak_utilisation_manual,
         atlas_utilisation_manual,
+        success_manual,
     ) = result_manual["science"][0]
 
     assert len(matched_peaks_robust) == len(matched_atlas_robust)
@@ -2084,6 +2094,7 @@ def test_manual_refit_add_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec_add_points.robust_refit(
@@ -2097,6 +2108,7 @@ def test_manual_refit_add_points():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
 
     onedspec_add_points.add_pix_wave_pair(
@@ -2107,10 +2119,13 @@ def test_manual_refit_add_points():
     )
     (
         best_p_manual,
+        matched_peaks_manual,
+        matched_atlas_manual,
         rms_manual,
         residual_manual,
         peak_utilisation_manual,
         atlas_utilisation_manual,
+        success_manual,
     ) = result_manual["science"][0]
 
     assert len(matched_peaks_robust) == len(matched_atlas_robust)
@@ -2161,6 +2176,7 @@ def test_manual_refit_remove_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec.robust_refit(
@@ -2174,6 +2190,7 @@ def test_manual_refit_remove_points():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
 
     onedspec.remove_pix_wave_pair(5)
@@ -2183,10 +2200,13 @@ def test_manual_refit_remove_points():
     )
     (
         best_p_manual,
+        matched_peaks_manual,
+        matched_atlas_manual,
         rms_manual,
         residual_manual,
         peak_utilisation_manual,
         atlas_utilisation_manual,
+        success_manual,
     ) = result_manual["science"][0]
 
     assert len(matched_peaks_robust) == len(matched_atlas_robust)
@@ -2240,6 +2260,7 @@ def test_quadratic_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec.robust_refit(
@@ -2253,6 +2274,7 @@ def test_quadratic_fit():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
 
     assert len(matched_peaks_robust) == len(matched_atlas_robust)
@@ -2315,6 +2337,7 @@ def test_quadratic_fit_legendre():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec.robust_refit(
@@ -2328,6 +2351,7 @@ def test_quadratic_fit_legendre():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
 
     assert len(matched_peaks_robust) == len(matched_atlas_robust)
@@ -2388,6 +2412,7 @@ def test_quadratic_fit_chebyshev():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = result["science"][0]
     # Refine solution
     result_robust = onedspec.robust_refit(
@@ -2401,6 +2426,7 @@ def test_quadratic_fit_chebyshev():
         residual_robust,
         peak_utilisation_robust,
         atlas_utilisation_robust,
+        success_robust,
     ) = result_robust["science"][0]
 
     assert len(matched_peaks_robust) == len(matched_atlas_robust)

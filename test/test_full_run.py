@@ -295,7 +295,7 @@ def test_full_run(mock_show):
 
     # Create more FITS
     lhs6328_onedspec.create_fits(
-        output="trace+count+arc_spec+wavecal",
+        output="trace+count+arc_spec+wavecal_coefficients",
         stype="science+standard",
         recreate=False,
     )
@@ -309,8 +309,7 @@ def test_full_run(mock_show):
 
     # Save as FITS (and create the ones that were not created earlier)
     lhs6328_onedspec.save_fits(
-        output="trace+count+arc_spec+wavecal+wavelength+count_resampled+flux+"
-        "flux_resampled",
+        output="*",
         filename=os.path.join(HERE, "test_output", "test_full_run"),
         stype="science+standard",
         recreate=False,
@@ -334,8 +333,7 @@ def test_full_run(mock_show):
 
     # save as CSV
     lhs6328_onedspec.save_csv(
-        output="trace+count+arc_spec+arc_lines+wavecal+wavelength+count_resampled+flux+"
-        "flux_resampled",
+        output="*",
         filename=os.path.join(HERE, "test_output", "test_full_run"),
         stype="science+standard",
         overwrite=True,

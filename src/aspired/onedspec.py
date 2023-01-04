@@ -5,6 +5,7 @@ import logging
 import os
 import pkg_resources
 
+from astropy.io import fits
 import numpy as np
 from plotly import graph_objects as go
 from plotly import io as pio
@@ -180,8 +181,8 @@ class OneDSpec:
         self.science_hough_pairs_available = False
         self.standard_hough_pairs_available = False
 
-        self.science_wavecal_polynomial_available = False
-        self.standard_wavecal_polynomial_available = False
+        self.science_wavecal_coefficients_available = False
+        self.standard_wavecal_coefficients_available = False
 
         self.science_wavelength_calibrated = False
         self.standard_wavelength_calibrated = False
@@ -794,11 +795,10 @@ class OneDSpec:
                             self.add_science_spectrum_oned(i)
 
                             self.logger.warning(
-                                "The given spec_id, {}, does not exist. A new "
-                                "spectrum_oned is created. Please check you are "
-                                "providing the correct spec_id.".format(
-                                    spec_id
-                                )
+                                f"The given spec_id, {spec_id}, does not "
+                                + "exist. A new spectrum_oned is created. "
+                                + "Please check you are providing the "
+                                + "correct spec_id."
                             )
 
                         else:
@@ -1014,7 +1014,7 @@ class OneDSpec:
         if "standard" in stype_split:
 
             self.standard_spectrum_list[0].add_arc_spec(arc_spec=arc_spec[0])
-            self.logger.info("Added arc_spec to" "standard_spectrum_list.")
+            self.logger.info("Added arc_spec to standard_spectrum_list.")
 
             self.standard_arc_spec_available = True
 
@@ -1117,7 +1117,7 @@ class OneDSpec:
         self,
         trace,
         trace_sigma,
-        pixel_list=None,
+        effective_pixel=None,
         spec_id=None,
         stype="science+standard",
     ):
@@ -1129,7 +1129,7 @@ class OneDSpec:
             spectral position.
         trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
-        pixel_list: list or numpy.narray (Default: None)
+        effective_pixel: list or numpy.narray (Default: None)
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(len(spec.trace[0])), for example, in the case of accounting
@@ -1247,10 +1247,10 @@ class OneDSpec:
                 self.science_spectrum_list[i].add_trace(
                     trace=trace[i],
                     trace_sigma=trace_sigma[i],
-                    pixel_list=pixel_list,
+                    effective_pixel=effective_pixel,
                 )
                 self.logger.info(
-                    "Added trace, trace_sigma, and pixel_list to"
+                    "Added trace, trace_sigma, and effective_pixel to"
                     "science_spectrum_list for spec_id: {}.".format(i)
                 )
 
@@ -1261,10 +1261,10 @@ class OneDSpec:
             self.standard_spectrum_list[0].add_trace(
                 trace=trace[0],
                 trace_sigma=trace_sigma[0],
-                pixel_list=pixel_list,
+                effective_pixel=effective_pixel,
             )
             self.logger.info(
-                "Added trace, trace_sigma, and pixel_list to"
+                "Added trace, trace_sigma, and effective_pixel to"
                 "standard_spectrum_list"
             )
 
@@ -1426,7 +1426,7 @@ class OneDSpec:
                         "science_spectrum_list for spec_id: {}.".format(i)
                     )
 
-            self.science_wavecal_polynomial_available = True
+            self.science_wavecal_coefficients_available = True
 
         if "standard" in stype_split:
 
@@ -1439,25 +1439,22 @@ class OneDSpec:
                     fit_type=fit_type[0]
                 )
                 self.logger.info(
-                    "Added fit_coeff and fit_type to" "standard_spectrum_list."
+                    "Added fit_coeff and fit_type tostandard_spectrum_list."
                 )
 
-            self.standard_wavecal_polynomial_available = True
+            self.standard_wavecal_coefficients_available = True
 
     def from_twodspec(self, twodspec, spec_id=None, stype="science+standard"):
         """
         To add a TwoDSpec object or numpy array to provide the traces, line
         spread function of the traces, optionally the pixel values
-        correcponding to the traces. If the arc is provided, the saxis and flip
-        properties of the TwoDSpec will be applied to the arc, and then
-        the spec_mask and the spatial_mask from the TwoDSpec object will be
-        applied.
+        correcponding to the traces. The arc_spec will be imported if
+        available.
 
         Parameters
         ----------
         twodspec: TwoDSpec object
-            TwoDSpec of the science image containin the trace(s) and
-            trace_sigma(s).
+            TwoDSpec containing `the trace` and `trace_sigma`.
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
@@ -1530,6 +1527,161 @@ class OneDSpec:
             )
             self.standard_wavecal.from_spectrum_oned(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum_oned(twodspec.spectrum_list[0])
+            self.standard_spectrum_list[
+                0
+            ] = self.standard_wavecal.spectrum_oned
+
+            self.logger.info(
+                "Referenced SpectrumOneD of the"
+                "standard_spectrum_list to the standard_wavecal."
+            )
+
+            self.standard_data_available = True
+            self.standard_arc_available = True
+            self.standard_arc_spec_available = True
+
+    def from_fits(self, fits_file, spec_id=0, stype="science"):
+        """
+        To add a FITS files/object saved from a TwoDSpec object to provide
+        the trace, line spread function of the trace, optionally the pixel
+        values correcponding to the trace. The arc_spec will be imported if
+        available. Note that TwoDSpec exports each trace as a separate file.
+
+        Parameters
+        ----------
+        fits: FITS filepath/object
+            A FITS HDUList containining the `trace`, `trace_sigma`,
+            and optionally the `weight_map` and `arc_spec`.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum_oned object, If not given,
+            it will assign the smallest positive integer that is not taken.
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        stype_split = stype.split("+")
+
+        # If a filepath to a TwoDSpec output FITS is provided
+        # Note that HDU0 is an empty PrimaryHDU
+        if isinstance(fits_file, str):
+
+            fits_file = fits.open(fits_file)
+
+        if not isinstance(fits_file, fits.hdu.hdulist.HDUList):
+
+            self.logger.critical(
+                "A FITS file containing an HDU list is required, "
+                + f"{type(fits_file)} is given"
+            )
+
+        if "science" in stype_split:
+
+            self.add_science_spectrum_oned(spec_id)
+            # fits_file[0] is the empty PrimaryHDU
+            self.science_spectrum_list[spec_id].add_trace(
+                fits_file["trace"].data, fits_file["trace_sigma"].data
+            )
+            self.science_spectrum_list[spec_id].add_count(
+                fits_file["count"].data,
+                fits_file["count_err"].data,
+                fits_file["count_sky"].data,
+            )
+            self.science_spectrum_list[spec_id].add_variances(
+                fits_file["weight_map"].data
+            )
+            self.science_spectrum_list[spec_id].add_arc_spec(
+                fits_file["arc_spec"].data
+            )
+
+            self.science_spectrum_list[spec_id].add_gain(
+                fits_file["count"].header["GAIN"]
+            )
+            self.science_spectrum_list[spec_id].add_readnoise(
+                fits_file["count"].header["RNOISE"]
+            )
+            self.science_spectrum_list[spec_id].add_exptime(
+                fits_file["count"].header["XPOSURE"]
+            )
+            self.science_spectrum_list[spec_id].add_seeing(
+                fits_file["count"].header["SEEING"]
+            )
+            self.science_spectrum_list[spec_id].add_airmass(
+                fits_file["count"].header["AIRMASS"]
+            )
+
+            # reference the spectrum_oned to the WavelengthCalibration
+            self.science_wavecal[spec_id] = WavelengthCalibration(
+                verbose=self.verbose,
+                logger_name=self.logger_name,
+                log_level=self.log_level,
+                log_file_folder=self.log_file_folder,
+                log_file_name=self.log_file_name,
+            )
+
+            # By reference
+            self.science_wavecal[spec_id].from_spectrum_oned(
+                self.science_spectrum_list[spec_id]
+            )
+            self.science_spectrum_list[spec_id] = self.science_wavecal[
+                spec_id
+            ].spectrum_oned
+
+            self.logger.info(
+                "Referenced SpectrumOneD of the science_spectrum_list "
+                + f"for spec_id: {spec_id} to the corresponding "
+                + "science_wavecal."
+            )
+
+            self.science_data_available = True
+            self.science_arc_available = True
+            self.science_arc_spec_available = True
+
+        if "standard" in stype_split:
+
+            self.standard_spectrum_list[0].add_trace(
+                fits_file["trace"].data, fits_file["trace_sigma"].data
+            )
+            self.standard_spectrum_list[0].add_count(
+                fits_file["count"].data,
+                fits_file["count_err"].data,
+                fits_file["count_sky"].data,
+            )
+            self.standard_spectrum_list[0].add_variances(
+                fits_file["weight_map"].data
+            )
+            self.standard_spectrum_list[0].add_arc_spec(
+                fits_file["arc_spec"].data
+            )
+
+            self.standard_spectrum_list[0].add_gain(
+                fits_file["count"].header["GAIN"]
+            )
+            self.standard_spectrum_list[0].add_readnoise(
+                fits_file["count"].header["RNOISE"]
+            )
+            self.standard_spectrum_list[0].add_exptime(
+                fits_file["count"].header["XPOSURE"]
+            )
+            self.standard_spectrum_list[0].add_seeing(
+                fits_file["count"].header["SEEING"]
+            )
+            self.standard_spectrum_list[0].add_airmass(
+                fits_file["count"].header["AIRMASS"]
+            )
+
+            # By reference
+            self.standard_wavecal = WavelengthCalibration(
+                verbose=self.verbose,
+                logger_name=self.logger_name,
+                log_level=self.log_level,
+                log_file_folder=self.log_file_folder,
+                log_file_name=self.log_file_name,
+            )
+            self.standard_wavecal.from_spectrum_oned(
+                self.standard_spectrum_list[0]
+            )
+            self.fluxcal.from_spectrum_oned(self.standard_spectrum_list[0])
             self.standard_spectrum_list[
                 0
             ] = self.standard_wavecal.spectrum_oned
@@ -1913,14 +2065,11 @@ class OneDSpec:
             self.standard_wavecal.set_ransac_properties()
 
             self.logger.info(
-                "Calibrator is initialised for the " "standard_spectrum_list."
+                "Calibrator is initialised for the standard_spectrum_list."
             )
 
-    def set_calibrator_properties(
+    def set_calibrator_logger(
         self,
-        num_pix=None,
-        pixel_list=None,
-        plotting_library="plotly",
         logger_name="Calibrator",
         log_level="info",
         spec_id=None,
@@ -1929,16 +2078,6 @@ class OneDSpec:
         """
         Parameters
         ----------
-        num_pix: int (Default: None)
-            The number of pixels in the dispersion direction
-        pixel_list: list or numpy array (Default: None)
-            The pixel position of the trace in the dispersion direction.
-            This should be provided if you wish to override the default
-            range(num_pix), for example, in the case of accounting
-            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
-            [0,1,2,...90, 100,101,...190, 200,201,...290]
-        plotting_library : str (Default: 'plotly')
-            Choose between matplotlib and plotly.
         logger_name: str (Default: 'Calibrator')
             This will set the name of the logger, if the name is used already,
             it will reference to the existing logger. This will be the
@@ -1978,12 +2117,75 @@ class OneDSpec:
 
             for i in spec_id:
 
-                self.science_wavecal[i].set_calibrator_properties(
-                    num_pix=num_pix,
-                    pixel_list=pixel_list,
-                    plotting_library=plotting_library,
+                self.science_wavecal[i].set_logger(
                     logger_name=logger_name,
                     log_level=log_level,
+                )
+
+        if "standard" in stype_split:
+
+            self.standard_wavecal.set_logger(
+                logger_name=logger_name,
+                log_level=log_level,
+            )
+
+    def set_calibrator_properties(
+        self,
+        num_pix=None,
+        effective_pixel=None,
+        plotting_library="plotly",
+        spec_id=None,
+        stype="science+standard",
+    ):
+        """
+        Parameters
+        ----------
+        num_pix: int (Default: None)
+            The number of pixels in the dispersion direction
+        effective_pixel: list or numpy array (Default: None)
+            The pixel position of the trace in the dispersion direction.
+            This should be provided if you wish to override the default
+            range(num_pix), for example, in the case of accounting
+            for chip gaps (10 pixels) in a 3-CCD setting, you should provide
+            [0,1,2,...90, 100,101,...190, 200,201,...290]
+        plotting_library : str (Default: 'plotly')
+            Choose between matplotlib and plotly.
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum_oned object
+        stype: str (Default: 'science+standard')
+            'science' and/or 'standard' to indicate type, use '+' as delimiter
+
+        """
+
+        stype_split = stype.split("+")
+
+        if "science" in stype_split:
+
+            if isinstance(spec_id, int):
+
+                spec_id = [spec_id]
+
+            if spec_id is not None:
+
+                if not set(spec_id).issubset(
+                    list(self.science_spectrum_list.keys())
+                ):
+
+                    error_msg = "The given spec_id does not exist."
+                    self.logger.critical(error_msg)
+                    raise ValueError(error_msg)
+
+            else:
+
+                # if spec_id is None, calibrators are initialised to all
+                spec_id = list(self.science_spectrum_list.keys())
+
+            for i in spec_id:
+
+                self.science_wavecal[i].set_calibrator_properties(
+                    num_pix=num_pix,
+                    effective_pixel=effective_pixel,
+                    plotting_library=plotting_library,
                 )
                 self.logger.info(
                     "Calibrator properties are set for the "
@@ -1994,10 +2196,8 @@ class OneDSpec:
 
             self.standard_wavecal.set_calibrator_properties(
                 num_pix=num_pix,
-                pixel_list=pixel_list,
+                effective_pixel=effective_pixel,
                 plotting_library=plotting_library,
-                logger_name=logger_name,
-                log_level=log_level,
             )
             self.logger.info(
                 "Calibrator properties are set for the "
@@ -2011,8 +2211,8 @@ class OneDSpec:
         ybins=200,
         min_wavelength=3000.0,
         max_wavelength=10000.0,
-        range_tolerance=500,
-        linearity_tolerance=100,
+        range_tolerance=500.0,
+        linearity_tolerance=100.0,
         spec_id=None,
         stype="science+standard",
     ):
@@ -2095,7 +2295,7 @@ class OneDSpec:
                 linearity_tolerance=linearity_tolerance,
             )
             self.logger.info(
-                "Hough properties are set for the " "standard_spectrum_list."
+                "Hough properties are set for the standard_spectrum_list."
             )
 
     def set_ransac_properties(
@@ -2104,7 +2304,7 @@ class OneDSpec:
         top_n_candidate=5,
         linear=True,
         filter_close=False,
-        ransac_tolerance=5,
+        ransac_tolerance=5.0,
         candidate_weighted=True,
         hough_weight=1.0,
         minimum_matches=3,
@@ -2213,7 +2413,7 @@ class OneDSpec:
                 minimum_fit_error=minimum_fit_error,
             )
             self.logger.info(
-                "Ransac properties are set for the " "standard_spectrum_list."
+                "Ransac properties are set for the standard_spectrum_list."
             )
 
     def set_known_pairs(
@@ -2338,7 +2538,7 @@ class OneDSpec:
         if temperature is None:
             temperature = 273.15
             self.logger.warning(
-                "Temperature is not provided, set to 0 degrees " "Celsius."
+                "Temperature is not provided, set to 0 degrees Celsius."
             )
 
         if relative_humidity is None:
@@ -2404,7 +2604,7 @@ class OneDSpec:
                 relative_humidity=relative_humidity,
             )
             self.logger.info(
-                "Added user supplied atlas to " "standard_spectrum_list."
+                "Added user supplied atlas to standard_spectrum_list."
             )
 
             self.standard_atlas_available = True
@@ -2503,7 +2703,7 @@ class OneDSpec:
                 )
                 self.logger.info(
                     "Added atlas to "
-                    "science_spectrum_list for spec_id: {}.".format(i)
+                    f"science_spectrum_list for spec_id: {i}."
                 )
 
             self.science_atlas_available = True
@@ -2523,10 +2723,7 @@ class OneDSpec:
                 temperature=temperature,
                 relative_humidity=relative_humidity,
             )
-            self.logger.info(
-                "Added atlas to "
-                "standard_spectrum_list for spec_id: {}.".format(i)
-            )
+            self.logger.info("Added atlas to standard_spectrum_list")
 
             self.standard_atlas_available = True
 
@@ -2733,7 +2930,7 @@ class OneDSpec:
 
                 self.standard_wavecal.list_atlas()
                 self.logger.info(
-                    "Listing the atlas of " "standard_spectrum_list."
+                    "Listing the atlas of standard_spectrum_list."
                 )
 
             else:
@@ -2802,7 +2999,7 @@ class OneDSpec:
 
             self.standard_wavecal.do_hough_transform(brute_force=brute_force)
             self.logger.info(
-                "Hough Transform is performed on " "standard_spectrum_list."
+                "Hough Transform is performed on standard_spectrum_list."
             )
 
             self.standard_hough_pairs_available = True
@@ -3058,7 +3255,7 @@ class OneDSpec:
                         "science_spectrum_list for spec_id: {}.".format(i)
                     )
 
-                self.science_wavecal_polynomial_available = True
+                self.science_wavecal_coefficients_available = True
                 solution["science"] = solution_science
 
             else:
@@ -3094,7 +3291,7 @@ class OneDSpec:
                     "standard_spectrum_list."
                 )
 
-                self.standard_wavecal_polynomial_available = True
+                self.standard_wavecal_coefficients_available = True
 
             else:
 
@@ -3170,7 +3367,7 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_wavecal_polynomial_available:
+            if self.science_wavecal_coefficients_available:
 
                 if isinstance(spec_id, int):
 
@@ -3230,7 +3427,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            if self.standard_wavecal_polynomial_available:
+            if self.standard_wavecal_coefficients_available:
 
                 if fit_coeff is None:
 
@@ -3293,7 +3490,7 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_wavecal_polynomial_available:
+            if self.science_wavecal_coefficients_available:
 
                 if isinstance(spec_id, int):
 
@@ -3325,7 +3522,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            if self.standard_wavecal_polynomial_available:
+            if self.standard_wavecal_coefficients_available:
 
                 pw_pairs_standard = self.standard_wavecal.get_pix_wave_pairs()
 
@@ -3358,7 +3555,7 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_wavecal_polynomial_available:
+            if self.science_wavecal_coefficients_available:
 
                 if isinstance(spec_id, int):
 
@@ -3384,7 +3581,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            if self.standard_wavecal_polynomial_available:
+            if self.standard_wavecal_coefficients_available:
 
                 self.standard_wavecal.add_pix_wave_pair(pix, wave)
 
@@ -3410,7 +3607,7 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_wavecal_polynomial_available:
+            if self.science_wavecal_coefficients_available:
 
                 if isinstance(spec_id, int):
 
@@ -3436,7 +3633,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            if self.standard_wavecal_polynomial_available:
+            if self.standard_wavecal_coefficients_available:
 
                 self.standard_wavecal.remove_pix_wave_pair(arg)
 
@@ -3492,7 +3689,7 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_wavecal_polynomial_available:
+            if self.science_wavecal_coefficients_available:
 
                 if isinstance(spec_id, int):
 
@@ -3530,7 +3727,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            if self.standard_wavecal_polynomial_available:
+            if self.standard_wavecal_coefficients_available:
 
                 solution["standard"] = self.standard_wavecal.manual_refit(
                     matched_peaks=matched_peaks,
@@ -3611,7 +3808,7 @@ class OneDSpec:
 
         if "science" in stype_split:
 
-            if self.science_wavecal_polynomial_available:
+            if self.science_wavecal_coefficients_available:
 
                 if isinstance(spec_id, int):
 
@@ -3641,17 +3838,18 @@ class OneDSpec:
                     wave = (
                         self.science_wavecal[i]
                         .polyval[spec.fit_type](
-                            np.array(spec.pixel_list), spec.fit_coeff
+                            np.array(spec.effective_pixel), spec.fit_coeff
                         )
                         .reshape(-1)
                     )
 
                     spec.add_wavelength(wave)
 
-                self.logger.info(
-                    "Wavelength calibration is applied for the "
-                    "science_spectrum_list for spec_id: {}.".format(i)
-                )
+                    self.logger.info(
+                        "Wavelength calibration is applied for the "
+                        "science_spectrum_list for spec_id: {}.".format(i)
+                    )
+
                 self.science_wavelength_calibrated = True
 
             else:
@@ -3660,13 +3858,13 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            if self.standard_wavecal_polynomial_available:
+            if self.standard_wavecal_coefficients_available:
 
                 spec = self.standard_spectrum_list[0]
 
                 # Adjust for pixel shift due to chip gaps
                 wave = self.standard_wavecal.polyval[spec.fit_type](
-                    np.array(spec.pixel_list), spec.fit_coeff
+                    np.array(spec.effective_pixel), spec.fit_coeff
                 ).reshape(-1)
 
                 spec.add_wavelength(wave)
@@ -3796,7 +3994,7 @@ class OneDSpec:
         return_function=False,
         sens_deg=7,
         recompute_continuum=True,
-        **kwargs
+        **kwargs,
     ):
         """
         Parameters
@@ -3851,7 +4049,7 @@ class OneDSpec:
                 return_function=return_function,
                 sens_deg=sens_deg,
                 recompute_continuum=recompute_continuum,
-                **kwargs
+                **kwargs,
             )
             self.logger.info("Sensitivity curve computed.")
             self.sensitivity_curve_available = True
@@ -4524,7 +4722,7 @@ class OneDSpec:
 
                 telluric_factor = optimize.minimize(
                     self._min_std,
-                    np.nanmedian(np.abs(flux)),
+                    np.nanmedian(np.abs(standard_spec.flux)),
                     args=(
                         standard_spec.flux,
                         standard_spec.telluric_profile,
@@ -5098,7 +5296,7 @@ class OneDSpec:
         extinction_func=None,
         kind="cubic",
         fill_value="extrapolate",
-        **kwargs
+        **kwargs,
     ):
         """
         The ORM atmospheric extinction correction table is taken from
@@ -5148,7 +5346,7 @@ class OneDSpec:
                 extinction_table[:, 1],
                 kind=kind,
                 fill_value=fill_value,
-                **kwargs
+                **kwargs,
             )
             self.logger.info(
                 "{} extinction correction function is loaded.".format(
@@ -6634,10 +6832,12 @@ class OneDSpec:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line position (pixel), and arc
-                    line effective position (pixel)
-                wavecal: 1 HDU
+                arc_spec: 1 HDU
+                    1D arc spectrum
+                arc_lines: 2 HDUs
+                    arc line position (pixel), and arc line effective
+                    position (pixel)
+                wavecal_coefficients: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
@@ -6696,11 +6896,11 @@ class OneDSpec:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+wavecal+wavelength+"
-                + "wavelength_resampled+count_resampled+sensitivity+flux+"
-                + "atm_ext+flux_atm_ext_corrected+flux_telluric_corrected+"
-                + "telluric_profile+flux_atm_ext_telluric_corrected+"
-                + "sensitivity_resampled+"
+                "trace+count+weight_map+arc_spec+wavecal_coefficients+"
+                + "wavelength+wavelength_resampled+count_resampled+"
+                + "sensitivity+flux+atm_ext+flux_atm_ext_corrected+"
+                + "flux_telluric_corrected+telluric_profile+"
+                + "flux_atm_ext_telluric_corrected+sensitivity_resampled+"
                 + "flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
                 + "telluric_profile_resampled+"
@@ -6719,7 +6919,8 @@ class OneDSpec:
                 "count",
                 "weight_map",
                 "arc_spec",
-                "wavecal",
+                "arc_lines",
+                "wavecal_coefficients",
                 "wavelength",
                 "wavelength_resampled",
                 "count_resampled",
@@ -6875,7 +7076,7 @@ class OneDSpec:
                 idx, method, *args
             )
             self.logger.info(
-                "trace header is moldified for the " "standard_spectrum_list."
+                "trace header is moldified for the standard_spectrum_list."
             )
 
     def modify_count_header(
@@ -6939,7 +7140,7 @@ class OneDSpec:
                 idx, method, *args
             )
             self.logger.info(
-                "count header is moldified for the " "standard_spectrum_list."
+                "count header is moldified for the standard_spectrum_list."
             )
 
     def modify_weight_map_header(
@@ -7523,7 +7724,7 @@ class OneDSpec:
                 idx, method, *args
             )
             self.logger.info(
-                "flux header is moldified for the " "standard_spectrum_list."
+                "flux header is moldified for the standard_spectrum_list."
             )
 
     def modify_atm_ext_header(
@@ -8353,7 +8554,7 @@ class OneDSpec:
                 arc_lines: 2 HDUs
                     arc line position (pixel), and arc
                     line effective position (pixel)
-                wavecal: 1 HDU
+                wavecal_coefficients: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
@@ -8419,12 +8620,12 @@ class OneDSpec:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+arc_lines+wavecal+"
-                + "wavelength+wavelength_resampled+count_resampled+"
-                + "sensitivity+flux+atm_ext+flux_atm_ext_corrected+"
-                + "flux_telluric_corrected+telluric_profile+"
-                + "flux_atm_ext_telluric_corrected+sensitivity_resampled+"
-                + "flux_resampled+atm_ext_resampled+"
+                "trace+count+weight_map+arc_spec+arc_lines+"
+                + "wavecal_coefficients+wavelength+wavelength_resampled+"
+                + "count_resampled+sensitivity+flux+atm_ext+"
+                + "flux_atm_ext_corrected+flux_telluric_corrected+"
+                + "telluric_profile+flux_atm_ext_telluric_corrected+"
+                + "sensitivity_resampled+flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
                 + "telluric_profile_resampled+"
                 + "flux_resampled_telluric_corrected+"
@@ -8443,7 +8644,7 @@ class OneDSpec:
                 "weight_map",
                 "arc_spec",
                 "arc_lines",
-                "wavecal",
+                "wavecal_coefficients",
                 "wavelength",
                 "wavelength_resampled",
                 "count_resampled",
@@ -8579,7 +8780,7 @@ class OneDSpec:
                 arc_lines: 2 HDUs
                     arc line position (pixel), and arc
                     line effective position (pixel)
-                wavecal: 1 HDU
+                wavecal_coefficients: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
@@ -8641,12 +8842,12 @@ class OneDSpec:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+arc_lines+wavecal+"
-                + "wavelength+wavelength_resampled+count_resampled+"
-                + "sensitivity+flux+atm_ext+flux_atm_ext_corrected+"
-                + "telluric_profile+flux_telluric_corrected+"
-                + "flux_atm_ext_telluric_corrected+sensitivity_resampled+"
-                + "flux_resampled+atm_ext_resampled+"
+                "trace+count+weight_map+arc_spec+arc_lines+"
+                + "wavecal_coefficients+wavelength+wavelength_resampled+"
+                + "count_resampled+sensitivity+flux+atm_ext+"
+                + "flux_atm_ext_corrected+telluric_profile+"
+                + "flux_telluric_corrected+flux_atm_ext_telluric_corrected+"
+                + "sensitivity_resampled+flux_resampled+atm_ext_resampled+"
                 + "flux_resampled_atm_ext_corrected+"
                 + "telluric_profile_resampled+"
                 + "flux_resampled_telluric_corrected+"
@@ -8665,7 +8866,7 @@ class OneDSpec:
                 "weight_map",
                 "arc_spec",
                 "arc_lines",
-                "wavecal",
+                "wavecal_coefficients",
                 "wavelength",
                 "wavelength_resampled",
                 "count_resampled",

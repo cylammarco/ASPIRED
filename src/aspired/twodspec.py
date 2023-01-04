@@ -4997,9 +4997,8 @@ class TwoDSpec:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                arc_spec: 1 HDU
+                    1D arc spectrum
 
         recreate: bool (Default: False)
             Set to True to overwrite the FITS data and header.
@@ -5039,7 +5038,8 @@ class TwoDSpec:
         empty_primary_hdu=True,
     ):
         """
-        Save the reduced image to disk.
+        Save the reduced image to disk. Each trace is saved into a separate
+        file.
 
         Parameters
         ----------
@@ -5054,9 +5054,8 @@ class TwoDSpec:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line pixels, and arc line effective
-                    pixels
+                arc_spec: 1 HDU
+                    1D arc spectrum
 
         filename: str
             Filename for the output, all of them will share the same name but

@@ -107,19 +107,17 @@ def test_spectrum_oned():
 
     spec.add_calibrator_properties(
         num_pix=1024,
-        pixel_list=np.arange(1024),
+        effective_pixel=np.arange(1024),
         plotting_library="plotly",
-        log_level="info",
     )
     assert spec.num_pix == 1024
-    assert (spec.pixel_list == np.arange(1024)).all()
+    assert (spec.effective_pixel == np.arange(1024)).all()
     assert spec.plotting_library == "plotly"
     assert spec.log_level == "info"
     spec.remove_calibrator_properties()
     assert spec.num_pix is None
-    assert spec.pixel_list is None
+    assert spec.effective_pixel is None
     assert spec.plotting_library is None
-    assert spec.log_level is None
 
     spec.add_hough_properties(
         num_slopes=1000,
@@ -188,6 +186,7 @@ def test_spectrum_oned():
         residual=0.56789,
         peak_utilisation=87.67894,
         atlas_utilisation=51.7643,
+        success=True,
     )
     assert spec.fit_coeff == [1, 2, 5, 7, 10]
     assert spec.matched_peaks == [0, 1, 2, 3]
@@ -196,6 +195,7 @@ def test_spectrum_oned():
     assert spec.residual == 0.56789
     assert spec.peak_utilisation == 87.67894
     assert spec.atlas_utilisation == 51.7643
+    assert spec.success
     spec.remove_fit_output_final()
     assert spec.fit_coeff is None
     assert spec.matched_peaks is None
@@ -204,6 +204,7 @@ def test_spectrum_oned():
     assert spec.residual is None
     assert spec.peak_utilisation is None
     assert spec.atlas_utilisation is None
+    assert spec.success is None
 
     spec.add_fit_output_rascal(
         fit_coeff=[1, 2, 5, 7, 10],
@@ -213,6 +214,7 @@ def test_spectrum_oned():
         residual=0.56789,
         peak_utilisation=87.67894,
         atlas_utilisation=51.7643,
+        success=True,
     )
     assert spec.fit_coeff_rascal == [1, 2, 5, 7, 10]
     assert spec.matched_peaks == [0, 1, 2, 3]
@@ -221,6 +223,7 @@ def test_spectrum_oned():
     assert spec.residual_rascal == 0.56789
     assert spec.peak_utilisation_rascal == 87.67894
     assert spec.atlas_utilisation_rascal == 51.7643
+    assert spec.success_rascal
     spec.remove_fit_output_rascal()
     assert spec.fit_coeff_rascal is None
     assert spec.matched_peaks_rascal is None
@@ -229,6 +232,7 @@ def test_spectrum_oned():
     assert spec.residual_rascal is None
     assert spec.peak_utilisation_rascal is None
     assert spec.atlas_utilisation_rascal is None
+    assert spec.success_rascal is None
 
     spec.add_fit_output_refine(
         fit_coeff=[1, 2, 5, 7, 10],
@@ -238,6 +242,7 @@ def test_spectrum_oned():
         residual=0.56789,
         peak_utilisation=87.67894,
         atlas_utilisation=51.7643,
+        success=True,
     )
     assert spec.fit_coeff_refine == [1, 2, 5, 7, 10]
     assert spec.matched_peaks_refine == [0, 1, 2, 3]
@@ -246,6 +251,7 @@ def test_spectrum_oned():
     assert spec.residual_refine == 0.56789
     assert spec.peak_utilisation_refine == 87.67894
     assert spec.atlas_utilisation_refine == 51.7643
+    assert spec.success_refine
     spec.remove_fit_output_refine()
     assert spec.fit_coeff_refine is None
     assert spec.matched_peaks_refine is None
@@ -254,6 +260,7 @@ def test_spectrum_oned():
     assert spec.residual_refine is None
     assert spec.peak_utilisation_refine is None
     assert spec.atlas_utilisation_refine is None
+    assert spec.success_refine is None
 
     spec.add_wavelength(np.arange(1000))
     assert (spec.wave == np.arange(1000)).all()

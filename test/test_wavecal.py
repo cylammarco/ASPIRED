@@ -114,14 +114,14 @@ def test_wavecal():
 
     # Save a FITS file
     wavecal.save_fits(
-        output="wavecal",
+        output="wavecal_coefficients",
         filename=os.path.join(HERE, "test_output", "test_wavecal"),
         overwrite=True,
     )
 
     # Save a CSV file
     wavecal.save_csv(
-        output="wavecal",
+        output="wavecal_coefficients",
         filename=os.path.join(HERE, "test_output", "test_wavecal"),
         overwrite=True,
     )
@@ -430,7 +430,7 @@ def test_user_supplied_poly_coeff_twodspec():
 
     # Save as a FITS file
     lhs6328_onedspec.save_fits(
-        output="wavecal+count",
+        output="wavecal_coefficients+count",
         filename=os.path.join(
             HERE,
             "test_output",
@@ -498,7 +498,7 @@ def test_user_supplied_poly_coeff_and_add_arc_twodspec():
 
     # Save as a FITS file
     lhs6328_onedspec.save_fits(
-        output="wavecal+count",
+        output="wavecal_coefficients+count",
         filename=os.path.join(
             HERE,
             "test_output",
@@ -610,6 +610,7 @@ def test_linear_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
     # Refine solution
     (
@@ -620,6 +621,7 @@ def test_linear_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     assert np.abs(best_p[1] - 5.0) / 5.0 < 0.001
@@ -658,6 +660,7 @@ def test_manual_refit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
 
     # Refine solution
@@ -669,6 +672,7 @@ def test_manual_refit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     (
@@ -677,6 +681,9 @@ def test_manual_refit():
         matched_atlas,
         rms,
         residuals,
+        peak_utilisation,
+        atlas_utilisation,
+        success,
     ) = wavecal.manual_refit(matched_peaks, matched_atlas)
 
     assert np.abs(best_p_manual[0] - best_p[0]) < 10.0
@@ -713,6 +720,7 @@ def test_manual_refit_remove_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
 
     # Refine solution
@@ -724,6 +732,7 @@ def test_manual_refit_remove_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     wavecal.remove_pix_wave_pair(5)
@@ -734,6 +743,9 @@ def test_manual_refit_remove_points():
         matched_atlas,
         rms,
         residuals,
+        peak_utilisation,
+        atlas_utilisation,
+        success,
     ) = wavecal.manual_refit(matched_peaks, matched_atlas)
 
     assert np.allclose(best_p_manual, best_p)
@@ -769,6 +781,7 @@ def test_manual_refit_add_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
 
     # Refine solution
@@ -780,6 +793,7 @@ def test_manual_refit_add_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     wavecal.add_pix_wave_pair(
@@ -791,6 +805,9 @@ def test_manual_refit_add_points():
         matched_atlas,
         rms,
         residuals,
+        peak_utilisation,
+        atlas_utilisation,
+        success,
     ) = wavecal.manual_refit(matched_peaks, matched_atlas)
 
     assert np.allclose(best_p_manual, best_p)
@@ -826,6 +843,7 @@ def test_quadratic_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(
         max_tries=2000, fit_tolerance=5.0, candidate_tolerance=2.0, fit_deg=2
     )
@@ -838,6 +856,7 @@ def test_quadratic_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
 
@@ -871,6 +890,7 @@ def test_quadratic_fit_legendre():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(
         max_tries=2000,
         fit_tolerance=5.0,
@@ -910,6 +930,7 @@ def test_quadratic_fit_chebyshev():
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ) = wavecal.fit(
         max_tries=2000,
         fit_tolerance=5.0,

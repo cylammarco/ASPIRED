@@ -599,13 +599,28 @@ class WavelengthCalibration:
         self.spectrum_oned.calibrator.atlas = Atlas()
         self.set_calibrator_properties()
 
+    def set_logger(
+        self, logger_name: str = "Calibrator", log_level: str = "info"
+    ):
+        """
+        Parameters
+        ----------
+        logger_name: str (Default: 'Calibrator')
+            Name of the logger.
+        log_level : str (Default: 'info')
+            Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
+
+        """
+
+        self.spectrum_oned.calibrator.set_logger(
+            logger_name=logger_name, log_level=log_level
+        )
+
     def set_calibrator_properties(
         self,
         num_pix=None,
-        pixel_list=None,
+        effective_pixel=None,
         plotting_library="plotly",
-        logger_name="Calibrator",
-        log_level="info",
     ):
         """
         Set the properties of the calibrator.
@@ -614,7 +629,7 @@ class WavelengthCalibration:
         ----------
         num_pix: int (Default: None)
             The number of pixels in the dispersion direction
-        pixel_list: list or numpy array (Default: None)
+        effective_pixel: list or numpy array (Default: None)
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(num_pix), for example, in the case of accounting
@@ -622,24 +637,19 @@ class WavelengthCalibration:
             [0,1,2,...90, 100,101,...190, 200,201,...290]
         plotting_library : string (Default: 'plotly')
             Choose between matplotlib and plotly.
-        log_level : string (Default: 'info')
-            Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
 
         """
 
         self.spectrum_oned.calibrator.set_calibrator_properties(
             num_pix=num_pix,
-            pixel_list=pixel_list,
+            effective_pixel=effective_pixel,
             plotting_library=plotting_library,
-            logger_name=logger_name,
-            log_level=log_level,
         )
 
         self.spectrum_oned.add_calibrator_properties(
             self.spectrum_oned.calibrator.num_pix,
-            self.spectrum_oned.calibrator.pixel_list,
+            self.spectrum_oned.calibrator.effective_pixel,
             self.spectrum_oned.calibrator.plotting_library,
-            self.spectrum_oned.calibrator.log_level,
         )
 
     def set_hough_properties(
@@ -647,10 +657,10 @@ class WavelengthCalibration:
         num_slopes=5000,
         xbins=500,
         ybins=500,
-        min_wavelength=3000,
-        max_wavelength=9000,
-        range_tolerance=500,
-        linearity_tolerance=100,
+        min_wavelength=3000.0,
+        max_wavelength=9000.0,
+        range_tolerance=500.0,
+        linearity_tolerance=100.0,
     ):
         """
         Set the properties of the hough transform.
@@ -663,15 +673,15 @@ class WavelengthCalibration:
             Number of bins for Hough accumulation
         ybins: int (Default: 50)
             Number of bins for Hough accumulation
-        min_wavelength: float (Default: 3000)
+        min_wavelength: float (Default: 3000.0)
             Minimum wavelength of the spectrum.
-        max_wavelength: float (Default: 9000)
+        max_wavelength: float (Default: 9000.0)
             Maximum wavelength of the spectrum.
-        range_tolerance: float (Default: 500)
+        range_tolerance: float (Default: 500.0)
             Estimation of the error on the provided spectral range
             e.g. 3000-5000 with tolerance 500 will search for
             solutions that may satisfy 2500-5500
-        linearity_tolerance: float (Default: 100)
+        linearity_tolerance: float (Default: 100.0)
             A toleranceold (Ansgtroms) which defines some padding around the
             range tolerance to allow for non-linearity. This should be the
             maximum expected excursion from linearity.
@@ -704,7 +714,7 @@ class WavelengthCalibration:
         top_n_candidate=5,
         linear=True,
         filter_close=False,
-        ransac_tolerance=5,
+        ransac_tolerance=5.0,
         candidate_weighted=True,
         hough_weight=1.0,
         minimum_matches=3,
@@ -726,7 +736,7 @@ class WavelengthCalibration:
             known polynomial.
         filter_close: bool (Default: False)
             Remove the pairs that are out of bounds in the hough space.
-        ransac_tolerance: float (Default: 1)
+        ransac_tolerance: float (Default: 5.0)
             The distance criteria  (Angstroms) to be considered an inlier to a
             fit. This should be close to the size of the expected residuals on
             the final fit (e.g. 1A is typical)
@@ -739,7 +749,7 @@ class WavelengthCalibration:
         minimum_matches: int (Default: 3)
             Minimum number of fitted peaks to accept as a solution. This has
             to be smaller than or equal to the sample size.
-        minimum_peak_utilisation: float (Default: 0.)
+        minimum_peak_utilisation: float (Default: 0.0)
             The minimum percentage of peaks used in order to accept as a
             valid solution.
         minimum_fit_error: float (Default 1e-4)
@@ -1146,6 +1156,7 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
+            success,
         ) = self.spectrum_oned.calibrator.fit(
             max_tries=max_tries,
             fit_deg=fit_deg,
@@ -1155,7 +1166,7 @@ class WavelengthCalibration:
             candidate_tolerance=candidate_tolerance,
             brute_force=brute_force,
             progress=progress,
-        )
+        ).values()
 
         if fit_type == "poly":
 
@@ -1179,6 +1190,7 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
+            success,
         )
 
         if display or return_jsonstring or save_fig:
@@ -1206,6 +1218,7 @@ class WavelengthCalibration:
                 residual,
                 peak_utilisation,
                 atlas_utilisation,
+                success,
             )
 
     def robust_refit(
@@ -1299,6 +1312,7 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
+            success,
         ) = self.spectrum_oned.calibrator.match_peaks(
             fit_coeff,
             n_delta=n_delta,
@@ -1308,7 +1322,7 @@ class WavelengthCalibration:
             convergence=convergence,
             robust_refit=robust_refit,
             fit_deg=fit_deg,
-        )
+        ).values()
 
         rms = np.sqrt(np.nanmean(residual**2.0))
 
@@ -1335,6 +1349,7 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
+            success,
         )
 
         if return_solution:
@@ -1347,6 +1362,7 @@ class WavelengthCalibration:
                 residual,
                 peak_utilisation,
                 atlas_utilisation,
+                success,
             )
 
     def get_pix_wave_pairs(self):
@@ -1443,10 +1459,13 @@ class WavelengthCalibration:
             self.matched_peaks,
             self.matched_atlas,
             self.rms,
-            self.residuals,
+            self.residual,
+            self.peak_utilisation,
+            self.atlas_utilisation,
+            self.success,
         ) = self.spectrum_oned.calibrator.manual_refit(
             matched_peaks, matched_atlas, degree, x0
-        )
+        ).values()
 
         if return_solution:
 
@@ -1455,7 +1474,10 @@ class WavelengthCalibration:
                 self.matched_peaks,
                 self.matched_atlas,
                 self.rms,
-                self.residuals,
+                self.residual,
+                self.peak_utilisation,
+                self.atlas_utilisation,
+                self.success,
             )
 
     def get_calibrator(self):

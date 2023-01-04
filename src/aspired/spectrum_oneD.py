@@ -64,16 +64,21 @@ class SpectrumOneD:
 
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
-        if (log_level == "CRITICAL") or (not verbose):
+        if (log_level.lower() == "critical") or (not verbose):
             self.logger.setLevel(logging.CRITICAL)
-        elif log_level == "ERROR":
+            self.log_level = "critical"
+        elif log_level.lower() == "error":
             self.logger.setLevel(logging.ERROR)
-        elif log_level == "WARNING":
+            self.log_level = "error"
+        elif log_level.lower() == "warning":
             self.logger.setLevel(logging.WARNING)
-        elif log_level == "INFO":
+            self.log_level = "warning"
+        elif log_level.lower() == "info":
             self.logger.setLevel(logging.INFO)
-        elif log_level == "DEBUG":
+            self.log_level = "info"
+        elif log_level.lower() == "debug":
             self.logger.setLevel(logging.DEBUG)
+            self.log_level = "debug"
         else:
             raise ValueError("Unknonw logging level.")
 
@@ -144,7 +149,7 @@ class SpectrumOneD:
         self.trace = None
         self.trace_sigma = None
         self.len_trace = None
-        self.pixel_list = None
+        self.effective_pixel = None
         self.pixel_mapping_itp = None
         self.widthdn = None
         self.widthup = None
@@ -197,6 +202,7 @@ class SpectrumOneD:
         self.residual = None
         self.peak_utilisation = None
         self.atlas_utilisation = None
+        self.success = None
 
         # fit output
         self.fit_coeff_rascal = None
@@ -206,6 +212,7 @@ class SpectrumOneD:
         self.residual_rascal = None
         self.peak_utilisation_rascal = None
         self.atlas_utilisation_rascal = None
+        self.success_rascal = None
 
         # fit output
         self.fit_coeff_refine = None
@@ -215,6 +222,7 @@ class SpectrumOneD:
         self.residual_refine = None
         self.peak_utilisation_refine = None
         self.atlas_utilisation_refine = None
+        self.success_refine = None
 
         # fitted solution
         self.wave = None
@@ -308,128 +316,170 @@ class SpectrumOneD:
         self.hdu_output = None
         self.empty_primary_hdu = True
 
-        self.header = {
-            "trace": "Pixel positions of the trace in the spatial direction, "
+        self.hdu_name = {
+            1: "trace",
+            2: "count",
+            3: "weight_map",
+            4: "arc_spec",
+            5: "arc_lines",
+            6: "wavecal_coefficients",
+            7: "wavelength",
+            8: "wavelength_resampled",
+            9: "count_resampled",
+            10: "sensitivity",
+            11: "flux",
+            12: "atm_ext",
+            13: "flux_atm_ext_corrected",
+            14: "telluric_profile",
+            15: "flux_telluric_corrected",
+            16: "flux_atm_ext_telluric_corrected",
+            17: "sensitivity_resampled",
+            18: "flux_resampled",
+            19: "atm_ext_resampled",
+            20: "flux_resampled_atm_ext_corrected",
+            21: "telluric_profile_resampled",
+            22: "flux_resampled_telluric_corrected",
+            23: "flux_resampled_atm_ext_telluric_corrected",
+        }
+
+        self.hdu_derscription = {
+            1: "Pixel positions of the trace in the spatial direction, "
             + "Width of the trace",
-            "count": "Count, Count uncertainty, Sky count",
-            "weight_map": "Weight map of the extration (variance)",
-            "arc_spec": "1D Arc spectrum",
-            "arc_lines": "Arc line position, Arc line effective position",
-            "wavecal": "Polynomial coefficients for wavelength calibration",
-            "wavelength": "The pixel-to-wavelength mapping",
-            "wavelength_resampled": "The pixel-to-wavelength mapping at",
-            "count_resampled": "Resampled count, "
-            + "Resampled count uncertainty, Resampled sky count",
-            "sensitivity": "Sensitivity curve",
-            "flux": "Flux, Flux uncertainty, Sky flux",
-            "atm_ext": "Atmospheric extinction correction factor",
-            "flux_atm_ext_corrected": "Flux (atmospheric extinction corrected), "
+            2: "Count, Count uncertainty, Sky count",
+            3: "Weight map of the extration (variance)",
+            4: "1D Arc spectrum",
+            5: "Arc line position, Arc line effective position",
+            6: "Polynomial coefficients for wavelength calibration",
+            7: "The pixel-to-wavelength mapping",
+            8: "The pixel-to-wavelength mapping in the resampled coordiates",
+            9: "Resampled count, Resampled count uncertainty, "
+            + "Resampled sky count",
+            10: "Sensitivity curve",
+            11: "Flux, Flux uncertainty, Sky flux",
+            12: "Atmospheric extinction correction factor",
+            13: "Flux (atmospheric extinction corrected), "
             + "Flux uncertainty (atmospheric extinction corrected), "
             + "Sky flux (atmospheric extinction corrected)",
-            "telluric_profile": "Telluric absorption profile",
-            "flux_telluric_corrected": "Flux (telluric absorption corrected), "
+            14: "Telluric absorption profile",
+            15: "Flux (telluric absorption corrected), "
             + "Flux Uncertainty (telluric absorption corrected), "
             + "Sky Flux (telluric absorption corrected)",
-            "flux_atm_ext_telluric_corrected": "Flux (atmospheric extinction and telluric absorption corrected), "
-            + "Flux Uncertainty (atmospheric extinction and telluric "
-            + "absorption corrected), "
-            + "Sky flux (atmospheric extinction and telluric absorption "
-            + "corrected)",
-            "sensitivity_resampled": "Resampled sensitivity curve",
-            "flux_resampled": "Resampled flux, Resampled flux uncertainty, "
+            16: "Flux (atmospheric extinction and telluric absorption "
+            + "corrected), Flux Uncertainty (atmospheric extinction and "
+            + "telluric absorption corrected), Sky flux (atmospheric "
+            + "extinction and telluric absorption corrected)",
+            17: "Resampled sensitivity curve",
+            18: "Resampled flux, Resampled flux uncertainty, "
             + "Resampled sky flux",
-            "atm_ext_resampled": "Atmospheric extinction correction factor (resampled)",
-            "flux_resampled_atm_ext_corrected": "Flux (resampled, atmospheric extinction), "
+            19: "Atmospheric extinction correction factor (resampled)",
+            20: "Flux (resampled, atmospheric extinction), "
             + "Flux uncertainty (resampled, atmospheric extinction), "
             + "Sky flux (resampled, atmospheric extinction)",
-            "telluric_profile_resampled": "Telluric absorption profile (resampled)",
-            "flux_resampled_telluric_corrected": "Flux (resampled, telluric absorption corrected), "
+            21: "Telluric absorption profile (resampled)",
+            22: "Flux (resampled, telluric absorption corrected), "
             + "Flux uncertainty (resampled, telluric absorption corrected), "
             + "Sky flux (resampled, telluric absorption corrected)",
-            "flux_resampled_atm_ext_telluric_corrected": "Flux (atmospheric extinction and telluric absorption corrected), "
-            + "Flux uncertainty (atmospheric extinction and telluric "
-            + "absorption corrected), "
-            + "Sky flux (atmospheric extinction and telluric absorption "
-            + "corrected)",
+            23: "Flux (atmospheric extinction and telluric absorption "
+            + "corrected), Flux uncertainty (atmospheric extinction and "
+            + "telluric absorption corrected), Sky flux (atmospheric "
+            + "extinction and telluric absorption corrected)",
         }
 
-        self.n_hdu = {
-            "trace": 2,
-            "count": 3,
-            "weight_map": 1,
-            "arc_spec": 1,
-            "arc_lines": 2,
-            "wavecal": 1,
-            "wavelength": 1,
-            "wavelength_resampled": 1,
-            "count_resampled": 3,
-            "sensitivity": 1,
-            "flux": 3,
-            "atm_ext": 1,
-            "flux_atm_ext_corrected": 3,
-            "telluric_profile": 1,
-            "flux_telluric_corrected": 3,
-            "flux_atm_ext_telluric_corrected": 3,
-            "sensitivity_resampled": 1,
-            "flux_resampled": 3,
-            "atm_ext_resampled": 1,
-            "flux_resampled_atm_ext_corrected": 3,
-            "telluric_profile_resampled": 1,
-            "flux_resampled_telluric_corrected": 3,
-            "flux_resampled_atm_ext_telluric_corrected": 3,
+        self.ext_name = {
+            1: ["trace", "trace_sigma"],
+            2: ["count", "count_err", "count_sky"],
+            3: ["weight_map"],
+            4: ["arc_spec"],
+            5: ["peaks", "peaks_refined"],
+            6: ["polynomials"],
+            7: ["wavelength"],
+            8: ["wavelength_resampled"],
+            9: [
+                "count_resampled",
+                "count_err_resampled",
+                "count_sky_resampled",
+            ],
+            10: ["sensitivity"],
+            11: ["flux", "flux_err", "flux_sky"],
+            12: ["atm_ext"],
+            13: [
+                "flux_atm_ext_corrected",
+                "flux_err_atm_ext_corrected",
+                "flux_sky_atm_ext_corrected",
+            ],
+            14: ["telluric_profile"],
+            15: [
+                "flux_telluric_corrected",
+                "flux_err_telluric_corrected",
+                "flux_sky_telluric_corrected",
+            ],
+            16: [
+                "flux_atm_ext_telluric_corrected",
+                "flux_err_atm_ext_telluric_corrected",
+                "flux_sky_atm_ext_telluric_corrected",
+            ],
+            17: ["sensitivity_resampled"],
+            18: ["flux_resampled", "flux_err_resampled", "flux_sky_resampled"],
+            19: ["atm_ext_resampled"],
+            20: [
+                "flux_resampled_atm_ext_corrected",
+                "flux_err_resampled_atm_ext_corrected",
+                "flux_sky_resampled_atm_ext_corrected",
+            ],
+            21: ["telluric_profile_resampled"],
+            22: [
+                "flux_resampled_telluric_corrected",
+                "flux_err_resampled_telluric_corrected",
+                "flux_sky_resampled_telluric_corrected",
+            ],
+            23: [
+                "flux_resampled_atm_ext_telluric_corrected",
+                "flux_err_resampled_atm_ext_telluric_corrected",
+                "flux_sky_resampled_atm_ext_telluric_corrected",
+            ],
         }
 
-        self.hdu_order = {
-            "trace": 0,
-            "count": 1,
-            "weight_map": 2,
-            "arc_spec": 3,
-            "arc_lines": 4,
-            "wavecal": 5,
-            "wavelength": 6,
-            "wavelength_resampled": 7,
-            "count_resampled": 8,
-            "sensitivity": 9,
-            "flux": 10,
-            "atm_ext": 11,
-            "flux_atm_ext_corrected": 12,
-            "telluric_profile": 13,
-            "flux_telluric_corrected": 14,
-            "flux_atm_ext_telluric_corrected": 15,
-            "sensitivity_resampled": 16,
-            "flux_resampled": 17,
-            "atm_ext_resampled": 18,
-            "flux_resampled_atm_ext_corrected": 19,
-            "telluric_profile_resampled": 20,
-            "flux_resampled_telluric_corrected": 21,
-            "flux_resampled_atm_ext_telluric_corrected": 22,
-        }
+        self.header = {}
+        for d1, d2 in zip(
+            self.hdu_name.values(), self.hdu_derscription.values()
+        ):
+            self.header[d1] = d2
 
-        self.hdu_content = {
-            "trace": False,
-            "count": False,
-            "weight_map": False,
-            "arc_spec": False,
-            "arc_lines": False,
-            "wavecal": False,
-            "wavelength": False,
-            "wavelength_resampled": False,
-            "count_resampled": False,
-            "sensitivity": False,
-            "flux": False,
-            "atm_ext": False,
-            "flux_atm_ext_corrected": False,
-            "telluric_profile": False,
-            "flux_telluric_corrected": False,
-            "flux_atm_ext_telluric_corrected": False,
-            "sensitivity_resampled": False,
-            "flux_resampled": False,
-            "atm_ext_resampled": False,
-            "flux_resampled_atm_ext_corrected": False,
-            "telluric_profile_resampled": False,
-            "flux_resampled_telluric_corrected": False,
-            "flux_resampled_atm_ext_telluric_corrected": False,
+        # The order in which HDUs are arranged
+        self.hdu_order = {v: k for k, v in self.hdu_name.items()}
+
+        # The HDU availability
+        self.hdu_content = dict.fromkeys(self.hdu_order, False)
+
+        # Set the counters of HDUs
+        number_of_hdus = {
+            1: 2,
+            2: 3,
+            3: 1,
+            4: 1,
+            5: 2,
+            6: 1,
+            7: 1,
+            8: 1,
+            9: 3,
+            10: 1,
+            11: 3,
+            12: 1,
+            13: 3,
+            14: 1,
+            15: 3,
+            16: 3,
+            17: 1,
+            18: 3,
+            19: 1,
+            20: 3,
+            21: 1,
+            22: 3,
+            23: 3,
         }
+        self.n_hdu = {}
+        for d1, d2 in zip(self.hdu_name.values(), number_of_hdus.values()):
+            self.n_hdu[d1] = d2
 
     def merge(self, spectrum_oned, overwrite=False):
         """
@@ -572,7 +622,7 @@ class SpectrumOneD:
 
         self.arc_header = None
 
-    def add_trace(self, trace, trace_sigma, pixel_list=None):
+    def add_trace(self, trace, trace_sigma, effective_pixel=None):
         """
         Add the trace of the spectrum.
 
@@ -583,7 +633,7 @@ class SpectrumOneD:
             spectral position.
         trace_sigma: list or numpy.ndarray (N)
             Standard deviation of the Gaussian profile of a trace
-        pixel_list: list or numpy array (Default: None)
+        effective_pixel: list or numpy array (Default: None)
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range (num_pix), for example, in the case of accounting for chip
@@ -601,21 +651,23 @@ class SpectrumOneD:
         assert len(trace_sigma) == len(trace), "trace and trace_sigma have to "
         " be the same size."
 
-        if pixel_list is None:
+        if effective_pixel is None:
 
-            pixel_list = list(np.arange(len(trace)).astype("int"))
+            effective_pixel = list(np.arange(len(trace)).astype("int"))
 
         else:
 
             assert isinstance(
-                pixel_list, (list, np.ndarray)
-            ), "pixel_list has to be a list or a numpy array"
-            assert len(pixel_list) == len(trace), "trace and pixel_list have "
+                effective_pixel, (list, np.ndarray)
+            ), "effective_pixel has to be a list or a numpy array"
+            assert len(effective_pixel) == len(
+                trace
+            ), "trace and effective_pixel have "
             "to be the same size."
 
         pixel_mapping_itp = itp.interp1d(
             np.arange(len(trace)),
-            pixel_list,
+            effective_pixel,
             kind="cubic",
             fill_value="extrapolate",
         )
@@ -624,12 +676,12 @@ class SpectrumOneD:
         self.trace = trace
         self.trace_sigma = trace_sigma
         self.len_trace = len(trace)
-        self.add_pixel_list(pixel_list)
+        self.add_effective_pixel(effective_pixel)
         self.add_pixel_mapping_itp(pixel_mapping_itp)
 
     def remove_trace(self):
         """
-        Remove the trace, trace_sigma and len_trace, also remove the pixel_list
+        Remove the trace, trace_sigma and len_trace, also remove the effective_pixel
         and the interpolation function that maps the pixel values to the
         effective pixel values.
 
@@ -638,7 +690,7 @@ class SpectrumOneD:
         self.trace = None
         self.trace_sigma = None
         self.len_trace = None
-        self.remove_pixel_list()
+        self.remove_effective_pixel()
         self.remove_pixel_mapping_itp()
 
     def add_aperture(
@@ -758,15 +810,15 @@ class SpectrumOneD:
 
             self.count_sky = np.zeros_like(self.count)
 
-        if self.pixel_list is None:
+        if self.effective_pixel is None:
 
-            pixel_list = list(np.arange(len(count)).astype("int"))
-            self.add_pixel_list(pixel_list)
+            effective_pixel = list(np.arange(len(count)).astype("int"))
+            self.add_effective_pixel(effective_pixel)
 
         else:
 
-            assert len(self.pixel_list) == len(count), (
-                "count and pixel_list have " + "to be the same size."
+            assert len(self.effective_pixel) == len(count), (
+                "count and effective_pixel have " + "to be the same size."
             )
 
     def remove_count(self):
@@ -844,30 +896,30 @@ class SpectrumOneD:
         """
         self.arc_spec = None
 
-    def add_pixel_list(self, pixel_list):
+    def add_effective_pixel(self, effective_pixel):
         """
         Add the pixel list, which contain the effective pixel values that
         has accounted for chip gaps and non-integer pixel value.
 
         Parameters
         ----------
-        pixel_list: 1-d array
+        effective_pixel: 1-d array
             The effective position of the pixel.
 
         """
 
         assert isinstance(
-            pixel_list, (list, np.ndarray)
-        ), "pixel_list has to be a list or a numpy array"
-        self.pixel_list = pixel_list
+            effective_pixel, (list, np.ndarray)
+        ), "effective_pixel has to be a list or a numpy array"
+        self.effective_pixel = effective_pixel
 
-    def remove_pixel_list(self):
+    def remove_effective_pixel(self):
         """
         Remove the pixel list.
 
         """
 
-        self.pixel_list = None
+        self.effective_pixel = None
 
     def add_pixel_mapping_itp(self, pixel_mapping_itp):
         """
@@ -1283,7 +1335,7 @@ class SpectrumOneD:
         self.fit_coeff = None
 
     def add_calibrator_properties(
-        self, num_pix, pixel_list, plotting_library, log_level
+        self, num_pix, effective_pixel, plotting_library
     ):
         """
         Add the properties of the RASCAL Calibrator.
@@ -1292,7 +1344,7 @@ class SpectrumOneD:
         ----------
         num_pix: int
             The number of pixels in the dispersion direction
-        pixel_list: list or numpy array
+        effective_pixel: list or numpy array
             The pixel position of the trace in the dispersion direction.
             This should be provided if you wish to override the default
             range(num_pix), for example, in the case of accounting
@@ -1300,15 +1352,12 @@ class SpectrumOneD:
             [0,1,2,...90, 100,101,...190, 200,201,...290]
         plotting_library : string
             Choose between matplotlib and plotly.
-        log_level : string
-            Choose from {CRITICAL, ERROR, WARNING, INFO, DEBUG, NOTSET}.
 
         """
 
         self.num_pix = num_pix
         self.plotting_library = plotting_library
-        self.log_level = log_level
-        self.pixel_list = pixel_list
+        self.effective_pixel = effective_pixel
 
     def remove_calibrator_properties(self):
         """
@@ -1318,9 +1367,8 @@ class SpectrumOneD:
         """
 
         self.num_pix = None
-        self.pixel_list = None
+        self.effective_pixel = None
         self.plotting_library = None
-        self.log_level = None
 
     def add_hough_properties(
         self,
@@ -1460,6 +1508,7 @@ class SpectrumOneD:
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ):
         """
         Add the final accepted polynomial solution.
@@ -1481,6 +1530,8 @@ class SpectrumOneD:
             The fraction of the input peaks used in the fit
         atlas_utilisation: float
             The fraction of the input atlas used in the fit
+        success: bool
+            True if fit converged.
 
         """
 
@@ -1492,6 +1543,7 @@ class SpectrumOneD:
         self.residual = residual
         self.peak_utilisation = peak_utilisation
         self.atlas_utilisation = atlas_utilisation
+        self.success = success
 
     def remove_fit_output_final(self):
         """
@@ -1505,6 +1557,7 @@ class SpectrumOneD:
         self.residual = None
         self.peak_utilisation = None
         self.atlas_utilisation = None
+        self.success = None
 
     def add_fit_output_rascal(
         self,
@@ -1515,6 +1568,7 @@ class SpectrumOneD:
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ):
         """
         Add the RASCAL polynomial solution.
@@ -1536,6 +1590,8 @@ class SpectrumOneD:
             The fraction of the input peaks used in the fit
         atlas_utilisation: float
             The fraction of the input atlas used in the fit
+        success: bool
+            True if fit converged.
 
         """
 
@@ -1547,6 +1603,7 @@ class SpectrumOneD:
         self.residual_rascal = residual
         self.peak_utilisation_rascal = peak_utilisation
         self.atlas_utilisation_rascal = atlas_utilisation
+        self.success_rascal = success
         self.add_fit_output_final(
             fit_coeff,
             matched_peaks,
@@ -1555,6 +1612,7 @@ class SpectrumOneD:
             residual,
             peak_utilisation,
             atlas_utilisation,
+            success,
         )
 
     def remove_fit_output_rascal(self):
@@ -1570,6 +1628,7 @@ class SpectrumOneD:
         self.residual_rascal = None
         self.peak_utilisation_rascal = None
         self.atlas_utilisation_rascal = None
+        self.success_rascal = None
 
     def add_fit_output_refine(
         self,
@@ -1580,6 +1639,7 @@ class SpectrumOneD:
         residual,
         peak_utilisation,
         atlas_utilisation,
+        success,
     ):
         """
         Add the refined RASCAL polynomial solution.
@@ -1612,6 +1672,7 @@ class SpectrumOneD:
         self.residual_refine = residual
         self.peak_utilisation_refine = peak_utilisation
         self.atlas_utilisation_refine = atlas_utilisation
+        self.success_refine = success
         self.add_fit_output_final(
             fit_coeff,
             matched_peaks,
@@ -1620,6 +1681,7 @@ class SpectrumOneD:
             residual,
             peak_utilisation,
             atlas_utilisation,
+            success,
         )
 
     def remove_fit_output_refine(self):
@@ -1635,6 +1697,7 @@ class SpectrumOneD:
         self.residual_refine = None
         self.peak_utilisation_refine = None
         self.atlas_utilisation_refine = None
+        self.success_refine = None
 
     def add_wavelength(self, wave):
         """
@@ -2793,7 +2856,7 @@ class SpectrumOneD:
             self.flux_resampled_atm_ext_telluric_corrected_hdulist,
             idx,
             method,
-            *args
+            *args,
         )
 
     def create_trace_fits(self):
@@ -2821,22 +2884,28 @@ class SpectrumOneD:
             self.trace_hdulist += [trace_ImageHDU]
             self.trace_hdulist += [trace_sigma_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["trace"]]
+
             # Add the trace
-            self.modify_trace_header(0, "set", "EXTNAME", "Trace")
+            self.modify_trace_header(0, "set", "EXTNAME", hdu_names[0])
             self.modify_trace_header(0, "set", "LABEL", "Trace")
             self.modify_trace_header(0, "set", "CRPIX1", 1)
             self.modify_trace_header(0, "set", "CDELT1", 1)
-            self.modify_trace_header(0, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_trace_header(
+                0, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_trace_header(0, "set", "CTYPE1", "Pixel (Dispersion)")
             self.modify_trace_header(0, "set", "CUNIT1", "Pixel")
             self.modify_trace_header(0, "set", "BUNIT", "Pixel (Spatial)")
 
             # Add the trace_sigma
-            self.modify_trace_header(1, "set", "EXTNAME", "Trace width")
+            self.modify_trace_header(1, "set", "EXTNAME", hdu_names[1])
             self.modify_trace_header(1, "set", "LABEL", "Trace width")
             self.modify_trace_header(1, "set", "CRPIX1", 1)
             self.modify_trace_header(1, "set", "CDELT1", 1)
-            self.modify_trace_header(1, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_trace_header(
+                1, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_trace_header(1, "set", "CTYPE1", "Pixel (Dispersion)")
             self.modify_trace_header(1, "set", "CUNIT1", "Number of Pixels")
             self.modify_trace_header(1, "set", "BUNIT", "Pixel (Spatial)")
@@ -2879,6 +2948,8 @@ class SpectrumOneD:
             self.count_hdulist += [count_err_ImageHDU]
             self.count_hdulist += [count_sky_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["count"]]
+
             # Add the count
             self.modify_count_header(0, "set", "WIDTHDN", self.widthdn)
             self.modify_count_header(0, "set", "WIDTHUP", self.widthup)
@@ -2887,37 +2958,44 @@ class SpectrumOneD:
             self.modify_count_header(0, "set", "SKYDN", self.skywidthdn)
             self.modify_count_header(0, "set", "SKYUP", self.skywidthup)
             self.modify_count_header(0, "set", "XTYPE", self.extraction_type)
-            self.modify_count_header(0, "set", "EXTNAME", "Electron count")
+            self.modify_count_header(0, "set", "EXTNAME", hdu_names[0])
             self.modify_count_header(0, "set", "LABEL", "Electron count")
             self.modify_count_header(0, "set", "CRPIX1", 1)
             self.modify_count_header(0, "set", "CDELT1", 1)
-            self.modify_count_header(0, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_count_header(
+                0, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_count_header(0, "set", "CTYPE1", " Pixel (Dispersion)")
             self.modify_count_header(0, "set", "CUNIT1", "Pixel")
             self.modify_count_header(0, "set", "BUNIT", "electron")
+            self.modify_count_header(0, "set", "XPOSURE", self.exptime)
+            self.modify_count_header(0, "set", "GAIN", self.gain)
+            self.modify_count_header(0, "set", "RNOISE", self.readnoise)
+            self.modify_count_header(0, "set", "SEEING", self.seeing)
+            self.modify_count_header(0, "set", "AIRMASS", self.airmass)
 
             # Add the uncertainty count
-            self.modify_count_header(
-                1, "set", "EXTNAME", "Electron count (Uncertainty)"
-            )
+            self.modify_count_header(1, "set", "EXTNAME", hdu_names[1])
             self.modify_count_header(
                 1, "set", "LABEL", "Electron count (Uncertainty)"
             )
             self.modify_count_header(1, "set", "CRPIX1", 1)
             self.modify_count_header(1, "set", "CDELT1", 1)
-            self.modify_count_header(1, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_count_header(
+                1, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_count_header(1, "set", "CTYPE1", "Pixel (Dispersion)")
             self.modify_count_header(1, "set", "CUNIT1", "Pixel")
             self.modify_count_header(1, "set", "BUNIT", "electron")
 
             # Add the sky count
-            self.modify_count_header(
-                2, "set", "EXTNAME", "Electron count (Sky)"
-            )
+            self.modify_count_header(2, "set", "EXTNAME", hdu_names[2])
             self.modify_count_header(2, "set", "LABEL", "Electron count (Sky)")
             self.modify_count_header(2, "set", "CRPIX1", 1)
             self.modify_count_header(2, "set", "CDELT1", 1)
-            self.modify_count_header(2, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_count_header(
+                2, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_count_header(2, "set", "CTYPE1", "Pixel (Dispersion)")
             self.modify_count_header(2, "set", "CUNIT1", "Pixel")
             self.modify_count_header(2, "set", "BUNIT", "electron")
@@ -2950,10 +3028,10 @@ class SpectrumOneD:
             self.weight_map_hdulist = fits.HDUList()
             self.weight_map_hdulist += [weight_map_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["weight_map"]]
+
             # Add the extraction weights
-            self.modify_weight_map_header(
-                "set", "EXTNAME", "Optimal extraction profile"
-            )
+            self.modify_weight_map_header("set", "EXTNAME", hdu_names[0])
             self.modify_weight_map_header(
                 "set", "LABEL", "Optimal extraction profile"
             )
@@ -3014,9 +3092,11 @@ class SpectrumOneD:
             self.count_resampled_hdulist += [count_err_resampled_ImageHDU]
             self.count_resampled_hdulist += [count_sky_resampled_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["count_resampled"]]
+
             # Add the resampled count
             self.modify_count_resampled_header(
-                0, "set", "EXTNAME", "Resampled electron count"
+                0, "set", "EXTNAME", hdu_names[0]
             )
             self.modify_count_resampled_header(
                 0, "set", "LABEL", "Resampled electron count"
@@ -3033,10 +3113,22 @@ class SpectrumOneD:
             )
             self.modify_count_resampled_header(0, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(0, "set", "BUNIT", "electron")
+            self.modify_count_resampled_header(0, "set", "BUNIT", "electron")
+            self.modify_count_resampled_header(
+                0, "set", "XPOSURE", self.exptime
+            )
+            self.modify_count_resampled_header(0, "set", "GAIN", self.gain)
+            self.modify_count_resampled_header(
+                0, "set", "RNOISE", self.readnoise
+            )
+            self.modify_count_resampled_header(0, "set", "SEEING", self.seeing)
+            self.modify_count_resampled_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
             # Add the resampled uncertainty count
             self.modify_count_resampled_header(
-                1, "set", "EXTNAME", "Resampled electron count (Uncertainty)"
+                1, "set", "EXTNAME", hdu_names[1]
             )
             self.modify_count_resampled_header(
                 1, "set", "LABEL", "Resampled electron count (Uncertainty)"
@@ -3056,7 +3148,7 @@ class SpectrumOneD:
 
             # Add the resampled sky count
             self.modify_count_resampled_header(
-                2, "set", "EXTNAME", "Resampled electron count (Sky)"
+                2, "set", "EXTNAME", hdu_names[2]
             )
             self.modify_count_resampled_header(
                 2, "set", "LABEL", "Resampled electron count (Sky)"
@@ -3102,16 +3194,18 @@ class SpectrumOneD:
             self.arc_spec_hdulist = fits.HDUList()
             self.arc_spec_hdulist += [arc_spec_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["arc_spec"]]
+
             # Add the arc spectrum
-            self.modify_arc_spec_header(
-                0, "set", "EXTNAME", "Electron count (Arc)"
-            )
+            self.modify_arc_spec_header(0, "set", "EXTNAME", hdu_names[0])
             self.modify_arc_spec_header(
                 0, "set", "LABEL", "Electron count (Arc)"
             )
             self.modify_arc_spec_header(0, "set", "CRPIX1", 1)
             self.modify_arc_spec_header(0, "set", "CDELT1", 1)
-            self.modify_arc_spec_header(0, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_arc_spec_header(
+                0, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_arc_spec_header(
                 0, "set", "CTYPE1", "Pixel (Dispersion)"
             )
@@ -3151,19 +3245,17 @@ class SpectrumOneD:
             self.arc_lines_hdulist += [peaks_ImageHDU]
             self.arc_lines_hdulist += [peaks_refined_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["arc_lines"]]
+
             # Add the peaks in native pixel value
-            self.modify_arc_lines_header(
-                0, "set", "EXTNAME", "Peaks (Detector pixel)"
-            )
+            self.modify_arc_lines_header(0, "set", "EXTNAME", hdu_names[0])
             self.modify_arc_lines_header(
                 0, "set", "LABEL", "Peaks (Detector pixel)"
             )
             self.modify_arc_lines_header(0, "set", "BUNIT", "Pixel")
 
             # Add the peaks in effective pixel value
-            self.modify_arc_lines_header(
-                1, "set", "EXTNAME", "Peaks (Effective pixel)"
-            )
+            self.modify_arc_lines_header(1, "set", "EXTNAME", hdu_names[1])
             self.modify_arc_lines_header(
                 1, "set", "LABEL", "Peaks (Effective pixel)"
             )
@@ -3198,6 +3290,8 @@ class SpectrumOneD:
             self.wavecal_hdulist = fits.HDUList()
             self.wavecal_hdulist += [wavecal_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["wavecal_coefficients"]]
+
             # Add the wavelength calibration header info
             self.modify_wavecal_header("set", "FTYPE", self.fit_type)
             self.modify_wavecal_header("set", "FDEG", self.fit_deg)
@@ -3230,9 +3324,7 @@ class SpectrumOneD:
             self.modify_wavecal_header("set", "W8ED", self.weighted)
             self.modify_wavecal_header("set", "FILTER", self.filter_close)
             self.modify_wavecal_header("set", "PUSAGE", self.peak_utilisation)
-            self.modify_wavecal_header(
-                "set", "EXTNAME", "Wavelength calibration coefficients"
-            )
+            self.modify_wavecal_header("set", "EXTNAME", hdu_names[0])
             self.modify_wavecal_header(
                 "set", "LABEL", "Wavelength calibration coefficients"
             )
@@ -3273,16 +3365,18 @@ class SpectrumOneD:
             self.wavelength_hdulist = fits.HDUList()
             self.wavelength_hdulist += [wavelength_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["wavelength"]]
+
             # Add the calibrated wavelength
-            self.modify_wavelength_header(
-                "set", "EXTNAME", "Pixel-wavelength mapping"
-            )
+            self.modify_wavelength_header("set", "EXTNAME", hdu_names[0])
             self.modify_wavelength_header(
                 "set", "LABEL", "Pixel-wavelength mapping"
             )
             self.modify_wavelength_header("set", "CRPIX1", 1)
             self.modify_wavelength_header("set", "CDELT1", 1)
-            self.modify_wavelength_header("set", "CRVAL1", self.pixel_list[0])
+            self.modify_wavelength_header(
+                "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_wavelength_header(
                 "set", "CTYPE1", "Pixel (Dispersion)"
             )
@@ -3323,9 +3417,11 @@ class SpectrumOneD:
                 wavelength_resampled_ImageHDU
             ]
 
+            hdu_names = self.ext_name[self.hdu_order["wavelength_resampled"]]
+
             # Add the calibrated wavelength
             self.modify_wavelength_resampled_header(
-                "set", "EXTNAME", "Wavelength at resampled position"
+                "set", "EXTNAME", hdu_names[0]
             )
             self.modify_wavelength_resampled_header(
                 "set", "LABEL", "Wavelength at resampled position"
@@ -3333,7 +3429,7 @@ class SpectrumOneD:
             self.modify_wavelength_resampled_header("set", "CRPIX1", 1)
             self.modify_wavelength_resampled_header("set", "CDELT1", 1)
             self.modify_wavelength_resampled_header(
-                "set", "CRVAL1", self.pixel_list[0]
+                "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_wavelength_resampled_header(
                 "set", "CTYPE1", "Pixel (Dispersion)"
@@ -3375,11 +3471,15 @@ class SpectrumOneD:
             self.sensitivity_hdulist = fits.HDUList()
             self.sensitivity_hdulist += [sensitivity_ImageHDU]
 
-            self.modify_sensitivity_header("set", "EXTNAME", "Sensitivity")
+            hdu_names = self.ext_name[self.hdu_order["sensitivity"]]
+
+            self.modify_sensitivity_header("set", "EXTNAME", hdu_names[0])
             self.modify_sensitivity_header("set", "LABEL", "Sensitivity")
             self.modify_sensitivity_header("set", "CRPIX1", 1.00e00)
             self.modify_sensitivity_header("set", "CDELT1", 1)
-            self.modify_sensitivity_header("set", "CRVAL1", self.pixel_list[0])
+            self.modify_sensitivity_header(
+                "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_sensitivity_header("set", "CTYPE1", "Pixel")
             self.modify_sensitivity_header("set", "CUNIT1", "Pixel")
             self.modify_sensitivity_header(
@@ -3428,34 +3528,47 @@ class SpectrumOneD:
             self.flux_hdulist += [flux_err_ImageHDU]
             self.flux_hdulist += [flux_sky_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["flux"]]
+
             # Note that wave_start is the centre of the starting bin
-            self.modify_flux_header(0, "set", "EXTNAME", "Flux")
+            self.modify_flux_header(0, "set", "EXTNAME", hdu_names[0])
             self.modify_flux_header(0, "set", "LABEL", "Flux")
             self.modify_flux_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(0, "set", "CDELT1", 1)
-            self.modify_flux_header(0, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_flux_header(
+                0, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_flux_header(0, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(0, "set", "CUNIT1", "Pixel")
             self.modify_flux_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
+            self.modify_flux_header(0, "set", "XPOSURE", self.exptime)
+            self.modify_flux_header(0, "set", "GAIN", self.gain)
+            self.modify_flux_header(0, "set", "RNOISE", self.readnoise)
+            self.modify_flux_header(0, "set", "SEEING", self.seeing)
+            self.modify_flux_header(0, "set", "AIRMASS", self.airmass)
 
-            self.modify_flux_header(1, "set", "EXTNAME", "Flux (Uncertainty)")
+            self.modify_flux_header(1, "set", "EXTNAME", hdu_names[1])
             self.modify_flux_header(1, "set", "LABEL", "Flux (Uncertainty)")
             self.modify_flux_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(1, "set", "CDELT1", 1)
-            self.modify_flux_header(1, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_flux_header(
+                1, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_flux_header(1, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(1, "set", "CUNIT1", "Pixel")
             self.modify_flux_header(
                 1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_header(2, "set", "EXTNAME", "Flux (Sky)")
+            self.modify_flux_header(2, "set", "EXTNAME", hdu_names[2])
             self.modify_flux_header(2, "set", "LABEL", "Flux (Sky)")
             self.modify_flux_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(2, "set", "CDELT1", 1)
-            self.modify_flux_header(2, "set", "CRVAL1", self.pixel_list[0])
+            self.modify_flux_header(
+                2, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_flux_header(2, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(2, "set", "CUNIT1", "Pixel")
             self.modify_flux_header(
@@ -3491,18 +3604,14 @@ class SpectrumOneD:
                 # Put the data in ImageHDUs
                 atm_ext_ImageHDU = fits.ImageHDU(self.atm_ext)
 
-            print(atm_ext_ImageHDU)
-
             # Create an empty HDU list and populate with ImageHDUs
             self.atm_ext_hdulist = fits.HDUList()
             self.atm_ext_hdulist += [atm_ext_ImageHDU]
 
-            print(self.atm_ext_hdulist)
+            hdu_names = self.ext_name[self.hdu_order["atm_ext"]]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_atm_ext_header(
-                "set", "EXTNAME", "Atmopheric extinction correction factor"
-            )
+            self.modify_atm_ext_header("set", "EXTNAME", hdu_names[0])
             self.modify_atm_ext_header(
                 "set", "LABEL", "Atmopheric extinction correction factor"
             )
@@ -3573,9 +3682,11 @@ class SpectrumOneD:
                 flux_sky_atm_ext_corrected_ImageHDU
             ]
 
+            hdu_names = self.ext_name[self.hdu_order["flux_atm_ext_corrected"]]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_atm_ext_corrected_header(
-                0, "set", "EXTNAME", "Flux atmospheric extinction corrected"
+                0, "set", "EXTNAME", hdu_names[0]
             )
             self.modify_flux_atm_ext_corrected_header(
                 0, "set", "LABEL", "Flux atmospheric extinction corrected"
@@ -3585,7 +3696,7 @@ class SpectrumOneD:
             )
             self.modify_flux_atm_ext_corrected_header(0, "set", "CDELT1", 1)
             self.modify_flux_atm_ext_corrected_header(
-                0, "set", "CRVAL1", self.pixel_list[0]
+                0, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_atm_ext_corrected_header(
                 0, "set", "CTYPE1", "Pixel"
@@ -3601,7 +3712,7 @@ class SpectrumOneD:
                 1,
                 "set",
                 "EXTNAME",
-                "Flux atmospheric extinction corrected (Uncertainty)",
+                hdu_names[1],
             )
             self.modify_flux_atm_ext_corrected_header(
                 1,
@@ -3614,7 +3725,7 @@ class SpectrumOneD:
             )
             self.modify_flux_atm_ext_corrected_header(1, "set", "CDELT1", 1)
             self.modify_flux_atm_ext_corrected_header(
-                1, "set", "CRVAL1", self.pixel_list[0]
+                1, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_atm_ext_corrected_header(
                 1, "set", "CTYPE1", "Pixel"
@@ -3630,7 +3741,7 @@ class SpectrumOneD:
                 2,
                 "set",
                 "EXTNAME",
-                "Flux atmospheric extinction corrected (Sky)",
+                hdu_names[2],
             )
             self.modify_flux_atm_ext_corrected_header(
                 2,
@@ -3643,7 +3754,7 @@ class SpectrumOneD:
             )
             self.modify_flux_atm_ext_corrected_header(2, "set", "CDELT1", 1)
             self.modify_flux_atm_ext_corrected_header(
-                2, "set", "CRVAL1", self.pixel_list[0]
+                2, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_atm_ext_corrected_header(
                 2, "set", "CTYPE1", "Pixel"
@@ -3695,10 +3806,10 @@ class SpectrumOneD:
             self.telluric_profile_hdulist = fits.HDUList()
             self.telluric_profile_hdulist += [telluric_profile_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["telluric_profile"]]
+
             # Note that wave_start is the centre of the starting bin
-            self.modify_telluric_profile_header(
-                "set", "EXTNAME", "Telluric absorption profile"
-            )
+            self.modify_telluric_profile_header("set", "EXTNAME", hdu_names[0])
             self.modify_telluric_profile_header(
                 "set", "LABEL", "Telluric absorption profile"
             )
@@ -3771,9 +3882,13 @@ class SpectrumOneD:
                 flux_sky_telluric_corrected_ImageHDU
             ]
 
+            hdu_names = self.ext_name[
+                self.hdu_order["flux_telluric_corrected"]
+            ]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux telluric corrected"
+                0, "set", "EXTNAME", hdu_names[0]
             )
             self.modify_flux_telluric_corrected_header(
                 0, "set", "LABEL", "Flux telluric corrected"
@@ -3783,7 +3898,7 @@ class SpectrumOneD:
             )
             self.modify_flux_telluric_corrected_header(0, "set", "CDELT1", 1)
             self.modify_flux_telluric_corrected_header(
-                0, "set", "CRVAL1", self.pixel_list[0]
+                0, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_telluric_corrected_header(
                 0, "set", "CTYPE1", "Pixel"
@@ -3796,7 +3911,7 @@ class SpectrumOneD:
             )
 
             self.modify_flux_telluric_corrected_header(
-                1, "set", "EXTNAME", "Flux telluric correct (Uncertainty)"
+                1, "set", "EXTNAME", hdu_names[1]
             )
             self.modify_flux_telluric_corrected_header(
                 1, "set", "LABEL", "Flux telluric correct (Uncertainty)"
@@ -3806,7 +3921,7 @@ class SpectrumOneD:
             )
             self.modify_flux_telluric_corrected_header(1, "set", "CDELT1", 1)
             self.modify_flux_telluric_corrected_header(
-                1, "set", "CRVAL1", self.pixel_list[0]
+                1, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_telluric_corrected_header(
                 1, "set", "CTYPE1", "Pixel"
@@ -3819,7 +3934,7 @@ class SpectrumOneD:
             )
 
             self.modify_flux_telluric_corrected_header(
-                2, "set", "EXTNAME", "Flux telluric corrected (Sky)"
+                2, "set", "EXTNAME", hdu_names[2]
             )
             self.modify_flux_telluric_corrected_header(
                 2, "set", "LABEL", "Flux telluric corrected (Sky)"
@@ -3829,7 +3944,7 @@ class SpectrumOneD:
             )
             self.modify_flux_telluric_corrected_header(2, "set", "CDELT1", 1)
             self.modify_flux_telluric_corrected_header(
-                2, "set", "CRVAL1", self.pixel_list[0]
+                2, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_telluric_corrected_header(
                 2, "set", "CTYPE1", "Pixel"
@@ -3903,12 +4018,16 @@ class SpectrumOneD:
                 flux_sky_atm_ext_telluric_corrected_ImageHDU
             ]
 
+            hdu_names = self.ext_name[
+                self.hdu_order["flux_atm_ext_telluric_corrected"]
+            ]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_atm_ext_telluric_corrected_header(
                 0,
                 "set",
                 "EXTNAME",
-                "Flux atmospheric extinction telluric corrected",
+                hdu_names[0],
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 0,
@@ -3923,7 +4042,7 @@ class SpectrumOneD:
                 0, "set", "CDELT1", 1
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
-                0, "set", "CRVAL1", self.pixel_list[0]
+                0, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 0, "set", "CTYPE1", "Pixel"
@@ -3934,12 +4053,27 @@ class SpectrumOneD:
             self.modify_flux_atm_ext_telluric_corrected_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
+            self.modify_flux_atm_ext_telluric_corrected_header(
+                0, "set", "XPOSURE", self.exptime
+            )
+            self.modify_flux_atm_ext_telluric_corrected_header(
+                0, "set", "GAIN", self.gain
+            )
+            self.modify_flux_atm_ext_telluric_corrected_header(
+                0, "set", "RNOISE", self.readnoise
+            )
+            self.modify_flux_atm_ext_telluric_corrected_header(
+                0, "set", "SEEING", self.seeing
+            )
+            self.modify_flux_atm_ext_telluric_corrected_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
             self.modify_flux_atm_ext_telluric_corrected_header(
                 1,
                 "set",
                 "EXTNAME",
-                "Flux atmospheric extinction telluric corrected (Uncertainty)",
+                hdu_names[1],
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 1,
@@ -3954,7 +4088,7 @@ class SpectrumOneD:
                 1, "set", "CDELT1", 1
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
-                1, "set", "CRVAL1", self.pixel_list[0]
+                1, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 1, "set", "CTYPE1", "Pixel"
@@ -3970,7 +4104,7 @@ class SpectrumOneD:
                 2,
                 "set",
                 "EXTNAME",
-                "Flux atmospheric extinction telluric corrected (Sky)",
+                hdu_names[2],
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 2,
@@ -3985,7 +4119,7 @@ class SpectrumOneD:
                 2, "set", "CDELT1", 1
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
-                2, "set", "CRVAL1", self.pixel_list[0]
+                2, "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_flux_atm_ext_telluric_corrected_header(
                 2, "set", "CTYPE1", "Pixel"
@@ -4026,8 +4160,10 @@ class SpectrumOneD:
                 sensitivity_resampled_ImageHDU
             ]
 
+            hdu_names = self.ext_name[self.hdu_order["sensitivity_resampled"]]
+
             self.modify_sensitivity_resampled_header(
-                "set", "EXTNAME", "Sensitivity"
+                "set", "EXTNAME", hdu_names[0]
             )
             self.modify_sensitivity_resampled_header(
                 "set", "LABEL", "Sensitivity"
@@ -4035,7 +4171,7 @@ class SpectrumOneD:
             self.modify_sensitivity_resampled_header("set", "CRPIX1", 1.00e00)
             self.modify_sensitivity_resampled_header("set", "CDELT1", 1)
             self.modify_sensitivity_resampled_header(
-                "set", "CRVAL1", self.pixel_list[0]
+                "set", "CRVAL1", self.effective_pixel[0]
             )
             self.modify_sensitivity_resampled_header("set", "CTYPE1", "Pixel")
             self.modify_sensitivity_resampled_header("set", "CUNIT1", "Pixel")
@@ -4093,9 +4229,11 @@ class SpectrumOneD:
             self.flux_resampled_hdulist += [flux_err_resampled_ImageHDU]
             self.flux_resampled_hdulist += [flux_sky_resampled_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["flux_resampled"]]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_header(
-                0, "set", "EXTNAME", "Flux resampled"
+                0, "set", "EXTNAME", hdu_names[0]
             )
             self.modify_flux_resampled_header(
                 0, "set", "LABEL", "Flux resampled"
@@ -4112,9 +4250,20 @@ class SpectrumOneD:
             self.modify_flux_resampled_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
+            self.modify_flux_resampled_header(
+                0, "set", "XPOSURE", self.exptime
+            )
+            self.modify_flux_resampled_header(0, "set", "GAIN", self.gain)
+            self.modify_flux_resampled_header(
+                0, "set", "RNOISE", self.readnoise
+            )
+            self.modify_flux_resampled_header(0, "set", "SEEING", self.seeing)
+            self.modify_flux_resampled_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
             self.modify_flux_resampled_header(
-                1, "set", "EXTNAME", "Flux resampled (Uncertainty)"
+                1, "set", "EXTNAME", hdu_names[1]
             )
             self.modify_flux_resampled_header(
                 1, "set", "LABEL", "Flux resampled (Uncertainty)"
@@ -4133,7 +4282,7 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_header(
-                2, "set", "EXTNAME", "Flux resampled (Sky)"
+                2, "set", "EXTNAME", hdu_names[2]
             )
             self.modify_flux_resampled_header(
                 2, "set", "LABEL", "Flux resampled (Sky)"
@@ -4189,9 +4338,11 @@ class SpectrumOneD:
             self.atm_ext_resampled_hdulist = fits.HDUList()
             self.atm_ext_resampled_hdulist += [atm_ext_resampled_ImageHDU]
 
+            hdu_names = self.ext_name[self.hdu_order["atm_ext_resampled"]]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_atm_ext_resampled_header(
-                "set", "EXTNAME", "Atmopheric extinction correction factor"
+                "set", "EXTNAME", hdu_names[0]
             )
             self.modify_atm_ext_resampled_header(
                 "set", "LABEL", "Atmopheric extinction correction factor"
@@ -4267,12 +4418,16 @@ class SpectrumOneD:
                 flux_sky_resampled_atm_ext_corrected_ImageHDU
             ]
 
+            hdu_names = self.ext_name[
+                self.hdu_order["flux_resampled_atm_ext_corrected"]
+            ]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_atm_ext_corrected_header(
                 0,
                 "set",
                 "EXTNAME",
-                "Flux resampled atmospheric extinction corrected",
+                hdu_names[0],
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 0,
@@ -4298,12 +4453,27 @@ class SpectrumOneD:
             self.modify_flux_resampled_atm_ext_corrected_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "XPOSURE", self.exptime
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "GAIN", self.gain
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "RNOISE", self.readnoise
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "SEEING", self.seeing
+            )
+            self.modify_flux_resampled_atm_ext_corrected_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
             self.modify_flux_resampled_atm_ext_corrected_header(
                 1,
                 "set",
                 "EXTNAME",
-                "Flux resampled atmospheric extinction corrected (Uncertainty)",
+                hdu_names[1],
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 1,
@@ -4334,7 +4504,7 @@ class SpectrumOneD:
                 2,
                 "set",
                 "EXTNAME",
-                "Flux resampled atmospheric extinction corrected (Sky)",
+                hdu_names[2],
             )
             self.modify_flux_resampled_atm_ext_corrected_header(
                 2,
@@ -4403,9 +4573,13 @@ class SpectrumOneD:
                 telluric_profile_resampled_ImageHDU
             ]
 
+            hdu_names = self.ext_name[
+                self.hdu_order["telluric_profile_resampled"]
+            ]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_telluric_profile_resampled_header(
-                "set", "EXTNAME", "Telluric absorption profile"
+                "set", "EXTNAME", hdu_names[0]
             )
             self.modify_telluric_profile_resampled_header(
                 "set", "LABEL", "Telluric absorption profile"
@@ -4485,9 +4659,13 @@ class SpectrumOneD:
                 flux_sky_resampled_telluric_corrected_ImageHDU
             ]
 
+            hdu_names = self.ext_name[
+                self.hdu_order["flux_resampled_telluric_corrected"]
+            ]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_telluric_corrected_header(
-                0, "set", "EXTNAME", "Flux resampled telluric corrected"
+                0, "set", "EXTNAME", hdu_names[0]
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 0, "set", "LABEL", "Flux resampled telluric corrected"
@@ -4510,12 +4688,27 @@ class SpectrumOneD:
             self.modify_flux_resampled_telluric_corrected_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
+            self.modify_flux_resampled_telluric_corrected_header(
+                0, "set", "XPOSURE", self.exptime
+            )
+            self.modify_flux_resampled_telluric_corrected_header(
+                0, "set", "GAIN", self.gain
+            )
+            self.modify_flux_resampled_telluric_corrected_header(
+                0, "set", "RNOISE", self.readnoise
+            )
+            self.modify_flux_resampled_telluric_corrected_header(
+                0, "set", "SEEING", self.seeing
+            )
+            self.modify_flux_resampled_telluric_corrected_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
             self.modify_flux_resampled_telluric_corrected_header(
                 1,
                 "set",
                 "EXTNAME",
-                "Flux resampled telluric corrected (Uncertainty)",
+                hdu_names[1],
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 1,
@@ -4543,7 +4736,7 @@ class SpectrumOneD:
             )
 
             self.modify_flux_resampled_telluric_corrected_header(
-                2, "set", "EXTNAME", "Flux resampled telluric corrected (Sky)"
+                2, "set", "EXTNAME", hdu_names[2]
             )
             self.modify_flux_resampled_telluric_corrected_header(
                 2, "set", "LABEL", "Flux resampled telluric corrected (Sky)"
@@ -4644,12 +4837,16 @@ class SpectrumOneD:
                 flux_sky_resampled_atm_ext_telluric_corrected_ImageHDU
             ]
 
+            hdu_names = self.ext_name[
+                self.hdu_order["flux_resampled_atm_ext_telluric_corrected"]
+            ]
+
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 0,
                 "set",
                 "EXTNAME",
-                "Flux resampled atmospheric extinction telluric corrected",
+                hdu_names[0],
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 0,
@@ -4675,12 +4872,27 @@ class SpectrumOneD:
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
+            self.modify_flux_resampled_atm_ext_telluric_corrected_header(
+                0, "set", "XPOSURE", self.exptime
+            )
+            self.modify_flux_resampled_atm_ext_telluric_corrected_header(
+                0, "set", "GAIN", self.gain
+            )
+            self.modify_flux_resampled_atm_ext_telluric_corrected_header(
+                0, "set", "RNOISE", self.readnoise
+            )
+            self.modify_flux_resampled_atm_ext_telluric_corrected_header(
+                0, "set", "SEEING", self.seeing
+            )
+            self.modify_flux_resampled_atm_ext_telluric_corrected_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 1,
                 "set",
                 "EXTNAME",
-                "Flux resampled atmospheric extinction telluric corrected (Uncertainty)",
+                hdu_names[1],
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 1,
@@ -4711,7 +4923,7 @@ class SpectrumOneD:
                 2,
                 "set",
                 "EXTNAME",
-                "Flux resampled atmospheric extinction telluric corrected (Sky)",
+                hdu_names[2],
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 2,
@@ -4919,7 +5131,7 @@ class SpectrumOneD:
 
     def create_fits(
         self,
-        output,
+        output="*",
         recreate=True,
         empty_primary_hdu=True,
         return_hdu_list=False,
@@ -4941,10 +5153,12 @@ class SpectrumOneD:
                     Count, uncertainty, and sky (pixel)
                 weight_map: 1 HDU
                     Weight (pixel)
-                arc_spec: 3 HDUs
-                    1D arc spectrum, arc line position (pixel), and arc
+                arc_spec: 1 HDU
+                    1D arc spectrum
+                arc_lines: 2 HDUs
+                    arc line position (pixel), and arc
                     line effective position (pixel)
-                wavecal: 1 HDU
+                wavecal_coefficients: 1 HDU
                     Polynomial coefficients for wavelength calibration
                 wavelength: 1 HDU
                     Wavelength of each pixel
@@ -4999,9 +5213,10 @@ class SpectrumOneD:
         if output == "*":
 
             output = (
-                "trace+count+weight_map+arc_spec+arc_lines+wavecal+"
-                "wavelength+wavelength_resampled+count_resampled+sensitivity+"
-                "flux+atm_ext+flux_atm_ext_corrected+telluric_profile+"
+                "trace+count+weight_map+arc_spec+arc_lines+"
+                "wavecal_coefficients+wavelength+wavelength_resampled+"
+                "count_resampled+sensitivity+flux+atm_ext+"
+                "flux_atm_ext_corrected+telluric_profile+"
                 "flux_telluric_corrected+flux_atm_ext_telluric_corrected+"
                 "sensitivity_resampled+flux_resampled+atm_ext_resampled+"
                 "flux_resampled_atm_ext_corrected+"
@@ -5120,9 +5335,9 @@ class SpectrumOneD:
                     hdu_output += self.arc_lines_hdulist
                     self.hdu_content["arc_lines"] = True
 
-            if "wavecal" in output_split:
+            if "wavecal_coefficients" in output_split:
 
-                if not self.hdu_content["wavecal"]:
+                if not self.hdu_content["wavecal_coefficients"]:
                     self.create_wavecal_fits()
 
                 if (self.wavecal_hdulist is not None) and (
@@ -5130,7 +5345,7 @@ class SpectrumOneD:
                 ):
 
                     hdu_output += self.wavecal_hdulist
-                    self.hdu_content["wavecal"] = True
+                    self.hdu_content["wavecal_coefficients"] = True
 
             if "wavelength" in output_split:
 
@@ -5548,12 +5763,10 @@ class SpectrumOneD:
 
             if (output_type in output_split) & self.hdu_content[output_type]:
 
-                logging.info("Exporting {} to CSV.".format(output_type))
+                logging.info(f"Exporting {output_type} to CSV.")
                 end = start + self.n_hdu[output_type]
 
-                logging.info(
-                    "The HDU index is from {} to {}.".format(start, end - 1)
-                )
+                logging.info(f"The HDU index is from {start} to {end - 1}.")
 
                 if output_type != "arc_lines":
 
@@ -5578,10 +5791,9 @@ class SpectrumOneD:
 
                         self.logger.warning(
                             filename
-                            + "_"
-                            + output_type
-                            + ".csv cannot be saved to disk. Please check "
-                            + "the path and/or set overwrite to True."
+                            + f"_{output_type}.csv cannot be saved to disk. "
+                            + "Please check the path and/or set overwrite to "
+                            + "True."
                         )
 
                 else:
@@ -5596,7 +5808,7 @@ class SpectrumOneD:
                     ):
 
                         np.savetxt(
-                            filename + "_arc_peaks.csv",
+                            f"{filename}_arc_peaks.csv",
                             output_data_arc_peaks,
                             delimiter=",",
                             header=self.header[output_type],
@@ -5605,9 +5817,9 @@ class SpectrumOneD:
                     else:
 
                         self.logger.warning(
-                            filename
-                            + "_arc_peaks.csv cannot be saved to disk. Please "
-                            + "check the path and/or set overwrite to True."
+                            f"{filename}_arc_peaks.csv cannot be saved to "
+                            + "disk. Please check the path and/or set "
+                            + "overwrite to True."
                         )
 
                     if overwrite or (
@@ -5624,13 +5836,10 @@ class SpectrumOneD:
                     else:
 
                         self.logger.warning(
-                            filename
-                            + "_arc_peaks_refined.csv cannot be saved to "
-                            + "disk. Please check the path and/or set "
-                            + "overwrite to True."
+                            f"{filename}_arc_peaks_refined.csv cannot be "
+                            + "saved to disk. Please check the path and/or "
+                            + "set overwrite to True."
                         )
 
                 start = end
-                logging.info(
-                    "Exported {} to CSV successfully.".format(output_type)
-                )
+                logging.info(f"Exported {output_type} to CSV successfully.")

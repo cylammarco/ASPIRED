@@ -522,7 +522,7 @@ class Reducer:
 
             self.saxis = 1
 
-        self.logger.info("Saxis is found/set to be %s.", self.saxis)
+        self.logger.info(f"Saxis is found/set to be {self.saxis}.")
 
     def set_properties(
         self,
@@ -762,8 +762,8 @@ class Reducer:
 
             self.combinetype_light = self.combinetype_light_default
             self.logger.warning(
-                "Unknown combinetype_light, it is set as %s.",
-                self.combinetype_light,
+                "Unknown combinetype_light, it is set as "
+                + f"{self.combinetype_light}."
             )
 
         elif isinstance(combinetype_light, (float, int)):
@@ -777,23 +777,23 @@ class Reducer:
                 # use the given readnoise value
                 self.combinetype_light = combinetype_light
                 self.logger.info(
-                    "combinetype_light is set to %s.", self.combinetype_light
+                    f"combinetype_light is set to {self.combinetype_light}."
                 )
 
             else:
 
                 self.combinetype_light = self.combinetype_light_default
                 self.logger.warning(
-                    "Unknown combinetype_light, it is set as %s.",
-                    self.combinetype_light,
+                    "Unknown combinetype_light, it is set as "
+                    + f"{self.combinetype_light}."
                 )
 
         else:
 
             self.combinetype_light = self.combinetype_light_default
             self.logger.warning(
-                "Unknown combinetype_light, it is set as %s.",
-                self.combinetype_light,
+                "Unknown combinetype_light, it is set as "
+                + f"{self.combinetype_light}.",
             )
 
         # sigma_clipping_light
@@ -801,8 +801,8 @@ class Reducer:
 
             self.sigma_clipping_light = self.sigma_clipping_light_default
             self.logger.warning(
-                "Unknown sigma_clipping_light, it is set to %s.",
-                self.sigma_clipping_light,
+                "Unknown sigma_clipping_light, it is set to "
+                + f"{self.sigma_clipping_light}.",
             )
 
         elif isinstance(sigma_clipping_light, (float, int)):
