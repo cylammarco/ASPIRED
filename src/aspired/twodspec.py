@@ -5032,7 +5032,7 @@ class TwoDSpec:
     def save_fits(
         self,
         output="*",
-        filename="TwoDSpecExtracted",
+        filename=None,
         overwrite=False,
         recreate=False,
         empty_primary_hdu=True,
@@ -5057,7 +5057,7 @@ class TwoDSpec:
                 arc_spec: 1 HDU
                     1D arc spectrum
 
-        filename: str
+        filename: str (Default: TwoDSpecExtracted)
             Filename for the output, all of them will share the same name but
             will have different extension.
         overwrite: bool
@@ -5069,11 +5069,17 @@ class TwoDSpec:
 
         """
 
-        filename = os.path.splitext(filename)[0]
-
         if output == "*":
 
             output = "trace+count+weight_map+arc_spec"
+
+        if filename is not None:
+
+            filename = os.path.splitext(filename)[0]
+
+        else:
+
+            filename = "TwoDSpecExtracted_" + output
 
         for i in output.split("+"):
 
@@ -5086,7 +5092,7 @@ class TwoDSpec:
         # Save each trace as a separate FITS file
         for i, spec_i in self.spectrum_list.items():
 
-            filename_i = filename + "_" + output + "_" + str(i)
+            filename_i = filename + "_" + str(i)
 
             spec_i.save_fits(
                 output=output,

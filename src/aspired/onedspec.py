@@ -1579,36 +1579,63 @@ class OneDSpec:
 
             self.add_science_spectrum_oned(spec_id)
             # fits_file[0] is the empty PrimaryHDU
-            self.science_spectrum_list[spec_id].add_trace(
-                fits_file["trace"].data, fits_file["trace_sigma"].data
-            )
-            self.science_spectrum_list[spec_id].add_count(
-                fits_file["count"].data,
-                fits_file["count_err"].data,
-                fits_file["count_sky"].data,
-            )
-            self.science_spectrum_list[spec_id].add_variances(
-                fits_file["weight_map"].data
-            )
-            self.science_spectrum_list[spec_id].add_arc_spec(
-                fits_file["arc_spec"].data
-            )
+            try:
+                self.science_spectrum_list[spec_id].add_trace(
+                    fits_file["trace"].data, fits_file["trace_sigma"].data
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_count(
+                    fits_file["count"].data,
+                    fits_file["count_err"].data,
+                    fits_file["count_sky"].data,
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_variances(
+                    fits_file["weight_map"].data
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_arc_spec(
+                    fits_file["arc_spec"].data
+                )
+            except KeyError as err:
+                self.logger.warning(err)
 
-            self.science_spectrum_list[spec_id].add_gain(
-                fits_file["count"].header["GAIN"]
-            )
-            self.science_spectrum_list[spec_id].add_readnoise(
-                fits_file["count"].header["RNOISE"]
-            )
-            self.science_spectrum_list[spec_id].add_exptime(
-                fits_file["count"].header["XPOSURE"]
-            )
-            self.science_spectrum_list[spec_id].add_seeing(
-                fits_file["count"].header["SEEING"]
-            )
-            self.science_spectrum_list[spec_id].add_airmass(
-                fits_file["count"].header["AIRMASS"]
-            )
+            try:
+                self.science_spectrum_list[spec_id].add_gain(
+                    fits_file["count"].header["GAIN"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_readnoise(
+                    fits_file["count"].header["RNOISE"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_exptime(
+                    fits_file["count"].header["XPOSURE"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_seeing(
+                    fits_file["count"].header["SEEING"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.science_spectrum_list[spec_id].add_airmass(
+                    fits_file["count"].header["AIRMASS"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
 
             # reference the spectrum_oned to the WavelengthCalibration
             self.science_wavecal[spec_id] = WavelengthCalibration(
@@ -1639,36 +1666,63 @@ class OneDSpec:
 
         if "standard" in stype_split:
 
-            self.standard_spectrum_list[0].add_trace(
-                fits_file["trace"].data, fits_file["trace_sigma"].data
-            )
-            self.standard_spectrum_list[0].add_count(
-                fits_file["count"].data,
-                fits_file["count_err"].data,
-                fits_file["count_sky"].data,
-            )
-            self.standard_spectrum_list[0].add_variances(
-                fits_file["weight_map"].data
-            )
-            self.standard_spectrum_list[0].add_arc_spec(
-                fits_file["arc_spec"].data
-            )
+            try:
+                self.standard_spectrum_list[0].add_trace(
+                    fits_file["trace"].data, fits_file["trace_sigma"].data
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_count(
+                    fits_file["count"].data,
+                    fits_file["count_err"].data,
+                    fits_file["count_sky"].data,
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_variances(
+                    fits_file["weight_map"].data
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_arc_spec(
+                    fits_file["arc_spec"].data
+                )
+            except KeyError as err:
+                self.logger.warning(err)
 
-            self.standard_spectrum_list[0].add_gain(
-                fits_file["count"].header["GAIN"]
-            )
-            self.standard_spectrum_list[0].add_readnoise(
-                fits_file["count"].header["RNOISE"]
-            )
-            self.standard_spectrum_list[0].add_exptime(
-                fits_file["count"].header["XPOSURE"]
-            )
-            self.standard_spectrum_list[0].add_seeing(
-                fits_file["count"].header["SEEING"]
-            )
-            self.standard_spectrum_list[0].add_airmass(
-                fits_file["count"].header["AIRMASS"]
-            )
+            try:
+                self.standard_spectrum_list[0].add_gain(
+                    fits_file["count"].header["GAIN"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_readnoise(
+                    fits_file["count"].header["RNOISE"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_exptime(
+                    fits_file["count"].header["XPOSURE"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_seeing(
+                    fits_file["count"].header["SEEING"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
+                self.standard_spectrum_list[0].add_airmass(
+                    fits_file["count"].header["AIRMASS"]
+                )
+            except KeyError as err:
+                self.logger.warning(err)
 
             # By reference
             self.standard_wavecal = WavelengthCalibration(
