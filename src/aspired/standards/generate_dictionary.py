@@ -49,10 +49,10 @@ lib_to_name = {}
 for lib_name in library_list:
     # Loop through the standard stars UNIQUE names in each library
     for star in eval(lib_name):
-        if lib_name not in lib_to_name:
-            lib_to_name[lib_name] = [star]
+        if lib_name.lower() not in lib_to_name:
+            lib_to_name[lib_name.lower()] = [star.lower()]
         else:
-            lib_to_name[lib_name].append(star)
+            lib_to_name[lib_name.lower()].append(star.lower())
 
 # Create dictionary for unique names to libraries
 name_to_lib = {}
@@ -60,10 +60,10 @@ name_to_lib = {}
 # Loop through the library names
 for lib, stars in lib_to_name.items():
     for s in stars:
-        if s not in name_to_lib:
-            name_to_lib[s] = [lib]
+        if s.lower() not in name_to_lib:
+            name_to_lib[s.lower()] = [lib.lower()]
         else:
-            name_to_lib[s].append(lib)
+            name_to_lib[s.lower()].append(lib.lower())
 
 # Sort the list of the dictionaries
 for star, libs in name_to_lib.items():
