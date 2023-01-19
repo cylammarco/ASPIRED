@@ -1,0 +1,32 @@
+# get version from setup.py
+{% set data = load_setup_py_data(setup_file='../setup.py', from_recipe_dir=True) %}
+
+package:
+  name: aspired
+  version: {{ data.get('version') }}
+
+source:
+  path: ../
+
+build:
+  noarch: python
+
+requirements:
+  build:
+    - python>=3.7
+    - setuptools
+  run:
+    {% for req in data.get('install_requires', []) %}
+      - {{ req }}
+    {% endfor %}
+
+test:
+ imports:
+   - aspired
+
+about:
+  home: https://github.com/cylammarco/ASPIRED
+  license: GPL-3.0
+  license_file: license
+  description: The Automated SpectroPhotometric REDuction (ASPIRED) toolkit is aimed to be as general as possible with high flexibility such that it can work with different instruments. It offers a flexible set of functions for users to refine and tailor-make automated pipelines for different instruments. ASPIRED is entirely Python-based and is independent of iraf.
+  summary: Automated SpectroPhotometric Image REDuction (ASPIRED)

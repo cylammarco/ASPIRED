@@ -5091,7 +5091,7 @@ class OneDSpec:
         else:
 
             filename = pkg_resources.resource_filename(
-                "aspired", "extinction/{}_atm_extinct.txt".format(location)
+                "aspired", "extinction/{}_atm_extinct.txt".format(location.lower())
             )
             extinction_table = np.loadtxt(filename, delimiter=",")
             self.extinction_func = interp1d(
@@ -5175,7 +5175,7 @@ class OneDSpec:
 
                 standard_am = standard_airmass
                 self.logger.info(
-                    "Airmass is set to be {}.".format(standard_am)
+                    "Standard airmass is set to be {}.".format(standard_am)
                 )
 
             if isinstance(standard_airmass, str):
@@ -5195,7 +5195,7 @@ class OneDSpec:
                         "Keyword for airmass: {} cannot be found "
                         "in header.".format(standard_airmass)
                     )
-                    self.logger.warning("Airmass is set to be 1.0")
+                    self.logger.warning("Standard airmass is set to be 1.0")
 
         else:
 
@@ -5212,7 +5212,7 @@ class OneDSpec:
                     "Keyword for airmass: AIRMASS cannot be found "
                     "in header."
                 )
-                self.logger.warning("Airmass is set to be 1.0")
+                self.logger.warning("Standard airmass is set to be 1.0")
 
         if spec_id is not None:
 
@@ -5243,6 +5243,9 @@ class OneDSpec:
                 if isinstance(science_airmass, (int, float)):
 
                     science_am = science_airmass
+                    self.logger.info(
+                        "Science airmass is set to be {}.".format(standard_am)
+                    )
 
                 if isinstance(science_airmass, str):
 
@@ -5256,6 +5259,9 @@ class OneDSpec:
 
                         self.logger.warning(str(e))
                         science_am = 1.0
+                        self.logger.info(
+                            "Science airmass is set to be 1.0."
+                        )
 
             else:
 
@@ -5264,11 +5270,17 @@ class OneDSpec:
                     try:
 
                         science_am = science_spec.spectrum_header["AIRMASS"]
+                        self.logger.info(
+                            f"Science airmass is set to be {science_am}."
+                        )
 
                     except Exception as e:
 
                         self.logger.warning(str(e))
                         science_am = 1.0
+                        self.logger.info(
+                            "Science airmass is set to be 1.0."
+                        )
 
             if science_am is None:
 

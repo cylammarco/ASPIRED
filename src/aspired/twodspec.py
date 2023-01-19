@@ -242,8 +242,9 @@ class TwoDSpec:
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
-        elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
-            data, fits.hdu.image.ImageHDU
+        elif (
+            isinstance(data, fits.hdu.image.PrimaryHDU)
+            or isinstance(data, fits.hdu.image.ImageHDU)
         ):
 
             self.img = data.data
@@ -280,6 +281,8 @@ class TwoDSpec:
                 self.set_header(data.image_fits.header)
             else:
                 self.set_header(header)
+
+            self.logger.info("An ImageReduction is loaded as data.")
 
             if data.arc_main is not None:
 
@@ -1239,8 +1242,9 @@ class TwoDSpec:
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
-        elif isinstance(bad_mask, fits.hdu.image.PrimaryHDU) or isinstance(
-            bad_mask, fits.hdu.image.ImageHDU
+        elif (
+            isinstance(bad_mask, fits.hdu.image.PrimaryHDU)
+            or isinstance(bad_mask, fits.hdu.image.ImageHDU)
         ):
             self.bad_mask = bad_mask.data
 
@@ -1349,8 +1353,9 @@ class TwoDSpec:
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
-        elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
-            arc, fits.hdu.image.ImageHDU
+        elif (
+            isinstance(arc, fits.hdu.image.PrimaryHDU)
+            or isinstance(arc, fits.hdu.image.ImageHDU)
         ):
 
             self.arc = arc.data
@@ -1917,25 +1922,27 @@ class TwoDSpec:
 
             self.logger.info('The "header" provided is None. Doing nothing.')
 
-        if self.exptime_is_default_value:
+        if self.header is not None:
 
-            self.set_exptime()
+            if self.exptime_is_default_value:
 
-        if self.airmass_is_default_value:
+                self.set_exptime()
 
-            self.set_airmass()
+            if self.airmass_is_default_value:
 
-        if self.seeing_is_default_value:
+                self.set_airmass()
 
-            self.set_seeing()
+            if self.seeing_is_default_value:
 
-        if self.readnoise_is_default_value:
+                self.set_seeing()
 
-            self.set_readnoise()
+            if self.readnoise_is_default_value:
 
-        if self.gain_is_default_value:
+                self.set_readnoise()
 
-            self.set_gain()
+            if self.gain_is_default_value:
+
+                self.set_gain()
 
     def _gaus(self, x, a, b, x0, sigma):
         """

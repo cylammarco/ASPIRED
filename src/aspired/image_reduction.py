@@ -2053,7 +2053,7 @@ class ImageReduction:
                 )
                 self.dark_filename.append(self.dark_list[i].split("/")[-1])
 
-            # combine the arc frames
+            # combine the dark frames
             self.dark_main = self.combine_dark()
 
         # Get the flats if available
@@ -2080,7 +2080,7 @@ class ImageReduction:
                 )
                 self.flat_filename.append(self.flat_list[i].split("/")[-1])
 
-            # combine the arc frames
+            # combine the flat frames
             self.flat_main = self.combine_flat()
 
         # Get the biases if available
@@ -2105,7 +2105,7 @@ class ImageReduction:
                 )
                 self.bias_filename.append(self.bias_list[i].split("/")[-1])
 
-            # combine the arc frames
+            # combine the bias frames
             self.bias_main = self.combine_bias()
 
     def add_light(self, light, header, exposure_time):
