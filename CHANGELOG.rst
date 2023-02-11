@@ -1,3 +1,30 @@
+Version 0.4.9
+-------------
+
+:Date 11-2-2023
+
+* Minor bug fixes
+
+  * Fixed a upper/lowercase bug in loading standard stars
+  * Fixed `OneDSpec` CSV export issue with `weigth_map` and `arc_spec`
+
+* Other changes
+
+  * Adopted astropy models for fitting gaussian functions
+  * `TwoDSpec` can now export CSV
+  * `spectres_numba` is supported
+  * require plotly!=5.12.0
+  * capped `rascal` minor version number
+  * Atempting to auto-publish to conda
+
+Version 0.4.8
+-------------
+
+:Date 1-12-2022
+
+(Duplicate)
+
+
 Version 0.4.7
 -------------
 

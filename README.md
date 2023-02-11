@@ -10,7 +10,7 @@
 
 We aim to provide a suite of publicly available spectral data reduction software to facilitate rapid scientific outcomes from time-domain observations. For time resolved observations, an automated pipeline frees astronomers from performance of the routine data analysis tasks to concentrate on interpretation, planning future observations and communication with international collaborators. Part of the OPTICON project coordinates the operation of a network of largely self-funded European robotic and conventional telescopes, coordinating common science goals and providing the tools to deliver science-ready photometric and spectroscopic data. As part of this activity is [SPRAT](https://ui.adsabs.harvard.edu/abs/2014SPIE.9147E..8HP/abstract), a compact, reliable, low-cost and high-throughput spectrograph and appropriate for deployment on a wide range of 1-4m class telescopes. Installed on the Liverpool Telescope since 2014, the deployable slit and grating mechanism and optical fibre based calibration system make the instrument self-contained.
 
-ASPIRED is written for use with python 3.7, 3.8 and 3.9 (will revisit 3.10 in the future when it becomes available with github actions), and is intentionally developed as a self-consistent reduction pipeline with its own diagnostics and error handling. The pipeline should be able to reduce 2D spectral data from raw image to wavelength and flux calibrated 1D spectrum automatically without any user input (quicklook quality). However, the real goal is to provide a set of easily configurable routines to build pipelines for long slit spectrographs on different telescopes (science quality). We use SPRAT as a test case for this development, but our aim is to support a much wider range of instruments. By delivering near real-time data reduction we will facilitate automated or interactive decision making, allowing "on-the-fly" modification of observing strategies and rapid triggering of other facilities.
+ASPIRED is written for use with python 3.8, 3.9, 3.10 and 3.11. It is intentionally developed as a self-consistent reduction pipeline with its own diagnostics and error handling. The pipeline should be able to reduce 2D spectral data from raw image to wavelength and flux calibrated 1D spectrum automatically without any user input (quicklook quality). However, the real goal is to provide a set of easily configurable routines to build pipelines for long slit spectrographs on different telescopes (science quality). We use SPRAT as a test case for this development, but our aim is to support a much wider range of instruments. By delivering near real-time data reduction we will facilitate automated or interactive decision making, allowing "on-the-fly" modification of observing strategies and rapid triggering of other facilities.
 
 Further information can be referred to this [arXiv article](https://arxiv.org/abs/2111.02127).
 
@@ -46,14 +46,14 @@ We are to cover as many use cases as possible. If you would like to apply some r
 See the examples of these use cases at [aspired-example](https://github.com/cylammarco/ASPIRED-example/).
 
 ## Dependencies
-* python >= 3.7
-* numpy
-* scipy
-* [astropy](https://github.com/astropy/astropy) >= 4.0
+* python >= 3.6
+* numpy >= 1.18
+* scipy >= 1.7
+* [astropy](https://github.com/astropy/astropy) >= 4.3
 * [astroscrappy](https://github.com/astropy/astroscrappy) >= 1.1
-* [ccdproc](https://github.com/astropy/ccdproc)
-* [plotly](https://github.com/plotly/plotly.py) >= 5.0
-* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.2
+* [ccdproc](https://github.com/astropy/ccdproc) >= 2.3
+* [plotly](https://github.com/plotly/plotly.py) >=5.6,!=5.12.0
+* [rascal](https://github.com/jveitchmichaelis/rascal) >=0.3.9,<0.4
 * [spectres](https://github.com/ACCarnall/SpectRes) >= 2.1.1
 * [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.13
 
