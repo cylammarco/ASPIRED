@@ -2361,10 +2361,6 @@ class ImageReduction:
 
             self.clip_high_light = clip_high_light
 
-        if self.combintype_light ==  "average":
-
-            self.exptime_light = np.mean()
-
         return self._combine(
             self.light_CCDData,
             self.combinetype_light,
