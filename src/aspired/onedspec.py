@@ -6990,7 +6990,7 @@ class OneDSpec:
                 "count_resampled",
                 "sensitivity",
                 "flux",
-                "sensitivity",
+                "sensitivity_resampled",
                 "flux_resampled",
             ]:
 

@@ -836,9 +836,9 @@ class ImageReduction:
         # exptime_light
         if exptime_light is None:
 
-            self.exptime_light = 5
+            self.exptime_light = self.exptime_light_default
             self.logger.warning(
-                "Unknown sigma_clipping_light, it is set to 5."
+                "exptime_light is None, it is set to 1."
             )
 
         elif isinstance(exptime_light, (float, int)):
@@ -2360,6 +2360,10 @@ class ImageReduction:
         if clip_high_light is not None:
 
             self.clip_high_light = clip_high_light
+
+        if self.combintype_light ==  "average":
+
+            self.exptime_light = np.mean()
 
         return self._combine(
             self.light_CCDData,
