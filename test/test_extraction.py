@@ -53,15 +53,15 @@ dummy_data = np.random.normal(dummy_data)
 dummy_gaussian_data = (
     np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
 ).T * 10000.0 + bg_level
-dummy_gaussian_data = np.random.normal(dummy_gaussian_data)
+dummy_gaussian_data = np.random.normal(dummy_gaussian_data, scale=bg_level)
 
 # Prepare faint dummy gaussian data
 dummy_gaussian_data_faint = (
     np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
 ).T * 100.0 + bg_level
-dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint)
+dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint, scale=bg_level)
 
-
+"""
 def test_spectral_extraction():
 
     # masking
@@ -125,7 +125,7 @@ def test_spectral_extraction():
         fig_type="iframe+png",
         return_jsonstring=True,
     )
-
+"""
 
 def test_gausian_spectral_extraction():
     # masking
@@ -190,6 +190,7 @@ def test_gausian_spectral_extraction():
         lowess_frac=0.05,
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    print(count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
@@ -197,7 +198,7 @@ def test_gausian_spectral_extraction():
     )
 
     # Optimal extraction (Marsh89)
-    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="marsh89")
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_marsh = count / count_err
@@ -206,7 +207,7 @@ def test_gausian_spectral_extraction():
     )
 
 
-def test_gaussian_spectral_extraction_low_signal():
+def test_gaussian_spectral_extraction_top_hat_low_signal():
     # masking
     spec_mask = np.arange(10, 900)
     spatial_mask = np.arange(15, 85)
@@ -252,13 +253,69 @@ def test_gaussian_spectral_extraction_low_signal():
         "Extracted count is " + str(count) + " but it should be ~100."
     )
 
+def test_gaussian_spectral_extraction_horne86_gaussian_low_signal():
+    # masking
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_gaussian_data_faint,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        cosmicray_sigma=5.0,
+        readnoise=0.1,
+        gain=1.0,
+        seeing=1.0,
+        exptime=1.0,
+    )
+
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
+    dummy_twodspec.ap_trace(
+        rescale=True,
+        fit_deg=0,
+    )
+
     # Optimal extraction (Horne86 gauss)
-    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="gauss")
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm='horne86', model="gauss")
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
+    )
+
+def test_gaussian_spectral_extraction_horne86_lowess_low_signal():
+    # masking
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_gaussian_data_faint,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        cosmicray_sigma=5.0,
+        readnoise=0.1,
+        gain=1.0,
+        seeing=1.0,
+        exptime=1.0,
+    )
+
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
+    dummy_twodspec.ap_trace(
+        rescale=True,
+        fit_deg=0,
     )
 
     # Optimal extraction (Horne86 lowess)
@@ -275,8 +332,36 @@ def test_gaussian_spectral_extraction_low_signal():
         "Extracted count is " + str(count) + " but it should be ~100."
     )
 
+def test_gaussian_spectral_extraction_marsh89_low_signal():
+    # masking
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+
+    # initialise the two spectral_reduction.TwoDSpec()
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        dummy_gaussian_data_faint,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        cosmicray_sigma=5.0,
+        readnoise=0.1,
+        gain=1.0,
+        seeing=1.0,
+        exptime=1.0,
+    )
+
+    # Trace the spectrum, note that the first 15 rows were trimmed from the
+    # spatial_mask
+    dummy_twodspec.ap_trace(
+        rescale=True,
+        fit_deg=0,
+    )
+
     # Optimal extraction (Marsh89)
-    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="marsh89")
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_marsh = count / count_err

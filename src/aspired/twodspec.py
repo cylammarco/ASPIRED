@@ -6,8 +6,9 @@ import os
 from itertools import chain
 
 import numpy as np
-from astropy.nddata import CCDData
 from astropy.io import fits
+from astropy.modeling import models, fitting
+from astropy.nddata import CCDData
 from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
@@ -15,6 +16,7 @@ from plotly import io as pio
 from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
+from scipy.stats import norm
 
 try:
     from spectres import spectres_numba as spectres
@@ -242,9 +244,8 @@ class TwoDSpec:
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
-        elif (
-            isinstance(data, fits.hdu.image.PrimaryHDU)
-            or isinstance(data, fits.hdu.image.ImageHDU)
+        elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
+            data, fits.hdu.image.ImageHDU
         ):
 
             self.img = data.data
@@ -1242,9 +1243,8 @@ class TwoDSpec:
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
-        elif (
-            isinstance(bad_mask, fits.hdu.image.PrimaryHDU)
-            or isinstance(bad_mask, fits.hdu.image.ImageHDU)
+        elif isinstance(bad_mask, fits.hdu.image.PrimaryHDU) or isinstance(
+            bad_mask, fits.hdu.image.ImageHDU
         ):
             self.bad_mask = bad_mask.data
 
@@ -1353,9 +1353,8 @@ class TwoDSpec:
             )
 
         # If it is a fits.hdu.image.PrimaryHDU object
-        elif (
-            isinstance(arc, fits.hdu.image.PrimaryHDU)
-            or isinstance(arc, fits.hdu.image.ImageHDU)
+        elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
+            arc, fits.hdu.image.ImageHDU
         ):
 
             self.arc = arc.data
@@ -1944,31 +1943,6 @@ class TwoDSpec:
 
                 self.set_gain()
 
-    def _gaus(self, x, a, b, x0, sigma):
-        """
-        Simple Gaussian function.
-
-        Parameters
-        ----------
-        x: float or 1-d numpy array
-            The data to evaluate the Gaussian over
-        a: float
-            the amplitude
-        b: float
-            the constant offset
-        x0: float
-            the center of the Gaussian
-        sigma: float
-            the width of the Gaussian
-
-        Returns
-        -------
-        Array or float of same type as input (x).
-
-        """
-
-        return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + b
-
     def ap_trace(
         self,
         nspec=1,
@@ -2273,7 +2247,7 @@ class TwoDSpec:
                 / resample_factor
             )
 
-        for i in range(len(spec_idx)):
+        for i, spec_i in enumerate(spec_idx):
 
             # Get the median of the subspectrum and then get the Count at the
             # central 5 pixels of the aperture
@@ -2282,7 +2256,7 @@ class TwoDSpec:
             for j in range(nwindow):
 
                 # rounding
-                idx = int(np.round(spec_idx[i][j] + 0.5)) * resample_factor
+                idx = int(np.round(spec_i[j] + 0.5)) * resample_factor
                 subspec_cleaned = sigma_clip(
                     img_split[j], sigma=3, masked=True
                 ).data
@@ -2301,7 +2275,7 @@ class TwoDSpec:
             )
 
             # fit the trace
-            ap_p = np.polyfit(spec_pix[mask], spec_idx[i][mask], int(fit_deg))
+            ap_p = np.polyfit(spec_pix[mask], spec_i[mask], int(fit_deg))
             ap = np.polyval(ap_p, np.arange(self.spec_size) * resample_factor)
             self.logger.info(
                 "The trace is found at {}.".format(
@@ -2323,24 +2297,34 @@ class TwoDSpec:
             last_pix = int(min(len(spec_spatial), last_pix))
 
             # compute ONE sigma for each trace
-            pguess = [
-                np.nanmax(spec_spatial[first_pix:last_pix]),
-                np.nanpercentile(spec_spatial[first_pix:last_pix], 5.0),
-                ap_centre_pix - first_pix,
-                3.0 * resample_factor,
-            ]
-
             non_nan_mask = np.isfinite(
                 spec_spatial[first_pix:last_pix]
             ) & ~np.isnan(spec_spatial[first_pix:last_pix])
 
-            popt, _ = curve_fit(
-                self._gaus,
-                np.arange(len(spec_spatial[first_pix:last_pix]))[non_nan_mask],
-                spec_spatial[first_pix:last_pix][non_nan_mask],
-                p0=pguess,
+            # construct the guassian and background profile
+            gauss_prof = models.Gaussian1D(
+                amplitude=np.nanmax(spec_spatial[first_pix:last_pix]),
+                mean=ap_centre_pix / resample_factor,
+                stddev=3.0 * resample_factor,
             )
-            ap_sigma = abs(popt[3]) / resample_factor
+            bkg_prof = models.Linear1D(
+                slope=0.0,
+                intercept=np.nanpercentile(
+                    spec_spatial[first_pix:last_pix], 5.0
+                ),
+            )
+
+            # combined profile
+            total_prof = gauss_prof + bkg_prof
+
+            # Fit the profile
+            fitter = fitting.LevMarLSQFitter()
+            fitted_profile_func = fitter(
+                total_prof,
+                np.arange(first_pix, last_pix)[non_nan_mask] / resample_factor,
+                spec_spatial[first_pix:last_pix][non_nan_mask],
+            )
+            ap_sigma = fitted_profile_func.stddev_0.value / resample_factor
 
             self.logger.info(
                 "Aperture is fitted with a Gaussian sigma of "
@@ -2356,6 +2340,7 @@ class TwoDSpec:
                 log_file_name=self.log_file_name,
             )
             self.spectrum_list[i].add_trace(list(ap), [ap_sigma] * len(ap))
+            self.spectrum_list[i].add_profile_func(fitted_profile_func)
             self.spectrum_list[i].add_gain(self.gain)
             self.spectrum_list[i].add_readnoise(self.readnoise)
             self.spectrum_list[i].add_exptime(self.exptime)
@@ -2391,7 +2376,7 @@ class TwoDSpec:
                 fig.add_trace(
                     go.Scatter(
                         x=spec_pix / resample_factor,
-                        y=spec_idx[i],
+                        y=spec_i,
                         mode="markers",
                         marker=dict(color="grey"),
                     )
@@ -3625,6 +3610,37 @@ class TwoDSpec:
 
                         var_i = None
 
+                    if model == "gauss":
+
+                        # .left is the gaussian model
+                        _profile_func = self.spectrum_list[j].profile_func.left
+                        _profile = _profile_func(source_pix)
+                        _profile /= np.sum(_profile)
+                        _lower = (pos - min(source_pix)) / _profile_func.stddev
+                        _upper = (max(source_pix) - pos + 1) / _profile_func.stddev
+                        _profile *= np.diff(norm.cdf([-_lower, _upper]))
+
+                    elif model == "lowess":
+
+                        _profile = lowess(
+                            source_slice - count_sky_source_slice,
+                            source_pix,
+                            frac=lowess_frac,
+                            it=lowess_it,
+                            delta=lowess_delta,
+                            return_sorted=False,
+                        )
+                        _profile[_profile < 0] = 0.0
+                        _profile /= np.nansum(_profile)
+
+                    else:
+
+                        self.logger.error(
+                            "The provided model has to be gauss or lowess, "
+                            "{} is given. lowess is used.".format(model)
+                        )
+                        model = "lowess"
+
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
                     (
@@ -3634,11 +3650,9 @@ class TwoDSpec:
                         profile[i][profile_start_idx:profile_end_idx],
                         var_temp,
                     ) = self._optimal_extraction_horne86(
-                        pix=source_pix,
                         source_slice=source_slice,
                         sky=count_sky_source_slice,
-                        mu=pos,
-                        sigma=spec.trace_sigma[i],
+                        profile=_profile,
                         tol=tolerance,
                         max_iter=max_iter,
                         readnoise=self.readnoise,
@@ -3646,10 +3660,6 @@ class TwoDSpec:
                         cosmicray_sigma=self.cosmicray_sigma,
                         forced=forced,
                         variances=var_i,
-                        model=model,
-                        lowess_frac=lowess_frac,
-                        lowess_it=lowess_it,
-                        lowess_delta=lowess_delta,
                         bad_mask=source_bad_mask,
                     )
 
@@ -4146,11 +4156,9 @@ class TwoDSpec:
 
     def _optimal_extraction_horne86(
         self,
-        pix,
         source_slice,
         sky,
-        mu,
-        sigma,
+        profile=None,
         tol=1e-6,
         max_iter=99,
         gain=1.0,
@@ -4158,10 +4166,6 @@ class TwoDSpec:
         cosmicray_sigma=5.0,
         forced=False,
         variances=None,
-        model="lowess",
-        lowess_frac=0.1,
-        lowess_it=3,
-        lowess_delta=0.0,
         bad_mask=None,
     ):
         """
@@ -4178,18 +4182,15 @@ class TwoDSpec:
 
         Parameters
         ----------
-        pix: 1D numpy.ndarray (N)
-            pixel number along the spatial direction
         source_slice: 1D numpy.ndarray (N)
             The counts along the profile for extraction, including the sky
             regions to be fitted and subtracted from. (NOT count per second)
         sky: 1D numpy.ndarray (N)
             Count of the fitted sky along the pix, has to be the same
             length as pix
-        mu: float
-            The center of the Gaussian
-        sigma: float
             The width of the Gaussian
+        profile: 1D numpy.ndarray (N)
+            The gaussian profile (only used if model='gauss')
         tol: float
             The tolerance limit for the covergence
         max_iter: int
@@ -4205,16 +4206,6 @@ class TwoDSpec:
         variances: 1D numpy.ndarray (N)
             The 1/weights of used for optimal extraction, has to be the
             same length as the pix. Only used if forced is True.
-        model: str (Default: 'lowess')
-            Choice of 'gauss' and 'lowess' for gaussian profile and a LOWESS
-            local regression fitting.
-        lowess_frac: float (Default: 0.1)
-            The fraction of the data used when estimating each y-value.
-        lowess_it: int (Default: 3)
-            The number of residual-based reweightings to perform.
-        lowess_delta: float (Default: 0.0)
-            Distance within which to use linear-interpolation instead of
-            weighted regression.
         bad_mask: list or None (Default: None)
             Mask of the bad or usable pixels.
 
@@ -4239,20 +4230,13 @@ class TwoDSpec:
 
         # step 4a - extract standard spectrum
         f = source_slice - sky
-        f[f < 0] = 0.0
         f1 = np.nansum(f)
 
         # step 4b - variance of standard spectrum
         v1 = 1.0 / np.nansum(1.0 / var1)
 
         # step 5 - construct the spatial profile
-        if not np.in1d(model, ["gauss", "lowess"]):
-
-            self.logger.error(
-                "The provided model has to be gauss or lowess, "
-                "{} is given. lowess is used.".format(model)
-            )
-            model = "lowess"
+        P = profile
 
         f_diff = 1
         v_diff = 1
@@ -4261,26 +4245,11 @@ class TwoDSpec:
 
         while (f_diff > tol) | (v_diff > tol):
 
-            if model == "gauss":
-
-                P = self._gaus(pix, 1.0, 0.0, mu, sigma)
-
-            else:
-
-                P = lowess(
-                    f,
-                    pix,
-                    frac=lowess_frac,
-                    it=lowess_it,
-                    delta=lowess_delta,
-                    return_sorted=False,
-                )
-
-            P[P < 0] = 0.0
-            P /= np.nansum(P)
-
             mask_cr = np.ones(len(P), dtype=bool)
-            mask_cr = mask_cr & ~bad_mask.astype(bool)
+
+            if bad_mask is not None:
+
+                mask_cr = mask_cr & ~bad_mask.astype(bool)
 
             if forced:
 

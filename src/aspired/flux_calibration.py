@@ -975,7 +975,7 @@ class FluxCalibration(StandardLibrary):
         self,
         k=3,
         method="interpolate",
-        mask_range=[[6850, 6960], [7580, 7700]],
+        mask_range=[[6850.0, 6960.0], [7580.0, 7700.0]],
         mask_fit_order=1,
         mask_fit_size=3,
         smooth=False,
@@ -1045,6 +1045,9 @@ class FluxCalibration(StandardLibrary):
         count_err = np.asarray(getattr(self.spectrum1D, "count_err"))
         wave = np.asarray(getattr(self.spectrum1D, "wave"))
 
+        print(wave)
+        print(count)
+
         if getattr(self.spectrum1D, "count_continuum") is None:
 
             self.spectrum1D.add_count_continuum(
@@ -1112,10 +1115,10 @@ class FluxCalibration(StandardLibrary):
 
                 # Get the indices for the two sides of the masking region
                 left_end = (
-                    int(max(np.where(standard_wave_true <= m[0])[0])) + 1
+                    int(np.max(np.where(standard_wave_true <= m[0]))) + 1
                 )
                 left_start = int(left_end - mask_fit_size)
-                right_start = int(min(np.where(standard_wave_true >= m[1])[0]))
+                right_start = int(np.min(np.where(standard_wave_true >= m[1])))
                 right_end = int(right_start + mask_fit_size) + 1
 
                 # Get the wavelengths of the two sides

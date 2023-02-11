@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import copy
 import datetime
 import logging
 import os
@@ -157,7 +158,9 @@ class Spectrum1D:
         self.count_err = None
         self.count_sky = None
         self.var = None
-
+        self.profile = None
+        self.profile_func = None
+        
         # Wavelength calibration properties
         self.arc_spec = None
         self.peaks = None
@@ -706,6 +709,27 @@ class Spectrum1D:
         """
 
         self.var = None
+
+    def add_profile_func(self, profile_func):
+        """
+        Add the fitted trace profile.
+
+        Parameters
+        ----------
+        profile_func: a fitted astropy.model
+            The fitted trace profile.
+
+        """
+
+        self.profile_func = profile_func
+
+    def remove_profile_func(self):
+        """
+        Remove the fitted trace profile.
+
+        """
+
+        self.profile_func = None
 
     def add_profile(self, profile):
         """
@@ -2773,17 +2797,17 @@ class Spectrum1D:
 
             # Use the header of the standard
             if self.spectrum_header is not None:
-                header = self.spectrum_header
+                header = copy.deepcopy(self.spectrum_header)
 
             if self.standard_header is not None:
                 if header is None:
-                    header = self.standard_header
+                    header = copy.deepcopy(self.standard_header)
                 else:
                     header += self.standard_header
 
             if self.arc_header is not None:
                 if header is None:
-                    header = self.arc_header
+                    header = copy.deepcopy(self.arc_header)
                 else:
                     header += self.arc_header
 
@@ -2905,17 +2929,17 @@ class Spectrum1D:
 
             # Use the header of the standard
             if self.spectrum_header is not None:
-                header = self.spectrum_header
+                header = copy.deepcopy(self.spectrum_header)
 
             if self.standard_header is not None:
                 if header is None:
-                    header = self.standard_header
+                    header = copy.deepcopy(self.standard_header)
                 else:
                     header += self.standard_header
 
             if self.arc_header is not None:
                 if header is None:
-                    header = self.arc_header
+                    header = copy.deepcopy(self.arc_header)
                 else:
                     header += self.arc_header
 
@@ -3200,6 +3224,7 @@ class Spectrum1D:
 
                 hdu_output += self.trace_hdulist
                 self.hdu_content["trace"] = True
+                self.logger.info('Added trace ImageHDU.')
 
             if "count" in output_split:
 
@@ -3208,6 +3233,7 @@ class Spectrum1D:
 
                 hdu_output += self.count_hdulist
                 self.hdu_content["count"] = True
+                self.logger.info('Added count ImageHDU.')
 
             if "weight_map" in output_split:
 
@@ -3216,6 +3242,7 @@ class Spectrum1D:
 
                 hdu_output += self.weight_map_hdulist
                 self.hdu_content["weight_map"] = True
+                self.logger.info('Added weight_map ImageHDU.')
 
             if "arc_spec" in output_split:
 
@@ -3224,6 +3251,7 @@ class Spectrum1D:
 
                 hdu_output += self.arc_spec_hdulist
                 self.hdu_content["arc_spec"] = True
+                self.logger.info('Added arc_spec ImageHDU.')
 
             if "wavecal" in output_split:
 
@@ -3232,6 +3260,7 @@ class Spectrum1D:
 
                 hdu_output += self.wavecal_hdulist
                 self.hdu_content["wavecal"] = True
+                self.logger.info('Added wavecal ImageHDU.')
 
             if "wavelength" in output_split:
 
@@ -3240,6 +3269,7 @@ class Spectrum1D:
 
                 hdu_output += self.wavelength_hdulist
                 self.hdu_content["wavelength"] = True
+                self.logger.info('Added wavelength ImageHDU.')
 
             if "count_resampled" in output_split:
 
@@ -3248,6 +3278,7 @@ class Spectrum1D:
 
                 hdu_output += self.count_resampled_hdulist
                 self.hdu_content["count_resampled"] = True
+                self.logger.info('Added count_resampled ImageHDU.')
 
             if "sensitivity" in output_split:
 
@@ -3256,6 +3287,7 @@ class Spectrum1D:
 
                 hdu_output += self.sensitivity_hdulist
                 self.hdu_content["sensitivity"] = True
+                self.logger.info('Added sensitivity ImageHDU.')
 
             if "flux" in output_split:
 
@@ -3264,6 +3296,7 @@ class Spectrum1D:
 
                 hdu_output += self.flux_hdulist
                 self.hdu_content["flux"] = True
+                self.logger.info('Added flux ImageHDU.')
 
             if "sensitivity_resampled" in output_split:
 
@@ -3272,6 +3305,7 @@ class Spectrum1D:
 
                 hdu_output += self.sensitivity_resampled_hdulist
                 self.hdu_content["sensitivity_resampled"] = True
+                self.logger.info('Added sensitivity_resampled ImageHDU.')
 
             if "flux_resampled" in output_split:
 
@@ -3280,6 +3314,7 @@ class Spectrum1D:
 
                 hdu_output += self.flux_resampled_hdulist
                 self.hdu_content["flux_resampled"] = True
+                self.logger.info('Added flux_resampled ImageHDU.')
 
             # If the primary HDU is not chosen to be empty
             if not empty_primary_hdu:
@@ -3290,11 +3325,13 @@ class Spectrum1D:
                 )
                 hdu_output.update_extend()
                 self.empty_primary_hdu = False
+                self.logger.info('Updated the HDU extend without an empty PrimaryHDU.')
 
             else:
 
                 hdu_output.update_extend()
                 self.empty_primary_hdu = True
+                self.logger.info('Updated the HDU extend with an empty PrimaryHDU.')
 
             self.hdu_output = hdu_output
 
