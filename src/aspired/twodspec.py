@@ -5187,8 +5187,6 @@ class TwoDSpec:
             Default is False.
         recreate: bool (Default: False)
             Set to True to overwrite the FITS data and header.
-        empty_primary_hdu: bool (Default: True)
-            Set to True to leave the Primary HDU blank
 
         """
 
@@ -5209,7 +5207,6 @@ class TwoDSpec:
                 filename=filename_i,
                 overwrite=overwrite,
                 recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu,
             )
             self.logger.info(
                 "CSV file is saved to {} ".format(filename_i)
