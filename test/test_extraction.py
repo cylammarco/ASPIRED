@@ -61,7 +61,7 @@ dummy_gaussian_data_faint = (
 ).T * 100.0 + bg_level
 dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint, scale=bg_level)
 
-"""
+
 def test_spectral_extraction():
 
     # masking
@@ -125,7 +125,6 @@ def test_spectral_extraction():
         fig_type="iframe+png",
         return_jsonstring=True,
     )
-"""
 
 def test_gausian_spectral_extraction():
     # masking
@@ -379,8 +378,8 @@ def test_user_supplied_trace():
     lhs6328_extracted = fits.open(
         os.path.join(HERE, "test_data", "test_full_run_science_0.fits")
     )
-    lhs6328_trace = lhs6328_extracted[1].data
-    lhs6328_trace_sigma = lhs6328_extracted[2].data
+    lhs6328_trace = lhs6328_extracted["trace"].data
+    lhs6328_trace_sigma = lhs6328_extracted["trace_sigma"].data
 
     lhs6328_twodspec = spectral_reduction.TwoDSpec(
         os.path.join(HERE, "test_data", "v_e_20180810_12_1_0_0.fits.gz"),
@@ -582,7 +581,7 @@ def test_gausian_spectral_extraction_10000s_exptime_2x_gain():
     )
 
     # Optimal extraction (Marsh89)
-    dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="marsh89")
+    dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_marsh = count / count_err

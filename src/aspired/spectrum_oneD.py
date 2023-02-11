@@ -162,6 +162,8 @@ class SpectrumOneD:
         self.count_err = None
         self.count_sky = None
         self.var = None
+        self.profile = None
+        self.profile_func = None
 
         # Wavelength calibration properties
         self.arc_spec = None
@@ -851,6 +853,24 @@ class SpectrumOneD:
         """
 
         self.var = None
+
+    def add_profile_func(self, profile_func):
+        """
+        Add the fitted trace profile.
+        Parameters
+        ----------
+        profile_func: a fitted astropy.model
+            The fitted trace profile.
+        """
+
+        self.profile_func = profile_func
+
+    def remove_profile_func(self):
+        """
+        Remove the fitted trace profile.
+        """
+
+        self.profile_func = None
 
     def add_profile(self, profile):
         """

@@ -20,7 +20,6 @@ from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import ndimage
 from scipy import signal
-from scipy.optimize import curve_fit
 from scipy.stats import norm
 
 try:
@@ -2271,7 +2270,7 @@ class TwoDSpec:
             )
             fig.add_trace(
                 go.Scatter(
-                    x=spec_pix / resample_factor,
+                    x=self.spec_pix / self.resample_factor,
                     y=spec_i,
                     mode="markers",
                     marker=dict(color="grey"),
@@ -3459,7 +3458,7 @@ class TwoDSpec:
                         is_optimal[i],
                         profile[i][profile_start_idx:profile_end_idx],
                         var_temp,
-                    ) = self._optimal_extraction_horne86(
+                    ) = optimal_extraction_horne86(
                         source_slice=source_slice,
                         sky=count_sky_source_slice,
                         profile=_profile,
@@ -4010,12 +4009,8 @@ class TwoDSpec:
             fig.update_layout(
                 yaxis=dict(
                     range=[
-                        np.nanmin(
-                            sigma_clip(profile, sigma=5.0, masked=False)
-                        ),
-                        np.nanmax(
-                            sigma_clip(profile, sigma=10.0, masked=False)
-                        ),
+                        np.nanmin(profile),
+                        np.nanmax(profile),
                     ],
                     zeroline=False,
                     domain=[0, 1.0],
