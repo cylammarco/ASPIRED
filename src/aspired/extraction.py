@@ -61,11 +61,9 @@ def tophat_extraction(
     """
 
     if source_bad_mask is not None:
-
         source_slice = source_slice[source_bad_mask]
 
     if source_bad_mask is not None:
-
         sky_source_slice = source_slice[sky_source_bad_mask]
 
     # Get the total count
@@ -101,11 +99,10 @@ def tophat_extraction(
 
 
 def optimal_extraction_horne86(
-    pix,
+    self,
     source_slice,
     sky,
-    mu,
-    sigma,
+    profile=None,
     tol=1e-6,
     max_iter=99,
     gain=1.0,
@@ -113,11 +110,7 @@ def optimal_extraction_horne86(
     cosmicray_sigma=5.0,
     forced=False,
     variances=None,
-    model="lowess",
-    lowess_frac=0.15,
-    lowess_it=3,
-    lowess_delta=0.0,
-    bad_mask=(0,),
+    bad_mask=None,
 ):
     """
     Make sure the counts are the number of photoelectrons or an equivalent
@@ -133,18 +126,15 @@ def optimal_extraction_horne86(
 
     Parameters
     ----------
-    pix: 1D numpy.ndarray (N)
-        pixel number along the spatial direction
     source_slice: 1D numpy.ndarray (N)
         The counts along the profile for extraction, including the sky
         regions to be fitted and subtracted from. (NOT count per second)
     sky: 1D numpy.ndarray (N)
         Count of the fitted sky along the pix, has to be the same
         length as pix
-    mu: float
-        The center of the Gaussian
-    sigma: float
         The width of the Gaussian
+    profile: 1D numpy.ndarray (N)
+        The gaussian profile (only used if model='gauss')
     tol: float
         The tolerance limit for the covergence
     max_iter: int
@@ -160,16 +150,6 @@ def optimal_extraction_horne86(
     variances: 1D numpy.ndarray (N)
         The 1/weights of used for optimal extraction, has to be the
         same length as the pix. Only used if forced is True.
-    model: str (Default: 'lowess')
-        Choice of 'gauss' and 'lowess' for gaussian profile and a LOWESS
-        local regression fitting.
-    lowess_frac: float (Default: 0.1)
-        The fraction of the data used when estimating each y-value.
-    lowess_it: int (Default: 3)
-        The number of residual-based reweightings to perform.
-    lowess_delta: float (Default: 0.0)
-        Distance within which to use linear-interpolation instead of
-        weighted regression.
     bad_mask: list or None (Default: None)
         Mask of the bad or usable pixels.
 
@@ -194,77 +174,43 @@ def optimal_extraction_horne86(
 
     # step 4a - extract standard spectrum
     f = source_slice - sky
-    f[f < 0] = 0.0
     f1 = np.nansum(f)
 
     # step 4b - variance of standard spectrum
     v1 = 1.0 / np.nansum(1.0 / var1)
 
     # step 5 - construct the spatial profile
-    if not np.in1d(model, ["gauss", "lowess"]):
-
-        model = "lowess"
+    P = profile
 
     f_diff = 1
     v_diff = 1
     i = 0
     is_optimal = True
 
-    if model == "gauss":
-
-        correction = special.erf(len(pix) * 0.5 / sigma / 1.4142135623730951)
-        P = np.mean(
-            np.reshape(
-                gaus(ndimage.zoom(pix, 100), 1.0, 0.0, mu, sigma),
-                (len(pix), 100),
-            ),
-            axis=1,
-        )
-        P /= np.sum(P)
-        P *= correction
-
-    else:
-
-        P = lowess(
-            f,
-            pix,
-            frac=lowess_frac,
-            it=lowess_it,
-            delta=lowess_delta,
-            return_sorted=False,
-        )
-        # This cannot happen in gaus, so it is only under 'else'
-        P[P < 0] = 0.0
-        P /= np.nansum(P)
-        correction = 1.0
-
-    var_f = variances
-
     while (f_diff > tol) | (v_diff > tol):
+        mask_cr = np.ones(len(P), dtype=bool)
+
+        if bad_mask is not None:
+            mask_cr = mask_cr & ~bad_mask.astype(bool)
+
+        if forced:
+            var_f = variances
 
         f0 = f1
         v0 = v1
-        mask_cr = np.ones(len(P), dtype=bool)
-
-        if mask_cr is not None:
-
-            mask_cr = mask_cr & ~bad_mask.astype(bool)
 
         # step 6 - revise variance estimates
         # var_f is the V in Horne87
         if not forced:
-
             var_f = readnoise**2.0 + np.abs(P * f0 + sky) / gain
 
         # step 7 - cosmic ray mask, only start considering after the
         # 2nd iteration. 1 pixel is masked at a time until convergence,
         # once the pixel is masked, it will stay masked.
         if i > 1:
-
             ratio = (cosmicray_sigma**2.0 * var_f) / (f - P * f0) ** 2.0
 
             if (ratio > 1).any():
-
                 mask_cr[np.argmax(ratio)] = False
 
         denom = np.nansum((P**2.0 / var_f)[mask_cr])
@@ -281,18 +227,18 @@ def optimal_extraction_horne86(
         i += 1
 
         if i == int(max_iter):
-
             is_optimal = False
             break
 
-    _signal = f1
-    _noise = np.sqrt(v1)
+    signal = f1
+    noise = np.sqrt(v1)
 
-    # Aperture correction
-    _signal /= correction
-    _noise /= correction
+    self.logger.debug(
+        "The signal and noise from the tophat extraction "
+        "are {} and {}.".format(signal, noise)
+    )
 
-    return _signal, _noise, is_optimal, P, var_f
+    return signal, noise, is_optimal, P, var_f
 
 
 def optimal_extraction_marsh89(
@@ -382,28 +328,23 @@ def optimal_extraction_marsh89(
     variance = variance.transpose()
 
     if isinstance(apwidth, (float, int)):
-
         # first do the aperture count
         width_dn = apwidth
         width_up = apwidth
 
     elif isinstance(apwidth, (list, np.ndarray)) & (len(apwidth) == 2):
-
         width_dn = apwidth[0]
         width_up = apwidth[1]
 
     else:
-
         width_dn = 7
         width_up = 7
 
     if goodpixelmask is not None:
-
         goodpixelmask = goodpixelmask.transpose()
         goodpixelmask = np.array(goodpixelmask, copy=True).astype(bool)
 
     else:
-
         goodpixelmask = np.ones_like(frame, dtype=bool)
 
     goodpixelmask *= np.isfinite(frame) * np.isfinite(variance)

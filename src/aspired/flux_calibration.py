@@ -1071,10 +1071,7 @@ class FluxCalibration(StandardLibrary):
         self,
         k=3,
         method="interpolate",
-        mask_range=[
-            [6850, 6960],
-            [7580, 7700],
-        ],
+        mask_range=[[6850.0, 6960.0], [7580.0, 7700.0]],
         mask_fit_order=1,
         mask_fit_size=3,
         smooth=False,

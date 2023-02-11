@@ -11,8 +11,9 @@ import os
 from itertools import chain
 
 import numpy as np
-from astropy.nddata import CCDData
 from astropy.io import fits
+from astropy.modeling import models, fitting
+from astropy.nddata import CCDData
 from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
@@ -20,6 +21,7 @@ from plotly import io as pio
 from scipy import ndimage
 from scipy import signal
 from scipy.optimize import curve_fit
+from scipy.stats import norm
 
 try:
     from spectres import spectres_numba as spectres
@@ -245,7 +247,6 @@ class TwoDSpec:
         self.set_properties(**kwargs)
 
         if self.arc is not None:
-
             self.apply_mask_to_arc()
 
     def add_data(
@@ -279,7 +280,6 @@ class TwoDSpec:
 
         # If data provided is an numpy array
         if isinstance(data, np.ndarray):
-
             self.img = data
             self.logger.info("An numpy array is loaded as data.")
             self.set_header(header)
@@ -287,7 +287,6 @@ class TwoDSpec:
 
         # If it is a fits.hdu.hdulist.HDUList object
         elif isinstance(data, fits.hdu.hdulist.HDUList):
-
             self.img = data[0].data
             if header is None:
                 self.set_header(data[0].header)
@@ -302,7 +301,6 @@ class TwoDSpec:
         elif isinstance(data, fits.hdu.image.PrimaryHDU) or isinstance(
             data, fits.hdu.image.ImageHDU
         ):
-
             self.img = data.data
             if header is None:
                 self.set_header(data.header)
@@ -313,7 +311,6 @@ class TwoDSpec:
 
         # If it is a CCDData
         elif isinstance(data, CCDData):
-
             self.img = data.data
             if header is None:
                 self.set_header(data.header)
@@ -324,11 +321,9 @@ class TwoDSpec:
 
         # If it is an Reducer object
         elif isinstance(data, (Reducer, ImageReduction)):
-
             # If the data is not reduced, reduce it here. Error handling is
             # done by the Reducer class
             if data.image_fits is None:
-
                 data.create_image_fits()
 
             self.img = data.image_fits.data
@@ -338,12 +333,10 @@ class TwoDSpec:
             else:
                 self.set_header(header)
             if data.arc_main is not None:
-
                 self.arc = data.arc_main
                 self.arc_header = data.arc_header[0]
 
             else:
-
                 self.logger.warning(
                     "Arc frame is not in the Reducer "
                     "object, please supplied manually if you wish to perform "
@@ -354,16 +347,13 @@ class TwoDSpec:
 
         # If a filepath is provided
         elif isinstance(data, str):
-
             # If HDU number is provided
             if data[-1] == "]":
-
                 filepath, hdunum = data.split("[")
                 hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
             else:
-
                 filepath = data
                 hdunum = 0
 
@@ -379,11 +369,9 @@ class TwoDSpec:
             fitsfile_tmp = None
 
         elif data is None:
-
             pass
 
         else:
-
             error_msg = (
                 "Please provide a numpy array, an "
                 + "astropy.io.fits.hdu.image.PrimaryHDU object "
@@ -393,12 +381,9 @@ class TwoDSpec:
             raise TypeError(error_msg)
 
         if self.img is not None:
-
             # We perform the tracing on a *pixel healed* temporary image
             if self.bad_mask is not None:
-
                 if self.bad_mask.shape == self.img.shape:
-
                     self.img = bfixpix(self.img, self.bad_mask, retdat=True)
 
             self.img_residual = self.img.copy()
@@ -532,19 +517,15 @@ class TwoDSpec:
         """
 
         if saxis is not None:
-
             self.saxis = saxis
 
             if self.saxis == 1:
-
                 self.waxis = 0
 
             elif self.saxis == 0:
-
                 self.waxis = 1
 
             else:
-
                 self.saxis = 0
                 self.logger.error(
                     "saxis can only be 0 or 1, %s is given. It is set to 0.",
@@ -552,15 +533,12 @@ class TwoDSpec:
                 )
 
         if spatial_mask is not None:
-
             self.spatial_mask = spatial_mask
 
         if spec_mask is not None:
-
             self.spec_mask = spec_mask
 
         if flip is not None:
-
             self.flip = flip
 
         self.set_readnoise(readnoise)
@@ -570,42 +548,31 @@ class TwoDSpec:
         self.set_airmass(airmass)
 
         if cosmicray is not None:
-
             self.cosmicray = cosmicray
 
         if fsmode is not None:
-
             self.fsmode = fsmode
 
         else:
-
             if self.fsmode is None:
-
                 self.fsmode = "convolve"
 
         if psfmodel is not None:
-
             self.psfmodel = psfmodel
 
         else:
-
             if self.psfmodel is None:
-
                 self.psfmodel = "gaussy"
 
         if kwargs is not None:
-
             self.cr_kwargs = kwargs
 
         # cosmic ray rejection
         if self.cosmicray:
-
             self.logger.info("Removing cosmic rays in mode: %s.", psfmodel)
 
             if self.fsmode == "convolve":
-
                 if psfmodel == "gaussyx":
-
                     self.img = detect_cosmics(
                         self.img / self.gain,
                         gain=self.gain,
@@ -625,7 +592,6 @@ class TwoDSpec:
                     )[1]
 
                 elif psfmodel == "gaussxy":
-
                     self.img = detect_cosmics(
                         self.img / self.gain,
                         gain=self.gain,
@@ -645,7 +611,6 @@ class TwoDSpec:
                     )[1]
 
                 else:
-
                     self.img = detect_cosmics(
                         self.img / self.gain,
                         gain=self.gain,
@@ -656,7 +621,6 @@ class TwoDSpec:
                     )[1]
 
             else:
-
                 self.img = detect_cosmics(
                     self.img / self.gain,
                     gain=self.gain,
@@ -667,99 +631,77 @@ class TwoDSpec:
                 )[1]
 
         if verbose is not None:
-
             self.verbose = verbose
 
         if self.img is not None:
-
             # the valid y-range of the chip (i.e. spatial direction)
             if len(self.spatial_mask) > 1:
-
                 if self.saxis == 1:
-
                     self.img = self.img[self.spatial_mask]
 
                     if self.img_residual is not None:
-
                         self.img_residual = self.img_residual[
                             self.spatial_mask
                         ]
 
                     if self.bad_mask is not None:
-
                         self.bad_mask = self.bad_mask[self.spatial_mask]
 
                 else:
-
                     self.img = self.img[:, self.spatial_mask]
 
                     if self.img_residual is not None:
-
                         self.img_residual = self.img_residual[
                             :, self.spatial_mask
                         ]
 
                     if self.bad_mask is not None:
-
                         self.bad_mask = self.bad_mask[:, self.spatial_mask]
 
                 self.spatial_mask_applied = True
 
             # the valid x-range of the chip (i.e. spectral direction)
             if len(self.spec_mask) > 1:
-
                 if self.saxis == 1:
-
                     self.img = self.img[:, self.spec_mask]
 
                     if self.img_residual is not None:
-
                         self.img_residual = self.img_residual[
                             :, self.spec_mask
                         ]
 
                     if self.bad_mask is not None:
-
                         self.bad_mask = self.bad_mask[:, self.spec_mask]
 
                 else:
-
                     self.img = self.img[self.spec_mask]
 
                     if self.img_residual is not None:
-
                         self.img_residual = self.img_residual[self.spec_mask]
 
                     if self.bad_mask is not None:
-
                         self.bad_mask = self.bad_mask[self.spec_mask]
 
                 self.spec_mask_applied = True
 
             if self.saxis == 0:
-
                 self.img = np.transpose(self.img)
 
                 if self.img_residual is not None:
-
                     self.img_residual = np.transpose(self.img_residual)
 
                 if self.bad_mask is not None:
-
                     self.bad_mask = np.transpose(self.bad_mask)
 
                 self.transpose_applied = True
 
             if self.flip:
-
                 self.img = np.flip(self.img)
 
                 if self.img_residual is not None:
-
                     self.img_residual = np.flip(self.img_residual)
 
                 if self.bad_mask is not None:
-
                     self.bad_mask = np.flip(self.bad_mask)
 
                 self.flip_applied = True
@@ -770,15 +712,12 @@ class TwoDSpec:
             if (variance is not None) & (
                 np.shape(variance) == np.shape(self.img)
             ):
-
                 self.variance = variance
 
             elif isinstance(variance, (int, float)):
-
                 self.variance = np.ones_like(self.img) * variance
 
             else:
-
                 self.logger.info(
                     "Variance image is created from the modulus of the image "
                     "and the readnoise value."
@@ -786,11 +725,9 @@ class TwoDSpec:
                 self.variance = np.abs(self.img) + self.readnoise**2
 
         else:
-
             self.variance = None
 
     def _get_image_size(self):
-
         # get the length in the spectral and spatial directions
         self.spec_size = np.shape(self.img)[1]
         self.spatial_size = np.shape(self.img)[0]
@@ -798,7 +735,6 @@ class TwoDSpec:
         self.logger.info("spatial_size is found to be %s.", self.spatial_size)
 
     def _get_image_zminmax(self):
-
         # set the 2D histogram z-limits
         img_log = np.log10(self.img)
         img_log_finite = img_log[np.isfinite(img_log)]
@@ -823,9 +759,7 @@ class TwoDSpec:
         """
 
         if (readnoise is not None) and (self.readnoise is not None):
-
             if isinstance(readnoise, str):
-
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
                 self.logger.info(
@@ -834,20 +768,16 @@ class TwoDSpec:
                 self.readnoise_is_default_value = False
 
             elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
-
                 if readnoise < 0:
-
                     pass
 
                 else:
-
                     # use the given readnoise value
                     self.readnoise = float(readnoise)
                     self.logger.info("readnoise is set to %s.", self.readnoise)
                     self.readnoise_is_default_value = False
 
             else:
-
                 self.readnoise = 0.0
                 self.logger.warning(
                     "readnoise has to be None, a numeric value or the FITS "
@@ -857,17 +787,14 @@ class TwoDSpec:
                 self.readnoise_is_default_value = True
 
         else:
-
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-
                 readnoise_keyword_matched = np.in1d(
                     self.readnoise_keyword, self.header
                 )
 
                 if readnoise_keyword_matched.any():
-
                     self.readnoise = self.header[
                         self.readnoise_keyword[
                             np.where(readnoise_keyword_matched)[0][0]
@@ -879,7 +806,6 @@ class TwoDSpec:
                     self.readnoise_is_default_value = False
 
                 else:
-
                     self.readnoise = 0.0
                     self.logger.warning(
                         "Readnoise value cannot be identified. "
@@ -888,7 +814,6 @@ class TwoDSpec:
                     self.readnoise_is_default_value = True
 
             else:
-
                 self.readnoise = 0.0
                 self.logger.warning(
                     "Header is not provided. Readnoise value "
@@ -912,29 +837,23 @@ class TwoDSpec:
         """
 
         if (gain is not None) and (self.gain is not None):
-
             if isinstance(gain, str):
-
                 # use the supplied keyword
                 self.gain = float(self.header[gain])
                 self.logger.info("gain is found to be %s.", self.gain)
                 self.gain_is_default_value = False
 
             elif isinstance(gain, (float, int)) & (~np.isnan(gain)):
-
                 if gain < 0:
-
                     pass
 
                 else:
-
                     # use the given gain value
                     self.gain = float(gain)
                     self.logger.info("gain is set to %s.", self.gain)
                     self.gain_is_default_value = False
 
             else:
-
                 self.gain = 1.0
                 self.logger.warning(
                     "Gain has to be None, a numeric value or the FITS "
@@ -943,15 +862,12 @@ class TwoDSpec:
                 )
                 self.gain_is_default_value = True
         else:
-
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-
                 gain_keyword_matched = np.in1d(self.gain_keyword, self.header)
 
                 if gain_keyword_matched.any():
-
                     self.gain = self.header[
                         self.gain_keyword[np.where(gain_keyword_matched)[0][0]]
                     ]
@@ -959,7 +875,6 @@ class TwoDSpec:
                     self.gain_is_default_value = False
 
                 else:
-
                     self.gain = 1.0
                     self.logger.warning(
                         "Gain value cannot be identified. It is set to 1."
@@ -967,7 +882,6 @@ class TwoDSpec:
                     self.gain_is_default_value = True
 
             else:
-
                 self.gain = 1.0
                 self.logger.warning(
                     "Header is not provide. Gain value is not provided. It "
@@ -991,29 +905,23 @@ class TwoDSpec:
         """
 
         if (seeing is not None) and (self.seeing is not None):
-
             if isinstance(seeing, str):
-
                 # use the supplied keyword
                 self.seeing = float(self.header[seeing])
                 self.logger.info("seeing is found to be %s.", self.seeing)
                 self.seeing_is_default_value = False
 
             elif isinstance(seeing, (float, int)) & (~np.isnan(seeing)):
-
                 if seeing < 0:
-
                     pass
 
                 else:
-
                     # use the given seeing value
                     self.seeing = float(seeing)
                     self.logger.info("seeing is set to %s.", self.seeing)
                     self.seeing_is_default_value = False
 
             else:
-
                 self.seeing = 1.0
                 self.logger.warning(
                     "Seeing has to be None, a numeric value or the FITS "
@@ -1023,17 +931,14 @@ class TwoDSpec:
                 self.seeing_is_default_value = True
 
         else:
-
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-
                 seeing_keyword_matched = np.in1d(
                     self.seeing_keyword, self.header
                 )
 
                 if seeing_keyword_matched.any():
-
                     self.seeing = self.header[
                         self.seeing_keyword[
                             np.where(seeing_keyword_matched)[0][0]
@@ -1043,7 +948,6 @@ class TwoDSpec:
                     self.seeing_is_default_value = False
 
                 else:
-
                     self.seeing = 1.0
                     self.logger.warning(
                         "Seeing value cannot be identified. It is set to 1."
@@ -1051,7 +955,6 @@ class TwoDSpec:
                     self.seeing_is_default_value = True
 
             else:
-
                 self.seeing = 1.0
                 self.logger.warning(
                     "Header is not provided. Seeing value is not provided. "
@@ -1075,29 +978,23 @@ class TwoDSpec:
         """
 
         if (exptime is not None) and (self.exptime is not None):
-
             if isinstance(exptime, str):
-
                 # use the supplied keyword
                 self.exptime = float(self.header[exptime])
                 self.logger.info("exptime is found to be %s.", self.exptime)
                 self.exptime_is_default_value = False
 
             elif isinstance(exptime, (float, int)) & (~np.isnan(exptime)):
-
                 if exptime < 0:
-
                     pass
 
                 else:
-
                     # use the given exptime value
                     self.exptime = float(exptime)
                     self.logger.info("exptime is set to %s.", self.exptime)
                     self.exptime_is_default_value = False
 
             else:
-
                 self.exptime = 1.0
                 self.logger.warning(
                     "Exposure Time has to be None, a numeric value or the "
@@ -1107,17 +1004,14 @@ class TwoDSpec:
                 self.exptime_is_default_value = True
 
         else:
-
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-
                 exptime_keyword_matched = np.in1d(
                     self.exptime_keyword, self.header
                 )
 
                 if exptime_keyword_matched.any():
-
                     self.exptime = self.header[
                         self.exptime_keyword[
                             np.where(exptime_keyword_matched)[0][0]
@@ -1129,7 +1023,6 @@ class TwoDSpec:
                     self.exptime_is_default_value = False
 
                 else:
-
                     self.exptime = 1.0
                     self.logger.warning(
                         "Exposure Time value cannot be identified. It is set "
@@ -1138,7 +1031,6 @@ class TwoDSpec:
                     self.exptime_is_default_value = True
 
             else:
-
                 self.exptime = 1.0
                 self.logger.warning(
                     "Header is not provided. Exposure Time value is not "
@@ -1162,29 +1054,23 @@ class TwoDSpec:
         """
 
         if (airmass is not None) and (self.airmass is not None):
-
             if isinstance(airmass, str):
-
                 # use the supplied keyword
                 self.airmass = float(self.header[airmass])
                 self.logger.info("Airmass is found to be %s.", self.airmass)
                 self.airmass_is_default_value = False
 
             elif isinstance(airmass, (float, int)) & (~np.isnan(airmass)):
-
                 if airmass < 0:
-
                     pass
 
                 else:
-
                     # use the given airmass value
                     self.airmass = float(airmass)
                     self.logger.info("Airmass is set to %s.", self.airmass)
                     self.airmass_is_default_value = False
 
             else:
-
                 self.logger.warning(
                     "Airmass has to be None, a numeric value or the FITS "
                     "header keyword, %s is given. It is set to 1.",
@@ -1194,17 +1080,14 @@ class TwoDSpec:
                 self.airmass_is_default_value = True
 
         else:
-
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-
                 airmass_keyword_matched = np.in1d(
                     self.airmass_keyword, self.header
                 )
 
                 if airmass_keyword_matched.any():
-
                     self.airmass = self.header[
                         self.airmass_keyword[
                             np.where(airmass_keyword_matched)[0][0]
@@ -1216,7 +1099,6 @@ class TwoDSpec:
                     self.airmass_is_default_value = False
 
                 else:
-
                     self.airmass = 1.0
                     self.logger.warning(
                         "Airmass value cannot be identified. It is set to 1."
@@ -1224,7 +1106,6 @@ class TwoDSpec:
                     self.airmass_is_default_value = True
 
             else:
-
                 self.airmass = 1.0
                 self.logger.warning(
                     "Header is not provided. Airmass value is not provided. "
@@ -1255,12 +1136,10 @@ class TwoDSpec:
 
         # If data provided is an numpy array
         if isinstance(bad_mask, np.ndarray):
-
             self.bad_mask = bad_mask
 
         # If it is a fits.hdu.hdulist.HDUList object
         elif isinstance(bad_mask, fits.hdu.hdulist.HDUList):
-
             self.bad_mask = bad_mask[0].data
             self.logger.warning(
                 "An HDU list is provided, only the first HDU will be read."
@@ -1274,23 +1153,19 @@ class TwoDSpec:
 
         # If a filepath is provided
         elif isinstance(bad_mask, str):
-
             # If HDU number is provided
             if bad_mask[-1] == "]":
-
                 filepath, hdunum = bad_mask.split("[")
                 hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
             else:
-
                 filepath = bad_mask
                 hdunum = 0
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
             if isinstance(fitsfile_tmp, fits.hdu.hdulist.HDUList):
-
                 fitsfile_tmp = fitsfile_tmp[0]
                 self.logger.warning(
                     "An HDU list is provided, only the first "
@@ -1300,33 +1175,27 @@ class TwoDSpec:
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
-
                 self.logger.debug("arc.data is 2 dimensional.")
                 self.bad_mask = fitsfile_tmp.data
 
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
-
                 self.logger.debug("arc.data is 3 dimensional.")
                 self.bad_mask = fitsfile_tmp.data[0]
 
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
-
                 self.logger.debug("arc.data is 1 dimensional.")
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
-
                     self.bad_mask = fitsfile_tmp.data[0][0]
 
                 else:
-
                     self.bad_mask = fitsfile_tmp.data[0]
 
             else:
-
                 error_msg = (
                     "Please check the shape/dimension of the "
                     + "input light frame, it is probably empty "
@@ -1336,7 +1205,6 @@ class TwoDSpec:
                 raise RuntimeError(error_msg)
 
         else:
-
             error_msg = (
                 "Please provide a numpy array, an "
                 + "astropy.io.fits.hdu.image.PrimaryHDU object, an "
@@ -1374,13 +1242,11 @@ class TwoDSpec:
 
         # If data provided is an numpy array
         if isinstance(arc, np.ndarray):
-
             self.arc = arc
             self.set_arc_header(header)
 
         # If it is a fits.hdu.hdulist.HDUList object
         elif isinstance(arc, fits.hdu.hdulist.HDUList):
-
             self.arc = arc[0].data
             self.set_arc_header(arc[0].header)
             self.logger.warning(
@@ -1391,13 +1257,11 @@ class TwoDSpec:
         elif isinstance(arc, fits.hdu.image.PrimaryHDU) or isinstance(
             arc, fits.hdu.image.ImageHDU
         ):
-
             self.arc = arc.data
             self.set_arc_header(arc.header)
 
         # If it is a CCDData
         elif isinstance(arc, CCDData):
-
             self.arc = arc.data
             if header is None:
                 self.set_arc_header(arc.header)
@@ -1407,23 +1271,19 @@ class TwoDSpec:
 
         # If a filepath is provided
         elif isinstance(arc, str):
-
             # If HDU number is provided
             if arc[-1] == "]":
-
                 filepath, hdunum = arc.split("[")
                 hdunum = int(hdunum[:-1])
 
             # If not, assume the HDU idnex is 0
             else:
-
                 filepath = arc
                 hdunum = 0
 
             # Load the file and dereference it afterwards
             fitsfile_tmp = fits.open(filepath)[hdunum]
             if isinstance(fitsfile_tmp, fits.hdu.hdulist.HDUList):
-
                 fitsfile_tmp = fitsfile_tmp[0]
                 self.logger.warning(
                     "An HDU list is provided, only the first "
@@ -1434,7 +1294,6 @@ class TwoDSpec:
 
             # Normal case
             if len(fitsfile_tmp_shape) == 2:
-
                 self.logger.debug("arc.data is 2 dimensional.")
                 self.arc = fitsfile_tmp.data
                 self.set_arc_header(fitsfile_tmp.header)
@@ -1442,29 +1301,24 @@ class TwoDSpec:
             # Try to trap common error when saving FITS file
             # Case with multiple image extensions, we only take the first one
             elif len(fitsfile_tmp_shape) == 3:
-
                 self.logger.debug("arc.data is 3 dimensional.")
                 self.arc = fitsfile_tmp.data[0]
                 self.set_arc_header(fitsfile_tmp.header)
 
             # Case with an extra bracket when saving
             elif len(fitsfile_tmp_shape) == 1:
-
                 self.logger.debug("arc.data is 1 dimensional.")
                 # In case it in a multiple extension format, we take the
                 # first one only
                 if len(np.shape(fitsfile_tmp.data[0]) == 3):
-
                     self.arc = fitsfile_tmp.data[0][0]
                     self.set_arc_header(fitsfile_tmp[0].header)
 
                 else:
-
                     self.arc = fitsfile_tmp.data[0]
                     self.set_arc_header(fitsfile_tmp[0].header)
 
             else:
-
                 error_msg = (
                     "Please check the shape/dimension of the input light "
                     "frame, it is probably empty or has an atypical output "
@@ -1474,7 +1328,6 @@ class TwoDSpec:
                 raise RuntimeError(error_msg)
 
         else:
-
             error_msg = (
                 "Please provide a numpy array, an "
                 "astropy.io.fits.hdu.image.PrimaryHDU object, an "
@@ -1499,18 +1352,14 @@ class TwoDSpec:
 
         # If it is a fits.hdu.header.Header object
         if isinstance(header, fits.header.Header):
-
             self.arc_header = header
 
         elif isinstance(header, (list, tuple)):
-
             if isinstance(header[0], fits.header.Header):
-
                 self.arc_header = header[0]
                 self.logger.info("arc_header is set.")
 
             else:
-
                 self.arc_header = None
                 error_msg = (
                     "Please provide a valid "
@@ -1520,7 +1369,6 @@ class TwoDSpec:
                 self.logger.warning(error_msg)
 
         else:
-
             self.arc_header = None
             error_msg = (
                 "Please provide a valid "
@@ -1537,19 +1385,15 @@ class TwoDSpec:
         """
 
         if self.transpose_applied is True:
-
             self.apply_transpose_to_arc()
 
         if self.flip_applied is True:
-
             self.apply_flip_to_arc()
 
         if np.shape(self.arc) == np.shape(self.img):
-
             pass
 
         else:
-
             self.apply_spec_mask_to_arc(self.spec_mask)
             self.apply_spatial_mask_to_arc(self.spatial_mask)
 
@@ -1568,12 +1412,10 @@ class TwoDSpec:
         """
 
         if len(spec_mask) > 1:
-
             self.arc = self.arc[:, spec_mask]
             self.logger.info("spec_mask is applied to arc.")
 
         else:
-
             self.logger.info(
                 "spec_mask has zero length, it cannot be "
                 "applied to the arc."
@@ -1594,12 +1436,10 @@ class TwoDSpec:
         """
 
         if len(spatial_mask) > 1:
-
             self.arc = self.arc[spatial_mask]
             self.logger.info("spatial_mask is applied to arc.")
 
         else:
-
             self.logger.info(
                 "spatial_mask has zero length, it cannot be "
                 "applied to the arc."
@@ -1640,44 +1480,36 @@ class TwoDSpec:
         """
 
         if isinstance(keyword_list, str):
-
             keyword_list = [keyword_list]
 
         elif isinstance(keyword_list, list):
-
             pass
 
         elif isinstance(keyword_list, np.ndarray):
-
             keyword_list = list(keyword_list)
 
         else:
-
             self.logger.error(
                 "Please provide the keyword list in str, list or "
                 "numpy.ndarray."
             )
 
         if append:
-
             self.readnoise_keyword += keyword_list
             self.logger.info(
                 "%s is appended to the readnoise_keyword list.", keyword_list
             )
 
         else:
-
             self.readnoise_keyword = keyword_list
             self.logger.info(
                 "%s is used as the readnoise_keyword list.", keyword_list
             )
 
         if update:
-
             self.set_readnoise()
 
         else:
-
             self.logger.info(
                 "readnoise_keyword list is updated, but it is "
                 "opted not to update the readnoise automatically."
@@ -1702,44 +1534,36 @@ class TwoDSpec:
         """
 
         if isinstance(keyword_list, str):
-
             keyword_list = [keyword_list]
 
         elif isinstance(keyword_list, list):
-
             pass
 
         elif isinstance(keyword_list, np.ndarray):
-
             keyword_list = list(keyword_list)
 
         else:
-
             self.logger.error(
                 "Please provide the keyword list in str, list or "
                 "numpy.ndarray."
             )
 
         if append:
-
             self.gain_keyword += keyword_list
             self.logger.info(
                 "%s is appended to the gain_keyword list.", keyword_list
             )
 
         else:
-
             self.gain_keyword = keyword_list
             self.logger.info(
                 "%s is used as the gain_keyword list.", keyword_list
             )
 
         if update:
-
             self.set_gain()
 
         else:
-
             self.logger.info(
                 "gain_keyword list is updated, but it is "
                 "opted not to update the gain automatically."
@@ -1764,44 +1588,36 @@ class TwoDSpec:
         """
 
         if isinstance(keyword_list, str):
-
             keyword_list = [keyword_list]
 
         elif isinstance(keyword_list, list):
-
             pass
 
         elif isinstance(keyword_list, np.ndarray):
-
             keyword_list = list(keyword_list)
 
         else:
-
             self.logger.error(
                 "Please provide the keyword list in str, list or "
                 "numpy.ndarray."
             )
 
         if append:
-
             self.seeing_keyword += keyword_list
             self.logger.info(
                 "%s is appended to the seeing_keyword list.", keyword_list
             )
 
         else:
-
             self.seeing_keyword = keyword_list
             self.logger.info(
                 "%s is used as the seeing_keyword list.", keyword_list
             )
 
         if update:
-
             self.set_seeing()
 
         else:
-
             self.logger.info(
                 "seeing_keyword list is updated, but it is "
                 "opted not to update the seeing automatically."
@@ -1826,44 +1642,36 @@ class TwoDSpec:
         """
 
         if isinstance(keyword_list, str):
-
             keyword_list = [keyword_list]
 
         elif isinstance(keyword_list, list):
-
             pass
 
         elif isinstance(keyword_list, np.ndarray):
-
             keyword_list = list(keyword_list)
 
         else:
-
             self.logger.error(
                 "Please provide the keyword list in str, list or "
                 "numpy.ndarray."
             )
 
         if append:
-
             self.exptime_keyword += keyword_list
             self.logger.info(
                 "%s is appended to the exptime_keyword list.", keyword_list
             )
 
         else:
-
             self.exptime_keyword = keyword_list
             self.logger.info(
                 "%s is used as the exptime_keyword list.", keyword_list
             )
 
         if update:
-
             self.set_exptime()
 
         else:
-
             self.logger.info(
                 "exptime_keyword list is updated, but it is "
                 "opted not to update the exptime automatically."
@@ -1888,44 +1696,36 @@ class TwoDSpec:
         """
 
         if isinstance(keyword_list, str):
-
             keyword_list = [keyword_list]
 
         elif isinstance(keyword_list, list):
-
             pass
 
         elif isinstance(keyword_list, np.ndarray):
-
             keyword_list = list(keyword_list)
 
         else:
-
             self.logger.error(
                 "Please provide the keyword list in str, list or "
                 "numpy.ndarray."
             )
 
         if append:
-
             self.airmass_keyword += keyword_list
             self.logger.info(
                 "%s is appended to the airmass_keyword list.", keyword_list
             )
 
         else:
-
             self.airmass_keyword = keyword_list
             self.logger.info(
                 "%s is used as the airmass_keyword list.", keyword_list
             )
 
         if update:
-
             self.set_airmass()
 
         else:
-
             self.logger.info(
                 "airmass_keyword list is updated, but it is "
                 "opted not to update the airmass automatically."
@@ -1943,18 +1743,14 @@ class TwoDSpec:
         """
 
         if header is not None:
-
             # If it is a fits.hdu.header.Header object
             if isinstance(header, fits.header.Header):
-
                 self.header = header
 
             elif isinstance(header[0], fits.header.Header):
-
                 self.header = header[0]
 
             else:
-
                 error_msg = (
                     "Please provide an "
                     + "astropy.io.fits.header.Header object."
@@ -1963,27 +1759,21 @@ class TwoDSpec:
                 raise TypeError(error_msg)
 
         else:
-
             self.logger.info('The "header" provided is None. Doing nothing.')
 
         if self.exptime_is_default_value:
-
             self.set_exptime()
 
         if self.airmass_is_default_value:
-
             self.set_airmass()
 
         if self.seeing_is_default_value:
-
             self.set_seeing()
 
         if self.readnoise_is_default_value:
-
             self.set_readnoise()
 
         if self.gain_is_default_value:
-
             self.set_gain()
 
     def ap_trace(
@@ -2120,7 +1910,6 @@ class TwoDSpec:
         ] = np.nanpercentile(img_tmp, percentile)
 
         if smooth:
-
             img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
 
         self.resample_factor = resample_factor
@@ -2137,11 +1926,9 @@ class TwoDSpec:
 
         # linear scaling limits
         if rescale:
-
             scaling_range = np.arange(scaling_min, scaling_max, scaling_step)
 
         else:
-
             scaling_range = np.ones(1)
 
         # subtract the sky background level
@@ -2164,7 +1951,6 @@ class TwoDSpec:
             range(self.start_window_idx, nwindow),
             range(self.start_window_idx - 1, -1, -1),
         ):
-
             self.logger.info("Correlating the %s-th window.", i)
 
             # smooth by taking the median
@@ -2179,13 +1965,10 @@ class TwoDSpec:
 
             # upsample by the same amount as the reference
             for j, scale in enumerate(scaling_range):
-
                 if scale == 1.0:
-
                     lines_ref_j = lines_ref
 
                 else:
-
                     # Upsampling the reference lines
                     lines_ref_j = spectres(
                         np.arange(int(nresample * scale)) / scale,
@@ -2213,7 +1996,6 @@ class TwoDSpec:
 
             # Align the spatial profile before stacking
             if i == (self.start_window_idx - 1):
-
                 pix = np.arange(nresample)
 
             pix = pix * scale_solution[i] + shift_solution[i]
@@ -2232,11 +2014,9 @@ class TwoDSpec:
 
             # Update (increment) the reference line
             if i == nwindow - 1:
-
                 lines_ref = lines_ref_init
 
             else:
-
                 lines_ref = lines
 
         spec_spatial = np.nanmedian(spec_spatial, axis=0)
@@ -2280,7 +2060,6 @@ class TwoDSpec:
 
         # Looping through pixels larger than middle pixel
         for i in range(self.start_window_idx + 1, nwindow):
-
             self.spec_idx[:, i] = (
                 self.spec_idx[:, i - 1]
                 * self.resample_factor
@@ -2291,7 +2070,6 @@ class TwoDSpec:
 
         # Looping through pixels smaller than middle pixel
         for i in range(self.start_window_idx - 1, -1, -1):
-
             self.spec_idx[:, i] = (
                 (
                     self.spec_idx[:, i + 1] * self.resample_factor
@@ -2302,13 +2080,11 @@ class TwoDSpec:
             )
 
         for i, spec_i in enumerate(self.spec_idx):
-
             # Get the median of the subspectrum and then get the Count at the
             # central 5 pixels of the aperture
             ap_val = np.zeros(nwindow)
 
             for j in range(nwindow):
-
                 # rounding
                 idx = int(np.round(spec_i[j])) * resample_factor
                 subspec_cleaned = sigma_clip(
@@ -2356,24 +2132,34 @@ class TwoDSpec:
             last_pix = int(min(len(spec_spatial), last_pix))
 
             # compute ONE sigma for each trace
-            pguess = [
-                np.nanmax(spec_spatial[first_pix:last_pix]),
-                np.nanpercentile(spec_spatial[first_pix:last_pix], 5.0),
-                ap_centre_pix - first_pix,
-                3.0 * self.resample_factor,
-            ]
-
             non_nan_mask = np.isfinite(
                 spec_spatial[first_pix:last_pix]
             ) & ~np.isnan(spec_spatial[first_pix:last_pix])
 
-            popt, _ = curve_fit(
-                gaus,
-                np.arange(len(spec_spatial[first_pix:last_pix]))[non_nan_mask],
-                spec_spatial[first_pix:last_pix][non_nan_mask],
-                p0=pguess,
+            # construct the guassian and background profile
+            gauss_prof = models.Gaussian1D(
+                amplitude=np.nanmax(spec_spatial[first_pix:last_pix]),
+                mean=ap_centre_pix / resample_factor,
+                stddev=3.0 * resample_factor,
             )
-            ap_sigma = abs(popt[3]) / self.resample_factor
+            bkg_prof = models.Linear1D(
+                slope=0.0,
+                intercept=np.nanpercentile(
+                    spec_spatial[first_pix:last_pix], 5.0
+                ),
+            )
+
+            # combined profile
+            total_prof = gauss_prof + bkg_prof
+
+            # Fit the profile
+            fitter = fitting.LevMarLSQFitter()
+            fitted_profile_func = fitter(
+                total_prof,
+                np.arange(first_pix, last_pix)[non_nan_mask] / resample_factor,
+                spec_spatial[first_pix:last_pix][non_nan_mask],
+            )
+            ap_sigma = fitted_profile_func.stddev_0.value / resample_factor
 
             self.logger.info(
                 "Aperture is fitted with a Gaussian sigma of %s pix.",
@@ -2389,6 +2175,7 @@ class TwoDSpec:
                 log_file_name=self.log_file_name,
             )
             self.spectrum_list[i].add_trace(list(aper), [ap_sigma] * len(aper))
+            self.spectrum_list[i].add_profile_func(fitted_profile_func)
             self.spectrum_list[i].add_gain(self.gain)
             self.spectrum_list[i].add_readnoise(self.readnoise)
             self.spectrum_list[i].add_exptime(self.exptime)
@@ -2397,7 +2184,6 @@ class TwoDSpec:
 
         # Plot
         if save_fig or display or return_jsonstring:
-
             to_return = self.inspect_trace(
                 display=display,
                 renderer=renderer,
@@ -2411,7 +2197,6 @@ class TwoDSpec:
             )
 
         if return_jsonstring:
-
             return to_return
 
     def inspect_trace(
@@ -2477,7 +2262,21 @@ class TwoDSpec:
         )
 
         for i, spec_i in enumerate(self.spec_idx):
-
+            fig.add_trace(
+                go.Scatter(
+                    x=np.arange(self.spec_size),
+                    y=self.spectrum_list[i].trace,
+                    line=dict(color="black"),
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=spec_pix / resample_factor,
+                    y=spec_i,
+                    mode="markers",
+                    marker=dict(color="grey"),
+                )
+            )
             fig.add_trace(
                 go.Scatter(
                     x=np.arange(self.spec_size),
@@ -2516,23 +2315,18 @@ class TwoDSpec:
         )
 
         if filename is None:
-
             filename = "ap_trace"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for f_type in fig_type_split:
-
                 if f_type == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
                 elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + f_type)
 
                 self.logger.info(
@@ -2540,17 +2334,13 @@ class TwoDSpec:
                 )
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def add_trace(
@@ -2576,7 +2366,6 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         assert isinstance(spec_id, (int, list, np.ndarray)) or (
@@ -2584,17 +2373,13 @@ class TwoDSpec:
         ), "spec_id has to be an integer, None, list or array."
 
         if spec_id is None:
-
             if len(np.shape(trace)) == 1:
-
                 spec_id = [0]
 
             elif len(np.shape(trace)) == 2:
-
                 spec_id = list(np.arange(np.shape(trace)[0]))
 
         if isinstance(spec_id, np.ndarray):
-
             spec_id = list(spec_id)
 
         assert isinstance(
@@ -2608,13 +2393,10 @@ class TwoDSpec:
         )
 
         for i in spec_id:
-
             if i in self.spectrum_list.keys():
-
                 self.spectrum_list[i].add_trace(trace, trace_sigma)
 
             else:
-
                 self.spectrum_list[i] = SpectrumOneD(
                     spec_id=i,
                     verbose=self.verbose,
@@ -2635,21 +2417,17 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
-
             spec_id = list(self.spectrum_list.keys())
 
         for i in spec_id:
-
             self.spectrum_list[i].remove_trace()
 
     def get_rectification(
@@ -2746,7 +2524,6 @@ class TwoDSpec:
         )
 
         if self.arc is None:
-
             self.logger.warning(
                 "Arc frame is not available, only the data image "
                 "will be rectified."
@@ -2755,7 +2532,6 @@ class TwoDSpec:
             use_arc = False
 
         elif isinstance(self.arc, CCDData):
-
             arc_tmp = ndimage.zoom(
                 self.arc.data.astype(float),
                 zoom=upsample_factor,
@@ -2764,7 +2540,6 @@ class TwoDSpec:
             self.logger.info("The arc frame is upsampled.")
 
         else:
-
             arc_tmp = ndimage.zoom(
                 self.arc.astype(float),
                 zoom=upsample_factor,
@@ -2775,18 +2550,15 @@ class TwoDSpec:
         # Shift the spectrum to spatially aligned to the trace at ref
         ref = y_tmp[len(y_tmp) // 2]
         for i in range(self.spec_size * upsample_factor):
-
             shift_i = int(np.round(y_tmp[i] - ref))
 
             img_tmp[:, i] = np.roll(img_tmp[:, i], -shift_i)
 
             if self.arc is not None:
-
                 arc_tmp[:, i] = np.roll(arc_tmp[:, i], -shift_i)
 
         # Now start working with the shift in the spectral direction
         if coeff is not None:
-
             n_down = None
             n_up = None
 
@@ -2797,19 +2569,15 @@ class TwoDSpec:
             )
 
         else:
-
             if isinstance(n_bin, (int, float)):
-
                 n_down = int(n_bin // 2)
                 n_up = int(n_bin // 2)
 
             elif isinstance(n_bin, (list, np.ndarray)):
-
                 n_down = n_bin[0]
                 n_up = n_bin[1]
 
             else:
-
                 self.logger.error(
                     "The given n_bin is not numeric or a list/array of "
                     "size 2: %s. Using the default value to proceed.",
@@ -2825,7 +2593,6 @@ class TwoDSpec:
 
             # s for "flattened signal of the slice"
             if use_arc:
-
                 s = [
                     np.nansum(
                         [
@@ -2848,7 +2615,6 @@ class TwoDSpec:
                 ]
 
             else:
-
                 s = [
                     np.nansum(
                         [
@@ -2881,7 +2647,6 @@ class TwoDSpec:
                 # Note the start and end are counting up, while the
                 # indices are becoming smaller.
                 if use_arc:
-
                     s_down.append(
                         np.nansum(
                             [
@@ -2904,7 +2669,6 @@ class TwoDSpec:
                     )
 
                 else:
-
                     s_down.append(
                         np.nansum(
                             [
@@ -2930,7 +2694,6 @@ class TwoDSpec:
                 end = start + bin_size * upsample_factor + 1
 
                 if use_arc:
-
                     s_up.append(
                         np.nansum(
                             [
@@ -2953,7 +2716,6 @@ class TwoDSpec:
                     )
 
                 else:
-
                     s_up.append(
                         np.nansum(
                             [
@@ -2986,7 +2748,6 @@ class TwoDSpec:
             shift_upsampled = np.zeros_like(y_trace_upsampled)
 
             for i in range(1, len(s_all)):
-
                 # Note: indice n_down is s
                 corr = signal.correlate(
                     s_all[i][one_tenth:-one_tenth],
@@ -3036,17 +2797,14 @@ class TwoDSpec:
         # of distance from the trace at ref
         # For each row j (sort of a line of spectrum...)
         for j, _ in enumerate(img_tmp):
-
             shift_j = np.polynomial.polynomial.polyval(j, coeff)
 
             if j % 10 == 0:
-
                 self.logger.info("The shift at line j = %s is %s.", j, shift_j)
 
             img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
 
             if self.arc is not None:
-
                 arc_tmp[j] = np.roll(arc_tmp[j], int(np.round(shift_j)))
 
         self.rec_coeff = coeff
@@ -3063,17 +2821,14 @@ class TwoDSpec:
         self.img_residual_rectified = copy.deepcopy(self.img_rectified)
 
         if self.arc is not None:
-
             self.arc_rectified = ndimage.zoom(
                 arc_tmp, zoom=1.0 / upsample_factor, order=spline_order
             )
 
         if apply:
-
             self.apply_rectification()
 
         if save_fig or display or return_jsonstring:
-
             fig = go.Figure(
                 layout=dict(autosize=False, height=height, width=width)
             )
@@ -3132,23 +2887,18 @@ class TwoDSpec:
                 )
 
             if filename is None:
-
                 filename = "rectified_image"
 
             if save_fig:
-
                 fig_type_split = fig_type.split("+")
 
                 for f_type in fig_type_split:
-
                     if f_type == "iframe":
-
                         pio.write_html(
                             fig, filename + "." + f_type, auto_open=open_iframe
                         )
 
                     elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                         pio.write_image(fig, filename + "." + f_type)
 
                     self.logger.info(
@@ -3156,17 +2906,13 @@ class TwoDSpec:
                     )
 
             if display:
-
                 if renderer == "default":
-
                     fig.show()
 
                 else:
-
                     fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def apply_rectification(self):
@@ -3176,25 +2922,21 @@ class TwoDSpec:
         """
 
         if self.img_rectified is not None:
-
             self.img = self.img_rectified
             self.img_residual = self.img_residual_rectified
             self.logger.info("Image rectification is applied")
 
         else:
-
             self.logger.info(
                 "Rectification is not computed, it cannot be "
                 "applied to the image."
             )
 
         if self.arc_rectified is not None:
-
             self.arc = self.arc_rectified
             self.logger.info("Arc rectification is applied")
 
         else:
-
             self.logger.info(
                 "Rectification is not computed, it cannot be "
                 "applied to the arc."
@@ -3239,7 +2981,6 @@ class TwoDSpec:
         """
 
         if (sky_width_dn > 0) or (sky_width_up > 0):
-
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_up] = True
@@ -3251,13 +2992,11 @@ class TwoDSpec:
             ).mask
 
             if sky_polyfit_order == 0:
-
                 count_sky_extraction_slice = np.ones(
                     len(extraction_slice[sky_mask][sky_bad_mask])
                 ) * np.nanmean(extraction_slice[sky_mask][sky_bad_mask])
 
             elif sky_polyfit_order > 0:
-
                 # fit a polynomial to the sky in this column
                 polyfit_coeff = np.polynomial.polynomial.polyfit(
                     np.arange(extraction_slice.size)[sky_mask][sky_bad_mask],
@@ -3271,11 +3010,9 @@ class TwoDSpec:
                 )
 
             else:
-
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
         else:
-
             # get the indexes of the sky regions
             count_sky_extraction_slice = np.zeros_like(extraction_slice)
 
@@ -3435,17 +3172,14 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
-
             spec_id = list(self.spectrum_list.keys())
 
         self.cosmicray_sigma = cosmicray_sigma
@@ -3453,20 +3187,16 @@ class TwoDSpec:
         to_return = []
 
         for j in spec_id:
-
             if isinstance(apwidth, int):
-
                 # first do the aperture count
                 width_dn = apwidth
                 width_up = apwidth
 
             elif len(apwidth) == 2:
-
                 width_dn = apwidth[0]
                 width_up = apwidth[1]
 
             else:
-
                 self.logger.error(
                     "apwidth can only be an int or a list of two ints. It is "
                     "set to the default value to continue the extraction."
@@ -3475,18 +3205,15 @@ class TwoDSpec:
                 width_up = 7
 
             if isinstance(skysep, int):
-
                 # first do the aperture count
                 sep_dn = skysep
                 sep_up = skysep
 
             elif len(skysep) == 2:
-
                 sep_dn = skysep[0]
                 sep_up = skysep[1]
 
             else:
-
                 self.logger.error(
                     "skysep can only be an int or a list of two ints. It is "
                     "set to the default value to continue the extraction."
@@ -3495,18 +3222,15 @@ class TwoDSpec:
                 sep_up = 3
 
             if isinstance(skywidth, int):
-
                 # first do the aperture count
                 sky_width_dn = skywidth
                 sky_width_up = skywidth
 
             elif len(skywidth) == 2:
-
                 sky_width_dn = skywidth[0]
                 sky_width_up = skywidth[1]
 
             else:
-
                 self.logger.error(
                     "skywidth can only be an int or a list of two ints. It "
                     "is set to the default value to continue the extraction."
@@ -3530,7 +3254,6 @@ class TwoDSpec:
 
             # Sky extraction
             for i, pos in enumerate(spec.trace):
-
                 itrace = int(pos)
                 pix_frac = pos - itrace
 
@@ -3538,7 +3261,6 @@ class TwoDSpec:
 
                 # fix width if trace is too close to the edge
                 if itrace + width_up > self.spatial_size:
-
                     self.logger.info(
                         "Extration is over the upper edge of the detector "
                         "plane. Fixing indices. width_up is changed from "
@@ -3554,7 +3276,6 @@ class TwoDSpec:
                 profile_end_idx = width_dn + width_up + 1
 
                 if itrace - width_dn < 0:
-
                     self.logger.info(
                         "Extration is over the lower edge of "
                         "the detector plane. Fixing indices."
@@ -3629,7 +3350,6 @@ class TwoDSpec:
                 # if not optimal extraction or using marsh89, perform a
                 # tophat extraction
                 if not optimal or (optimal & (algorithm == "marsh89")):
-
                     (
                         count[i],
                         count_err[i],
@@ -3648,72 +3368,88 @@ class TwoDSpec:
 
                 # Get the optimal signals
                 if optimal & (algorithm == "horne86"):
-
                     self.logger.debug("Using Horne 1986 algorithm.")
 
                     # If the weights are given externally to perform forced
                     # extraction
                     if forced:
-
                         self.logger.debug("Using forced extraction.")
 
                         # Unit weighted
                         if np.ndim(variances) == 0:
-
                             if isinstance(variances, (int, float)):
-
                                 var_i = (
                                     np.ones(width_dn + width_up + 1)
                                     * variances
                                 )
 
                             else:
-
                                 var_i = np.ones(len(source_pix))
                                 self.logger.warning("Variances are set to 1.")
 
                         # A single LSF is given for the entire trace
                         elif np.ndim(variances) == 1:
                             if len(variances) == len(source_pix):
-
                                 var_i = variances
 
                             elif len(variances) == len_trace:
-
                                 var_i = np.ones(len(source_pix)) * variances[i]
 
                             else:
-
                                 var_i = np.ones(len(source_pix))
                                 self.logger.warning("Variances are set to 1.")
 
                         # A two dimensional LSF
                         elif np.ndim(variances) == 2:
-
                             var_i = variances[i]
 
                             # If the spectrum is outside of the frame
                             if itrace - apwidth < 0:
-
                                 var_i = var_i[apwidth - width_dn :]
 
                             # If the spectrum is outside of the frame
                             elif itrace + apwidth > self.spatial_size:
-
                                 var_i = var_i[: -(apwidth - width_up + 1)]
 
                             else:
-
                                 pass
 
                         else:
-
                             var_i = np.ones(len(source_pix))
                             self.logger.warning("Variances are set to 1.")
 
                     else:
-
                         var_i = None
+
+                    if model == "gauss":
+                        # .left is the gaussian model
+                        _profile_func = self.spectrum_list[j].profile_func.left
+                        _profile = _profile_func(source_pix)
+                        _profile /= np.sum(_profile)
+                        _lower = (pos - min(source_pix)) / _profile_func.stddev
+                        _upper = (
+                            max(source_pix) - pos + 1
+                        ) / _profile_func.stddev
+                        _profile *= np.diff(norm.cdf([-_lower, _upper]))
+
+                    elif model == "lowess":
+                        _profile = lowess(
+                            source_slice - count_sky_source_slice,
+                            source_pix,
+                            frac=lowess_frac,
+                            it=lowess_it,
+                            delta=lowess_delta,
+                            return_sorted=False,
+                        )
+                        _profile[_profile < 0] = 0.0
+                        _profile /= np.nansum(_profile)
+
+                    else:
+                        self.logger.error(
+                            "The provided model has to be gauss or lowess, "
+                            "{} is given. lowess is used.".format(model)
+                        )
+                        model = "lowess"
 
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
@@ -3723,12 +3459,10 @@ class TwoDSpec:
                         is_optimal[i],
                         profile[i][profile_start_idx:profile_end_idx],
                         var_temp,
-                    ) = optimal_extraction_horne86(
-                        pix=source_pix,
+                    ) = self._optimal_extraction_horne86(
                         source_slice=source_slice,
                         sky=count_sky_source_slice,
-                        mu=pos,
-                        sigma=spec.trace_sigma[i],
+                        profile=_profile,
                         tol=tolerance,
                         max_iter=max_iter,
                         readnoise=self.readnoise,
@@ -3736,29 +3470,21 @@ class TwoDSpec:
                         cosmicray_sigma=self.cosmicray_sigma,
                         forced=forced,
                         variances=var_i,
-                        model=model,
-                        lowess_frac=lowess_frac,
-                        lowess_it=lowess_it,
-                        lowess_delta=lowess_delta,
                         bad_mask=source_bad_mask,
                     )
 
                     if var_i is None:
-
                         var[
                             i, offset : offset + width_dn + width_up + 1
                         ] = var_temp
 
                     else:
-
                         var[i] = var_i
 
             if optimal & (algorithm == "marsh89"):
-
                 self.logger.debug("Using Marsh 1989 algorithm.")
 
                 if variances is None:
-
                     variances = self.variance
 
                 (
@@ -3797,20 +3523,16 @@ class TwoDSpec:
             self.logger.info("Spectrum extracted for spec_id: %s.", j)
 
             if optimal & (algorithm == "horne86"):
-
                 spec.extraction_type = "OptimalHorne86"
 
             if optimal & (algorithm == "marsh89"):
-
                 spec.extraction_type = "OptimalMarsh89"
 
             else:
-
                 spec.extraction_type = "Tophat"
 
             # If more than a third of the spectrum is extracted suboptimally
             if np.sum(is_optimal) / len(is_optimal) < 0.333:
-
                 self.logger.warning(
                     "Some signal extracted is likely to be suboptimal, it "
                     "is most likely happening at the red and/or blue ends "
@@ -3818,7 +3540,6 @@ class TwoDSpec:
                 )
 
         if save_fig or display or return_jsonstring:
-
             to_return = self.inspect_extraction(
                 display=display,
                 renderer=renderer,
@@ -3833,7 +3554,6 @@ class TwoDSpec:
             )
 
         if return_jsonstring:
-
             return to_return
 
     def inspect_extraction(
@@ -3881,23 +3601,19 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
-
             spec_id = list(self.spectrum_list.keys())
 
         to_return = []
 
         for j in spec_id:
-
             spec = self.spectrum_list[j]
 
             width_dn = spec.widthdn
@@ -3991,7 +3707,6 @@ class TwoDSpec:
 
             # Lower red box on the image
             if offset == 0:
-
                 lower_redbox_upper_bound = (
                     np.array(spec.trace) - width_dn - sep_dn - 1
                 )
@@ -4033,7 +3748,6 @@ class TwoDSpec:
 
             # Upper red box on the image
             if sep_up + sky_width_up > 0:
-
                 upper_redbox_upper_bound = (
                     np.array(spec.trace) + width_up + sep_up + sky_width_up
                 )
@@ -4175,23 +3889,18 @@ class TwoDSpec:
             )
 
             if filename is None:
-
                 filename = "ap_extract"
 
             if save_fig:
-
                 fig_type_split = fig_type.split("+")
 
                 for t in fig_type_split:
-
                     save_path = filename + "_" + str(j) + "." + t
 
                     if t == "iframe":
-
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
                     elif t in ["jpg", "png", "svg", "pdf"]:
-
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
@@ -4199,21 +3908,16 @@ class TwoDSpec:
                     )
 
             if display:
-
                 if renderer == "default":
-
                     fig.show()
 
                 else:
-
                     fig.show(renderer)
 
             if return_jsonstring:
-
                 to_return.append(fig.to_json())
 
         if return_jsonstring:
-
             return to_return
 
     def inspect_line_spread_function(
@@ -4264,23 +3968,19 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
-
             spec_id = list(self.spectrum_list.keys())
 
         to_return = []
 
         for j in spec_id:
-
             spec = self.spectrum_list[j]
             profile = self.spectrum_list[j].profile
 
@@ -4333,23 +4033,18 @@ class TwoDSpec:
             )
 
             if filename is None:
-
                 filename = "extraction_profile"
 
             if save_fig:
-
                 fig_type_split = fig_type.split("+")
 
                 for f_type in fig_type_split:
-
                     save_path = filename + "_" + str(j) + "." + f_type
 
                     if f_type == "iframe":
-
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
                     elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
@@ -4357,21 +4052,16 @@ class TwoDSpec:
                     )
 
             if display:
-
                 if renderer == "default":
-
                     fig.show()
 
                 else:
-
                     fig.show(renderer)
 
             if return_jsonstring:
-
                 to_return.append(fig.to_json())
 
         if return_jsonstring:
-
             return to_return
 
     def inspect_extracted_spectrum(
@@ -4421,23 +4111,19 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             assert np.in1d(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
         else:
-
             spec_id = list(self.spectrum_list.keys())
 
         to_return = []
 
         for j in spec_id:
-
             spec = self.spectrum_list[j]
 
             len_trace = len(spec.trace)
@@ -4540,23 +4226,18 @@ class TwoDSpec:
             )
 
             if filename is None:
-
                 filename = "extracted_spectrum"
 
             if save_fig:
-
                 fig_type_split = fig_type.split("+")
 
                 for f_type in fig_type_split:
-
                     save_path = filename + "_" + str(j) + "." + f_type
 
                     if f_type == "iframe":
-
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
                     elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
@@ -4564,21 +4245,16 @@ class TwoDSpec:
                     )
 
             if display:
-
                 if renderer == "default":
-
                     fig.show()
 
                 else:
-
                     fig.show(renderer)
 
             if return_jsonstring:
-
                 to_return.append(fig.to_json())
 
         if return_jsonstring:
-
             return to_return
 
     def inspect_residual(
@@ -4633,14 +4309,12 @@ class TwoDSpec:
         """
 
         if log:
-
             fig = go.Figure(
                 data=go.Heatmap(
                     z=np.log10(self.img_residual), colorscale="Viridis"
                 )
             )
         else:
-
             fig = go.Figure(
                 data=go.Heatmap(z=self.img_residual, colorscale="Viridis")
             )
@@ -4661,37 +4335,28 @@ class TwoDSpec:
         )
 
         if filename is None:
-
             filename = "residual_image"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for f_type in fig_type_split:
-
                 if f_type == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
                 elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + f_type)
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def extract_arc_spec(
@@ -4753,24 +4418,19 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             if not set(spec_id).issubset(list(self.spectrum_list.keys())):
-
                 error_msg = "The given spec_id does not exist."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         else:
-
             # if spec_id is None, all arc spectra are extracted
             spec_id = list(self.spectrum_list.keys())
 
         if self.arc is None:
-
             error_msg = (
                 "arc is not provided. Please provide arc by "
                 + "using add_arc() or with from_twodspec() before "
@@ -4782,17 +4442,14 @@ class TwoDSpec:
         to_return = []
 
         for i in spec_id:
-
             spec = self.spectrum_list[i]
 
             len_trace = len(spec.trace)
             trace = np.nanmean(spec.trace)
             if spec_width is None:
-
                 trace_width = np.nanmean(spec.trace_sigma) * 3.0
 
             else:
-
                 trace_width = spec_width
 
             arc_trace = self.arc[
@@ -4808,7 +4465,6 @@ class TwoDSpec:
 
         # note that the display is adjusted for the chip gaps
         if save_fig or display or return_jsonstring:
-
             to_return = self.inspect_arc_spec(
                 display=display,
                 renderer=renderer,
@@ -4823,7 +4479,6 @@ class TwoDSpec:
             )
 
         if return_jsonstring:
-
             return to_return
 
     def inspect_arc_spec(
@@ -4873,13 +4528,10 @@ class TwoDSpec:
         """
 
         if isinstance(spec_id, int):
-
             spec_id = [spec_id]
 
         if spec_id is not None:
-
             if not set(spec_id).issubset(list(self.spectrum_list.keys())):
-
                 error_msg = (
                     "The given spec_id(s): %s do(es) not exist. The twodspec "
                     "object has %s.",
@@ -4890,12 +4542,10 @@ class TwoDSpec:
                 raise ValueError(error_msg)
 
         else:
-
             # if spec_id is None, all arc spectra are extracted
             spec_id = list(self.spectrum_list.keys())
 
         if self.arc is None:
-
             error_msg = (
                 "arc is not provided. Please provide arc by "
                 + "using add_arc() or with from_twodspec() before "
@@ -4907,7 +4557,6 @@ class TwoDSpec:
         to_return = []
 
         for i in spec_id:
-
             spec = self.spectrum_list[i]
 
             len_trace = len(spec.trace)
@@ -4941,23 +4590,18 @@ class TwoDSpec:
             )
 
             if filename is None:
-
                 filename = f"arc_spec_{i}"
 
             if save_fig:
-
                 fig_type_split = fig_type.split("+")
 
                 for f_type in fig_type_split:
-
                     save_path = filename + "_" + str(i) + "." + f_type
 
                     if f_type == "iframe":
-
                         pio.write_html(fig, save_path, auto_open=open_iframe)
 
                     elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                         pio.write_image(fig, save_path)
 
                     self.logger.info(
@@ -4965,21 +4609,16 @@ class TwoDSpec:
                     )
 
             if display:
-
                 if renderer == "default":
-
                     fig.show()
 
                 else:
-
                     fig.show(renderer)
 
             if return_jsonstring:
-
                 to_return.append(fig.to_json())
 
         if return_jsonstring:
-
             return to_return
 
     def create_fits(self, output="*", recreate=False, empty_primary_hdu=True):
@@ -5008,20 +4647,16 @@ class TwoDSpec:
         """
 
         if output == "*":
-
             output = "trace+count+weight_map+arc_spec"
 
         for i in output.split("+"):
-
             if i not in ["trace", "count", "weight_map", "arc_spec"]:
-
                 error_msg = f"{i} is not a valid output."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file
         for i, spec_i in self.spectrum_list.items():
-
             spec_i.create_fits(
                 output=output,
                 recreate=recreate,
@@ -5070,28 +4705,22 @@ class TwoDSpec:
         """
 
         if output == "*":
-
             output = "trace+count+weight_map+arc_spec"
 
         if filename is not None:
-
             filename = os.path.splitext(filename)[0]
 
         else:
-
             filename = "TwoDSpecExtracted_" + output
 
         for i in output.split("+"):
-
             if i not in ["trace", "count", "weight_map", "arc_spec"]:
-
                 error_msg = f"{i} is not a valid output."
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
         # Save each trace as a separate FITS file
         for i, spec_i in self.spectrum_list.items():
-
             filename_i = filename + "_" + str(i)
 
             spec_i.save_fits(
