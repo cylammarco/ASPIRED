@@ -4728,3 +4728,70 @@ class TwoDSpec:
             self.logger.info(
                 "FITS file is saved to %s for spec_id: %s.", filename_i, i
             )
+
+    def save_csv(
+        self,
+        output="*",
+        filename=None,
+        overwrite=False,
+        recreate=False,
+    ):
+        """
+        Save the reduced image to disk. Each trace is saved into a separate
+        file.
+
+        Parameters
+        ----------
+        output: String (Default: "*")
+            Type of data to be saved, the order is fixed (in the order of
+            the following description), but the options are flexible. The
+            input strs are delimited by "+",
+
+                trace: 2 HDUs
+                    Trace, and trace width (pixel)
+                count: 3 HDUs
+                    Count, uncertainty, and sky (pixel)
+                weight_map: 1 HDU
+                    Weight (pixel)
+                arc_spec: 1 HDU
+                    1D arc spectrum
+
+        filename: str (Default: TwoDSpecExtracted)
+            Filename for the output, all of them will share the same name but
+            will have different extension.
+        overwrite: bool
+            Default is False.
+        recreate: bool (Default: False)
+            Set to True to overwrite the FITS data and header before exporting
+            as CSV.
+
+        """
+
+        if output == "*":
+            output = "trace+count+weight_map+arc_spec"
+
+        if filename is not None:
+            filename = os.path.splitext(filename)[0]
+
+        else:
+            filename = "TwoDSpecExtracted_" + output
+
+        for i in output.split("+"):
+            if i not in ["trace", "count", "weight_map", "arc_spec"]:
+                error_msg = f"{i} is not a valid output."
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
+
+        # Save each trace as a separate FITS file
+        for i, spec_i in self.spectrum_list.items():
+            filename_i = filename + "_" + str(i)
+
+            spec_i.save_csv(
+                output=output,
+                filename=filename_i,
+                overwrite=overwrite,
+                recreate=recreate,
+            )
+            self.logger.info(
+                "CSV file is saved to %s for spec_id: %s.", filename_i, i
+            )
