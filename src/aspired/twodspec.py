@@ -4456,6 +4456,7 @@ class TwoDSpec:
         """
         Call this method to inspect the line spread function used to extract
         the spectrum.
+
         Parameters
         ----------
         spec_id: int (Default: None)
@@ -4483,6 +4484,7 @@ class TwoDSpec:
             will have different extension.
         open_iframe: bool
             Open the iframe in the default browser if set to True.
+
         """
 
         if isinstance(spec_id, int):

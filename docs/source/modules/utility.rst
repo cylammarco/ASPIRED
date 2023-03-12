@@ -1,4 +1,4 @@
 Utility
 =======
 
-.. literalinclude:: ../../../aspired/util.py
+.. literalinclude:: ../../../src/aspired/util.py
