@@ -1,6 +1,7 @@
 astropy>=4.3
 astroscrappy>=1.1
 ccdproc<= 2.3
+Cython>=0.29.23
 coverage>=0.38.4
 flake8>=5.0.4
 kaleido>=0.2
