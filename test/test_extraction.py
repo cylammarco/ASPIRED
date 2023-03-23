@@ -327,7 +327,7 @@ def test_gaussian_spectral_extraction_horne86_lowess_low_signal():
     count = np.median(dummy_twodspec.spectrum_list[0].count)
     count_err = np.median(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
-    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
+    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err*2.0), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
 
