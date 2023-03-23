@@ -16,9 +16,7 @@ from aspired import util
 HERE = os.path.dirname(os.path.realpath(__file__))
 
 img = image_reduction.ImageReduction(log_file_name=None)
-img.add_filelist(
-    filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
-)
+img.add_filelist(filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list"))
 img.load_data()
 img.reduce()
 
@@ -458,7 +456,7 @@ def test_add_arc_hdulist():
     assert twodspec.arc_header == arc_fits.header
 
 
-def test_add_arc_hdulist():
+def test_add_arc_CCDData():
     twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
     twodspec.add_arc(arc_in_CCDData)
     assert (twodspec.arc == arc_fits.data).all()

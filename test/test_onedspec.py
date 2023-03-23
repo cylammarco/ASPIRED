@@ -443,7 +443,7 @@ def test_add_wavelength_science_two_spec():
 
 @pytest.mark.xfail(raises=ValueError)
 # science add_wavelengthcalibration to two traces
-def test_add_wavelength_science_expect_fail():
+def test_add_wavelength_science_expect_fail_wrong_specid():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -453,11 +453,10 @@ def test_add_wavelength_science_expect_fail():
 
 @pytest.mark.xfail(raises=ValueError)
 # science add_wavelengthcalibration to two traces
-def test_add_wavelength_science_expect_fail():
+def test_add_wavelength_science_expect_fail_wrong_shape():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
-
     onedspec.add_spec(np.arange(100), spec_id=0, stype="science+standard")
     onedspec.add_wavelength(
         [np.arange(100), np.arange(200)], spec_id=[0], stype="science+standard"
@@ -901,7 +900,7 @@ def test_add_fit_coeff_science_fail_type():
 
 
 @pytest.mark.xfail(raises=ValueError)
-def test_add_fit_coeff_science_fail_type():
+def test_add_fit_coeff_science_fail_wrong_shape():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )

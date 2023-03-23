@@ -5447,6 +5447,7 @@ class SpectrumOneD:
         overwrite=False,
         recreate=True,
         empty_primary_hdu=True,
+        create_folder=False,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
@@ -5522,6 +5523,8 @@ class SpectrumOneD:
             Set to True to overwrite the FITS data and header.
         empty_primary_hdu: boolean (Default: True)
             Set to True to leave the Primary HDU blank (Default: True)
+        create_folder: boolean (Default: False)
+            Create folder if not exist. Use with caution.
 
         """
 
@@ -5529,12 +5532,32 @@ class SpectrumOneD:
             output, recreate=recreate, empty_primary_hdu=empty_primary_hdu
         )
 
-        # Save file to disk
-        self.hdu_output.writeto(
-            filename + ".fits", overwrite=overwrite, output_verify="fix+ignore"
-        )
+        # create the director if not exist
+        if create_folder:
+            if not os.path.exists(os.path.dirname(filename)):
+                os.makedirs(os.path.dirname(filename))
 
-    def save_csv(self, output, filename, overwrite, recreate):
+        # Save file to disk
+        if os.path.splitext(filename)[-1].lower() in [".fits", ".fit", ".fts"]:
+            self.hdu_output.writeto(
+                filename, overwrite=overwrite, output_verify="fix+ignore"
+            )
+
+        else:
+            self.hdu_output.writeto(
+                filename + ".fits",
+                overwrite=overwrite,
+                output_verify="fix+ignore",
+            )
+
+    def save_csv(
+        self,
+        output,
+        filename,
+        overwrite=False,
+        recreate=True,
+        create_folder=False,
+    ):
         """
         Save the reduced data to disk, with a choice of any combination of the
         5 sets of data, see below the 'output' parameters for details.
@@ -5607,10 +5630,17 @@ class SpectrumOneD:
             Default is False.
         recreate: boolean (Default: False)
             Set to True to overwrite the FITS data and header.
+        create_folder: boolean (Default: False)
+            Create folder if not exist. Use with caution.
 
         """
 
         self.create_fits(output, recreate=recreate, empty_primary_hdu=False)
+
+        # create the director if not exist
+        if create_folder:
+            if not os.path.exists(os.path.dirname(filename)):
+                os.makedirs(os.path.dirname(filename))
 
         output_split = output.split("+")
 
