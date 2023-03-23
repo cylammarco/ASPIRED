@@ -42,7 +42,7 @@ lhs6328_twodspec.ap_extract(
     optimal=False,
     display=False,
     save_fig=True,
-    filename=os.path.join(HERE, "test_output", "test_force_extraxtion"),
+    filename=os.path.join(HERE, "test_output", "test_force_extraction"),
     fig_type="iframe+png",
 )
 
@@ -60,7 +60,7 @@ lhs6328_twodspec.ap_extract(
     optimal=True,
     display=False,
     save_fig=True,
-    filename=os.path.join(HERE, "test_output", "test_force_extraxtion1"),
+    filename=os.path.join(HERE, "test_output", "test_force_extraction1"),
     fig_type="iframe+png",
 )
 
@@ -77,7 +77,7 @@ lhs6328_twodspec.ap_extract(
     model="lowess",
     display=False,
     save_fig=True,
-    filename=os.path.join(HERE, "test_output", "test_force_extraxtion2"),
+    filename=os.path.join(HERE, "test_output", "test_force_extraction2"),
     fig_type="iframe+png",
 )
 
@@ -95,7 +95,7 @@ lhs6328_twodspec.ap_extract(
     algorithm="marsh89",
     display=False,
     save_fig=True,
-    filename=os.path.join(HERE, "test_output", "test_force_extraxtion3"),
+    filename=os.path.join(HERE, "test_output", "test_force_extraction3"),
     fig_type="iframe+png",
 )
 
@@ -126,7 +126,7 @@ def test_forced_extraction_tophat():
         forced=True,
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion4"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraction4"),
         fig_type="iframe+png",
     )
 
@@ -159,7 +159,7 @@ def test_forced_extraction_horne86_gauss():
         optimal=True,
         forced=True,
         variances=horne86_var,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion5"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraction5"),
         display=False,
     )
 
@@ -193,7 +193,7 @@ def test_forced_extraction_horne86_lowess():
         model="lowess",
         forced=True,
         variances=horne86_var,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion6"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraction6"),
         display=False,
     )
 
@@ -229,7 +229,7 @@ def test_forced_extraction_marsh89():
         variances=np.transpose(marsh89_var),
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion7"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraction7"),
         fig_type="iframe+png",
     )
 
@@ -265,7 +265,7 @@ def test_forced_extraction_horne86_lowess_int_var():
         variances=np.nanmedian(horne86_var),
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion8"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraction8"),
         fig_type="iframe+png",
     )
 
@@ -301,7 +301,7 @@ def test_forced_extraction_horne86_lowess_str_var():
         variances="blabla",
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion9"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraction9"),
         fig_type="iframe+png",
     )
 
