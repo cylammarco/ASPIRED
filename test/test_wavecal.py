@@ -70,7 +70,6 @@ np.random.seed(0)
 
 
 def test_wavecal():
-
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
 
@@ -135,7 +134,6 @@ def test_wavecal():
 
 
 def test_setting_a_known_pair():
-
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum_oned.add_arc_spec(arc_spec)
@@ -158,7 +156,6 @@ def test_setting_a_known_pair():
 
 @patch("plotly.graph_objects.Figure.show")
 def test_setting_known_pairs(mock_show):
-
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum_oned.add_arc_spec(arc_spec)
@@ -181,7 +178,6 @@ def test_setting_known_pairs(mock_show):
 
 @pytest.mark.xfail()
 def test_setting_a_none_to_known_pairs_expect_fail():
-
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum_oned.add_arc_spec(arc_spec)
@@ -202,7 +198,6 @@ def test_setting_a_none_to_known_pairs_expect_fail():
 
 @pytest.mark.xfail()
 def test_setting_nones_to_known_pairs_expect_fail():
-
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal = WavelengthCalibration(log_file_name=None)
     lhs6328_spectrum_oned.add_arc_spec(arc_spec)
@@ -222,7 +217,6 @@ def test_setting_nones_to_known_pairs_expect_fail():
 
 
 def test_user_supplied_arc_spec():
-
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Science arc_spec
@@ -261,7 +255,6 @@ def test_user_supplied_arc_spec():
 
 
 def test_user_supplied_arc_spec_2():
-
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Find the peaks of the arc
@@ -297,7 +290,6 @@ def test_user_supplied_arc_spec_2():
 
 
 def test_user_supplied_arc_spec_arc_lines_from_at_initilisation():
-
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Configure the wavelength calibrator
@@ -328,7 +320,6 @@ def test_user_supplied_arc_spec_arc_lines_from_at_initilisation():
 
 
 def test_overwritten_copy_of_spectrum_oneds_are_different():
-
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
     wavecal_1 = WavelengthCalibration(log_file_name=None)
     wavecal_1.from_spectrum_oned(lhs6328_spectrum_oned)
@@ -344,7 +335,6 @@ def test_overwritten_copy_of_spectrum_oneds_are_different():
 @pytest.mark.skip(reason="waiting on rascal fix.")
 @patch("plotly.graph_objects.Figure.show")
 def test_user_supplied_arc_lines(mock_show):
-
     wavecal = WavelengthCalibration(log_file_name=None)
 
     # Find the peaks of the arc
@@ -541,9 +531,7 @@ def test_user_supplied_wavelength_twodspec(mock_show):
     lhs6328_onedspec.from_twodspec(lhs6328)
 
     wavelength = np.genfromtxt(
-        os.path.join(
-            HERE, "test_data", "test_full_run_standard_wavelength.csv"
-        )
+        os.path.join(HERE, "test_data", "test_full_run_standard_wavelength.csv")
     )
     # Manually supply wavelengths
     lhs6328_onedspec.add_wavelength([wavelength, wavelength])
@@ -582,7 +570,6 @@ elements_quadratic = ["Quadratic"] * len(wavelengths_quadratic)
 
 
 def test_linear_fit():
-
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
 
@@ -610,7 +597,6 @@ def test_linear_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
     # Refine solution
     (
@@ -621,7 +607,6 @@ def test_linear_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     assert np.abs(best_p[1] - 5.0) / 5.0 < 0.001
@@ -631,7 +616,6 @@ def test_linear_fit():
 
 
 def test_manual_refit():
-
     # Initialise the calibrator
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
@@ -660,7 +644,6 @@ def test_manual_refit():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
 
     # Refine solution
@@ -672,7 +655,6 @@ def test_manual_refit():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     (
@@ -681,9 +663,6 @@ def test_manual_refit():
         matched_atlas,
         rms,
         residuals,
-        peak_utilisation,
-        atlas_utilisation,
-        success,
     ) = wavecal.manual_refit(matched_peaks, matched_atlas)
 
     assert np.abs(best_p_manual[0] - best_p[0]) < 10.0
@@ -691,7 +670,6 @@ def test_manual_refit():
 
 
 def test_manual_refit_remove_points():
-
     # Initialise the calibrator
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
@@ -720,7 +698,6 @@ def test_manual_refit_remove_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
 
     # Refine solution
@@ -732,7 +709,6 @@ def test_manual_refit_remove_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     wavecal.remove_pix_wave_pair(5)
@@ -743,16 +719,12 @@ def test_manual_refit_remove_points():
         matched_atlas,
         rms,
         residuals,
-        peak_utilisation,
-        atlas_utilisation,
-        success,
     ) = wavecal.manual_refit(matched_peaks, matched_atlas)
 
     assert np.allclose(best_p_manual, best_p)
 
 
 def test_manual_refit_add_points():
-
     # Initialise the calibrator
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
@@ -781,7 +753,6 @@ def test_manual_refit_add_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(max_tries=500, fit_deg=1)
 
     # Refine solution
@@ -793,7 +764,6 @@ def test_manual_refit_add_points():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
     wavecal.add_pix_wave_pair(
@@ -805,16 +775,12 @@ def test_manual_refit_add_points():
         matched_atlas,
         rms,
         residuals,
-        peak_utilisation,
-        atlas_utilisation,
-        success,
     ) = wavecal.manual_refit(matched_peaks, matched_atlas)
 
     assert np.allclose(best_p_manual, best_p)
 
 
 def test_quadratic_fit():
-
     # Initialise the calibrator
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
@@ -843,7 +809,6 @@ def test_quadratic_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(
         max_tries=2000, fit_tolerance=5.0, candidate_tolerance=2.0, fit_deg=2
     )
@@ -856,12 +821,10 @@ def test_quadratic_fit():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.robust_refit(best_p, refine=False, robust_refit=True)
 
 
 def test_quadratic_fit_legendre():
-
     # Initialise the calibrator
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
@@ -890,7 +853,6 @@ def test_quadratic_fit_legendre():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(
         max_tries=2000,
         fit_tolerance=5.0,
@@ -901,7 +863,6 @@ def test_quadratic_fit_legendre():
 
 
 def test_quadratic_fit_chebyshev():
-
     # Initialise the calibrator
     wavecal = WavelengthCalibration(log_file_name=None)
     wavecal.initialise_calibrator(peaks)
@@ -930,7 +891,6 @@ def test_quadratic_fit_chebyshev():
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ) = wavecal.fit(
         max_tries=2000,
         fit_tolerance=5.0,

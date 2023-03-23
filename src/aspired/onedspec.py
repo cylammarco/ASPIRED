@@ -2122,6 +2122,7 @@ class OneDSpec:
                 "Calibrator is initialised for the standard_spectrum_list."
             )
 
+    # placeholder for rascal v0.4
     def set_calibrator_logger(
         self,
         logger_name="Calibrator",

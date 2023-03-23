@@ -53,8 +53,8 @@ def test_full_run(mock_show):
     ]
     element = ["Xe"] * len(atlas)
 
-    spatial_mask = np.arange(35, 200)
-    spec_mask = np.arange(50, 1024)
+    spatial_mask = np.arange(20, 200)
+    spec_mask = np.arange(100, 1024)
 
     # Science frame
     lhs6328_frame = image_reduction.ImageReduction(
@@ -71,8 +71,6 @@ def test_full_run(mock_show):
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
-        psfmodel="gaussxy",
         readnoise=5.7,
         log_level="ERROR",
         log_file_folder=os.path.join(HERE, "test_output"),
@@ -120,7 +118,7 @@ def test_full_run(mock_show):
         skydeg=1,
         optimal=True,
         forced=True,
-        variances=1000000.0,
+        variances=10000.0,
         display=False,
         save_fig=True,
         filename=os.path.join(HERE, "test_output", "test_full_run_extract"),
@@ -154,8 +152,6 @@ def test_full_run(mock_show):
 
     hilt102_twodspec = spectral_reduction.TwoDSpec(
         standard_frame,
-        cosmicray=True,
-        psfmodel="gaussyx",
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
         readnoise=5.7,
@@ -223,11 +219,11 @@ def test_full_run(mock_show):
     lhs6328_onedspec.initialise_calibrator(stype="science+standard")
 
     lhs6328_onedspec.set_hough_properties(
-        num_slopes=1000,
+        num_slopes=2000,
         xbins=200,
         ybins=200,
-        min_wavelength=3500,
-        max_wavelength=8500,
+        min_wavelength=3700,
+        max_wavelength=8200,
         stype="science+standard",
     )
     lhs6328_onedspec.set_ransac_properties(

@@ -52,14 +52,14 @@ dummy_data = np.random.normal(dummy_data)
 # Prepare dummy gaussian data
 dummy_gaussian_data = (
     np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
-).T * 10000.0 + bg_level
-dummy_gaussian_data = np.random.normal(dummy_gaussian_data, scale=bg_level)
+).T * 10000.0
+dummy_gaussian_data = np.random.normal(dummy_gaussian_data, scale=bg_level) + bg_level
 
 # Prepare faint dummy gaussian data
 dummy_gaussian_data_faint = (
     np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
-).T * 100.0 + bg_level
-dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint, scale=bg_level)
+).T * 100.0
+dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint, scale=bg_level) + bg_level
 
 
 def test_spectral_extraction():
@@ -324,8 +324,8 @@ def test_gaussian_spectral_extraction_horne86_lowess_low_signal():
         model="lowess",
         lowess_frac=0.05,
     )
-    count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    count = np.median(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.median(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
@@ -361,8 +361,8 @@ def test_gaussian_spectral_extraction_marsh89_low_signal():
 
     # Optimal extraction (Marsh89)
     dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
-    count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
+    count = np.median(dummy_twodspec.spectrum_list[0].count)
+    count_err = np.median(dummy_twodspec.spectrum_list[0].count_err)
     snr_marsh = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
@@ -371,8 +371,8 @@ def test_gaussian_spectral_extraction_marsh89_low_signal():
 
 def test_user_supplied_trace():
 
-    spatial_mask = np.arange(50, 200)
-    spec_mask = np.arange(50, 1024)
+    spatial_mask = np.arange(20, 200)
+    spec_mask = np.arange(100, 1024)
 
     # Loading a single pre-saved spectral trace.
     lhs6328_extracted = fits.open(

@@ -83,8 +83,7 @@ class SpectrumOneD:
             raise ValueError("Unknonw logging level.")
 
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
-            "%(message)s",
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%a, %d %b %Y %H:%M:%S",
         )
 
@@ -204,7 +203,6 @@ class SpectrumOneD:
         self.residual = None
         self.peak_utilisation = None
         self.atlas_utilisation = None
-        self.success = None
 
         # fit output
         self.fit_coeff_rascal = None
@@ -214,7 +212,6 @@ class SpectrumOneD:
         self.residual_rascal = None
         self.peak_utilisation_rascal = None
         self.atlas_utilisation_rascal = None
-        self.success_rascal = None
 
         # fit output
         self.fit_coeff_refine = None
@@ -224,7 +221,6 @@ class SpectrumOneD:
         self.residual_refine = None
         self.peak_utilisation_refine = None
         self.atlas_utilisation_refine = None
-        self.success_refine = None
 
         # fitted solution
         self.wave = None
@@ -498,23 +494,17 @@ class SpectrumOneD:
         """
 
         for attr, value in self.__dict__.items():
-
             if attr == "spec_id":
-
                 if getattr(spectrum_oned, attr) != 0:
-
                     setattr(self, attr, value)
 
             if getattr(self, attr) is None or []:
-
                 setattr(self, attr, getattr(spectrum_oned, attr))
 
             if overwrite:
-
                 setattr(self, attr, getattr(spectrum_oned, attr))
 
             else:
-
                 # if not overwrite, do nothing
                 pass
 
@@ -654,11 +644,9 @@ class SpectrumOneD:
         " be the same size."
 
         if effective_pixel is None:
-
             effective_pixel = list(np.arange(len(trace)).astype("int"))
 
         else:
-
             assert isinstance(
                 effective_pixel, (list, np.ndarray)
             ), "effective_pixel has to be a list or a numpy array"
@@ -776,7 +764,6 @@ class SpectrumOneD:
         ), "count has to be a list or a numpy array"
 
         if count_err is not None:
-
             assert isinstance(
                 count_err, (list, np.ndarray)
             ), "count_err has to be a list or a numpy array"
@@ -785,7 +772,6 @@ class SpectrumOneD:
             ), "count_err has to be the same size as count"
 
         if count_sky is not None:
-
             assert isinstance(
                 count_sky, (list, np.ndarray)
             ), "count_sky has to be a list or a numpy array"
@@ -797,28 +783,22 @@ class SpectrumOneD:
 
         # Only add if they are provided
         if count_err is not None:
-
             self.count_err = count_err
 
         else:
-
             self.count_err = np.zeros_like(self.count)
 
         if count_sky is not None:
-
             self.count_sky = count_sky
 
         else:
-
             self.count_sky = np.zeros_like(self.count)
 
         if self.effective_pixel is None:
-
             effective_pixel = list(np.arange(len(count)).astype("int"))
             self.add_effective_pixel(effective_pixel)
 
         else:
-
             assert len(self.effective_pixel) == len(count), (
                 "count and effective_pixel have " + "to be the same size."
             )
@@ -854,9 +834,48 @@ class SpectrumOneD:
 
         self.var = None
 
+    def add_line_spread_profile_upsampled(self, line_spread_profile_upsampled):
+        """
+        Add the empirical line spread profile as measured from the upsampled image.
+
+        Parameters
+        ----------
+        profile_func: a fitted astropy.model
+            The fitted trace profile.
+        """
+
+        self.line_spread_profile_upsampled = line_spread_profile_upsampled
+
+    def remove_line_spread_profile_upsampled(self):
+        """
+        Remove the fitted trace profile.
+        """
+
+        self.line_spread_profile_upsampled = None
+
+    def add_line_spread_profile(self, line_spread_profile):
+        """
+        Add the empirical line spread profile as measured.
+
+        Parameters
+        ----------
+        profile_func: a fitted astropy.model
+            The fitted trace profile.
+        """
+
+        self.line_spread_profile = line_spread_profile
+
+    def remove_line_spread_profile(self):
+        """
+        Remove the fitted trace profile.
+        """
+
+        self.line_spread_profile = None
+
     def add_profile_func(self, profile_func):
         """
         Add the fitted trace profile.
+
         Parameters
         ----------
         profile_func: a fitted astropy.model
@@ -874,7 +893,7 @@ class SpectrumOneD:
 
     def add_profile(self, profile):
         """
-        Add the extraction profile.
+        Add the extraction profile (generated from the profile_func).
 
         Parameters
         ----------
@@ -1528,7 +1547,6 @@ class SpectrumOneD:
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ):
         """
         Add the final accepted polynomial solution.
@@ -1550,8 +1568,6 @@ class SpectrumOneD:
             The fraction of the input peaks used in the fit
         atlas_utilisation: float
             The fraction of the input atlas used in the fit
-        success: bool
-            True if fit converged.
 
         """
 
@@ -1563,7 +1579,6 @@ class SpectrumOneD:
         self.residual = residual
         self.peak_utilisation = peak_utilisation
         self.atlas_utilisation = atlas_utilisation
-        self.success = success
 
     def remove_fit_output_final(self):
         """
@@ -1577,7 +1592,6 @@ class SpectrumOneD:
         self.residual = None
         self.peak_utilisation = None
         self.atlas_utilisation = None
-        self.success = None
 
     def add_fit_output_rascal(
         self,
@@ -1588,7 +1602,6 @@ class SpectrumOneD:
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ):
         """
         Add the RASCAL polynomial solution.
@@ -1610,8 +1623,6 @@ class SpectrumOneD:
             The fraction of the input peaks used in the fit
         atlas_utilisation: float
             The fraction of the input atlas used in the fit
-        success: bool
-            True if fit converged.
 
         """
 
@@ -1623,7 +1634,6 @@ class SpectrumOneD:
         self.residual_rascal = residual
         self.peak_utilisation_rascal = peak_utilisation
         self.atlas_utilisation_rascal = atlas_utilisation
-        self.success_rascal = success
         self.add_fit_output_final(
             fit_coeff,
             matched_peaks,
@@ -1632,7 +1642,6 @@ class SpectrumOneD:
             residual,
             peak_utilisation,
             atlas_utilisation,
-            success,
         )
 
     def remove_fit_output_rascal(self):
@@ -1648,7 +1657,6 @@ class SpectrumOneD:
         self.residual_rascal = None
         self.peak_utilisation_rascal = None
         self.atlas_utilisation_rascal = None
-        self.success_rascal = None
 
     def add_fit_output_refine(
         self,
@@ -1659,7 +1667,6 @@ class SpectrumOneD:
         residual,
         peak_utilisation,
         atlas_utilisation,
-        success,
     ):
         """
         Add the refined RASCAL polynomial solution.
@@ -1692,7 +1699,6 @@ class SpectrumOneD:
         self.residual_refine = residual
         self.peak_utilisation_refine = peak_utilisation
         self.atlas_utilisation_refine = atlas_utilisation
-        self.success_refine = success
         self.add_fit_output_final(
             fit_coeff,
             matched_peaks,
@@ -1701,7 +1707,6 @@ class SpectrumOneD:
             residual,
             peak_utilisation,
             atlas_utilisation,
-            success,
         )
 
     def remove_fit_output_refine(self):
@@ -1717,7 +1722,6 @@ class SpectrumOneD:
         self.residual_refine = None
         self.peak_utilisation_refine = None
         self.atlas_utilisation_refine = None
-        self.success_refine = None
 
     def add_wavelength(self, wave):
         """
@@ -2545,9 +2549,7 @@ class SpectrumOneD:
 
         """
 
-        self._modify_imagehdu_header(
-            self.arc_lines_hdulist, idx, method, *args
-        )
+        self._modify_imagehdu_header(self.arc_lines_hdulist, idx, method, *args)
 
     def modify_wavecal_header(self, method, *args):
         """
@@ -2631,9 +2633,7 @@ class SpectrumOneD:
 
         """
 
-        self._modify_imagehdu_header(
-            self.sensitivity_hdulist, 0, method, *args
-        )
+        self._modify_imagehdu_header(self.sensitivity_hdulist, 0, method, *args)
 
     def modify_flux_header(self, idx, method, *args):
         """
@@ -2722,9 +2722,7 @@ class SpectrumOneD:
             self.flux_telluric_corrected_hdulist, idx, method, *args
         )
 
-    def modify_flux_atm_ext_telluric_corrected_header(
-        self, idx, method, *args
-    ):
+    def modify_flux_atm_ext_telluric_corrected_header(self, idx, method, *args):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2886,7 +2884,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
                 trace_ImageHDU = fits.ImageHDU(
@@ -2931,7 +2928,6 @@ class SpectrumOneD:
             self.modify_trace_header(1, "set", "BUNIT", "Pixel (Spatial)")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -2945,7 +2941,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
                 count_ImageHDU = fits.ImageHDU(
@@ -3021,7 +3016,6 @@ class SpectrumOneD:
             self.modify_count_header(2, "set", "BUNIT", "electron")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3035,7 +3029,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
                 weight_map_ImageHDU = fits.ImageHDU(
@@ -3070,7 +3063,6 @@ class SpectrumOneD:
                 )
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3085,7 +3077,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the spectrum
             if self.spectrum_header is not None:
                 count_resampled_ImageHDU = fits.ImageHDU(
@@ -3128,9 +3119,7 @@ class SpectrumOneD:
             self.modify_count_resampled_header(
                 0, "set", "CRVAL1", self.wave_start
             )
-            self.modify_count_resampled_header(
-                0, "set", "CTYPE1", "Wavelength"
-            )
+            self.modify_count_resampled_header(0, "set", "CTYPE1", "Wavelength")
             self.modify_count_resampled_header(0, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(0, "set", "BUNIT", "electron")
             self.modify_count_resampled_header(0, "set", "BUNIT", "electron")
@@ -3160,9 +3149,7 @@ class SpectrumOneD:
             self.modify_count_resampled_header(
                 1, "set", "CRVAL1", self.wave_start
             )
-            self.modify_count_resampled_header(
-                1, "set", "CTYPE1", "Wavelength"
-            )
+            self.modify_count_resampled_header(1, "set", "CTYPE1", "Wavelength")
             self.modify_count_resampled_header(1, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(1, "set", "BUNIT", "electron")
 
@@ -3180,14 +3167,11 @@ class SpectrumOneD:
             self.modify_count_resampled_header(
                 2, "set", "CRVAL1", self.wave_start
             )
-            self.modify_count_resampled_header(
-                2, "set", "CTYPE1", "Wavelength"
-            )
+            self.modify_count_resampled_header(2, "set", "CTYPE1", "Wavelength")
             self.modify_count_resampled_header(2, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(2, "set", "BUNIT", "electron")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3201,7 +3185,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the arc
             if self.arc_header is not None:
                 arc_spec_ImageHDU = fits.ImageHDU(
@@ -3233,7 +3216,6 @@ class SpectrumOneD:
             self.modify_arc_spec_header(0, "set", "BUNIT", "electron")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3247,7 +3229,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the arc
             if self.arc_header is not None:
                 peaks_ImageHDU = fits.ImageHDU(
@@ -3282,7 +3263,6 @@ class SpectrumOneD:
             self.modify_arc_lines_header(1, "set", "BUNIT", "Pixel")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3297,7 +3277,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Use the header of the arc
             if self.arc_header is not None:
                 wavecal_ImageHDU = fits.ImageHDU(
@@ -3356,7 +3335,6 @@ class SpectrumOneD:
             self.modify_wavecal_header("set", "BUNIT", "electron")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3370,7 +3348,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Put the data in an ImageHDU
 
             # Use the header of the arc
@@ -3397,14 +3374,11 @@ class SpectrumOneD:
             self.modify_wavelength_header(
                 "set", "CRVAL1", self.effective_pixel[0]
             )
-            self.modify_wavelength_header(
-                "set", "CTYPE1", "Pixel (Dispersion)"
-            )
+            self.modify_wavelength_header("set", "CTYPE1", "Pixel (Dispersion)")
             self.modify_wavelength_header("set", "CUNIT1", "Pixel")
             self.modify_wavelength_header("set", "BUNIT", "Angstroms")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3418,7 +3392,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Put the data in an ImageHDU
 
             # Use the header of the arc
@@ -3433,9 +3406,7 @@ class SpectrumOneD:
 
             # Create an empty HDU list and populate with the ImageHDU
             self.wavelength_resampled_hdulist = fits.HDUList()
-            self.wavelength_resampled_hdulist += [
-                wavelength_resampled_ImageHDU
-            ]
+            self.wavelength_resampled_hdulist += [wavelength_resampled_ImageHDU]
 
             hdu_names = self.ext_name[self.hdu_order["wavelength_resampled"]]
 
@@ -3455,12 +3426,9 @@ class SpectrumOneD:
                 "set", "CTYPE1", "Pixel (Dispersion)"
             )
             self.modify_wavelength_resampled_header("set", "CUNIT1", "Pixel")
-            self.modify_wavelength_resampled_header(
-                "set", "BUNIT", "Angstroms"
-            )
+            self.modify_wavelength_resampled_header("set", "BUNIT", "Angstroms")
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -3476,7 +3444,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Put the data in ImageHDUs
 
             # Use the header of the standard
@@ -3507,7 +3474,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3522,7 +3488,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -3530,14 +3495,12 @@ class SpectrumOneD:
                 header = self.spectrum_header
 
             if header is not None:
-
                 # Put the data in ImageHDUs
                 flux_ImageHDU = fits.ImageHDU(self.flux, header=header)
                 flux_err_ImageHDU = fits.ImageHDU(self.flux_err, header=header)
                 flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky, header=header)
 
             else:
-
                 flux_ImageHDU = fits.ImageHDU(self.flux)
                 flux_err_ImageHDU = fits.ImageHDU(self.flux_err)
                 flux_sky_ImageHDU = fits.ImageHDU(self.flux_sky)
@@ -3555,14 +3518,10 @@ class SpectrumOneD:
             self.modify_flux_header(0, "set", "LABEL", "Flux")
             self.modify_flux_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(0, "set", "CDELT1", 1)
-            self.modify_flux_header(
-                0, "set", "CRVAL1", self.effective_pixel[0]
-            )
+            self.modify_flux_header(0, "set", "CRVAL1", self.effective_pixel[0])
             self.modify_flux_header(0, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(0, "set", "CUNIT1", "Pixel")
-            self.modify_flux_header(
-                0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
-            )
+            self.modify_flux_header(0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)")
             self.modify_flux_header(0, "set", "XPOSURE", self.exptime)
             self.modify_flux_header(0, "set", "GAIN", self.gain)
             self.modify_flux_header(0, "set", "RNOISE", self.readnoise)
@@ -3573,30 +3532,21 @@ class SpectrumOneD:
             self.modify_flux_header(1, "set", "LABEL", "Flux (Uncertainty)")
             self.modify_flux_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(1, "set", "CDELT1", 1)
-            self.modify_flux_header(
-                1, "set", "CRVAL1", self.effective_pixel[0]
-            )
+            self.modify_flux_header(1, "set", "CRVAL1", self.effective_pixel[0])
             self.modify_flux_header(1, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(1, "set", "CUNIT1", "Pixel")
-            self.modify_flux_header(
-                1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
-            )
+            self.modify_flux_header(1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)")
 
             self.modify_flux_header(2, "set", "EXTNAME", hdu_names[2])
             self.modify_flux_header(2, "set", "LABEL", "Flux (Sky)")
             self.modify_flux_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(2, "set", "CDELT1", 1)
-            self.modify_flux_header(
-                2, "set", "CRVAL1", self.effective_pixel[0]
-            )
+            self.modify_flux_header(2, "set", "CRVAL1", self.effective_pixel[0])
             self.modify_flux_header(2, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(2, "set", "CUNIT1", "Pixel")
-            self.modify_flux_header(
-                2, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
-            )
+            self.modify_flux_header(2, "set", "BUNIT", "erg/(s*cm**2*Angstrom)")
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -3611,7 +3561,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             if self.spectrum_header is not None:
@@ -3643,7 +3592,6 @@ class SpectrumOneD:
             self.modify_atm_ext_header("set", "BUNIT", " ")
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -3658,7 +3606,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -3666,7 +3613,6 @@ class SpectrumOneD:
                 header = self.spectrum_header
 
             if header is not None:
-
                 # Put the data in ImageHDUs
                 flux_atm_ext_corrected_ImageHDU = fits.ImageHDU(
                     self.flux_atm_ext_corrected, header=header
@@ -3679,7 +3625,6 @@ class SpectrumOneD:
                 )
 
             else:
-
                 flux_atm_ext_corrected_ImageHDU = fits.ImageHDU(
                     self.flux_atm_ext_corrected
                 )
@@ -3787,7 +3732,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -3804,7 +3748,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -3818,9 +3761,7 @@ class SpectrumOneD:
                 )
             else:
                 # Put the data in ImageHDUs
-                telluric_profile_ImageHDU = fits.ImageHDU(
-                    self.telluric_profile
-                )
+                telluric_profile_ImageHDU = fits.ImageHDU(self.telluric_profile)
 
             # Create an empty HDU list and populate with ImageHDUs
             self.telluric_profile_hdulist = fits.HDUList()
@@ -3843,7 +3784,6 @@ class SpectrumOneD:
             self.modify_telluric_profile_header("set", "BUNIT", "")
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -3858,7 +3798,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -3866,7 +3805,6 @@ class SpectrumOneD:
                 header = self.spectrum_header
 
             if header is not None:
-
                 # Put the data in ImageHDUs
                 flux_telluric_corrected_ImageHDU = fits.ImageHDU(
                     self.flux_telluric_corrected, header=header
@@ -3879,7 +3817,6 @@ class SpectrumOneD:
                 )
 
             else:
-
                 flux_telluric_corrected_ImageHDU = fits.ImageHDU(
                     self.flux_telluric_corrected
                 )
@@ -3902,9 +3839,7 @@ class SpectrumOneD:
                 flux_sky_telluric_corrected_ImageHDU
             ]
 
-            hdu_names = self.ext_name[
-                self.hdu_order["flux_telluric_corrected"]
-            ]
+            hdu_names = self.ext_name[self.hdu_order["flux_telluric_corrected"]]
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_telluric_corrected_header(
@@ -3977,7 +3912,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -3994,7 +3928,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4002,7 +3935,6 @@ class SpectrumOneD:
                 header = self.spectrum_header
 
             if header is not None:
-
                 # Put the data in ImageHDUs
                 flux_atm_ext_telluric_corrected_ImageHDU = fits.ImageHDU(
                     self.flux_atm_ext_telluric_corrected, header=header
@@ -4015,7 +3947,6 @@ class SpectrumOneD:
                 )
 
             else:
-
                 flux_atm_ext_telluric_corrected_ImageHDU = fits.ImageHDU(
                     self.flux_atm_ext_telluric_corrected
                 )
@@ -4152,7 +4083,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -4168,7 +4098,6 @@ class SpectrumOneD:
         """
 
         try:
-
             # Put the data in ImageHDUs
             sensitivity_resampled_ImageHDU = fits.ImageHDU(
                 self.sensitivity_resampled
@@ -4200,7 +4129,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -4215,7 +4143,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4252,16 +4179,12 @@ class SpectrumOneD:
             hdu_names = self.ext_name[self.hdu_order["flux_resampled"]]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_flux_resampled_header(
-                0, "set", "EXTNAME", hdu_names[0]
-            )
+            self.modify_flux_resampled_header(0, "set", "EXTNAME", hdu_names[0])
             self.modify_flux_resampled_header(
                 0, "set", "LABEL", "Flux resampled"
             )
             self.modify_flux_resampled_header(0, "set", "CRPIX1", 1.00e00)
-            self.modify_flux_resampled_header(
-                0, "set", "CDELT1", self.wave_bin
-            )
+            self.modify_flux_resampled_header(0, "set", "CDELT1", self.wave_bin)
             self.modify_flux_resampled_header(
                 0, "set", "CRVAL1", self.wave_start
             )
@@ -4270,28 +4193,20 @@ class SpectrumOneD:
             self.modify_flux_resampled_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
-            self.modify_flux_resampled_header(
-                0, "set", "XPOSURE", self.exptime
-            )
+            self.modify_flux_resampled_header(0, "set", "XPOSURE", self.exptime)
             self.modify_flux_resampled_header(0, "set", "GAIN", self.gain)
             self.modify_flux_resampled_header(
                 0, "set", "RNOISE", self.readnoise
             )
             self.modify_flux_resampled_header(0, "set", "SEEING", self.seeing)
-            self.modify_flux_resampled_header(
-                0, "set", "AIRMASS", self.airmass
-            )
+            self.modify_flux_resampled_header(0, "set", "AIRMASS", self.airmass)
 
-            self.modify_flux_resampled_header(
-                1, "set", "EXTNAME", hdu_names[1]
-            )
+            self.modify_flux_resampled_header(1, "set", "EXTNAME", hdu_names[1])
             self.modify_flux_resampled_header(
                 1, "set", "LABEL", "Flux resampled (Uncertainty)"
             )
             self.modify_flux_resampled_header(1, "set", "CRPIX1", 1.00e00)
-            self.modify_flux_resampled_header(
-                1, "set", "CDELT1", self.wave_bin
-            )
+            self.modify_flux_resampled_header(1, "set", "CDELT1", self.wave_bin)
             self.modify_flux_resampled_header(
                 1, "set", "CRVAL1", self.wave_start
             )
@@ -4301,16 +4216,12 @@ class SpectrumOneD:
                 1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_resampled_header(
-                2, "set", "EXTNAME", hdu_names[2]
-            )
+            self.modify_flux_resampled_header(2, "set", "EXTNAME", hdu_names[2])
             self.modify_flux_resampled_header(
                 2, "set", "LABEL", "Flux resampled (Sky)"
             )
             self.modify_flux_resampled_header(2, "set", "CRPIX1", 1.00e00)
-            self.modify_flux_resampled_header(
-                2, "set", "CDELT1", self.wave_bin
-            )
+            self.modify_flux_resampled_header(2, "set", "CDELT1", self.wave_bin)
             self.modify_flux_resampled_header(
                 2, "set", "CRVAL1", self.wave_start
             )
@@ -4321,7 +4232,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.error(str(e))
 
             # Set it to None if the above failed
@@ -4336,7 +4246,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4361,16 +4270,12 @@ class SpectrumOneD:
             hdu_names = self.ext_name[self.hdu_order["atm_ext_resampled"]]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_atm_ext_resampled_header(
-                "set", "EXTNAME", hdu_names[0]
-            )
+            self.modify_atm_ext_resampled_header("set", "EXTNAME", hdu_names[0])
             self.modify_atm_ext_resampled_header(
                 "set", "LABEL", "Atmopheric extinction correction factor"
             )
             self.modify_atm_ext_resampled_header("set", "CRPIX1", 1.00e00)
-            self.modify_atm_ext_resampled_header(
-                "set", "CDELT1", self.wave_bin
-            )
+            self.modify_atm_ext_resampled_header("set", "CDELT1", self.wave_bin)
             self.modify_atm_ext_resampled_header(
                 "set", "CRVAL1", self.wave_start
             )
@@ -4379,13 +4284,10 @@ class SpectrumOneD:
             self.modify_atm_ext_resampled_header("set", "BUNIT", "")
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.warning(
-                "atm_ext_resampled ImageHDU cannot be created."
-            )
+            self.logger.warning("atm_ext_resampled ImageHDU cannot be created.")
             self.atm_ext_resampled_hdulist = None
 
     def create_flux_resampled_atm_ext_corrected_fits(self):
@@ -4396,7 +4298,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4552,7 +4453,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -4569,7 +4469,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4620,7 +4519,6 @@ class SpectrumOneD:
             self.modify_telluric_profile_resampled_header("set", "BUNIT", "")
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -4637,7 +4535,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4781,7 +4678,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -4798,7 +4694,6 @@ class SpectrumOneD:
         """
 
         try:
-
             header = None
 
             # Use the header of the standard
@@ -4918,7 +4813,10 @@ class SpectrumOneD:
                 1,
                 "set",
                 "LABEL",
-                "Flux resampled atmospheric extinction telluric corrected (Uncertainty)",
+                (
+                    "Flux resampled atmospheric extinction telluric corrected"
+                    " (Uncertainty)"
+                ),
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 1, "set", "CRPIX1", 1.00e00
@@ -4949,7 +4847,10 @@ class SpectrumOneD:
                 2,
                 "set",
                 "LABEL",
-                "Flux resampled atmospheric extinction telluric corrected (Sky)",
+                (
+                    "Flux resampled atmospheric extinction telluric corrected"
+                    " (Sky)"
+                ),
             )
             self.modify_flux_resampled_atm_ext_telluric_corrected_header(
                 2, "set", "CRPIX1", 1.00e00
@@ -4971,7 +4872,6 @@ class SpectrumOneD:
             )
 
         except Exception as e:
-
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
@@ -5231,7 +5131,6 @@ class SpectrumOneD:
         """
 
         if output == "*":
-
             output = (
                 "trace+count+weight_map+arc_spec+arc_lines+"
                 "wavecal_coefficients+wavelength+wavelength_resampled+"
@@ -5249,7 +5148,6 @@ class SpectrumOneD:
 
         # If to recreate the FITS, set all contents to False
         if recreate:
-
             self.logger.info("HDUList is cleared.")
 
             for k, v in self.hdu_content.items():
@@ -5259,29 +5157,24 @@ class SpectrumOneD:
         if set([k for k, v in self.hdu_content.items() if v]) == set(
             output_split
         ):
-
             self.logger.info("HDUList is ready to go.")
 
             # If there is an empty primary HDU, but requested without
             if self.empty_primary_hdu & (not empty_primary_hdu):
-
                 self.hdu_output.pop(0)
                 self.empty_primary_hdu = False
 
             # If there is not an empty primary HDU, but requested one
             elif (not self.empty_primary_hdu) & empty_primary_hdu:
-
                 self.hdu_output.insert(0, fits.PrimaryHDU())
                 self.empty_primary_hdu = True
 
             # Otherwise, the self.hdu_output does not need to be modified
             else:
-
                 pass
 
         # If the requested list is different or empty, (re)create the list
         else:
-
             self.hdu_output = None
 
             self.logger.info("Populating the HDUList now.")
@@ -5291,278 +5184,226 @@ class SpectrumOneD:
 
             # If leaving the primary HDU empty
             if empty_primary_hdu:
-
                 hdu_output.append(fits.PrimaryHDU())
 
             # Join the list(s)
             if "trace" in output_split:
-
                 if not self.hdu_content["trace"]:
                     self.create_trace_fits()
 
                 if (self.trace_hdulist is not None) and (
                     self.trace is not None
                 ):
-
                     hdu_output += self.trace_hdulist
                     self.hdu_content["trace"] = True
 
             if "count" in output_split:
-
                 if not self.hdu_content["count"]:
                     self.create_count_fits()
 
                 if (self.count_hdulist is not None) and (
                     self.count is not None
                 ):
-
                     hdu_output += self.count_hdulist
                     self.hdu_content["count"] = True
 
             if "weight_map" in output_split:
-
                 if not self.hdu_content["weight_map"]:
                     self.create_weight_map_fits()
 
                 if (self.weight_map_hdulist is not None) and (
                     self.var is not None
                 ):
-
                     hdu_output += self.weight_map_hdulist
                     self.hdu_content["weight_map"] = True
 
             if "arc_spec" in output_split:
-
                 if not self.hdu_content["arc_spec"]:
                     self.create_arc_spec_fits()
 
                 if (self.arc_spec_hdulist is not None) and (
                     self.arc_spec is not None
                 ):
-
                     hdu_output += self.arc_spec_hdulist
                     self.hdu_content["arc_spec"] = True
 
             if "arc_lines" in output_split:
-
                 if not self.hdu_content["arc_lines"]:
                     self.create_arc_lines_fits()
 
-                if (self.arc_lines_hdulist is not None) and (
-                    self.arc_lines is not None
-                ):
-
+                if self.arc_lines_hdulist is not None:
                     hdu_output += self.arc_lines_hdulist
                     self.hdu_content["arc_lines"] = True
 
             if "wavecal_coefficients" in output_split:
-
                 if not self.hdu_content["wavecal_coefficients"]:
                     self.create_wavecal_fits()
 
                 if (self.wavecal_hdulist is not None) and (
                     self.fit_coeff is not None
                 ):
-
                     hdu_output += self.wavecal_hdulist
                     self.hdu_content["wavecal_coefficients"] = True
 
             if "wavelength" in output_split:
-
                 if not self.hdu_content["wavelength"]:
                     self.create_wavelength_fits()
 
                 if (self.wavelength_hdulist is not None) and (
                     self.wave is not None
                 ):
-
                     hdu_output += self.wavelength_hdulist
                     self.hdu_content["wavelength"] = True
 
             if "wavelength_resampled" in output_split:
-
                 if not self.hdu_content["wavelength_resampled"]:
                     self.create_wavelength_resampled_fits()
 
                 if (self.wavelength_resampled_hdulist is not None) and (
                     self.wave_resampled is not None
                 ):
-
                     hdu_output += self.wavelength_resampled_hdulist
                     self.hdu_content["wavelength_resampled"] = True
 
             if "count_resampled" in output_split:
-
                 if not self.hdu_content["count_resampled"]:
                     self.create_count_resampled_fits()
 
                 if (self.count_resampled_hdulist is not None) and (
                     self.count_resampled is not None
                 ):
-
                     hdu_output += self.count_resampled_hdulist
                     self.hdu_content["count_resampled"] = True
 
             if "sensitivity" in output_split:
-
                 if not self.hdu_content["sensitivity"]:
                     self.create_sensitivity_fits()
 
                 if (self.sensitivity_hdulist is not None) and (
                     self.sensitivity is not None
                 ):
-
                     hdu_output += self.sensitivity_hdulist
                     self.hdu_content["sensitivity"] = True
 
             if "flux" in output_split:
-
                 if not self.hdu_content["flux"]:
                     self.create_flux_fits()
 
                 if (self.flux_hdulist is not None) and (self.flux is not None):
-
                     hdu_output += self.flux_hdulist
                     self.hdu_content["flux"] = True
 
             if "atm_ext" in output_split:
-
                 if not self.hdu_content["atm_ext"]:
                     self.create_atm_ext_fits()
 
                 if (self.atm_ext_hdulist is not None) and (
                     self.atm_ext is not None
                 ):
-
                     hdu_output += self.atm_ext_hdulist
                     self.hdu_content["atm_ext"] = True
 
             if "flux_atm_ext_corrected" in output_split:
-
                 if not self.hdu_content["flux_atm_ext_corrected"]:
                     self.create_flux_atm_ext_corrected_fits()
 
                 if (self.flux_atm_ext_corrected_hdulist is not None) and (
                     self.flux_atm_ext_corrected is not None
                 ):
-
                     hdu_output += self.flux_atm_ext_corrected_hdulist
                     self.hdu_content["flux_atm_ext_corrected"] = True
 
             if "telluric_profile" in output_split:
-
                 if not self.hdu_content["telluric_profile"]:
                     self.create_telluric_profile_fits()
 
                 if (self.telluric_profile_hdulist is not None) and (
                     self.telluric_profile is not None
                 ):
-
                     hdu_output += self.telluric_profile_hdulist
                     self.hdu_content["telluric_profile"] = True
 
             if "flux_telluric_corrected" in output_split:
-
                 if not self.hdu_content["flux_telluric_corrected"]:
                     self.create_flux_telluric_corrected_fits()
 
                 if (self.flux_telluric_corrected_hdulist is not None) and (
                     self.flux_telluric_corrected is not None
                 ):
-
                     hdu_output += self.flux_telluric_corrected_hdulist
                     self.hdu_content["flux_telluric_corrected"] = True
 
             if "flux_atm_ext_telluric_corrected" in output_split:
-
                 if not self.hdu_content["flux_atm_ext_telluric_corrected"]:
                     self.create_flux_atm_ext_telluric_corrected_fits()
 
                 if (
                     self.flux_atm_ext_telluric_corrected_hdulist is not None
                 ) and (self.flux_atm_ext_telluric_corrected is not None):
-
                     hdu_output += self.flux_atm_ext_telluric_corrected_hdulist
                     self.hdu_content["flux_atm_ext_telluric_corrected"] = True
 
             if "sensitivity_resampled" in output_split:
-
                 if not self.hdu_content["sensitivity_resampled"]:
                     self.create_sensitivity_resampled_fits()
 
                 if (self.sensitivity_resampled_hdulist is not None) and (
                     self.sensitivity_resampled is not None
                 ):
-
                     hdu_output += self.sensitivity_resampled_hdulist
                     self.hdu_content["sensitivity_resampled"] = True
 
             if "flux_resampled" in output_split:
-
                 if not self.hdu_content["flux_resampled"]:
                     self.create_flux_resampled_fits()
 
                 if (self.flux_resampled_hdulist is not None) and (
                     self.flux_resampled is not None
                 ):
-
                     hdu_output += self.flux_resampled_hdulist
                     self.hdu_content["flux_resampled"] = True
 
             if "atm_ext_resampled" in output_split:
-
                 if not self.hdu_content["atm_ext_resampled"]:
                     self.create_atm_ext_resampled_fits()
 
                 if (self.atm_ext_resampled_hdulist is not None) and (
                     self.atm_ext_resampled is not None
                 ):
-
                     hdu_output += self.atm_ext_resampled_hdulist
                     self.hdu_content["atm_ext_resampled"] = True
 
             if "flux_resampled_atm_ext_corrected" in output_split:
-
                 if not self.hdu_content["flux_resampled_atm_ext_corrected"]:
                     self.create_flux_resampled_atm_ext_corrected_fits()
 
                 if (
                     self.flux_resampled_atm_ext_corrected_hdulist is not None
                 ) and (self.flux_resampled_atm_ext_corrected is not None):
-
                     hdu_output += self.flux_resampled_atm_ext_corrected_hdulist
                     self.hdu_content["flux_resampled_atm_ext_corrected"] = True
 
             if "telluric_profile_resampled" in output_split:
-
                 if not self.hdu_content["telluric_profile_resampled"]:
                     self.create_telluric_profile_resampled_fits()
 
                 if (self.telluric_profile_resampled_hdulist is not None) and (
                     self.telluric_profile_resampled is not None
                 ):
-
                     hdu_output += self.telluric_profile_resampled_hdulist
                     self.hdu_content["telluric_profile_resampled"] = True
 
             if "flux_resampled_telluric_corrected" in output_split:
-
                 if not self.hdu_content["flux_resampled_telluric_corrected"]:
                     self.create_flux_resampled_telluric_corrected_fits()
 
                 if (
                     self.flux_resampled_telluric_corrected_hdulist is not None
                 ) and (self.flux_resampled_telluric_corrected is not None):
-
-                    hdu_output += (
-                        self.flux_resampled_telluric_corrected_hdulist
-                    )
-                    self.hdu_content[
-                        "flux_resampled_telluric_corrected"
-                    ] = True
+                    hdu_output += self.flux_resampled_telluric_corrected_hdulist
+                    self.hdu_content["flux_resampled_telluric_corrected"] = True
 
             if "flux_resampled_atm_ext_telluric_corrected" in output_split:
-
                 if not self.hdu_content[
                     "flux_resampled_atm_ext_telluric_corrected"
                 ]:
@@ -5574,7 +5415,6 @@ class SpectrumOneD:
                 ) and (
                     self.flux_resampled_atm_ext_telluric_corrected is not None
                 ):
-
                     hdu_output += (
                         self.flux_resampled_atm_ext_telluric_corrected_hdulist
                     )
@@ -5584,7 +5424,6 @@ class SpectrumOneD:
 
             # If the primary HDU is not chosen to be empty
             if not empty_primary_hdu:
-
                 # Convert the first HDU to PrimaryHDU
                 hdu_output[0] = fits.PrimaryHDU(
                     hdu_output[0].data, hdu_output[0].header
@@ -5593,14 +5432,12 @@ class SpectrumOneD:
                 self.empty_primary_hdu = False
 
             else:
-
                 hdu_output.update_extend()
                 self.empty_primary_hdu = True
 
             self.hdu_output = hdu_output
 
         if return_hdu_list:
-
             return self.hdu_output
 
     def save_fits(
@@ -5780,16 +5617,13 @@ class SpectrumOneD:
         start = 0
 
         for output_type in self.hdu_order.keys():
-
             if (output_type in output_split) & self.hdu_content[output_type]:
-
                 logging.info(f"Exporting {output_type} to CSV.")
                 end = start + self.n_hdu[output_type]
 
                 logging.info(f"The HDU index is from {start} to {end - 1}.")
 
                 if output_type != "arc_lines":
-
                     output_data = np.column_stack(
                         [hdu.data for hdu in self.hdu_output[start:end]]
                     )
@@ -5799,7 +5633,6 @@ class SpectrumOneD:
                             filename + "_" + output_type + ".csv"
                         )
                     ):
-
                         np.savetxt(
                             filename + "_" + output_type + ".csv",
                             output_data,
@@ -5808,7 +5641,6 @@ class SpectrumOneD:
                         )
 
                     else:
-
                         self.logger.warning(
                             filename
                             + f"_{output_type}.csv cannot be saved to disk. "
@@ -5817,7 +5649,6 @@ class SpectrumOneD:
                         )
 
                 else:
-
                     output_data_arc_peaks = self.hdu_output[start].data
                     output_data_arc_peaks_refined = self.hdu_output[
                         start + 1
@@ -5826,7 +5657,6 @@ class SpectrumOneD:
                     if overwrite or (
                         not os.path.exists(filename + "_arc_peaks.csv")
                     ):
-
                         np.savetxt(
                             f"{filename}_arc_peaks.csv",
                             output_data_arc_peaks,
@@ -5835,7 +5665,6 @@ class SpectrumOneD:
                         )
 
                     else:
-
                         self.logger.warning(
                             f"{filename}_arc_peaks.csv cannot be saved to "
                             + "disk. Please check the path and/or set "
@@ -5845,7 +5674,6 @@ class SpectrumOneD:
                     if overwrite or (
                         not os.path.exists(filename + "_arc_peaks_refined.csv")
                     ):
-
                         np.savetxt(
                             filename + "_arc_peaks_refined.csv",
                             output_data_arc_peaks_refined,
@@ -5854,7 +5682,6 @@ class SpectrumOneD:
                         )
 
                     else:
-
                         self.logger.warning(
                             f"{filename}_arc_peaks_refined.csv cannot be "
                             + "saved to disk. Please check the path and/or "

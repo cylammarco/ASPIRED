@@ -61,29 +61,33 @@ def tophat_extraction(
     """
 
     if source_bad_mask is not None:
-        source_slice = source_slice[source_bad_mask]
+        _source_slice = source_slice[~source_bad_mask]
+    else:
+        _source_slice = source_slice
 
     if source_bad_mask is not None:
-        sky_source_slice = source_slice[sky_source_bad_mask]
+        _sky_source_slice = sky_source_slice[~sky_source_bad_mask]
+    else:
+        _sky_source_slice = sky_source_slice
 
     # Get the total count
     source_plus_sky = (
-        np.nansum(source_slice)
-        - pix_frac * source_slice[0]
-        - (1 - pix_frac) * source_slice[-1]
+        np.nansum(_source_slice)
+        - pix_frac * _source_slice[0]
+        - (1 - pix_frac) * _source_slice[-1]
     )
 
     # finally, compute the error in this pixel
     sky = (
-        np.nansum(sky_source_slice)
-        - pix_frac * sky_source_slice[0]
-        - (1 - pix_frac) * sky_source_slice[-1]
+        np.nansum(_sky_source_slice)
+        - pix_frac * _sky_source_slice[0]
+        - (1 - pix_frac) * _sky_source_slice[-1]
     )
 
     # number of bkgd pixels
-    nB = sky_width_dn + sky_width_up - np.sum(np.isnan(sky_source_slice))
+    nB = sky_width_dn + sky_width_up - np.sum(np.isnan(_sky_source_slice))
     # number of aperture pixels
-    nA = width_dn + width_up - np.sum(np.isnan(source_slice))
+    nA = width_dn + width_up - np.sum(np.isnan(_source_slice))
 
     # Based on aperture phot err description by F. Masci,
     # Caltech:

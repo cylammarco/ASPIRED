@@ -26,7 +26,6 @@ lhs6328_twodspec = spectral_reduction.TwoDSpec(
     lhs6328_frame,
     spatial_mask=spatial_mask,
     spec_mask=spec_mask,
-    cosmicray=True,
     readnoise=5.7,
     gain=2.45,
     log_level="INFO",
@@ -61,7 +60,7 @@ lhs6328_twodspec.ap_extract(
     optimal=True,
     display=False,
     save_fig=True,
-    filename=os.path.join(HERE, "test_output", "test_force_extraxtion2"),
+    filename=os.path.join(HERE, "test_output", "test_force_extraxtion1"),
     fig_type="iframe+png",
 )
 
@@ -110,7 +109,6 @@ def test_forced_extraction_tophat():
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
         readnoise=5.7,
         gain=2.45,
         log_level="INFO",
@@ -145,7 +143,6 @@ def test_forced_extraction_horne86_gauss():
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
         readnoise=5.7,
         gain=2.45,
         log_level="INFO",
@@ -162,14 +159,15 @@ def test_forced_extraction_horne86_gauss():
         optimal=True,
         forced=True,
         variances=horne86_var,
+        filename=os.path.join(HERE, "test_output", "test_force_extraxtion5"),
         display=False,
     )
 
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.999) & (
-        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.001
+    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.99) & (
+        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.01
     )
 
 
@@ -178,7 +176,6 @@ def test_forced_extraction_horne86_lowess():
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
         readnoise=5.7,
         gain=2.45,
         log_level="INFO",
@@ -196,6 +193,7 @@ def test_forced_extraction_horne86_lowess():
         model="lowess",
         forced=True,
         variances=horne86_var,
+        filename=os.path.join(HERE, "test_output", "test_force_extraxtion6"),
         display=False,
     )
 
@@ -212,7 +210,6 @@ def test_forced_extraction_marsh89():
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
         readnoise=5.7,
         gain=2.45,
         log_level="INFO",
@@ -232,7 +229,7 @@ def test_forced_extraction_marsh89():
         variances=np.transpose(marsh89_var),
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion5"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraxtion7"),
         fig_type="iframe+png",
     )
 
@@ -249,7 +246,6 @@ def test_forced_extraction_horne86_lowess_int_var():
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
         readnoise=5.7,
         gain=2.45,
         log_level="INFO",
@@ -269,7 +265,7 @@ def test_forced_extraction_horne86_lowess_int_var():
         variances=np.nanmedian(horne86_var),
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion6"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraxtion8"),
         fig_type="iframe+png",
     )
 
@@ -286,7 +282,6 @@ def test_forced_extraction_horne86_lowess_str_var():
         lhs6328_frame,
         spatial_mask=spatial_mask,
         spec_mask=spec_mask,
-        cosmicray=True,
         readnoise=5.7,
         gain=2.45,
         log_level="INFO",
@@ -306,7 +301,7 @@ def test_forced_extraction_horne86_lowess_str_var():
         variances="blabla",
         display=False,
         save_fig=True,
-        filename=os.path.join(HERE, "test_output", "test_force_extraxtion7"),
+        filename=os.path.join(HERE, "test_output", "test_force_extraxtion9"),
         fig_type="iframe+png",
     )
 

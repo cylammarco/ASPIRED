@@ -599,6 +599,7 @@ class WavelengthCalibration:
         self.spectrum_oned.calibrator.atlas = Atlas()
         self.set_calibrator_properties()
 
+    # placeholder for rascal v0.4
     def set_logger(
         self, logger_name: str = "Calibrator", log_level: str = "info"
     ):
@@ -621,6 +622,9 @@ class WavelengthCalibration:
         num_pix=None,
         effective_pixel=None,
         plotting_library="plotly",
+        seed=None,
+        logger_name="Calibrator",
+        log_level="warning",
     ):
         """
         Set the properties of the calibrator.
@@ -637,18 +641,30 @@ class WavelengthCalibration:
             [0,1,2,...90, 100,101,...190, 200,201,...290]
         plotting_library : string (Default: 'plotly')
             Choose between matplotlib and plotly.
+        seed: int
+            Set an optional seed for random number generators. If used,
+            this parameter must be set prior to calling RANSAC. Useful
+            for deterministic debugging.
+        logger_name: string (default: 'Calibrator')
+            The name of the logger. It can use an existing logger if a
+            matching name is provided.
+        log_level: string (default: 'info')
+            Choose {critical, error, warning, info, debug, notset}.
 
         """
 
         self.spectrum_oned.calibrator.set_calibrator_properties(
             num_pix=num_pix,
-            effective_pixel=effective_pixel,
+            pixel_list=effective_pixel,
             plotting_library=plotting_library,
+            seed=seed,
+            logger_name=logger_name,
+            log_level=log_level,
         )
 
         self.spectrum_oned.add_calibrator_properties(
             self.spectrum_oned.calibrator.num_pix,
-            self.spectrum_oned.calibrator.effective_pixel,
+            self.spectrum_oned.calibrator.pixel_list,
             self.spectrum_oned.calibrator.plotting_library,
         )
 
@@ -1156,7 +1172,6 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
-            success,
         ) = self.spectrum_oned.calibrator.fit(
             max_tries=max_tries,
             fit_deg=fit_deg,
@@ -1166,7 +1181,7 @@ class WavelengthCalibration:
             candidate_tolerance=candidate_tolerance,
             brute_force=brute_force,
             progress=progress,
-        ).values()
+        )
 
         if fit_type == "poly":
 
@@ -1190,7 +1205,6 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
-            success,
         )
 
         if display or return_jsonstring or save_fig:
@@ -1218,7 +1232,6 @@ class WavelengthCalibration:
                 residual,
                 peak_utilisation,
                 atlas_utilisation,
-                success,
             )
 
     def robust_refit(
@@ -1312,7 +1325,6 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
-            success,
         ) = self.spectrum_oned.calibrator.match_peaks(
             fit_coeff,
             n_delta=n_delta,
@@ -1322,7 +1334,7 @@ class WavelengthCalibration:
             convergence=convergence,
             robust_refit=robust_refit,
             fit_deg=fit_deg,
-        ).values()
+        )
 
         rms = np.sqrt(np.nanmean(residual**2.0))
 
@@ -1349,7 +1361,6 @@ class WavelengthCalibration:
             residual,
             peak_utilisation,
             atlas_utilisation,
-            success,
         )
 
         if return_solution:
@@ -1362,7 +1373,6 @@ class WavelengthCalibration:
                 residual,
                 peak_utilisation,
                 atlas_utilisation,
-                success,
             )
 
     def get_pix_wave_pairs(self):
@@ -1460,12 +1470,9 @@ class WavelengthCalibration:
             self.matched_atlas,
             self.rms,
             self.residual,
-            self.peak_utilisation,
-            self.atlas_utilisation,
-            self.success,
         ) = self.spectrum_oned.calibrator.manual_refit(
             matched_peaks, matched_atlas, degree, x0
-        ).values()
+        )
 
         if return_solution:
 
@@ -1475,9 +1482,6 @@ class WavelengthCalibration:
                 self.matched_atlas,
                 self.rms,
                 self.residual,
-                self.peak_utilisation,
-                self.atlas_utilisation,
-                self.success,
             )
 
     def get_calibrator(self):

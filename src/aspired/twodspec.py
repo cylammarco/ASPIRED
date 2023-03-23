@@ -12,7 +12,6 @@ from itertools import chain
 
 import numpy as np
 from astropy.io import fits
-from astropy.modeling import models, fitting
 from astropy.nddata import CCDData
 from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
@@ -20,7 +19,6 @@ from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import ndimage
 from scipy import signal
-from scipy.stats import norm
 
 try:
     from spectres import spectres_numba as spectres
@@ -35,6 +33,10 @@ from .extraction import (
     optimal_extraction_marsh89,
 )
 from .image_reduction import Reducer, ImageReduction
+from .line_spread_function import (
+    build_line_spread_profile,
+    get_line_spread_function,
+)
 from .spectrum_oneD import SpectrumOneD
 from .util import create_bad_pixel_mask, bfixpix, gaus
 
@@ -122,8 +124,7 @@ class TwoDSpec:
             raise ValueError("Unknonw logging level.")
 
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
-            "%(message)s",
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%a, %d %b %Y %H:%M:%S",
         )
 
@@ -209,6 +210,11 @@ class TwoDSpec:
         self.rec_n_bin = None
         self.rec_spline_order = None
         self.rec_order = None
+
+        # profile
+        self.line_spread_profile_upsampled = None
+        self.line_spread_profile = None
+        self.fitted_profile_func = None
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -639,9 +645,7 @@ class TwoDSpec:
                     self.img = self.img[self.spatial_mask]
 
                     if self.img_residual is not None:
-                        self.img_residual = self.img_residual[
-                            self.spatial_mask
-                        ]
+                        self.img_residual = self.img_residual[self.spatial_mask]
 
                     if self.bad_mask is not None:
                         self.bad_mask = self.bad_mask[self.spatial_mask]
@@ -665,9 +669,7 @@ class TwoDSpec:
                     self.img = self.img[:, self.spec_mask]
 
                     if self.img_residual is not None:
-                        self.img_residual = self.img_residual[
-                            :, self.spec_mask
-                        ]
+                        self.img_residual = self.img_residual[:, self.spec_mask]
 
                     if self.bad_mask is not None:
                         self.bad_mask = self.bad_mask[:, self.spec_mask]
@@ -761,9 +763,7 @@ class TwoDSpec:
             if isinstance(readnoise, str):
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
-                self.logger.info(
-                    "readnoise is found to be %s.", self.readnoise
-                )
+                self.logger.info("readnoise is found to be %s.", self.readnoise)
                 self.readnoise_is_default_value = False
 
             elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
@@ -779,8 +779,10 @@ class TwoDSpec:
             else:
                 self.readnoise = 0.0
                 self.logger.warning(
-                    "readnoise has to be None, a numeric value or the FITS "
-                    "header keyword, %s is  given. It is set to 0.",
+                    (
+                        "readnoise has to be None, a numeric value or the FITS"
+                        " header keyword, %s is  given. It is set to 0."
+                    ),
                     readnoise,
                 )
                 self.readnoise_is_default_value = True
@@ -807,8 +809,7 @@ class TwoDSpec:
                 else:
                     self.readnoise = 0.0
                     self.logger.warning(
-                        "Readnoise value cannot be identified. "
-                        "It is set to 0."
+                        "Readnoise value cannot be identified. It is set to 0."
                     )
                     self.readnoise_is_default_value = True
 
@@ -855,8 +856,10 @@ class TwoDSpec:
             else:
                 self.gain = 1.0
                 self.logger.warning(
-                    "Gain has to be None, a numeric value or the FITS "
-                    "header keyword, %s is given. It is set to 1.",
+                    (
+                        "Gain has to be None, a numeric value or the FITS "
+                        "header keyword, %s is given. It is set to 1."
+                    ),
                     gain,
                 )
                 self.gain_is_default_value = True
@@ -923,8 +926,10 @@ class TwoDSpec:
             else:
                 self.seeing = 1.0
                 self.logger.warning(
-                    "Seeing has to be None, a numeric value or the FITS "
-                    "header keyword, %s is given. It is set to 1.",
+                    (
+                        "Seeing has to be None, a numeric value or the FITS "
+                        "header keyword, %s is given. It is set to 1."
+                    ),
                     seeing,
                 )
                 self.seeing_is_default_value = True
@@ -996,8 +1001,10 @@ class TwoDSpec:
             else:
                 self.exptime = 1.0
                 self.logger.warning(
-                    "Exposure Time has to be None, a numeric value or the "
-                    "FITS header keyword, %s is given. It is set to 1.",
+                    (
+                        "Exposure Time has to be None, a numeric value or the "
+                        "FITS header keyword, %s is given. It is set to 1."
+                    ),
                     exptime,
                 )
                 self.exptime_is_default_value = True
@@ -1016,9 +1023,7 @@ class TwoDSpec:
                             np.where(exptime_keyword_matched)[0][0]
                         ]
                     ]
-                    self.logger.info(
-                        "exptime is found to be %s.", self.exptime
-                    )
+                    self.logger.info("exptime is found to be %s.", self.exptime)
                     self.exptime_is_default_value = False
 
                 else:
@@ -1071,8 +1076,10 @@ class TwoDSpec:
 
             else:
                 self.logger.warning(
-                    "Airmass has to be None, a numeric value or the FITS "
-                    "header keyword, %s is given. It is set to 1.",
+                    (
+                        "Airmass has to be None, a numeric value or the FITS "
+                        "header keyword, %s is given. It is set to 1."
+                    ),
                     airmass,
                 )
                 self.airmass = 1.0
@@ -1092,9 +1099,7 @@ class TwoDSpec:
                             np.where(airmass_keyword_matched)[0][0]
                         ]
                     ]
-                    self.logger.info(
-                        "Airmass is found to be %s.", self.airmass
-                    )
+                    self.logger.info("Airmass is found to be %s.", self.airmass)
                     self.airmass_is_default_value = False
 
                 else:
@@ -1167,8 +1172,7 @@ class TwoDSpec:
             if isinstance(fitsfile_tmp, fits.hdu.hdulist.HDUList):
                 fitsfile_tmp = fitsfile_tmp[0]
                 self.logger.warning(
-                    "An HDU list is provided, only the first "
-                    "HDU will be read."
+                    "An HDU list is provided, only the first HDU will be read."
                 )
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
 
@@ -1285,8 +1289,7 @@ class TwoDSpec:
             if isinstance(fitsfile_tmp, fits.hdu.hdulist.HDUList):
                 fitsfile_tmp = fitsfile_tmp[0]
                 self.logger.warning(
-                    "An HDU list is provided, only the first "
-                    "HDU will be read."
+                    "An HDU list is provided, only the first HDU will be read."
                 )
 
             fitsfile_tmp_shape = np.shape(fitsfile_tmp.data)
@@ -1416,8 +1419,7 @@ class TwoDSpec:
 
         else:
             self.logger.info(
-                "spec_mask has zero length, it cannot be "
-                "applied to the arc."
+                "spec_mask has zero length, it cannot be applied to the arc."
             )
 
     def apply_spatial_mask_to_arc(self, spatial_mask: np.ndarray):
@@ -1440,8 +1442,7 @@ class TwoDSpec:
 
         else:
             self.logger.info(
-                "spatial_mask has zero length, it cannot be "
-                "applied to the arc."
+                "spatial_mask has zero length, it cannot be applied to the arc."
             )
 
     def apply_transpose_to_arc(self):
@@ -1489,8 +1490,7 @@ class TwoDSpec:
 
         else:
             self.logger.error(
-                "Please provide the keyword list in str, list or "
-                "numpy.ndarray."
+                "Please provide the keyword list in str, list or numpy.ndarray."
             )
 
         if append:
@@ -1543,8 +1543,7 @@ class TwoDSpec:
 
         else:
             self.logger.error(
-                "Please provide the keyword list in str, list or "
-                "numpy.ndarray."
+                "Please provide the keyword list in str, list or numpy.ndarray."
             )
 
         if append:
@@ -1597,8 +1596,7 @@ class TwoDSpec:
 
         else:
             self.logger.error(
-                "Please provide the keyword list in str, list or "
-                "numpy.ndarray."
+                "Please provide the keyword list in str, list or numpy.ndarray."
             )
 
         if append:
@@ -1651,8 +1649,7 @@ class TwoDSpec:
 
         else:
             self.logger.error(
-                "Please provide the keyword list in str, list or "
-                "numpy.ndarray."
+                "Please provide the keyword list in str, list or numpy.ndarray."
             )
 
         if append:
@@ -1705,8 +1702,7 @@ class TwoDSpec:
 
         else:
             self.logger.error(
-                "Please provide the keyword list in str, list or "
-                "numpy.ndarray."
+                "Please provide the keyword list in str, list or numpy.ndarray."
             )
 
         if append:
@@ -1774,6 +1770,36 @@ class TwoDSpec:
 
         if self.gain_is_default_value:
             self.set_gain()
+
+    def _build_line_spread_function(
+        self, img, trace, trace_width=5.0, resample_factor=1.0
+    ):
+        # img_tmp is already upsampled
+        line_spread_profile_upsampled = build_line_spread_profile(
+            spectrum2D=ndimage.zoom(img, resample_factor),
+            trace=ndimage.zoom(trace, resample_factor) * resample_factor,
+            trace_width=trace_width * resample_factor,
+        )
+        line_spread_profile_upsampled = (
+            line_spread_profile_upsampled
+            / np.nansum(line_spread_profile_upsampled)
+        )
+        line_spread_profile = ndimage.zoom(
+            line_spread_profile_upsampled, 1.0 / resample_factor
+        )
+        line_spread_profile = line_spread_profile / np.nansum(
+            line_spread_profile
+        )
+
+        fitted_profile_func = get_line_spread_function(
+            trace=trace, line_spread_profile=line_spread_profile
+        )
+
+        return (
+            line_spread_profile_upsampled,
+            line_spread_profile,
+            fitted_profile_func,
+        )
 
     def ap_trace(
         self,
@@ -1941,7 +1967,9 @@ class TwoDSpec:
         # maximum shift (SEMI-AMPLITUDE) from the neighbour (pixel)
         shift_tol_len = int(shift_tol * self.resample_factor)
 
-        spec_spatial = np.zeros((nwindow, nresample))
+        # line_spread_profile is the empirically measured profile
+        # line_spread_function is the fitted profile
+        spatial_profile = np.zeros((nwindow, nresample))
 
         pix = np.arange(nresample)
 
@@ -1999,17 +2027,17 @@ class TwoDSpec:
 
             pix = pix * scale_solution[i] + shift_solution[i]
 
-            spec_spatial_tmp = spectres(
+            spatial_profile_tmp = spectres(
                 np.arange(nresample),
                 np.array(pix).reshape(-1),
                 np.array(lines).reshape(-1),
                 fill=0.0,
                 verbose=False,
             )
-            spec_spatial_tmp[np.isnan(spec_spatial_tmp)] = np.nanmin(
-                spec_spatial_tmp
+            spatial_profile_tmp[np.isnan(spatial_profile_tmp)] = np.nanmin(
+                spatial_profile_tmp
             )
-            spec_spatial[i] = copy.deepcopy(spec_spatial_tmp)
+            spatial_profile[i] = copy.deepcopy(spatial_profile_tmp)
 
             # Update (increment) the reference line
             if i == nwindow - 1:
@@ -2018,13 +2046,13 @@ class TwoDSpec:
             else:
                 lines_ref = lines
 
-        spec_spatial = np.nanmedian(spec_spatial, axis=0)
+        spatial_profile = np.nanmedian(spatial_profile, axis=0)
         nscaled = (nresample * scale_solution).astype("int")
 
         # Find the spectral position in the middle of the gram in the upsampled
         # pixel location location
         # FWHM cannot be smaller than 3 pixels for any real signal
-        peaks = signal.find_peaks(spec_spatial, distance=spec_sep, width=3.0)
+        peaks = signal.find_peaks(spatial_profile, distance=spec_sep, width=3.0)
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
@@ -2097,16 +2125,16 @@ class TwoDSpec:
             n_faint = int(np.round(len(ap_val) * ap_faint / 100))
             mask = np.argsort(ap_val)[n_faint:]
             self.logger.info(
-                "The faintest %s subspectra are going to be ignored in the "
-                "tracing. They are %s.",
+                (
+                    "The faintest %s subspectra are going to be ignored in the"
+                    " tracing. They are %s."
+                ),
                 n_faint,
                 np.argsort(ap_val)[:n_faint],
             )
 
             # fit the trace
-            aper_p = np.polyfit(
-                self.spec_pix[mask], spec_i[mask], int(fit_deg)
-            )
+            aper_p = np.polyfit(self.spec_pix[mask], spec_i[mask], int(fit_deg))
             aper = np.polyval(
                 aper_p, np.arange(self.spec_size) * self.resample_factor
             )
@@ -2115,50 +2143,26 @@ class TwoDSpec:
                 [
                     (x, y)
                     for (x, y) in zip(
-                        np.arange(self.spec_size)[::100]
-                        * self.resample_factor,
+                        np.arange(self.spec_size)[::100] * self.resample_factor,
                         aper,
                     )
                 ],
             )
 
-            # Get the centre of the upsampled spectrum
-            ap_centre_pix = float(np.argmax(spec_spatial))
-            first_pix = ap_centre_pix - trace_width * self.resample_factor
-            last_pix = ap_centre_pix + trace_width * self.resample_factor + 1
-
-            first_pix = int(max(0, first_pix))
-            last_pix = int(min(len(spec_spatial), last_pix))
-
-            # compute ONE sigma for each trace
-            non_nan_mask = np.isfinite(
-                spec_spatial[first_pix:last_pix]
-            ) & ~np.isnan(spec_spatial[first_pix:last_pix])
-
-            # construct the guassian and background profile
-            gauss_prof = models.Gaussian1D(
-                amplitude=np.nanmax(spec_spatial[first_pix:last_pix]),
-                mean=ap_centre_pix / resample_factor,
-                stddev=3.0 * resample_factor,
-            )
-            bkg_prof = models.Linear1D(
-                slope=0.0,
-                intercept=np.nanpercentile(
-                    spec_spatial[first_pix:last_pix], 5.0
-                ),
+            (
+                line_spread_profile_upsampled,
+                line_spread_profile,
+                fitted_profile_func,
+            ) = self._build_line_spread_function(
+                img=self.img,
+                trace=aper,
+                trace_width=5.0,
+                resample_factor=self.resample_factor,
             )
 
-            # combined profile
-            total_prof = gauss_prof + bkg_prof
-
-            # Fit the profile
-            fitter = fitting.LevMarLSQFitter()
-            fitted_profile_func = fitter(
-                total_prof,
-                np.arange(first_pix, last_pix)[non_nan_mask] / resample_factor,
-                spec_spatial[first_pix:last_pix][non_nan_mask],
-            )
-            ap_sigma = fitted_profile_func.stddev_0.value / resample_factor
+            ap_sigma = fitted_profile_func.stddev_0.value
+            fitted_profile_func.slope_1 = 0.0
+            fitted_profile_func.intercept_1 = 0.0
 
             self.logger.info(
                 "Aperture is fitted with a Gaussian sigma of %s pix.",
@@ -2174,6 +2178,10 @@ class TwoDSpec:
                 log_file_name=self.log_file_name,
             )
             self.spectrum_list[i].add_trace(list(aper), [ap_sigma] * len(aper))
+            self.spectrum_list[i].add_line_spread_profile_upsampled(
+                line_spread_profile_upsampled
+            )
+            self.spectrum_list[i].add_line_spread_profile(line_spread_profile)
             self.spectrum_list[i].add_profile_func(fitted_profile_func)
             self.spectrum_list[i].add_gain(self.gain)
             self.spectrum_list[i].add_readnoise(self.readnoise)
@@ -2246,9 +2254,7 @@ class TwoDSpec:
 
         """
 
-        fig = go.Figure(
-            layout=dict(autosize=False, height=height, width=width)
-        )
+        fig = go.Figure(layout=dict(autosize=False, height=height, width=width))
 
         fig.add_trace(
             go.Heatmap(
@@ -2387,9 +2393,9 @@ class TwoDSpec:
         assert isinstance(
             trace_sigma, (list, np.ndarray)
         ), "trace_sigma has to be a list or an array."
-        assert len(trace) == len(trace_sigma), (
-            "trace and trace_sigma have " "to be the same size."
-        )
+        assert len(trace) == len(
+            trace_sigma
+        ), "trace and trace_sigma have to be the same size."
 
         for i in spec_id:
             if i in self.spectrum_list.keys():
@@ -2562,8 +2568,10 @@ class TwoDSpec:
             n_up = None
 
             self.logger.info(
-                "Polynomial coefficients for rectifying in the spatial "
-                "direction is given as: %s.",
+                (
+                    "Polynomial coefficients for rectifying in the spatial "
+                    "direction is given as: %s."
+                ),
                 coeff,
             )
 
@@ -2578,8 +2586,10 @@ class TwoDSpec:
 
             else:
                 self.logger.error(
-                    "The given n_bin is not numeric or a list/array of "
-                    "size 2: %s. Using the default value to proceed.",
+                    (
+                        "The given n_bin is not numeric or a list/array of "
+                        "size 2: %s. Using the default value to proceed."
+                    ),
                     n_bin,
                 )
                 n_down = 5
@@ -2764,15 +2774,19 @@ class TwoDSpec:
             shift_upsampled -= shift_upsampled[n_down]
 
             self.logger.info(
-                "The upsampled y-coordinates of subspectra are: %s and the "
-                "corresponding upsampled shifts are: %s.",
+                (
+                    "The upsampled y-coordinates of subspectra are: %s and the"
+                    " corresponding upsampled shifts are: %s."
+                ),
                 y_trace_upsampled,
                 shift_upsampled,
             )
 
             self.logger.info(
-                "The y-coordinates of subspectra are: %s and the "
-                "corresponding shifts are: %s.",
+                (
+                    "The y-coordinates of subspectra are: %s and the "
+                    "corresponding shifts are: %s."
+                ),
                 y_trace_upsampled / upsample_factor,
                 shift_upsampled / upsample_factor,
             )
@@ -2781,14 +2795,14 @@ class TwoDSpec:
             # of y-pixel. The coeff is in the upsampled resolution
             coeff = np.polynomial.polynomial.polyfit(
                 y_trace_upsampled,
-                lowess(
-                    shift_upsampled, y_trace_upsampled, return_sorted=False
-                ),
+                lowess(shift_upsampled, y_trace_upsampled, return_sorted=False),
                 order,
             )
             self.logger.info(
-                "Best fit polynomial for rectifying in the spatial direction."
-                "is %s.",
+                (
+                    "Best fit polynomial for rectifying in the spatial"
+                    " direction.is %s."
+                ),
                 coeff,
             )
 
@@ -2850,12 +2864,8 @@ class TwoDSpec:
                     go.Heatmap(
                         z=np.log10(self.arc_rectified),
                         colorscale="Viridis",
-                        zmin=np.nanpercentile(
-                            np.log10(self.arc_rectified), 10
-                        ),
-                        zmax=np.nanpercentile(
-                            np.log10(self.arc_rectified), 90
-                        ),
+                        zmin=np.nanpercentile(np.log10(self.arc_rectified), 10),
+                        zmax=np.nanpercentile(np.log10(self.arc_rectified), 90),
                         xaxis="x2",
                         yaxis="y2",
                     )
@@ -3185,60 +3195,60 @@ class TwoDSpec:
 
         to_return = []
 
+        if isinstance(apwidth, int):
+            # first do the aperture count
+            width_dn = apwidth
+            width_up = apwidth
+
+        elif len(apwidth) == 2:
+            width_dn = apwidth[0]
+            width_up = apwidth[1]
+
+        else:
+            self.logger.error(
+                "apwidth can only be an int or a list of two ints. It is "
+                "set to the default value to continue the extraction."
+            )
+            width_dn = 7
+            width_up = 7
+
+        if isinstance(skysep, int):
+            # first do the aperture count
+            sep_dn = skysep
+            sep_up = skysep
+
+        elif len(skysep) == 2:
+            sep_dn = skysep[0]
+            sep_up = skysep[1]
+
+        else:
+            self.logger.error(
+                "skysep can only be an int or a list of two ints. It is "
+                "set to the default value to continue the extraction."
+            )
+            sep_dn = 3
+            sep_up = 3
+
+        if isinstance(skywidth, int):
+            # first do the aperture count
+            sky_width_dn = skywidth
+            sky_width_up = skywidth
+
+        elif len(skywidth) == 2:
+            sky_width_dn = skywidth[0]
+            sky_width_up = skywidth[1]
+
+        else:
+            self.logger.error(
+                "skywidth can only be an int or a list of two ints. It "
+                "is set to the default value to continue the extraction."
+            )
+            sky_width_dn = 5
+            sky_width_up = 5
+
+        offset = 0
+
         for j in spec_id:
-            if isinstance(apwidth, int):
-                # first do the aperture count
-                width_dn = apwidth
-                width_up = apwidth
-
-            elif len(apwidth) == 2:
-                width_dn = apwidth[0]
-                width_up = apwidth[1]
-
-            else:
-                self.logger.error(
-                    "apwidth can only be an int or a list of two ints. It is "
-                    "set to the default value to continue the extraction."
-                )
-                width_dn = 7
-                width_up = 7
-
-            if isinstance(skysep, int):
-                # first do the aperture count
-                sep_dn = skysep
-                sep_up = skysep
-
-            elif len(skysep) == 2:
-                sep_dn = skysep[0]
-                sep_up = skysep[1]
-
-            else:
-                self.logger.error(
-                    "skysep can only be an int or a list of two ints. It is "
-                    "set to the default value to continue the extraction."
-                )
-                sep_dn = 3
-                sep_up = 3
-
-            if isinstance(skywidth, int):
-                # first do the aperture count
-                sky_width_dn = skywidth
-                sky_width_up = skywidth
-
-            elif len(skywidth) == 2:
-                sky_width_dn = skywidth[0]
-                sky_width_up = skywidth[1]
-
-            else:
-                self.logger.error(
-                    "skywidth can only be an int or a list of two ints. It "
-                    "is set to the default value to continue the extraction."
-                )
-                sky_width_dn = 5
-                sky_width_up = 5
-
-            offset = 0
-
             spec = self.spectrum_list[j]
             len_trace = len(spec.trace)
             count_sky = np.zeros(len_trace)
@@ -3251,6 +3261,27 @@ class TwoDSpec:
             profile = np.zeros((len_trace, width_dn + width_up + 1))
             is_optimal = np.zeros(len_trace, dtype=bool)
 
+            if self.fitted_profile_func is None:
+                (
+                    line_spread_profile_upsampled,
+                    line_spread_profile,
+                    fitted_profile_func,
+                ) = self._build_line_spread_function(
+                    img=self.img,
+                    trace=spec.trace,
+                    trace_width=5.0,
+                    resample_factor=self.resample_factor,
+                )
+
+                fitted_profile_func.slope_1 = 0.0
+                fitted_profile_func.intercept_1 = 0.0
+
+                spec.add_line_spread_profile_upsampled(
+                    line_spread_profile_upsampled
+                )
+                spec.add_line_spread_profile(line_spread_profile)
+                spec.add_profile_func(fitted_profile_func)
+
             # Sky extraction
             for i, pos in enumerate(spec.trace):
                 itrace = int(pos)
@@ -3261,9 +3292,11 @@ class TwoDSpec:
                 # fix width if trace is too close to the edge
                 if itrace + width_up > self.spatial_size:
                     self.logger.info(
-                        "Extration is over the upper edge of the detector "
-                        "plane. Fixing indices. width_up is changed from "
-                        "%s to %s.",
+                        (
+                            "Extration is over the upper edge of the detector "
+                            "plane. Fixing indices. width_up is changed from "
+                            "%s to %s."
+                        ),
                         width_up,
                         self.spatial_size - itrace - 1,
                     )
@@ -3288,9 +3321,7 @@ class TwoDSpec:
                     profile_end_idx = offset + width_dn + width_up + 1
 
                 # Pixels where the source spectrum and the sky regions are
-                source_pix = np.arange(
-                    itrace - width_dn, itrace + width_up + 1
-                )
+                source_pix = np.arange(itrace - width_dn, itrace + width_up + 1)
                 extraction_pix = np.arange(
                     itrace - width_dn - sep_dn - sky_width_dn,
                     itrace + width_up + sep_up + sky_width_up + 1,
@@ -3338,9 +3369,7 @@ class TwoDSpec:
                     - (1 - pix_frac) * count_sky_source_slice[-1]
                 )
 
-                self.img_residual[
-                    source_pix, i
-                ] = count_sky_source_slice.copy()
+                self.img_residual[source_pix, i] = count_sky_source_slice.copy()
 
                 self.logger.debug(
                     "count_sky at pixel %s is %s.", i, count_sky[i]
@@ -3378,8 +3407,7 @@ class TwoDSpec:
                         if np.ndim(variances) == 0:
                             if isinstance(variances, (int, float)):
                                 var_i = (
-                                    np.ones(width_dn + width_up + 1)
-                                    * variances
+                                    np.ones(width_dn + width_up + 1) * variances
                                 )
 
                             else:
@@ -3422,14 +3450,14 @@ class TwoDSpec:
 
                     if model == "gauss":
                         # .left is the gaussian model
-                        _profile_func = self.spectrum_list[j].profile_func.left
+                        _profile_func = spec.profile_func.left
                         _profile = _profile_func(source_pix)
-                        _profile /= np.sum(_profile)
-                        _lower = (pos - min(source_pix)) / _profile_func.stddev
-                        _upper = (
-                            max(source_pix) - pos + 1
-                        ) / _profile_func.stddev
-                        _profile *= np.diff(norm.cdf([-_lower, _upper]))
+                        _profile /= np.nansum(_profile)
+                        # _lower = (pos - min(source_pix)) / _profile_func.stddev
+                        # _upper = (
+                        #    max(source_pix) - pos + 1
+                        # ) / _profile_func.stddev
+                        # _profile *= np.diff(norm.cdf([-_lower, _upper]))
 
                     elif model == "lowess":
                         _profile = lowess(
@@ -3471,7 +3499,6 @@ class TwoDSpec:
                         variances=var_i,
                         bad_mask=source_bad_mask,
                     )
-
                     if var_i is None:
                         var[
                             i, offset : offset + width_dn + width_up + 1
@@ -3829,7 +3856,6 @@ class TwoDSpec:
                     name="Target e- count",
                 )
             )
-
             # Decorative stuff
             fig.update_layout(
                 xaxis=dict(showticklabels=False),
@@ -3987,8 +4013,7 @@ class TwoDSpec:
             # plot 10 LSFs
             lsf_dist = len_trace // 10
             lsf_idx = (
-                np.arange(0, len_trace - lsf_dist + 1, lsf_dist)
-                + lsf_dist // 2
+                np.arange(0, len_trace - lsf_dist + 1, lsf_dist) + lsf_dist // 2
             )
 
             fig = go.Figure(
@@ -4528,8 +4553,10 @@ class TwoDSpec:
         if spec_id is not None:
             if not set(spec_id).issubset(list(self.spectrum_list.keys())):
                 error_msg = (
-                    "The given spec_id(s): %s do(es) not exist. The twodspec "
-                    "object has %s.",
+                    (
+                        "The given spec_id(s): %s do(es) not exist. The"
+                        " twodspec object has %s."
+                    ),
                     spec_id,
                     list(self.spectrum_list.keys()),
                 )
