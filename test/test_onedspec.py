@@ -957,7 +957,6 @@ def test_add_fit_coeff_standard_not_fail_spec_id():
 # Note that this is testing the "relay" to the WavelengthCalibrator, but
 # not testing the calibrator itself.
 def test_calibrator_science():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -987,9 +986,7 @@ def test_calibrator_science():
 
     onedspec.set_hough_properties(num_slopes=1000, stype="science")
     onedspec.set_hough_properties(spec_id=0, num_slopes=1000, stype="science")
-    onedspec.set_hough_properties(
-        spec_id=[1], num_slopes=1000, stype="science"
-    )
+    onedspec.set_hough_properties(spec_id=[1], num_slopes=1000, stype="science")
     onedspec.set_hough_properties(
         spec_id=[11, 75], num_slopes=1000, stype="science"
     )
@@ -1092,7 +1089,6 @@ def test_calibrator_science():
 # Fail at the RASCAL initilisation
 @pytest.mark.xfail(raises=TypeError)
 def test_calibrator_science2():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1110,7 +1106,6 @@ def test_calibrator_science2():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_calibrator_properties_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1128,7 +1123,6 @@ def test_calibrator_science_fail_calibrator_properties_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_hough_properties_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1147,7 +1141,6 @@ def test_calibrator_science_fail_hough_properties_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_ransac_properties_science():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1167,7 +1160,6 @@ def test_calibrator_ransac_properties_science():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_known_pairs_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1188,7 +1180,6 @@ def test_calibrator_science_fail_known_pairs_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_add_user_atlas_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1211,7 +1202,6 @@ def test_calibrator_science_fail_add_user_atlas_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_add_atlas_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1232,7 +1222,6 @@ def test_calibrator_science_fail_add_atlas_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_remove_atlas_lines_range_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1256,7 +1245,6 @@ def test_calibrator_science_fail_remove_atlas_lines_range_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_clear_atlas_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1282,7 +1270,6 @@ def test_calibrator_science_fail_clear_atlas_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_list_atlas_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1302,7 +1289,6 @@ def test_calibrator_science_fail_list_atlas_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_hough_transform_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1326,7 +1312,6 @@ def test_calibrator_science_fail_hough_transform_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_fit_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1349,7 +1334,6 @@ def test_calibrator_science_fail_fit_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_refine_fit_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1373,7 +1357,6 @@ def test_calibrator_science_fail_refine_fit_spec_id():
 
 @pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science_fail_ap_extract_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1382,9 +1365,7 @@ def test_calibrator_science_fail_ap_extract_spec_id():
 
 
 img = image_reduction.ImageReduction(log_file_name=None)
-img.add_filelist(
-    filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
-)
+img.add_filelist(filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list"))
 img.load_data()
 img.reduce()
 twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
@@ -1392,12 +1373,12 @@ twodspec.add_data(img)
 twodspec.ap_trace()
 twodspec.ap_extract(model="lowess")
 twodspec.save_fits(
-    filename="test/test_output/twodspec_output.fits", overwrite=True
+    filename=os.path.join(HERE, "test_output", "twodspec_output.fits"),
+    overwrite=True,
 )
 
 
 def test_from_twodspec():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1405,25 +1386,26 @@ def test_from_twodspec():
 
 
 def test_from_fits_path():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
-    onedspec.from_fits("test/test_output/twodspec_output_0.fits", spec_id=0)
+    onedspec.from_fits(
+        os.path.join(HERE, "test_output", "twodspec_output_0.fits"), spec_id=0
+    )
 
 
 def test_from_fits():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
-    twodspec_fits = fits.open("test/test_output/twodspec_output_0.fits")
+    twodspec_fits = fits.open(
+        os.path.join(HERE, "test_output", "twodspec_output_0.fits")
+    )
     onedspec.from_fits(twodspec_fits, spec_id=0)
 
 
 @pytest.mark.xfail()
 def test_from_twodspec_fail_spec_id():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1431,7 +1413,6 @@ def test_from_twodspec_fail_spec_id():
 
 
 def test_extinction_function():
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1444,7 +1425,6 @@ def test_extinction_function():
 
 @patch("plotly.graph_objects.Figure.show")
 def test_standard_library_lookup(mock_show):
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1460,7 +1440,6 @@ def test_standard_library_lookup(mock_show):
 
 @patch("plotly.graph_objects.Figure.show")
 def test_sensitivity(mock_show):
-
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -1469,9 +1448,7 @@ def test_sensitivity(mock_show):
         np.ones(70) * 37, np.ones(70), spec_id=0, stype="science+standard"
     )
     onedspec.add_spec(np.arange(1, 71), spec_id=0, stype="science+standard")
-    onedspec.add_arc_spec(
-        np.arange(1, 71), spec_id=0, stype="science+standard"
-    )
+    onedspec.add_arc_spec(np.arange(1, 71), spec_id=0, stype="science+standard")
     onedspec.add_fit_coeff(
         np.array((4000.0, 1, 0.2, 0.0071)), spec_id=0, stype="science+standard"
     )
@@ -1553,7 +1530,6 @@ global_onedspec.create_fits(
 
 
 def test_adding_telluric_function():
-
     global_onedspec.add_telluric_function(
         lambda x: np.polynomial.polynomial.polyval(x, coeff)
     )
@@ -1575,7 +1551,6 @@ def test_adding_telluric_function():
 
 @patch("plotly.graph_objects.Figure.show")
 def test_getting_telluric_profile(mock_show):
-
     global_onedspec.add_telluric_function([np.arange(10000), np.arange(10000)])
 
     global_onedspec.inspect_telluric_profile(
@@ -1598,7 +1573,6 @@ def test_getting_telluric_profile(mock_show):
 
 @pytest.mark.xfail(raises=ValueError)
 def test_adding_telluric_function_wrong_spec_id():
-
     global_onedspec.add_telluric_function(
         lambda x: np.polynomial.polynomial.polyval(x, coeff), spec_id=1000
     )
@@ -1607,32 +1581,26 @@ def test_adding_telluric_function_wrong_spec_id():
 # spec_id is irrelevant, there is only ONE standard spectrum
 @pytest.mark.xfail(raises=ValueError)
 def test_getting_telluric_profile_wrong_spec_id():
-
     global_onedspec.get_telluric_profile(spec_id=1000)
 
 
 @pytest.mark.xfail(raises=ValueError)
 def test_inspecting_telluric_correction_wrong_spec_id():
-
     global_onedspec.inspect_telluric_correction(spec_id=1000)
 
 
 @pytest.mark.xfail(raises=ValueError)
 def test_applying_atmospheric_extinction_correction_wrong_spec_id():
-
     global_onedspec.apply_atmospheric_extinction_correction(spec_id=1000)
 
 
 @patch("plotly.graph_objects.Figure.show")
 def test_miscellaneous(mock_show):
-
     global_onedspec.apply_flux_calibration()
     global_onedspec.apply_flux_calibration(spec_id=0)
     global_onedspec.apply_flux_calibration(spec_id=[0])
 
-    global_onedspec.apply_atmospheric_extinction_correction(
-        science_airmass=1.2
-    )
+    global_onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2)
     global_onedspec.apply_atmospheric_extinction_correction(
         science_airmass=1.2, standard_airmass=1.5
     )
@@ -1649,9 +1617,7 @@ def test_miscellaneous(mock_show):
         extinction_func=np.poly1d([1, 2, 3])
     )
 
-    global_onedspec.apply_atmospheric_extinction_correction(
-        science_airmass=1.2
-    )
+    global_onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2)
     global_onedspec.apply_atmospheric_extinction_correction(
         science_airmass=1.2, standard_airmass=1.5
     )
@@ -1665,9 +1631,7 @@ def test_miscellaneous(mock_show):
     global_onedspec.apply_flux_calibration()
     global_onedspec.set_atmospheric_extinction()
 
-    global_onedspec.apply_atmospheric_extinction_correction(
-        science_airmass=1.2
-    )
+    global_onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2)
     global_onedspec.apply_atmospheric_extinction_correction(
         science_airmass=1.2, standard_airmass=1.5
     )
@@ -1707,15 +1671,19 @@ def test_miscellaneous(mock_show):
     )
 
     global_onedspec.create_fits(
-        output="trace+count+weight_map+arc_spec+wavecal_coefficients+"
-        "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
-        "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
+        output=(
+            "trace+count+weight_map+arc_spec+wavecal_coefficients+"
+            "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
+            "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected"
+        ),
         empty_primary_hdu=False,
     )
     global_onedspec.create_fits(
-        output="trace+count+weight_map+arc_spec+wavecal_coefficients+"
-        "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
-        "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected",
+        output=(
+            "trace+count+weight_map+arc_spec+wavecal_coefficients+"
+            "wavelength+count_resampled+sensitivity+flux+flux_atm_ext_corrected+"
+            "sensitivity_resampled+flux_resampled+flux_resampled_atm_ext_corrected"
+        ),
         recreate=True,
     )
     global_onedspec.create_fits(
@@ -1922,7 +1890,6 @@ def test_save_csv_fail_spec_id():
 
 
 def test_linear_fit():
-
     peaks = np.sort(np.random.random(31) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=5.0)
@@ -1987,7 +1954,6 @@ def test_linear_fit():
 
 
 def test_manual_refit():
-
     peaks = np.sort(np.random.random(31) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=5.0)
@@ -2061,7 +2027,6 @@ def test_manual_refit():
 
 
 def test_manual_refit_add_points():
-
     peaks = np.sort(np.random.random(31) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=5.0)
@@ -2138,7 +2103,6 @@ def test_manual_refit_add_points():
 
 
 def test_manual_refit_remove_points():
-
     peaks = np.sort(np.random.random(31) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=5.0)
@@ -2214,7 +2178,6 @@ def test_manual_refit_remove_points():
 
 
 def test_quadratic_fit():
-
     peaks = np.sort(np.random.random(31) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=5.0)
@@ -2281,7 +2244,6 @@ def test_quadratic_fit():
 
 
 def test_quadratic_fit_legendre():
-
     peaks = np.sort(np.random.random(31) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=5.0)
@@ -2355,7 +2317,6 @@ def test_quadratic_fit_legendre():
 
 @pytest.mark.skip()
 def test_quadratic_fit_chebyshev():
-
     peaks = np.sort(np.random.random(51) * 1000.0)
     # Removed the closely spaced peaks
     distance_mask = np.isclose(peaks[:-1], peaks[1:], atol=10.0)
