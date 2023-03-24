@@ -1692,7 +1692,6 @@ class OneDSpec:
                 )
             except KeyError as err:
                 self.logger.warning(err)
-
             try:
                 self.standard_spectrum_list[0].add_gain(
                     fits_file["count"].header["GAIN"]
@@ -1748,6 +1747,193 @@ class OneDSpec:
             self.standard_data_available = True
             self.standard_arc_available = True
             self.standard_arc_spec_available = True
+
+    def add_variance(self, variance, stype, spec_id=0):
+        """
+        Add variance manually.
+
+        Parameters
+        ----------
+        variance: 1-d array
+            The variance.
+        stype: str
+            'science' or 'standard' to indicate type.
+        spec_id: int or None
+            The ID corresponding to the spectrum_oned object.
+
+        """
+
+        if stype == 'science':
+
+            self.science_spectrum_list[spec_id].add_variances(
+                variance,
+            )
+
+        elif stype == 'standard':
+
+            self.standard_spectrum_list[spec_id].add_variances(
+                variance,
+            )
+
+        else:
+
+            self.logger.error(f"Unknown stype: {stype}.")
+
+    def add_gain(self, gain, stype, spec_id=0):
+        """
+        Add arc_spec manually.
+
+        Parameters
+        ----------
+        gain: float
+            The gain.
+        stype: str
+            'science' or 'standard' to indicate type.
+        spec_id: int or None
+            The ID corresponding to the spectrum_oned object.
+
+        """
+
+        if stype == 'science':
+
+            self.science_spectrum_list[spec_id].add_gain(
+                gain,
+            )
+
+        elif stype == 'standard':
+
+            self.standard_spectrum_list[spec_id].add_gain(
+                gain,
+            )
+
+        else:
+
+            self.logger.error(f"Unknown stype: {stype}.")
+
+
+    def add_readnoise(self, readnoise, stype, spec_id=0):
+        """
+        Add arc_spec manually.
+
+        Parameters
+        ----------
+        readnoise: float
+            The readnoise.
+        stype: str
+            'science' or 'standard' to indicate type.
+        spec_id: int or None
+            The ID corresponding to the spectrum_oned object.
+
+        """
+
+        if stype == 'science':
+
+            self.science_spectrum_list[spec_id].add_readnoise(
+                readnoise,
+            )
+
+        elif stype == 'standard':
+
+            self.standard_spectrum_list[spec_id].add_readnoise(
+                readnoise,
+            )
+
+        else:
+
+            self.logger.error(f"Unknown stype: {stype}.")
+
+    def add_exptime(self, exptime, stype, spec_id=0):
+        """
+        Add exptime manually.
+
+        Parameters
+        ----------
+        exptime: float
+            The exptime.
+        stype: str
+            'science' or 'standard' to indicate type.
+        spec_id: int or None
+            The ID corresponding to the spectrum_oned object.
+
+        """
+
+        if stype == 'science':
+
+            self.science_spectrum_list[spec_id].add_exptime(
+                exptime,
+            )
+
+        elif stype == 'standard':
+
+            self.standard_spectrum_list[spec_id].add_exptime(
+                exptime,
+            )
+
+        else:
+
+            self.logger.error(f"Unknown stype: {stype}.")
+
+    def add_seeing(self, seeing, stype, spec_id=0):
+        """
+        Add seeing manually.
+
+        Parameters
+        ----------
+        seeing: float
+            The seeing.
+        stype: str
+            'science' or 'standard' to indicate type.
+        spec_id: int or None
+            The ID corresponding to the spectrum_oned object.
+
+        """
+
+        if stype == 'science':
+
+            self.science_spectrum_list[spec_id].add_seeing(
+                seeing,
+            )
+
+        elif stype == 'standard':
+
+            self.standard_spectrum_list[spec_id].add_seeing(
+                seeing,
+            )
+
+        else:
+
+            self.logger.error(f"Unknown stype: {stype}.")
+
+    def add_airmass(self, airmass, stype, spec_id=0):
+        """
+        Add airmass manually.
+
+        Parameters
+        ----------
+        airmass: float
+            The airmass.
+        stype: str
+            'science' or 'standard' to indicate type.
+        spec_id: int or None
+            The ID corresponding to the spectrum_oned object.
+
+        """
+
+        if stype == 'science':
+
+            self.science_spectrum_list[spec_id].add_airmass(
+                airmass,
+            )
+
+        elif stype == 'standard':
+
+            self.standard_spectrum_list[spec_id].add_airmass(
+                airmass,
+            )
+
+        else:
+
+            self.logger.error(f"Unknown stype: {stype}.")
 
     def find_arc_lines(
         self,
@@ -1849,7 +2035,19 @@ class OneDSpec:
                     # if spec_id is None
                     spec_id = list(self.science_spectrum_list.keys())
 
+                if filename is None:
+
+                    filename = "arc_lines"
+
                 for i in spec_id:
+
+                    if len(spec_id) == 1:
+
+                        filename_i = filename
+
+                    else:
+
+                        filename_i = filename + "_" + str(i)
 
                     self.science_wavecal[i].find_arc_lines(
                         prominence=prominence,
@@ -1864,7 +2062,7 @@ class OneDSpec:
                         return_jsonstring=return_jsonstring,
                         save_fig=save_fig,
                         fig_type=fig_type,
-                        filename=filename,
+                        filename=filename_i,
                         open_iframe=open_iframe,
                     )
 
@@ -1995,6 +2193,14 @@ class OneDSpec:
 
                 for i in spec_id:
 
+                    if len(spec_id) == 1:
+
+                        filename_i = filename
+
+                    else:
+
+                        filename_i = filename + "_" + str(i)
+
                     self.science_wavecal[i].inspect_arc_lines(
                         display=display,
                         width=width,
@@ -2003,7 +2209,7 @@ class OneDSpec:
                         renderer=renderer,
                         save_fig=save_fig,
                         fig_type=fig_type,
-                        filename=filename,
+                        filename=filename_i,
                         open_iframe=open_iframe,
                     )
 
@@ -5104,7 +5310,13 @@ class OneDSpec:
 
                 for t in fig_type_split:
 
-                    save_path = filename + "_" + str(i) + "." + t
+                    if len(spec_id) == 1:
+
+                        save_path = filename + "." + t
+
+                    else:
+
+                        save_path = filename + "_" + str(i) + "." + t
 
                     if t == "iframe":
 
@@ -6022,7 +6234,13 @@ class OneDSpec:
 
                     for t in fig_type_split:
 
-                        save_path = filename + "_" + str(i) + "." + t
+                        if len(spec_id) == 1:
+
+                            save_path = filename + "." + t
+
+                        else:
+
+                            save_path = filename + "_" + str(i) + "." + t
 
                         if t == "iframe":
 
@@ -8756,7 +8974,14 @@ class OneDSpec:
 
             for i in spec_id:
 
-                filename_i = filename + "_science_" + str(i)
+                if len(spec_id) == 1:
+
+                    filename_i = filename + "_science"
+
+                else:
+
+                    filename_i = filename + "_science_" + str(i)
+
                 spec = self.science_spectrum_list[i]
                 output_filtered = []
 
@@ -8989,7 +9214,13 @@ class OneDSpec:
 
                         output_filtered.append(j)
 
-                filename_i = filename + "_science_" + str(i)
+                if len(spec_id) == 1:
+
+                    filename_i = filename + "_science"
+
+                else:
+
+                    filename_i = filename + "_science_" + str(i)
 
                 spec.save_csv(
                     output="+".join(output_filtered),

@@ -2510,11 +2510,11 @@ class SpectrumOneD:
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
 
-        +-----+----------------------+
-        | HDU | Data                 |
-        +-----+----------------------+
-        |  0  | Line spread function |
-        +-----+----------------------+
+        +-----+----------+
+        | HDU | Data     |
+        +-----+----------+
+        |  0  | Variance |
+        +-----+----------+
 
         """
 

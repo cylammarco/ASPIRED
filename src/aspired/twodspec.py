@@ -3081,13 +3081,11 @@ class TwoDSpec:
         properties of the TwoDSpec object.
 
         count: 1-d array
-            The summed count at each column about the trace. Note: is not
-            sky subtracted!
+            The summed count at each column about the trace.
         count_err: 1-d array
-            the uncertainties of the count values
+            the uncertainties of the count values.
         count_sky: 1-d array
-            The integrated sky values along each column, suitable for
-            subtracting from the output of ap_extract
+            The integrated sky values along each column.
 
         Parameters
         ----------
