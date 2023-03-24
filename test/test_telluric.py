@@ -12,7 +12,6 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 
 
 def test_telluric_square_wave():
-
     wave = np.arange(1000.0)
     flux_sci = np.ones(1000) * 5.0
     flux_std = np.ones(1000) * 100.0

@@ -78,7 +78,6 @@ class StandardLibrary:
         log_file_folder="default",
         log_file_name=None,
     ):
-
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
         if (log_level == "CRITICAL") or (not verbose):
@@ -167,11 +166,9 @@ class StandardLibrary:
 
         # first letter of the file name
         if self.ftype == "flux":
-
             filename = "f"
 
         else:
-
             filename = "m"
 
         # the rest of the file name
@@ -188,9 +185,7 @@ class StandardLibrary:
         self.standard_fluxmag_true = _f[:, 1]
 
         if self.ftype == "flux":
-
             if self.library != "esoxshooter":
-
                 self.standard_fluxmag_true /= 10.0**16.0
 
     def _get_ing_standard(self):
@@ -207,24 +202,19 @@ class StandardLibrary:
 
         # last letter (or nothing) of the file name
         if self.ftype == "flux":
-
             # .mas only contain magnitude files
             if extension == "mas":
-
                 filename += "a"
 
             if (filename == "g24" or filename == "g157") and (
                 extension == "fg"
             ):
-
                 filename += "a"
 
             if (filename == "h102") and (extension == "sto"):
-
                 filename += "a"
 
         else:
-
             filename += "a"
 
         # the extension
@@ -236,18 +226,14 @@ class StandardLibrary:
         wave = []
         fluxmag = []
         for line in _f.readlines():
-
             if line[0] in ["*", "S"]:
-
                 if line.startswith("SET .Z.UNITS = "):
-
                     # remove all special characters and white spaces
                     unit = "".join(
                         e for e in line.split('"')[1].lower() if e.isalnum()
                     )
 
             else:
-
                 _li = line.strip().strip(":").split()
                 wave.append(_li[0])
                 fluxmag.append(_li[1])
@@ -259,7 +245,6 @@ class StandardLibrary:
         # See https://www.stsci.edu/~strolger/docs/UNITS.txt for the unit
         # conversion.
         if self.ftype == "flux":
-
             # Trap the ones without flux files
             if (
                 extension == "mas"
@@ -267,7 +252,6 @@ class StandardLibrary:
                 or filename == "g157a.fg"
                 or filename == "h102a.sto"
             ):
-
                 self.standard_fluxmag_true = (
                     10.0 ** (-(self.standard_fluxmag_true / 2.5))
                     * 3630.780548
@@ -277,7 +261,6 @@ class StandardLibrary:
 
             # convert milli-Jy into F_lambda
             if unit == "mjy":
-
                 self.standard_fluxmag_true = (
                     self.standard_fluxmag_true
                     * 1e-3
@@ -287,7 +270,6 @@ class StandardLibrary:
 
             # convert micro-Jy into F_lambda
             if unit == "microjanskys":
-
                 self.standard_fluxmag_true = (
                     self.standard_fluxmag_true
                     * 1e-6
@@ -315,7 +297,6 @@ class StandardLibrary:
 
         # iraf is always in AB magnitude
         if self.ftype == "flux":
-
             # Convert from AB mag to flux
             self.standard_fluxmag_true = (
                 10.0 ** (-(self.standard_fluxmag_true / 2.5))
@@ -344,12 +325,10 @@ class StandardLibrary:
         # Load the list of targets in the requested library
         # Only works in case of exact match
         try:
-
             libraries = self.uname_to_lib[target.lower()]
             return libraries, True
 
         except Exception as _warn:
-
             self.logger.warning(str(_warn))
 
             # If the requested target is not in any library, suggest the
@@ -363,7 +342,6 @@ class StandardLibrary:
             )
 
             if len(target_list) > 0:
-
                 self.logger.warning(
                     "Requested standard star cannot be found, a list of the "
                     "closest matching names are returned: %s",
@@ -373,7 +351,6 @@ class StandardLibrary:
                 return target_list, False
 
             else:
-
                 error_msg = (
                     "Please check the name of your standard star, nothing "
                     "share a similarity above %s.",
@@ -410,11 +387,9 @@ class StandardLibrary:
         )
 
         if library_name == []:
-
             return None, None
 
         else:
-
             library_name = library_name[0]
 
         # difflib uses Gestalt pattern matching.
@@ -422,11 +397,9 @@ class StandardLibrary:
             target.lower(), self.lib_to_uname[library_name], n=1, cutoff=0.3
         )
         if target_name == []:
-
             target_name = None
 
         else:
-
             target_name = target_name[0]
 
         return target_name, library_name
@@ -462,30 +435,24 @@ class StandardLibrary:
         # similarity is above 0.5
         self.library = library
         if self.library is not None:
-
             (
                 _target,
                 _library,
             ) = self.lookup_closet_match_in_library(self.target, self.library)
 
             if _target is not None:
-
                 self.target = _target
                 self.library = _library
 
         # If not, search again with the first one returned from lookup.
         else:
-
             libraries, success = self.lookup_standard_libraries(self.target)
 
             if success:
-
                 if np.in1d([library], libraries):
-
                     self.library = library
 
                 else:
-
                     self.library = libraries[0]
 
                     self.logger.warning(
@@ -496,7 +463,6 @@ class StandardLibrary:
                     )
 
             else:
-
                 # When success is Flase, the libraries is a list of standards
                 self.target = libraries[0]
                 libraries, _ = self.lookup_standard_libraries(self.target)
@@ -509,24 +475,19 @@ class StandardLibrary:
                 )
 
         if not self.verbose:
-
             if self.library is None:
-
                 # Use the default library order
                 self.logger.warning(
                     "Standard library is not given, %s is used.", self.library
                 )
 
         if self.library.startswith("iraf"):
-
             self._get_iraf_standard()
 
         if self.library.startswith("ing"):
-
             self._get_ing_standard()
 
         if self.library.startswith("eso"):
-
             self._get_eso_standard()
 
     def inspect_standard(
@@ -638,37 +599,28 @@ class StandardLibrary:
         )
 
         if filename is None:
-
             filename = "standard"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for _t in fig_type_split:
-
                 if _t == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + _t, auto_open=open_iframe
                     )
 
                 elif _t in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + _t)
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
 
@@ -802,11 +754,9 @@ class FluxCalibration(StandardLibrary):
         """
 
         if merge:
-
             self.spectrum_oned.merge(spectrum_oned, overwrite=overwrite)
 
         else:
-
             self.spectrum_oned = spectrum_oned
 
         self.spectrum_oned_imported = True
@@ -915,14 +865,12 @@ class FluxCalibration(StandardLibrary):
         residual = continuum - flux
 
         for m_range in mask_range:
-
             # Get the indices for the two sides of the masking region
             # at the native pixel scale
             left_of_mask = np.where(wave <= m_range[0])[0]
             right_of_mask = np.where(wave >= m_range[1])[0]
 
             if (len(left_of_mask) == 0) or (len(right_of_mask) == 0):
-
                 continue
 
             left_telluric_start = int(max(left_of_mask))
@@ -938,7 +886,6 @@ class FluxCalibration(StandardLibrary):
 
         # If the spectrum doesn't cover any given telluric mask regions
         if np.isnan(telluric_profile).all():
-
             telluric_profile = np.zeros_like(telluric_profile)
 
         telluric_func = itp.interp1d(
@@ -950,7 +897,6 @@ class FluxCalibration(StandardLibrary):
         self.spectrum_oned.add_telluric_factor(telluric_factor)
 
         if return_function:
-
             return telluric_func, telluric_profile, telluric_factor
 
     def inspect_telluric_profile(
@@ -1034,37 +980,28 @@ class FluxCalibration(StandardLibrary):
         )
 
         if filename is None:
-
             filename = "telluric_profile"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for f_type in fig_type_split:
-
                 if f_type == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
                 elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + f_type)
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def get_sensitivity(
@@ -1155,12 +1092,9 @@ class FluxCalibration(StandardLibrary):
 
         # Mask regions before smoothing and avoiding telluric absorptions
         if mask_range is not None:
-
             for m in mask_range:
-
                 # If the mask is partially outside the spectrum, ignore
                 if (m[0] < min(wave)) or (m[1] > max(wave)):
-
                     continue
 
                 # Get the indices for the two sides of the masking region
@@ -1205,7 +1139,6 @@ class FluxCalibration(StandardLibrary):
 
         # apply a Savitzky-Golay filter
         if smooth:
-
             count = signal.savgol_filter(count, slength, sorder)
             # Set the smoothing parameters
             self.spectrum_oned.add_smoothing(smooth, slength, sorder)
@@ -1213,7 +1146,6 @@ class FluxCalibration(StandardLibrary):
         if (
             getattr(self.spectrum_oned, "count_continuum") is None
         ) or recompute_continuum:
-
             self.spectrum_oned.add_count_continuum(
                 get_continuum(wave, count, **kwargs)
             )
@@ -1225,7 +1157,6 @@ class FluxCalibration(StandardLibrary):
         if np.nanmedian(np.array(np.ediff1d(wave))) < np.nanmedian(
             np.array(np.ediff1d(self.standard_wave_true))
         ):
-
             standard_count, _ = spectres(
                 np.array(self.standard_wave_true).reshape(-1),
                 np.array(wave).reshape(-1),
@@ -1239,7 +1170,6 @@ class FluxCalibration(StandardLibrary):
         # If the median resolution of the observed spectrum is lower than
         # the literature one
         else:
-
             standard_count = count
             # standard_flux_err = count_err
             standard_flux_true = spectres(
@@ -1269,7 +1199,6 @@ class FluxCalibration(StandardLibrary):
                 return itp.splev(_x, tck)
 
         elif method == "polynomial":
-
             coeff = np.polynomial.polynomial.polyfit(
                 standard_wave_masked,
                 np.log10(sensitivity_masked),
@@ -1280,7 +1209,6 @@ class FluxCalibration(StandardLibrary):
                 return np.polynomial.polynomial.polyval(x, coeff)
 
         else:
-
             error_msg = "{method} is not implemented."
             self.logger.critical(error_msg)
             raise NotImplementedError(error_msg)
@@ -1313,7 +1241,6 @@ class FluxCalibration(StandardLibrary):
         self.spectrum_oned.add_telluric_factor(telluric_factor)
 
         if return_function:
-
             return sensitivity_func
 
     def add_sensitivity_func(self, sensitivity_func):
@@ -1493,37 +1420,28 @@ class FluxCalibration(StandardLibrary):
         )
 
         if filename is None:
-
             filename = "senscurve"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for f_type in fig_type_split:
-
                 if f_type == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
                 elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + f_type)
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def apply_flux_calibration(
@@ -1607,7 +1525,6 @@ class FluxCalibration(StandardLibrary):
         )
 
         if getattr(target_spectrum_oned, "count_continuum") is None:
-
             target_spectrum_oned.add_count_continuum(
                 get_continuum(wave, count)
             )
@@ -1621,11 +1538,9 @@ class FluxCalibration(StandardLibrary):
         flux = sensitivity * count
 
         if count_err is not None:
-
             flux_err = sensitivity * count_err
 
         if count_sky is not None:
-
             flux_sky = sensitivity * count_sky
 
         flux_continuum = sensitivity * count_continuum
@@ -1639,15 +1554,12 @@ class FluxCalibration(StandardLibrary):
         target_spectrum_oned.merge(self.spectrum_oned)
 
         if wave_min is None:
-
             wave_min = 3500.0
 
         if wave_max is None:
-
             wave_max = 8500.0
 
         if inspect:
-
             wave_mask = (np.array(wave).reshape(-1) > wave_min) & (
                 np.array(wave).reshape(-1) < wave_max
             )
@@ -1725,7 +1637,6 @@ class FluxCalibration(StandardLibrary):
             )
 
             if flux_err is not None:
-
                 fig.add_trace(
                     go.Scatter(
                         x=wave,
@@ -1736,7 +1647,6 @@ class FluxCalibration(StandardLibrary):
                 )
 
             if flux_sky is not None:
-
                 fig.add_trace(
                     go.Scatter(
                         x=wave,
@@ -1747,7 +1657,6 @@ class FluxCalibration(StandardLibrary):
                 )
 
             if flux_continuum is not None:
-
                 fig.add_trace(
                     go.Scatter(
                         x=wave,
@@ -1774,11 +1683,9 @@ class FluxCalibration(StandardLibrary):
             )
 
             if filename is None:
-
                 filename = "spectrum_" + str(self.target_spec_id)
 
             else:
-
                 filename = (
                     os.path.splitext(filename)[0]
                     + "_"
@@ -1786,33 +1693,25 @@ class FluxCalibration(StandardLibrary):
                 )
 
             if save_fig:
-
                 fig_type_split = fig_type.split("+")
 
                 for f_type in fig_type_split:
-
                     if f_type == "iframe":
-
                         pio.write_html(
                             fig, filename + "." + f_type, auto_open=open_iframe
                         )
 
                     elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                         pio.write_image(fig, filename + "." + f_type)
 
             if display:
-
                 if renderer == "default":
-
                     fig.show()
 
                 else:
-
                     fig.show(renderer)
 
             if return_jsonstring:
-
                 return fig.to_json()
 
     def create_fits(

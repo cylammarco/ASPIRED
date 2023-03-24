@@ -531,7 +531,9 @@ def test_user_supplied_wavelength_twodspec(mock_show):
     lhs6328_onedspec.from_twodspec(lhs6328)
 
     wavelength = np.genfromtxt(
-        os.path.join(HERE, "test_data", "test_full_run_standard_wavelength.csv")
+        os.path.join(
+            HERE, "test_data", "test_full_run_standard_wavelength.csv"
+        )
     )
     # Manually supply wavelengths
     lhs6328_onedspec.add_wavelength([wavelength, wavelength])

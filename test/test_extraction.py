@@ -53,17 +53,20 @@ dummy_data = np.random.normal(dummy_data)
 dummy_gaussian_data = (
     np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
 ).T * 10000.0
-dummy_gaussian_data = np.random.normal(dummy_gaussian_data, scale=bg_level) + bg_level
+dummy_gaussian_data = (
+    np.random.normal(dummy_gaussian_data, scale=bg_level) + bg_level
+)
 
 # Prepare faint dummy gaussian data
 dummy_gaussian_data_faint = (
     np.ones((100, 1000)).T * gaussian(np.arange(100), 50)
 ).T * 100.0
-dummy_gaussian_data_faint = np.random.normal(dummy_gaussian_data_faint, scale=bg_level) + bg_level
+dummy_gaussian_data_faint = (
+    np.random.normal(dummy_gaussian_data_faint, scale=bg_level) + bg_level
+)
 
 
 def test_spectral_extraction():
-
     # masking
     spec_mask = np.arange(10, 900)
     spatial_mask = np.arange(15, 85)
@@ -125,6 +128,7 @@ def test_spectral_extraction():
         fig_type="iframe+png",
         return_jsonstring=True,
     )
+
 
 def test_gausian_spectral_extraction():
     # masking
@@ -252,6 +256,7 @@ def test_gaussian_spectral_extraction_top_hat_low_signal():
         "Extracted count is " + str(count) + " but it should be ~100."
     )
 
+
 def test_gaussian_spectral_extraction_horne86_gaussian_low_signal():
     # masking
     spec_mask = np.arange(10, 900)
@@ -281,13 +286,16 @@ def test_gaussian_spectral_extraction_horne86_gaussian_low_signal():
     )
 
     # Optimal extraction (Horne86 gauss)
-    dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm='horne86', model="gauss")
+    dummy_twodspec.ap_extract(
+        apwidth=5, optimal=True, algorithm="horne86", model="gauss"
+    )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
+
 
 def test_gaussian_spectral_extraction_horne86_lowess_low_signal():
     # masking
@@ -327,9 +335,10 @@ def test_gaussian_spectral_extraction_horne86_lowess_low_signal():
     count = np.median(dummy_twodspec.spectrum_list[0].count)
     count_err = np.median(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
-    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err*2.0), (
+    assert np.isclose(count, 100.0, rtol=0.01, atol=count_err * 2.0), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
+
 
 def test_gaussian_spectral_extraction_marsh89_low_signal():
     # masking
@@ -370,7 +379,6 @@ def test_gaussian_spectral_extraction_marsh89_low_signal():
 
 
 def test_user_supplied_trace():
-
     spatial_mask = np.arange(20, 200)
     spec_mask = np.arange(100, 1024)
 
@@ -454,42 +462,36 @@ def test_extraction_wrong_size_extraction_description():
 
 
 def test_horne_extraction():
-
     lhs6328_twodspec.ap_extract(
         optimal=True, algorithm="horne86", display=False
     )
 
 
 def test_marsh_extraction_fast():
-
     lhs6328_twodspec.ap_extract(
         optimal=True, algorithm="marsh89", qmode="fast-nearest", display=False
     )
 
 
 def test_marsh_extraction_fast_linear():
-
     lhs6328_twodspec.ap_extract(
         optimal=True, algorithm="marsh89", qmode="fast-linear", display=False
     )
 
 
 def test_marsh_extraction_slow():
-
     lhs6328_twodspec.ap_extract(
         optimal=True, algorithm="marsh89", qmode="slow-nearest", display=False
     )
 
 
 def test_marsh_extraction_slow_linear():
-
     lhs6328_twodspec.ap_extract(
         optimal=True, algorithm="marsh89", qmode="slow-linear", display=False
     )
 
 
 def test_marsh_extraction_fast_apwidth():
-
     lhs6328_twodspec.ap_extract(
         optimal=True,
         apwidth=5,
@@ -500,7 +502,6 @@ def test_marsh_extraction_fast_apwidth():
 
 
 def test_marsh_extraction_fast_apwidth_str():
-
     lhs6328_twodspec.ap_extract(
         optimal=True,
         apwidth="blabla",

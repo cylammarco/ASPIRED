@@ -666,17 +666,14 @@ def test_input_with_fits_data_object():
     light_list = impath[imtype == "light"]
 
     for i in range(light_list.size):
-
         light = fits.open(light_list[i])[0]
         img.add_light(light.data, light.header, float(light.header["EXPTIME"]))
 
     for i in range(arc_list.size):
-
         arc = fits.open(arc_list[i])[0]
         img.add_arc(arc.data, arc.header)
 
     for i in range(dark_list.size):
-
         dark = fits.open(dark_list[i])[0]
         img.add_dark(dark.data, dark.header, float(dark.header["EXPTIME"]))
 

@@ -16,7 +16,9 @@ from aspired import util
 HERE = os.path.dirname(os.path.realpath(__file__))
 
 img = image_reduction.ImageReduction(log_file_name=None)
-img.add_filelist(filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list"))
+img.add_filelist(
+    filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
+)
 img.load_data()
 img.reduce()
 

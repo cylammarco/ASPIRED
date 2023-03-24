@@ -645,7 +645,9 @@ class TwoDSpec:
                     self.img = self.img[self.spatial_mask]
 
                     if self.img_residual is not None:
-                        self.img_residual = self.img_residual[self.spatial_mask]
+                        self.img_residual = self.img_residual[
+                            self.spatial_mask
+                        ]
 
                     if self.bad_mask is not None:
                         self.bad_mask = self.bad_mask[self.spatial_mask]
@@ -669,7 +671,9 @@ class TwoDSpec:
                     self.img = self.img[:, self.spec_mask]
 
                     if self.img_residual is not None:
-                        self.img_residual = self.img_residual[:, self.spec_mask]
+                        self.img_residual = self.img_residual[
+                            :, self.spec_mask
+                        ]
 
                     if self.bad_mask is not None:
                         self.bad_mask = self.bad_mask[:, self.spec_mask]
@@ -763,7 +767,9 @@ class TwoDSpec:
             if isinstance(readnoise, str):
                 # use the supplied keyword
                 self.readnoise = float(self.header[readnoise])
-                self.logger.info("readnoise is found to be %s.", self.readnoise)
+                self.logger.info(
+                    "readnoise is found to be %s.", self.readnoise
+                )
                 self.readnoise_is_default_value = False
 
             elif isinstance(readnoise, (float, int)) & (~np.isnan(readnoise)):
@@ -1023,7 +1029,9 @@ class TwoDSpec:
                             np.where(exptime_keyword_matched)[0][0]
                         ]
                     ]
-                    self.logger.info("exptime is found to be %s.", self.exptime)
+                    self.logger.info(
+                        "exptime is found to be %s.", self.exptime
+                    )
                     self.exptime_is_default_value = False
 
                 else:
@@ -1099,7 +1107,9 @@ class TwoDSpec:
                             np.where(airmass_keyword_matched)[0][0]
                         ]
                     ]
-                    self.logger.info("Airmass is found to be %s.", self.airmass)
+                    self.logger.info(
+                        "Airmass is found to be %s.", self.airmass
+                    )
                     self.airmass_is_default_value = False
 
                 else:
@@ -2052,7 +2062,9 @@ class TwoDSpec:
         # Find the spectral position in the middle of the gram in the upsampled
         # pixel location location
         # FWHM cannot be smaller than 3 pixels for any real signal
-        peaks = signal.find_peaks(spatial_profile, distance=spec_sep, width=3.0)
+        peaks = signal.find_peaks(
+            spatial_profile, distance=spec_sep, width=3.0
+        )
 
         # update the number of spectra if the number of peaks detected is less
         # than the number requested
@@ -2134,7 +2146,9 @@ class TwoDSpec:
             )
 
             # fit the trace
-            aper_p = np.polyfit(self.spec_pix[mask], spec_i[mask], int(fit_deg))
+            aper_p = np.polyfit(
+                self.spec_pix[mask], spec_i[mask], int(fit_deg)
+            )
             aper = np.polyval(
                 aper_p, np.arange(self.spec_size) * self.resample_factor
             )
@@ -2143,7 +2157,8 @@ class TwoDSpec:
                 [
                     (x, y)
                     for (x, y) in zip(
-                        np.arange(self.spec_size)[::100] * self.resample_factor,
+                        np.arange(self.spec_size)[::100]
+                        * self.resample_factor,
                         aper,
                     )
                 ],
@@ -2254,7 +2269,9 @@ class TwoDSpec:
 
         """
 
-        fig = go.Figure(layout=dict(autosize=False, height=height, width=width))
+        fig = go.Figure(
+            layout=dict(autosize=False, height=height, width=width)
+        )
 
         fig.add_trace(
             go.Heatmap(
@@ -2795,7 +2812,9 @@ class TwoDSpec:
             # of y-pixel. The coeff is in the upsampled resolution
             coeff = np.polynomial.polynomial.polyfit(
                 y_trace_upsampled,
-                lowess(shift_upsampled, y_trace_upsampled, return_sorted=False),
+                lowess(
+                    shift_upsampled, y_trace_upsampled, return_sorted=False
+                ),
                 order,
             )
             self.logger.info(
@@ -2864,8 +2883,12 @@ class TwoDSpec:
                     go.Heatmap(
                         z=np.log10(self.arc_rectified),
                         colorscale="Viridis",
-                        zmin=np.nanpercentile(np.log10(self.arc_rectified), 10),
-                        zmax=np.nanpercentile(np.log10(self.arc_rectified), 90),
+                        zmin=np.nanpercentile(
+                            np.log10(self.arc_rectified), 10
+                        ),
+                        zmax=np.nanpercentile(
+                            np.log10(self.arc_rectified), 90
+                        ),
                         xaxis="x2",
                         yaxis="y2",
                     )
@@ -3319,7 +3342,9 @@ class TwoDSpec:
                     profile_end_idx = offset + width_dn + width_up + 1
 
                 # Pixels where the source spectrum and the sky regions are
-                source_pix = np.arange(itrace - width_dn, itrace + width_up + 1)
+                source_pix = np.arange(
+                    itrace - width_dn, itrace + width_up + 1
+                )
                 extraction_pix = np.arange(
                     itrace - width_dn - sep_dn - sky_width_dn,
                     itrace + width_up + sep_up + sky_width_up + 1,
@@ -3367,7 +3392,9 @@ class TwoDSpec:
                     - (1 - pix_frac) * count_sky_source_slice[-1]
                 )
 
-                self.img_residual[source_pix, i] = count_sky_source_slice.copy()
+                self.img_residual[
+                    source_pix, i
+                ] = count_sky_source_slice.copy()
 
                 self.logger.debug(
                     "count_sky at pixel %s is %s.", i, count_sky[i]
@@ -3405,7 +3432,8 @@ class TwoDSpec:
                         if np.ndim(variances) == 0:
                             if isinstance(variances, (int, float)):
                                 var_i = (
-                                    np.ones(width_dn + width_up + 1) * variances
+                                    np.ones(width_dn + width_up + 1)
+                                    * variances
                                 )
 
                             else:
@@ -4011,7 +4039,8 @@ class TwoDSpec:
             # plot 10 LSFs
             lsf_dist = len_trace // 10
             lsf_idx = (
-                np.arange(0, len_trace - lsf_dist + 1, lsf_dist) + lsf_dist // 2
+                np.arange(0, len_trace - lsf_dist + 1, lsf_dist)
+                + lsf_dist // 2
             )
 
             fig = go.Figure(

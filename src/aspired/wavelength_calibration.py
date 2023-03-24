@@ -265,7 +265,6 @@ class WavelengthCalibration:
         filename=None,
         open_iframe=False,
     ):
-
         """
 
         Parameters
@@ -343,37 +342,28 @@ class WavelengthCalibration:
         )
 
         if filename is None:
-
             filename = "arc_lines"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for t in fig_type_split:
-
                 if t == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + t, auto_open=open_iframe
                     )
 
                 elif t in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + t)
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def find_arc_lines(
@@ -453,9 +443,7 @@ class WavelengthCalibration:
         """
 
         if arc_spec is None:
-
             if getattr(self.spectrum_oned, "arc_spec") is None:
-
                 error_msg = (
                     "arc_spec is not provided. Either provide when "
                     + "executing this function or provide a spectrum_oned that "
@@ -465,9 +453,7 @@ class WavelengthCalibration:
                 raise ValueError(error_msg)
 
         else:
-
             if getattr(self.spectrum_oned, "arc_spec") is not None:
-
                 self.logger.warning("arc_spec is replaced with the new one.")
 
             setattr(self.spectrum_oned, "arc_spec", arc_spec)
@@ -484,14 +470,12 @@ class WavelengthCalibration:
         prom_sorted_arg = np.argsort(prom)[::-1]
 
         if isinstance(top_n_peaks, (int, float)):
-
             peaks = np.sort(peaks[prom_sorted_arg][: int(top_n_peaks)])
 
         self.spectrum_oned.add_peaks(peaks)
 
         # Fine tuning
         if refine:
-
             peaks = refine_peaks(
                 arc_spec,
                 getattr(self.spectrum_oned, "peaks"),
@@ -501,17 +485,14 @@ class WavelengthCalibration:
 
         # Adjust for chip gaps
         if getattr(self.spectrum_oned, "pixel_mapping_itp") is not None:
-
             self.spectrum_oned.add_peaks_refined(
                 getattr(self.spectrum_oned, "pixel_mapping_itp")(peaks)
             )
 
         else:
-
             self.spectrum_oned.add_peaks_refined(peaks)
 
         if save_fig or display or return_jsonstring:
-
             to_return = self.inspect_arc_lines(
                 display=display,
                 renderer=renderer,
@@ -525,7 +506,6 @@ class WavelengthCalibration:
             )
 
         if return_jsonstring:
-
             return to_return
 
     def initialise_calibrator(self, peaks=None, arc_spec=None):
@@ -542,17 +522,13 @@ class WavelengthCalibration:
         """
 
         if peaks is None:
-
             if getattr(self.spectrum_oned, "peaks_refined") is not None:
-
                 peaks = getattr(self.spectrum_oned, "peaks_refined")
 
             elif getattr(self.spectrum_oned, "peaks") is not None:
-
                 peaks = getattr(self.spectrum_oned, "peaks")
 
             else:
-
                 error_msg = (
                     "arc_spec is not provided. Either provide when "
                     + "executing this function or provide a spectrum_oned that "
@@ -561,9 +537,7 @@ class WavelengthCalibration:
                 self.logger.warning(error_msg)
 
         else:
-
             if getattr(self.spectrum_oned, "peaks_refined") is not None:
-
                 self.logger.warning(
                     "peaks_refined is replaced with the new one."
                 )
@@ -571,13 +545,10 @@ class WavelengthCalibration:
             self.spectrum_oned.add_peaks_refined(peaks)
 
         if arc_spec is None:
-
             if getattr(self.spectrum_oned, "arc_spec") is not None:
-
                 arc_spec = getattr(self.spectrum_oned, "arc_spec")
 
             else:
-
                 error_msg = (
                     "arc_spec is not provided. Either provide when "
                     + "executing this function or provide a spectrum_oned that "
@@ -586,9 +557,7 @@ class WavelengthCalibration:
                 self.logger.warning(error_msg)
 
         else:
-
             if getattr(self.spectrum_oned, "arc_spec") is not None:
-
                 self.logger.warning("arc_spec is replaced with the new one.")
 
             self.spectrum_oned.add_arc_spec(arc_spec)
@@ -1184,15 +1153,12 @@ class WavelengthCalibration:
         )
 
         if fit_type == "poly":
-
             fit_type_rascal = "poly"
 
         if fit_type == "legendre":
-
             fit_type_rascal = "leg"
 
         if fit_type == "chebyshev":
-
             fit_type_rascal = "cheb"
 
         self.spectrum_oned.add_fit_type(fit_type_rascal)
@@ -1208,7 +1174,6 @@ class WavelengthCalibration:
         )
 
         if display or return_jsonstring or save_fig:
-
             self.spectrum_oned.calibrator.plot_fit(
                 fit_coeff=fit_coeff,
                 plot_atlas=True,
@@ -1223,7 +1188,6 @@ class WavelengthCalibration:
             )
 
         if return_solution:
-
             return (
                 fit_coeff,
                 matched_peaks,
@@ -1310,11 +1274,9 @@ class WavelengthCalibration:
         """
 
         if fit_deg is None:
-
             fit_deg = len(fit_coeff) - 1
 
         if n_delta is None:
-
             n_delta = len(fit_coeff) - 1
 
         (
@@ -1339,7 +1301,6 @@ class WavelengthCalibration:
         rms = np.sqrt(np.nanmean(residual**2.0))
 
         if display:
-
             self.spectrum_oned.calibrator.plot_fit(
                 fit_coeff=fit_coeff,
                 plot_atlas=True,
@@ -1364,7 +1325,6 @@ class WavelengthCalibration:
         )
 
         if return_solution:
-
             return (
                 fit_coeff,
                 matched_peaks,
@@ -1475,7 +1435,6 @@ class WavelengthCalibration:
         )
 
         if return_solution:
-
             return (
                 self.fit_coeff,
                 self.matched_peaks,

@@ -42,7 +42,6 @@ def test_standard_return_suggestion2():
 
 @patch("plotly.graph_objects.Figure.show")
 def test_sensitivity(mock_show):
-
     hiltner_spectrum_oned = SpectrumOneD(log_file_name=None)
     sens = FluxCalibration(log_file_name=None)
 
@@ -96,7 +95,6 @@ def test_sensitivity(mock_show):
 
 @patch("plotly.graph_objects.Figure.show")
 def test_fluxcalibration(mock_show):
-
     hiltner_spectrum_oned = SpectrumOneD(log_file_name=None)
     lhs6328_spectrum_oned = SpectrumOneD(log_file_name=None)
 

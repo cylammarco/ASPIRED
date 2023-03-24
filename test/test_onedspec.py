@@ -985,7 +985,9 @@ def test_calibrator_science():
 
     onedspec.set_hough_properties(num_slopes=1000, stype="science")
     onedspec.set_hough_properties(spec_id=0, num_slopes=1000, stype="science")
-    onedspec.set_hough_properties(spec_id=[1], num_slopes=1000, stype="science")
+    onedspec.set_hough_properties(
+        spec_id=[1], num_slopes=1000, stype="science"
+    )
     onedspec.set_hough_properties(
         spec_id=[11, 75], num_slopes=1000, stype="science"
     )
@@ -1364,7 +1366,9 @@ def test_calibrator_science_fail_ap_extract_spec_id():
 
 
 img = image_reduction.ImageReduction(log_file_name=None)
-img.add_filelist(filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list"))
+img.add_filelist(
+    filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
+)
 img.load_data()
 img.reduce()
 twodspec = spectral_reduction.TwoDSpec(log_file_name=None)
@@ -1447,7 +1451,9 @@ def test_sensitivity(mock_show):
         np.ones(70) * 37, np.ones(70), spec_id=0, stype="science+standard"
     )
     onedspec.add_spec(np.arange(1, 71), spec_id=0, stype="science+standard")
-    onedspec.add_arc_spec(np.arange(1, 71), spec_id=0, stype="science+standard")
+    onedspec.add_arc_spec(
+        np.arange(1, 71), spec_id=0, stype="science+standard"
+    )
     onedspec.add_fit_coeff(
         np.array((4000.0, 1, 0.2, 0.0071)), spec_id=0, stype="science+standard"
     )
@@ -1599,7 +1605,9 @@ def test_miscellaneous(mock_show):
     global_onedspec.apply_flux_calibration(spec_id=0)
     global_onedspec.apply_flux_calibration(spec_id=[0])
 
-    global_onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2)
+    global_onedspec.apply_atmospheric_extinction_correction(
+        science_airmass=1.2
+    )
     global_onedspec.apply_atmospheric_extinction_correction(
         science_airmass=1.2, standard_airmass=1.5
     )
@@ -1616,7 +1624,9 @@ def test_miscellaneous(mock_show):
         extinction_func=np.poly1d([1, 2, 3])
     )
 
-    global_onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2)
+    global_onedspec.apply_atmospheric_extinction_correction(
+        science_airmass=1.2
+    )
     global_onedspec.apply_atmospheric_extinction_correction(
         science_airmass=1.2, standard_airmass=1.5
     )
@@ -1630,7 +1640,9 @@ def test_miscellaneous(mock_show):
     global_onedspec.apply_flux_calibration()
     global_onedspec.set_atmospheric_extinction()
 
-    global_onedspec.apply_atmospheric_extinction_correction(science_airmass=1.2)
+    global_onedspec.apply_atmospheric_extinction_correction(
+        science_airmass=1.2
+    )
     global_onedspec.apply_atmospheric_extinction_correction(
         science_airmass=1.2, standard_airmass=1.5
     )

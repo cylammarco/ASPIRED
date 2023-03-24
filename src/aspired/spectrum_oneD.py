@@ -2549,7 +2549,9 @@ class SpectrumOneD:
 
         """
 
-        self._modify_imagehdu_header(self.arc_lines_hdulist, idx, method, *args)
+        self._modify_imagehdu_header(
+            self.arc_lines_hdulist, idx, method, *args
+        )
 
     def modify_wavecal_header(self, method, *args):
         """
@@ -2633,7 +2635,9 @@ class SpectrumOneD:
 
         """
 
-        self._modify_imagehdu_header(self.sensitivity_hdulist, 0, method, *args)
+        self._modify_imagehdu_header(
+            self.sensitivity_hdulist, 0, method, *args
+        )
 
     def modify_flux_header(self, idx, method, *args):
         """
@@ -2722,7 +2726,9 @@ class SpectrumOneD:
             self.flux_telluric_corrected_hdulist, idx, method, *args
         )
 
-    def modify_flux_atm_ext_telluric_corrected_header(self, idx, method, *args):
+    def modify_flux_atm_ext_telluric_corrected_header(
+        self, idx, method, *args
+    ):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -3119,7 +3125,9 @@ class SpectrumOneD:
             self.modify_count_resampled_header(
                 0, "set", "CRVAL1", self.wave_start
             )
-            self.modify_count_resampled_header(0, "set", "CTYPE1", "Wavelength")
+            self.modify_count_resampled_header(
+                0, "set", "CTYPE1", "Wavelength"
+            )
             self.modify_count_resampled_header(0, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(0, "set", "BUNIT", "electron")
             self.modify_count_resampled_header(0, "set", "BUNIT", "electron")
@@ -3149,7 +3157,9 @@ class SpectrumOneD:
             self.modify_count_resampled_header(
                 1, "set", "CRVAL1", self.wave_start
             )
-            self.modify_count_resampled_header(1, "set", "CTYPE1", "Wavelength")
+            self.modify_count_resampled_header(
+                1, "set", "CTYPE1", "Wavelength"
+            )
             self.modify_count_resampled_header(1, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(1, "set", "BUNIT", "electron")
 
@@ -3167,7 +3177,9 @@ class SpectrumOneD:
             self.modify_count_resampled_header(
                 2, "set", "CRVAL1", self.wave_start
             )
-            self.modify_count_resampled_header(2, "set", "CTYPE1", "Wavelength")
+            self.modify_count_resampled_header(
+                2, "set", "CTYPE1", "Wavelength"
+            )
             self.modify_count_resampled_header(2, "set", "CUNIT1", "Angstroms")
             self.modify_count_resampled_header(2, "set", "BUNIT", "electron")
 
@@ -3374,7 +3386,9 @@ class SpectrumOneD:
             self.modify_wavelength_header(
                 "set", "CRVAL1", self.effective_pixel[0]
             )
-            self.modify_wavelength_header("set", "CTYPE1", "Pixel (Dispersion)")
+            self.modify_wavelength_header(
+                "set", "CTYPE1", "Pixel (Dispersion)"
+            )
             self.modify_wavelength_header("set", "CUNIT1", "Pixel")
             self.modify_wavelength_header("set", "BUNIT", "Angstroms")
 
@@ -3406,7 +3420,9 @@ class SpectrumOneD:
 
             # Create an empty HDU list and populate with the ImageHDU
             self.wavelength_resampled_hdulist = fits.HDUList()
-            self.wavelength_resampled_hdulist += [wavelength_resampled_ImageHDU]
+            self.wavelength_resampled_hdulist += [
+                wavelength_resampled_ImageHDU
+            ]
 
             hdu_names = self.ext_name[self.hdu_order["wavelength_resampled"]]
 
@@ -3426,7 +3442,9 @@ class SpectrumOneD:
                 "set", "CTYPE1", "Pixel (Dispersion)"
             )
             self.modify_wavelength_resampled_header("set", "CUNIT1", "Pixel")
-            self.modify_wavelength_resampled_header("set", "BUNIT", "Angstroms")
+            self.modify_wavelength_resampled_header(
+                "set", "BUNIT", "Angstroms"
+            )
 
         except Exception as e:
             self.logger.warning(str(e))
@@ -3518,10 +3536,14 @@ class SpectrumOneD:
             self.modify_flux_header(0, "set", "LABEL", "Flux")
             self.modify_flux_header(0, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(0, "set", "CDELT1", 1)
-            self.modify_flux_header(0, "set", "CRVAL1", self.effective_pixel[0])
+            self.modify_flux_header(
+                0, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_flux_header(0, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(0, "set", "CUNIT1", "Pixel")
-            self.modify_flux_header(0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)")
+            self.modify_flux_header(
+                0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
             self.modify_flux_header(0, "set", "XPOSURE", self.exptime)
             self.modify_flux_header(0, "set", "GAIN", self.gain)
             self.modify_flux_header(0, "set", "RNOISE", self.readnoise)
@@ -3532,19 +3554,27 @@ class SpectrumOneD:
             self.modify_flux_header(1, "set", "LABEL", "Flux (Uncertainty)")
             self.modify_flux_header(1, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(1, "set", "CDELT1", 1)
-            self.modify_flux_header(1, "set", "CRVAL1", self.effective_pixel[0])
+            self.modify_flux_header(
+                1, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_flux_header(1, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(1, "set", "CUNIT1", "Pixel")
-            self.modify_flux_header(1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)")
+            self.modify_flux_header(
+                1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
 
             self.modify_flux_header(2, "set", "EXTNAME", hdu_names[2])
             self.modify_flux_header(2, "set", "LABEL", "Flux (Sky)")
             self.modify_flux_header(2, "set", "CRPIX1", 1.00e00)
             self.modify_flux_header(2, "set", "CDELT1", 1)
-            self.modify_flux_header(2, "set", "CRVAL1", self.effective_pixel[0])
+            self.modify_flux_header(
+                2, "set", "CRVAL1", self.effective_pixel[0]
+            )
             self.modify_flux_header(2, "set", "CTYPE1", "Pixel")
             self.modify_flux_header(2, "set", "CUNIT1", "Pixel")
-            self.modify_flux_header(2, "set", "BUNIT", "erg/(s*cm**2*Angstrom)")
+            self.modify_flux_header(
+                2, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
+            )
 
         except Exception as e:
             self.logger.error(str(e))
@@ -3761,7 +3791,9 @@ class SpectrumOneD:
                 )
             else:
                 # Put the data in ImageHDUs
-                telluric_profile_ImageHDU = fits.ImageHDU(self.telluric_profile)
+                telluric_profile_ImageHDU = fits.ImageHDU(
+                    self.telluric_profile
+                )
 
             # Create an empty HDU list and populate with ImageHDUs
             self.telluric_profile_hdulist = fits.HDUList()
@@ -3839,7 +3871,9 @@ class SpectrumOneD:
                 flux_sky_telluric_corrected_ImageHDU
             ]
 
-            hdu_names = self.ext_name[self.hdu_order["flux_telluric_corrected"]]
+            hdu_names = self.ext_name[
+                self.hdu_order["flux_telluric_corrected"]
+            ]
 
             # Note that wave_start is the centre of the starting bin
             self.modify_flux_telluric_corrected_header(
@@ -4179,12 +4213,16 @@ class SpectrumOneD:
             hdu_names = self.ext_name[self.hdu_order["flux_resampled"]]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_flux_resampled_header(0, "set", "EXTNAME", hdu_names[0])
+            self.modify_flux_resampled_header(
+                0, "set", "EXTNAME", hdu_names[0]
+            )
             self.modify_flux_resampled_header(
                 0, "set", "LABEL", "Flux resampled"
             )
             self.modify_flux_resampled_header(0, "set", "CRPIX1", 1.00e00)
-            self.modify_flux_resampled_header(0, "set", "CDELT1", self.wave_bin)
+            self.modify_flux_resampled_header(
+                0, "set", "CDELT1", self.wave_bin
+            )
             self.modify_flux_resampled_header(
                 0, "set", "CRVAL1", self.wave_start
             )
@@ -4193,20 +4231,28 @@ class SpectrumOneD:
             self.modify_flux_resampled_header(
                 0, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
-            self.modify_flux_resampled_header(0, "set", "XPOSURE", self.exptime)
+            self.modify_flux_resampled_header(
+                0, "set", "XPOSURE", self.exptime
+            )
             self.modify_flux_resampled_header(0, "set", "GAIN", self.gain)
             self.modify_flux_resampled_header(
                 0, "set", "RNOISE", self.readnoise
             )
             self.modify_flux_resampled_header(0, "set", "SEEING", self.seeing)
-            self.modify_flux_resampled_header(0, "set", "AIRMASS", self.airmass)
+            self.modify_flux_resampled_header(
+                0, "set", "AIRMASS", self.airmass
+            )
 
-            self.modify_flux_resampled_header(1, "set", "EXTNAME", hdu_names[1])
+            self.modify_flux_resampled_header(
+                1, "set", "EXTNAME", hdu_names[1]
+            )
             self.modify_flux_resampled_header(
                 1, "set", "LABEL", "Flux resampled (Uncertainty)"
             )
             self.modify_flux_resampled_header(1, "set", "CRPIX1", 1.00e00)
-            self.modify_flux_resampled_header(1, "set", "CDELT1", self.wave_bin)
+            self.modify_flux_resampled_header(
+                1, "set", "CDELT1", self.wave_bin
+            )
             self.modify_flux_resampled_header(
                 1, "set", "CRVAL1", self.wave_start
             )
@@ -4216,12 +4262,16 @@ class SpectrumOneD:
                 1, "set", "BUNIT", "erg/(s*cm**2*Angstrom)"
             )
 
-            self.modify_flux_resampled_header(2, "set", "EXTNAME", hdu_names[2])
+            self.modify_flux_resampled_header(
+                2, "set", "EXTNAME", hdu_names[2]
+            )
             self.modify_flux_resampled_header(
                 2, "set", "LABEL", "Flux resampled (Sky)"
             )
             self.modify_flux_resampled_header(2, "set", "CRPIX1", 1.00e00)
-            self.modify_flux_resampled_header(2, "set", "CDELT1", self.wave_bin)
+            self.modify_flux_resampled_header(
+                2, "set", "CDELT1", self.wave_bin
+            )
             self.modify_flux_resampled_header(
                 2, "set", "CRVAL1", self.wave_start
             )
@@ -4270,12 +4320,16 @@ class SpectrumOneD:
             hdu_names = self.ext_name[self.hdu_order["atm_ext_resampled"]]
 
             # Note that wave_start is the centre of the starting bin
-            self.modify_atm_ext_resampled_header("set", "EXTNAME", hdu_names[0])
+            self.modify_atm_ext_resampled_header(
+                "set", "EXTNAME", hdu_names[0]
+            )
             self.modify_atm_ext_resampled_header(
                 "set", "LABEL", "Atmopheric extinction correction factor"
             )
             self.modify_atm_ext_resampled_header("set", "CRPIX1", 1.00e00)
-            self.modify_atm_ext_resampled_header("set", "CDELT1", self.wave_bin)
+            self.modify_atm_ext_resampled_header(
+                "set", "CDELT1", self.wave_bin
+            )
             self.modify_atm_ext_resampled_header(
                 "set", "CRVAL1", self.wave_start
             )
@@ -4287,7 +4341,9 @@ class SpectrumOneD:
             self.logger.warning(str(e))
 
             # Set it to None if the above failed
-            self.logger.warning("atm_ext_resampled ImageHDU cannot be created.")
+            self.logger.warning(
+                "atm_ext_resampled ImageHDU cannot be created."
+            )
             self.atm_ext_resampled_hdulist = None
 
     def create_flux_resampled_atm_ext_corrected_fits(self):
@@ -5400,8 +5456,12 @@ class SpectrumOneD:
                 if (
                     self.flux_resampled_telluric_corrected_hdulist is not None
                 ) and (self.flux_resampled_telluric_corrected is not None):
-                    hdu_output += self.flux_resampled_telluric_corrected_hdulist
-                    self.hdu_content["flux_resampled_telluric_corrected"] = True
+                    hdu_output += (
+                        self.flux_resampled_telluric_corrected_hdulist
+                    )
+                    self.hdu_content[
+                        "flux_resampled_telluric_corrected"
+                    ] = True
 
             if "flux_resampled_atm_ext_telluric_corrected" in output_split:
                 if not self.hdu_content[

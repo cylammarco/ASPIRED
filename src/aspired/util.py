@@ -45,7 +45,6 @@ def bfixpix(data, badmask, n_nearest=4, retdat=False):
     nbad = len(badx)
 
     if retdat:
-
         data = np.array(data, copy=True)
 
     for i in range(nbad):
@@ -53,7 +52,6 @@ def bfixpix(data, badmask, n_nearest=4, retdat=False):
         num_nearby_good_pixels = 0
 
         while num_nearby_good_pixels < n_nearest:
-
             rad += 1
             xmin = max(0, badx[i] - rad)
             xmax = min(n_x, badx[i] + rad)
@@ -82,11 +80,9 @@ def bfixpix(data, badmask, n_nearest=4, retdat=False):
         data[badx[i], bady[i]] = 1.0 * local_sum / local_denominator
 
     if retdat:
-
         ret = data
 
     else:
-
         ret = None
 
     return ret
@@ -121,14 +117,11 @@ def create_cutoff_mask(
     """
 
     if isinstance(cutoff, (list, np.ndarray)):
-
         if len(cutoff) == 2:
-
             lower_limit = cutoff[0]
             upper_limit = cutoff[1]
 
         else:
-
             err_msg = (
                 "Please supply a list or array for the cutoff. The "
                 f"given cutoff is {cutoff} and and a size of {len(cutoff)}."
@@ -137,12 +130,10 @@ def create_cutoff_mask(
             raise RuntimeError(err_msg)
 
     elif isinstance(cutoff, (int, float)):
-
         lower_limit = -1e10
         upper_limit = cutoff
 
     else:
-
         err_msg = (
             "Please supply a numeric value for the cutoff. "
             f"The given cutoff is {cutoff} of type {type(cutoff)}."
@@ -153,18 +144,15 @@ def create_cutoff_mask(
     cutoff_mask = (data > upper_limit) | (data < lower_limit)
 
     if grow:
-
         cutoff_mask = grow_mask(
             cutoff_mask, iterations=iterations, diagonal=diagonal
         )
 
     if (data > upper_limit).any():
-
         logging.warning("Saturated pixels detected.")
         return cutoff_mask, True
 
     else:
-
         return cutoff_mask, False
 
 
@@ -194,18 +182,15 @@ def create_bad_pixel_mask(data, grow=False, iterations=1, diagonal=False):
     bad_pixel_mask = ~np.isfinite(data) | np.isnan(data)
 
     if grow:
-
         bad_pixel_mask = grow_mask(
             mask=bad_pixel_mask, iterations=iterations, diagonal=diagonal
         )
 
     if bad_pixel_mask.any():
-
         logging.warning("Bad pixels detected.")
         return bad_pixel_mask, True
 
     else:
-
         return bad_pixel_mask, False
 
 
@@ -268,11 +253,9 @@ def grow_mask(mask, iterations, diagonal):
     """
 
     if diagonal:
-
         struct = ndimage.generate_binary_structure(2, 2)
 
     else:
-
         struct = ndimage.generate_binary_structure(2, 1)
 
     mask_grown = ndimage.binary_dilation(
@@ -308,16 +291,13 @@ def get_continuum(x, y, **kwargs):
     )
 
     if "lowess_frac" not in kwargs:
-
         kwargs["frac"] = 0.01
 
     else:
-
         kwargs["frac"] = copy.deepcopy(kwargs["lowess_frac"])
         kwargs.pop("lowess_frac")
 
     if "return_sorted" not in kwargs:
-
         kwargs["return_sorted"] = False
 
     x = np.asarray(x, dtype=float)

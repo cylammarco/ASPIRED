@@ -78,31 +78,24 @@ class Reducer:
         self.logger = logging.getLogger(logger_name)
 
         if not isinstance(verbose, bool):
-
             raise ValueError("Please provide a boolean value for `verbose`.")
 
         if (log_level.lower() == "critical") or (not verbose):
-
             self.logger.setLevel(logging.CRITICAL)
 
         elif log_level.lower() == "error":
-
             self.logger.setLevel(logging.ERROR)
 
         elif log_level.lower() == "warning":
-
             self.logger.setLevel(logging.WARNING)
 
         elif log_level.lower() == "info":
-
             self.logger.setLevel(logging.INFO)
 
         elif log_level.lower() == "debug":
-
             self.logger.setLevel(logging.DEBUG)
 
         else:
-
             raise ValueError(f"Unknonw logging level: {log_level}.")
 
         formatter = logging.Formatter(
@@ -112,20 +105,16 @@ class Reducer:
         )
 
         if log_file_name is None:
-
             # Only print log to screen
             self.handler = logging.StreamHandler()
 
         else:
-
             if log_file_name == "default":
-
                 t_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
                 log_file_name = f"{logger_name}_{t_str}.log"
 
             # Save log to file
             if log_file_folder == "default":
-
                 log_file_folder = ""
 
             self.handler = logging.FileHandler(
@@ -134,7 +123,6 @@ class Reducer:
 
         self.handler.setFormatter(formatter)
         if self.logger.hasHandlers():
-
             self.logger.handlers.clear()
 
         self.logger.addHandler(self.handler)
@@ -350,47 +338,37 @@ class Reducer:
         """
 
         if delimiter is not None:
-
             self.delimiter = delimiter
             self.ftype = None
 
         else:
-
             self.ftype = ftype
 
             if ftype == "csv":
-
                 self.delimiter = ","
 
             elif ftype == "tsv":
-
                 self.delimiter = "\t"
 
             elif ftype == "ascii":
-
                 self.delimiter = " "
 
         # import file with first column as image type and second column as
         # file path
         if isinstance(filelist, str):
-
             if os.path.isabs(filelist):
-
                 self.filelist = filelist
 
             else:
-
                 self.filelist = os.path.abspath(filelist)
 
             self.logger.debug("The filelist is: %s", self.filelist)
 
             # Check if running on Windows
             if os.name == "nt":
-
                 self.filelist_abspath = self.filelist.rsplit("\\", 1)[0]
 
             else:
-
                 self.filelist_abspath = self.filelist.rsplit("/", 1)[0]
 
             self.logger.debug(
@@ -403,15 +381,12 @@ class Reducer:
             )
 
             if np.shape(self.filelist)[1] == 3:
-
                 self.logger.debug("filelist contains 3 columns.")
 
             elif np.shape(self.filelist)[1] == 2:
-
                 self.logger.debug("filelist contains 2 column.")
 
             else:
-
                 error_msg = (
                     "Please provide a text file with 2 or 3 "
                     + "columns: where the first column is the image type "
@@ -422,20 +397,16 @@ class Reducer:
                 raise RuntimeError(error_msg)
 
         elif isinstance(filelist, np.ndarray):
-
             self.filelist = filelist
             self.filelist_abspath = ""
             self.logger.info("Loading filelist from an numpy.ndarray.")
             if np.shape(self.filelist)[1] == 3:
-
                 self.logger.debug("filelist contains 3 columns.")
 
             elif np.shape(self.filelist)[1] == 2:
-
                 self.logger.debug("filelist contains 2 columns.")
 
             else:
-
                 error_msg = (
                     "Please provide a numpy.ndarray with at "
                     + "least 2 columns: where the first column is the "
@@ -446,29 +417,24 @@ class Reducer:
                 raise RuntimeError(error_msg)
 
         else:
-
             error_msg = "Please provide a file path to the file list."
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
         if np.shape(self.filelist)[1] == 3:
-
             self.logger.debug("filelist contains 3 columns.")
             self.imtype = self.filelist[:, 0].astype("object")
             self.impath = self.filelist[:, 1].astype("object")
             self.hdunum = self.filelist[:, 2].astype("int")
 
         else:
-
             self.logger.debug("filelist contains 2 columns.")
             self.imtype = self.filelist[:, 0].astype("object")
             self.impath = self.filelist[:, 1].astype("object")
             self.hdunum = np.zeros(len(self.imtype)).astype("int")
 
         for i, path_i in enumerate(self.impath):
-
             if not os.path.isabs(path_i):
-
                 self.impath[i] = os.path.join(
                     self.filelist_abspath, path_i.strip()
                 )
@@ -490,7 +456,6 @@ class Reducer:
 
         # Load the data
         if auto_load:
-
             self.load_data()
 
     def set_saxis(self, saxis: int = None):
@@ -505,21 +470,16 @@ class Reducer:
         """
 
         if saxis is None:
-
             if "SAXIS" in self.light_ccddata[0].header:
-
                 self.saxis = int(self.light_ccddata[0].header["SAXIS"])
 
             else:
-
                 self.saxis = 1
 
         elif np.in1d(saxis, [0, 1]).any():
-
             self.saxis = saxis
 
         else:
-
             self.saxis = 1
 
         self.logger.info(f"Saxis is found/set to be {self.saxis}.")
@@ -759,7 +719,6 @@ class Reducer:
 
         # combinetype_light
         if combinetype_light is None:
-
             self.combinetype_light = self.combinetype_light_default
             self.logger.warning(
                 "Unknown combinetype_light, it is set as "
@@ -767,13 +726,10 @@ class Reducer:
             )
 
         elif isinstance(combinetype_light, (float, int)):
-
             pass
 
         elif isinstance(combinetype_light, str):
-
             if combinetype_light in ["average", "median"]:
-
                 # use the given readnoise value
                 self.combinetype_light = combinetype_light
                 self.logger.info(
@@ -781,7 +737,6 @@ class Reducer:
                 )
 
             else:
-
                 self.combinetype_light = self.combinetype_light_default
                 self.logger.warning(
                     "Unknown combinetype_light, it is set as "
@@ -789,7 +744,6 @@ class Reducer:
                 )
 
         else:
-
             self.combinetype_light = self.combinetype_light_default
             self.logger.warning(
                 "Unknown combinetype_light, it is set as "
@@ -798,7 +752,6 @@ class Reducer:
 
         # sigma_clipping_light
         if sigma_clipping_light is None:
-
             self.sigma_clipping_light = self.sigma_clipping_light_default
             self.logger.warning(
                 "Unknown sigma_clipping_light, it is set to "
@@ -806,15 +759,12 @@ class Reducer:
             )
 
         elif isinstance(sigma_clipping_light, (float, int)):
-
             pass
 
         elif isinstance(sigma_clipping_light, bool):
-
             self.sigma_clipping_light = sigma_clipping_light
 
         else:
-
             self.sigma_clipping_light = self.sigma_clipping_light_default
             self.logger.warning(
                 "Unknown sigma_clipping_light, it is set to %s.",
@@ -823,7 +773,6 @@ class Reducer:
 
         # clip_low_light
         if clip_low_light is None:
-
             self.clip_low_light = self.clip_low_light_default
             self.logger.warning(
                 "Unknown sigma_clipping_light, it is set to %s.",
@@ -831,17 +780,13 @@ class Reducer:
             )
 
         elif isinstance(clip_low_light, (float, int)):
-
             if clip_low_light > 0:
-
                 self.clip_low_light = clip_low_light
 
             else:
-
                 pass
 
         else:
-
             self.clip_low_light = self.clip_low_light_default
             self.logger.warning(
                 "Unknown clip_low_light, it is set to %s.", self.clip_low_light
@@ -849,7 +794,6 @@ class Reducer:
 
         # clip_high_light
         if clip_high_light is None:
-
             self.clip_high_light = self.clip_high_light_default
             self.logger.warning(
                 "Unknown sigma_clipping_light, it is set to %s.",
@@ -857,17 +801,13 @@ class Reducer:
             )
 
         elif isinstance(clip_high_light, (float, int)):
-
             if clip_high_light > 0:
-
                 self.clip_high_light = clip_high_light
 
             else:
-
                 pass
 
         else:
-
             self.clip_high_light = self.clip_high_light_default
             self.logger.warning(
                 "Unknown clip_high_light, it is set to %s.",
@@ -876,22 +816,17 @@ class Reducer:
 
         # exptime_light
         if exptime_light is None:
-
             self.exptime_light = 1.0
             self.logger.warning("Unknown exptime_light, it is set to 1.0.")
 
         elif isinstance(exptime_light, (float, int)):
-
             if exptime_light > 0:
-
                 self.exptime_light = exptime_light
 
             else:
-
                 pass
 
         else:
-
             self.exptime_light = self.exptime_light_default
             self.logger.warning(
                 "Unknown exptime_light, it is set to %s.", self.exptime_light
@@ -899,7 +834,6 @@ class Reducer:
 
         # exptime_light_keyword
         if exptime_light_keyword is None:
-
             self.exptime_light_keyword = self.exptime_light_keyword_default
             self.logger.warning(
                 "Unknown exptime_light_keyword, it is set to %s.",
@@ -907,15 +841,12 @@ class Reducer:
             )
 
         elif isinstance(exptime_light_keyword, (float, int)):
-
             pass
 
         elif isinstance(exptime_light_keyword, str):
-
             self.exptime_light_keyword = exptime_light_keyword
 
         else:
-
             self.exptime_light_keyword = self.exptime_light_keyword_default
             self.logger.warning(
                 "Unknown exptime_light_keyword, it is set to %s.",
@@ -940,7 +871,6 @@ class Reducer:
         """
 
         if combinetype_dark is None:
-
             self.combinetype_dark = self.combinetype_dark_default
             self.logger.warning(
                 "Unknown combinetype_dark, it is set as %s.",
@@ -948,15 +878,11 @@ class Reducer:
             )
 
         else:
-
             if isinstance(combinetype_dark, (float, int)):
-
                 pass
 
             elif isinstance(combinetype_dark, str):
-
                 if combinetype_dark in ["average", "median"]:
-
                     # use the given readnoise value
                     self.combinetype_dark = combinetype_dark
                     self.logger.info(
@@ -964,7 +890,6 @@ class Reducer:
                     )
 
                 else:
-
                     self.combinetype_dark = self.combinetype_dark_default
                     self.logger.warning(
                         "Unknown combinetype_dark, it is set as %s.",
@@ -972,7 +897,6 @@ class Reducer:
                     )
 
             else:
-
                 self.combinetype_dark = self.combinetype_dark_default
                 self.logger.warning(
                     "Unknown combinetype_dark, it is set as %s.",
@@ -980,7 +904,6 @@ class Reducer:
                 )
 
         if sigma_clipping_dark is None:
-
             self.sigma_clipping_dark = self.sigma_clipping_dark_default
             self.logger.warning(
                 "Unknown sigma_clipping_dark, it is set to %s.",
@@ -988,15 +911,12 @@ class Reducer:
             )
 
         elif isinstance(sigma_clipping_dark, (float, int)):
-
             pass
 
         elif isinstance(sigma_clipping_dark, bool):
-
             self.sigma_clipping_dark = sigma_clipping_dark
 
         else:
-
             self.sigma_clipping_dark = self.sigma_clipping_dark_default
             self.logger.warning(
                 "Unknown sigma_clipping_dark, it is set to %s.",
@@ -1005,7 +925,6 @@ class Reducer:
 
         # clip_low_dark
         if clip_low_dark is None:
-
             self.clip_low_dark = self.clip_low_dark_default
             self.logger.warning(
                 "Unknown sigma_clipping_dark, it is set to %s.",
@@ -1013,17 +932,13 @@ class Reducer:
             )
 
         elif isinstance(clip_low_dark, (float, int)):
-
             if clip_low_dark > 0:
-
                 self.clip_low_dark = clip_low_dark
 
             else:
-
                 pass
 
         else:
-
             self.clip_low_dark = self.clip_low_dark_default
             self.logger.warning(
                 "Unknown clip_low_dark, it is set to %s.", self.clip_low_dark
@@ -1031,7 +946,6 @@ class Reducer:
 
         # clip_high_dark
         if clip_high_dark is None:
-
             self.clip_high_dark = self.clip_high_dark_default
             self.logger.warning(
                 "Unknown sigma_clipping_dark, it is set to %s.",
@@ -1039,17 +953,13 @@ class Reducer:
             )
 
         elif isinstance(clip_high_dark, (float, int)):
-
             if clip_high_dark > 0:
-
                 self.clip_high_dark = clip_high_dark
 
             else:
-
                 pass
 
         else:
-
             self.clip_high_dark = self.clip_high_dark_default
             self.logger.warning(
                 "Unknown clip_high_dark, it is set to %s.", self.clip_high_dark
@@ -1057,7 +967,6 @@ class Reducer:
 
         # exptime_dark
         if exptime_dark is None:
-
             self.exptime_dark = self.exptime_dark_default
             self.logger.warning(
                 "Unknown sigma_clipping_dark, it is set to %s.",
@@ -1065,19 +974,14 @@ class Reducer:
             )
 
         else:
-
             if isinstance(exptime_dark, (float, int)):
-
                 if exptime_dark > 0:
-
                     self.exptime_dark = exptime_dark
 
                 else:
-
                     pass
 
             else:
-
                 self.exptime_dark = self.exptime_dark_default
                 self.logger.warning(
                     "Unknown exptime_dark, it is set to %s.", self.exptime_dark
@@ -1085,7 +989,6 @@ class Reducer:
 
         # exptime_dark_keyword
         if exptime_dark_keyword is None:
-
             self.exptime_dark_keyword = self.exptime_dark_default
             self.logger.warning(
                 "Unknown exptime_dark_keyword, it is set to %s.",
@@ -1093,17 +996,13 @@ class Reducer:
             )
 
         else:
-
             if isinstance(exptime_dark_keyword, (float, int)):
-
                 pass
 
             elif isinstance(exptime_dark_keyword, str):
-
                 self.exptime_dark_keyword = exptime_dark_keyword
 
             else:
-
                 self.exptime_dark_keyword = self.exptime_dark_keyword_default
                 self.logger.warning(
                     "Unknown exptime_dark_keyword, it is set to %s.",
@@ -1129,7 +1028,6 @@ class Reducer:
 
         # combinetype_flat
         if combinetype_flat is None:
-
             self.combinetype_flat = self.combinetype_flat_default
             self.logger.warning(
                 "Unknown combinetype_flat, it is set as %s.",
@@ -1137,13 +1035,10 @@ class Reducer:
             )
 
         elif isinstance(combinetype_flat, (float, int)):
-
             pass
 
         elif isinstance(combinetype_flat, str):
-
             if combinetype_flat in ["average", "median"]:
-
                 # use the given readnoise value
                 self.combinetype_flat = combinetype_flat
                 self.logger.info(
@@ -1151,7 +1046,6 @@ class Reducer:
                 )
 
             else:
-
                 self.combinetype_flat = self.combinetype_flat_default
                 self.logger.warning(
                     "Unknown combinetype_flat, it is set as %s.",
@@ -1159,7 +1053,6 @@ class Reducer:
                 )
 
         else:
-
             self.combinetype_flat = self.combinetype_flat_default
             self.logger.warning(
                 "Unknown combinetype_flat, it is set as %s.",
@@ -1168,7 +1061,6 @@ class Reducer:
 
         # sigma_clipping_flat
         if sigma_clipping_flat is None:
-
             self.sigma_clipping_flat = self.sigma_clipping_flat_default
             self.logger.warning(
                 "Unknown sigma_clipping_flat, it is set to %s.",
@@ -1176,15 +1068,12 @@ class Reducer:
             )
 
         elif isinstance(sigma_clipping_flat, (float, int)):
-
             pass
 
         elif isinstance(sigma_clipping_flat, bool):
-
             self.sigma_clipping_flat = sigma_clipping_flat
 
         else:
-
             self.sigma_clipping_flat = self.sigma_clipping_flat_default
             self.logger.warning(
                 "Unknown sigma_clipping_flat, it is set to %s.",
@@ -1193,7 +1082,6 @@ class Reducer:
 
         # clip_low_flat
         if clip_low_flat is None:
-
             self.clip_low_flat = self.clip_low_flat_default
             self.logger.warning(
                 "Unknown sigma_clipping_flat, it is set to %s.",
@@ -1201,17 +1089,13 @@ class Reducer:
             )
 
         elif isinstance(clip_low_flat, (float, int)):
-
             if clip_low_flat > 0:
-
                 self.clip_low_flat = clip_low_flat
 
             else:
-
                 pass
 
         else:
-
             self.clip_low_flat = self.clip_low_flat_default
             self.logger.warning(
                 "Unknown clip_low_flat, it is set to %s.", self.clip_low_flat
@@ -1219,7 +1103,6 @@ class Reducer:
 
         # clip_high_flat
         if clip_high_flat is None:
-
             self.clip_high_flat = self.clip_high_flat_default
             self.logger.warning(
                 "Unknown sigma_clipping_flat, it is set to %s.",
@@ -1227,17 +1110,13 @@ class Reducer:
             )
 
         elif isinstance(clip_high_flat, (float, int)):
-
             if clip_high_flat > 0:
-
                 self.clip_high_flat = clip_high_flat
 
             else:
-
                 pass
 
         else:
-
             self.clip_high_flat = self.clip_high_flat_default
             self.logger.warning(
                 "Unknown clip_high_flat, it is set to %s.", self.clip_high_flat
@@ -1245,7 +1124,6 @@ class Reducer:
 
         # exptime_flat
         if exptime_flat is None:
-
             self.exptime_flat = self.exptime_flat_default
             self.logger.warning(
                 "Unknown sigma_clipping_flat, it is set to %s.",
@@ -1253,17 +1131,13 @@ class Reducer:
             )
 
         elif isinstance(exptime_flat, (float, int)):
-
             if exptime_flat > 0:
-
                 self.exptime_flat = exptime_flat
 
             else:
-
                 pass
 
         else:
-
             self.exptime_flat = self.exptime_flat_default
             self.logger.warning(
                 "Unknown exptime_flat, it is set to %s.", self.exptime_flat
@@ -1271,7 +1145,6 @@ class Reducer:
 
         # exptime_flat_keyword
         if exptime_flat_keyword is None:
-
             self.exptime_flat_keyword = self.exptime_flat_keyword_default
             self.logger.warning(
                 "Unknown exptime_flat_keyword, it is set to %s.",
@@ -1279,15 +1152,12 @@ class Reducer:
             )
 
         elif isinstance(exptime_flat_keyword, (float, int)):
-
             pass
 
         elif isinstance(exptime_flat_keyword, str):
-
             self.exptime_flat_keyword = exptime_flat_keyword
 
         else:
-
             self.exptime_flat_keyword = self.exptime_flat_keyword_default
             self.logger.warning(
                 "Unknown exptime_flat_keyword, it is set to %s.",
@@ -1310,7 +1180,6 @@ class Reducer:
         """
 
         if combinetype_bias is None:
-
             self.combinetype_bias = self.combinetype_bias_default
             self.logger.warning(
                 "Unknown combinetype_bias, it is set as %s.",
@@ -1318,13 +1187,10 @@ class Reducer:
             )
 
         elif isinstance(combinetype_bias, (float, int)):
-
             pass
 
         elif isinstance(combinetype_bias, str):
-
             if combinetype_bias in ["average", "median"]:
-
                 # use the given readnoise value
                 self.combinetype_bias = combinetype_bias
                 self.logger.info(
@@ -1332,21 +1198,18 @@ class Reducer:
                 )
 
             else:
-
                 self.combinetype_bias = self.combinetype_bias_default
                 self.logger.warning(
                     "Unknown combinetype_bias, it is set as median."
                 )
 
         else:
-
             self.combinetype_bias = self.combinetype_bias_default
             self.logger.warning(
                 "Unknown combinetype_bias, it is set as median."
             )
 
         if sigma_clipping_bias is None:
-
             self.sigma_clipping_bias = self.sigma_clipping_bias_default
             self.logger.warning(
                 "Unknown sigma_clipping_bias, it is set to %s.",
@@ -1354,15 +1217,12 @@ class Reducer:
             )
 
         elif isinstance(sigma_clipping_bias, (float, int)):
-
             pass
 
         elif isinstance(sigma_clipping_bias, bool):
-
             self.sigma_clipping_bias = sigma_clipping_bias
 
         else:
-
             self.sigma_clipping_bias = self.sigma_clipping_bias_default
             self.logger.warning(
                 "Unknown sigma_clipping_bias, it is set to %s.",
@@ -1370,7 +1230,6 @@ class Reducer:
             )
 
         if clip_low_bias is None:
-
             self.clip_low_bias = self.clip_high_bias_default
             self.logger.warning(
                 "Unknown sigma_clipping_bias, it is set to %s.",
@@ -1378,24 +1237,19 @@ class Reducer:
             )
 
         elif isinstance(clip_low_bias, (float, int)):
-
             if clip_low_bias > 0:
-
                 self.clip_low_bias = clip_low_bias
 
             else:
-
                 pass
 
         else:
-
             self.clip_low_bias = self.clip_high_bias_default
             self.logger.warning(
                 "Unknown clip_low_bias, it is set to %s.", self.clip_high_bias
             )
 
         if clip_high_bias is None:
-
             self.clip_high_bias = self.clip_high_bias_default
             self.logger.warning(
                 "Unknown sigma_clipping_bias, it is set to %s.",
@@ -1403,17 +1257,13 @@ class Reducer:
             )
 
         elif isinstance(clip_high_bias, (float, int)):
-
             if clip_high_bias > 0:
-
                 self.clip_high_bias = clip_high_bias
 
             else:
-
                 pass
 
         else:
-
             self.clip_high_bias = self.clip_high_bias_default
             self.logger.warning(
                 "Unknown clip_high_bias, it is set to %s.", self.clip_high_bias
@@ -1436,7 +1286,6 @@ class Reducer:
 
         # combinetype_arc
         if combinetype_arc is None:
-
             self.combinetype_arc = self.combinetype_arc_default
             self.logger.warning(
                 "Unknown combinetype_arc, it is set as %s.",
@@ -1444,13 +1293,10 @@ class Reducer:
             )
 
         elif isinstance(combinetype_arc, (float, int)):
-
             pass
 
         elif isinstance(combinetype_arc, str):
-
             if combinetype_arc in ["average", "median"]:
-
                 # use the given readnoise value
                 self.combinetype_arc = combinetype_arc
                 self.logger.info(
@@ -1458,7 +1304,6 @@ class Reducer:
                 )
 
             else:
-
                 self.combinetype_arc = self.combinetype_arc_default
                 self.logger.warning(
                     "Unknown combinetype_arc, it is set as %s.",
@@ -1466,7 +1311,6 @@ class Reducer:
                 )
 
         else:
-
             self.combinetype_arc = self.combinetype_arc_default
             self.logger.warning(
                 "Unknown combinetype_arc, it is set as %s.",
@@ -1475,7 +1319,6 @@ class Reducer:
 
         # sigma_clipping_arc
         if sigma_clipping_arc is None:
-
             self.sigma_clipping_arc = self.sigma_clipping_arc_default
             self.logger.warning(
                 "Unknown sigma_clipping_arc, it is set to %s.",
@@ -1483,17 +1326,13 @@ class Reducer:
             )
 
         else:
-
             if isinstance(sigma_clipping_arc, (float, int)):
-
                 pass
 
             elif isinstance(sigma_clipping_arc, bool):
-
                 self.sigma_clipping_arc = sigma_clipping_arc
 
             else:
-
                 self.sigma_clipping_arc = self.sigma_clipping_arc_default
                 self.logger.warning(
                     "Unknown sigma_clipping_arc, it is set to %s.",
@@ -1502,7 +1341,6 @@ class Reducer:
 
         # clip_low_arc
         if clip_low_arc is None:
-
             self.clip_low_arc = self.clip_low_arc_default
             self.logger.warning(
                 "Unknown sigma_clipping_arc, it is set to %s.",
@@ -1510,23 +1348,18 @@ class Reducer:
             )
 
         elif isinstance(clip_low_arc, (float, int)):
-
             if clip_low_arc > 0:
-
                 self.clip_low_arc = clip_low_arc
 
             else:
-
                 pass
 
         else:
-
             self.clip_low_arc = self.clip_low_arc_default
             self.logger.warning("Unknown clip_low_arc, it is set to 5.")
 
         # clip_high_arc
         if clip_high_arc is None:
-
             self.clip_high_arc = self.clip_high_arc_default
             self.logger.warning(
                 "Unknown sigma_clipping_arc, it is set to %s.",
@@ -1534,17 +1367,13 @@ class Reducer:
             )
 
         elif isinstance(clip_high_arc, (float, int)):
-
             if clip_high_arc > 0:
-
                 self.clip_high_arc = clip_high_arc
 
             else:
-
                 pass
 
         else:
-
             self.clip_high_arc = self.clip_high_arc_default
             self.logger.warning(
                 "Unknown clip_high_arc, it is set to %s.", self.clip_high_arc
@@ -1565,25 +1394,19 @@ class Reducer:
 
         # cosmicray
         if isinstance(cosmicray, int):
-
             if cosmicray == 1:
-
                 self.cosmicray = True
 
             elif cosmicray == 0:
-
                 self.cosmicray = False
 
             else:
-
                 pass
 
         elif isinstance(cosmicray, bool):
-
             self.cosmicray = cosmicray
 
         else:
-
             self.cosmicray = self.cosmicray_default
             self.logger.warning(
                 "Unknown cosmicray, it is set to %s.", self.cosmicray
@@ -1591,33 +1414,27 @@ class Reducer:
 
         # fsmode in detect_cosmics()
         if fsmode is None:
-
             self.fsmode = self.fsmode_default
             self.logger.warning(
                 "Unknown fsmode, it is set as %s.", self.fsmode_default
             )
 
         elif isinstance(fsmode, (float, int)):
-
             pass
 
         elif isinstance(fsmode, str):
-
             if fsmode in ["convolve", "median"]:
-
                 # use the given fsmode value
                 self.fsmode = fsmode
                 self.logger.info("fsmode is set to %s.", self.fsmode)
 
             else:
-
                 self.fsmode = self.fsmode_default
                 self.logger.warning(
                     "Unknown fsmode, it is set as %s.", self.fsmode
                 )
 
         else:
-
             self.fsmode = self.fsmode_default
             self.logger.warning(
                 "Unknown fsmode, it is set as %s.", self.fsmode
@@ -1625,7 +1442,6 @@ class Reducer:
 
         # psfmodel in detect_cosmics() (and the two added modes)
         if psfmodel is None:
-
             self.psfmodel = self.psfmodel_default
             self.logger.warning(
                 "psfmodel is given as None, it is set as %s.",
@@ -1633,11 +1449,9 @@ class Reducer:
             )
 
         elif isinstance(psfmodel, (float, int)):
-
             pass
 
         elif isinstance(psfmodel, str):
-
             if psfmodel in [
                 "gauss",
                 "gaussx",
@@ -1646,20 +1460,17 @@ class Reducer:
                 "gaussyx",
                 "moffat",
             ]:
-
                 # use the given psfmodel value
                 self.psfmodel = psfmodel
                 self.logger.info("psfmodel is set to %s.", self.psfmodel)
 
             else:
-
                 self.psfmodel = self.psfmodel_default
                 self.logger.warning(
                     "Unknown psfmodel, it is set as %s.", self.psfmodel
                 )
 
         else:
-
             self.psfmodel = self.psfmodel_default
             self.logger.warning(
                 "Unknown psfmodel, it is set as %s.", self.psfmodel
@@ -1667,19 +1478,15 @@ class Reducer:
 
         # extra keyword arguments for detect_cosmics()
         if kwargs is None:
-
             self.cr_kwargs = self.cr_kwargs_default
 
         if isinstance(kwargs, (float, int)):
-
             pass
 
         elif isinstance(kwargs, dict):
-
             self.cr_kwargs = kwargs
 
         else:
-
             self.cr_kwargs = self.cr_kwargs_default
             self.logger.warning(
                 "Unknown cr_kwargs, it is set as %s.", self.cr_kwargs
@@ -1703,55 +1510,41 @@ class Reducer:
 
         # gain
         if isinstance(gain, (float, int)):
-
             if gain > 0:
-
                 self.gain = gain
 
             else:
-
                 pass
 
         else:
-
             self.gain = self.gain_default
 
         # readnoise
         if isinstance(readnoise, (float, int)):
-
             if readnoise >= 0:
-
                 self.readnoise = readnoise
 
             else:
-
                 pass
 
         else:
-
             self.readnoise = self.readnoise_default
 
         # heal_pixels
         if isinstance(heal_pixels, (float, int)):
-
             if heal_pixels == 1:
-
                 self.heal_pixels = True
 
             elif heal_pixels == 0:
-
                 self.heal_pixels = False
 
             else:
-
                 pass
 
         elif isinstance(heal_pixels, bool):
-
             self.heal_pixels = heal_pixels
 
         else:
-
             self.heal_pixels = self.heal_pixels_default
             self.logger.warning(
                 "Unknown heal_pixels, it is set to %s.",
@@ -1760,40 +1553,30 @@ class Reducer:
 
         # cutoff
         if isinstance(cutoff, (float, int)):
-
             if cutoff > 0:
-
                 self.cutoff = cutoff
 
             else:
-
                 pass
 
         else:
-
             self.cutoff = self.cutoff_default
 
         # grow
         if isinstance(grow, (float, int)):
-
             if grow == 1:
-
                 self.grow = True
 
             elif grow == 0:
-
                 self.grow = False
 
             else:
-
                 pass
 
         elif isinstance(grow, bool):
-
             self.grow = grow
 
         else:
-
             self.grow = self.grow_default
             self.logger.warning(
                 "Unknown grow, it is set to %s.", self.grow_default
@@ -1801,40 +1584,30 @@ class Reducer:
 
         # iterations
         if isinstance(iterations, (float, int)):
-
             if iterations >= 0:
-
                 self.iterations = iterations
 
             else:
-
                 pass
 
         else:
-
             self.iterations = self.iterations_default
 
         # diagonal
         if isinstance(diagonal, (float, int)):
-
             if diagonal == 1:
-
                 self.diagonal = True
 
             elif diagonal == 0:
-
                 self.diagonal = False
 
             else:
-
                 pass
 
         elif isinstance(diagonal, bool):
-
             self.diagonal = diagonal
 
         else:
-
             self.diagonal = self.diagonal_default
             self.logger.warning(
                 "Unknown diagonal, it is set to %s.", self.diagonal_default
@@ -1853,7 +1626,6 @@ class Reducer:
         # Only load the science data, other types of image data are loaded by
         # separate methods.
         for i in range(self.light_list.size):
-
             # Open all the light frames
             self.logger.debug("Loading light frame: %s.", self.light_list[i])
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
@@ -1865,15 +1637,12 @@ class Reducer:
 
             # Cosmic ray cleaning
             if self.cosmicray:
-
                 self.logger.info(
                     "Removing cosmic rays in mode: %s.", self.psfmodel
                 )
 
                 if self.fsmode == "convolve":
-
                     if self.psfmodel == "gaussyx":
-
                         self.light_ccddata[i].data = detect_cosmics(
                             self.light_ccddata[i].data / self.gain,
                             gain=self.gain,
@@ -1893,7 +1662,6 @@ class Reducer:
                         )[1]
 
                     elif self.psfmodel == "gaussxy":
-
                         self.light_ccddata[i].data = detect_cosmics(
                             self.light_ccddata[i].data / self.gain,
                             gain=self.gain,
@@ -1913,7 +1681,6 @@ class Reducer:
                         )[1]
 
                     else:
-
                         self.light_ccddata[i].data = detect_cosmics(
                             self.light_ccddata[i].data / self.gain,
                             gain=self.gain,
@@ -1924,7 +1691,6 @@ class Reducer:
                         )[1]
 
                 elif self.fsmode == "median":
-
                     self.light_ccddata[i].data = detect_cosmics(
                         self.light_ccddata[i].data / self.gain,
                         gain=self.gain,
@@ -1935,7 +1701,6 @@ class Reducer:
                     )[1]
 
                 else:
-
                     self.logger.error("Unknown fsmode: %s", self.fsmode)
 
             self.logger.debug("Light frame header: %s.", self.light_header[i])
@@ -1955,12 +1720,10 @@ class Reducer:
             )
 
             if self.saturation_mask is None:
-
                 self.saturation_mask = saturation_mask
                 self.saturated = saturated
 
             else:
-
                 self.saturation_mask *= saturation_mask
                 self.saturated *= saturated
 
@@ -1973,10 +1736,8 @@ class Reducer:
 
         # Get the arcs if available
         if len(self.arc_list) > 0:
-
             # Combine the arcs
             for i in range(self.arc_list.size):
-
                 # Open all the light frames
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
 
@@ -1996,9 +1757,7 @@ class Reducer:
 
         # Get the darks if available
         if len(self.dark_list) > 0:
-
             for i in range(self.dark_list.size):
-
                 # Open all the dark frames
                 dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
 
@@ -2022,9 +1781,7 @@ class Reducer:
 
         # Get the flats if available
         if len(self.flat_list) > 0:
-
             for i in range(self.flat_list.size):
-
                 # Open all the flatfield frames
                 flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
 
@@ -2048,9 +1805,7 @@ class Reducer:
 
         # Get the biases if available
         if len(self.bias_list) > 0:
-
             for i in range(self.bias_list.size):
-
                 # Open all the flatfield frames
                 bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
 
@@ -2091,7 +1846,6 @@ class Reducer:
         """
 
         if isinstance(light, np.ndarray):
-
             light = CCDData(light.astype("float"), unit=u.ct)
 
         self.light_ccddata.append(light)
@@ -2112,7 +1866,6 @@ class Reducer:
         """
 
         if isinstance(arc, np.ndarray):
-
             arc = CCDData(arc.astype("float"), unit=u.ct)
 
         self.arc_ccddata.append(arc)
@@ -2139,7 +1892,6 @@ class Reducer:
         """
 
         if isinstance(flat, np.ndarray):
-
             flat = CCDData(flat.astype("float"), unit=u.ct)
 
         self.flat_ccddata.append(flat)
@@ -2167,7 +1919,6 @@ class Reducer:
         """
 
         if isinstance(dark, np.ndarray):
-
             dark = CCDData(dark.astype("float"), unit=u.ct)
 
         self.dark_ccddata.append(dark)
@@ -2188,7 +1939,6 @@ class Reducer:
         """
 
         if isinstance(bias, np.ndarray):
-
             bias = CCDData(bias.astype("float"), unit=u.ct)
 
         self.bias_ccddata.append(bias)
@@ -2199,9 +1949,7 @@ class Reducer:
         input_data: Union[fits.hdu.hdulist.HDUList, str],
         exptime_keyword: str = None,
     ):
-
         if isinstance(input_data, fits.hdu.hdulist.HDUList):
-
             input_data = input_data[0]
             self.logger.warning(
                 "An HDU list is provided, only the first HDU will be read."
@@ -2211,7 +1959,6 @@ class Reducer:
 
         # Normal case
         if len(input_shape) == 2:
-
             self.logger.debug("input_data.data is 2 dimensional.")
             input_ccddata = CCDData(input_data.data.astype("float"), unit=u.ct)
             input_header = input_data.header
@@ -2219,7 +1966,6 @@ class Reducer:
         # Try to trap common error when saving FITS file
         # Case with multiple image extensions, we only take the first one
         elif len(input_shape) == 3:
-
             self.logger.debug("input_data.data is 3 dimensional.")
             input_ccddata = CCDData(
                 input_data.data[0].astype("float"), unit=u.ct
@@ -2228,7 +1974,6 @@ class Reducer:
 
         # Case with an extra bracket when saving
         elif len(input_shape) == 4:
-
             self.logger.debug(
                 "input_data.data is 4 dimensional, there is most "
                 "likely an extra bracket, attempting to go in "
@@ -2238,21 +1983,18 @@ class Reducer:
             # In case it in a multiple extension format, we take the
             # first one only
             if len(np.shape(input_data.data[0])) == 3:
-
                 input_ccddata = CCDData(
                     input_data.data[0][0].astype("float"), unit=u.ct
                 )
                 input_header = input_data.header
 
             else:
-
                 input_ccddata = CCDData(
                     input_data.data[0].astype("float"), unit=u.ct
                 )
                 input_header = input_data.header
 
         else:
-
             error_msg = (
                 "Please check the shape/dimension of the input_data frame, "
                 "it is probably empty or has an atypical format. The shape "
@@ -2266,25 +2008,20 @@ class Reducer:
 
         # Get the exposure time for the frame
         if isinstance(exptime_keyword, str):
-
             if exptime_keyword in input_header:
-
                 exposure_time = input_header[exptime_keyword]
                 self.logger.info(
                     "Exposure time found with the supplied keyword."
                 )
 
             else:
-
                 pass
 
         else:
-
             pass
 
         # If the exposure_time is still None, loop through the default list
         if exposure_time is None:
-
             if np.in1d(self.exptime_keyword_list, input_header).any():
                 # Get the exposure time for the light frames
                 exptime_keyword_idx = int(
@@ -2301,7 +2038,6 @@ class Reducer:
                 )
 
             else:
-
                 # If exposure time cannot be found from the header and
                 # user failed to supply the exposure time, use 1 second
                 self.logger.warning(
@@ -2326,19 +2062,15 @@ class Reducer:
         """
 
         if combinetype_light is not None:
-
             self.combinetype_light = combinetype_light
 
         if sigma_clipping_light is not None:
-
             self.sigma_clipping_light = sigma_clipping_light
 
         if clip_low_light is not None:
-
             self.clip_low_light = clip_low_light
 
         if clip_high_light is not None:
-
             self.clip_high_light = clip_high_light
 
         return self._combine(
@@ -2364,19 +2096,15 @@ class Reducer:
         """
 
         if combinetype_arc is not None:
-
             self.combinetype_arc = combinetype_arc
 
         if sigma_clipping_arc is not None:
-
             self.sigma_clipping_arc = sigma_clipping_arc
 
         if clip_low_arc is not None:
-
             self.clip_low_arc = clip_low_arc
 
         if clip_high_arc is not None:
-
             self.clip_high_arc = clip_high_arc
 
         return self._combine(
@@ -2402,19 +2130,15 @@ class Reducer:
         """
 
         if combinetype_flat is not None:
-
             self.combinetype_flat = combinetype_flat
 
         if sigma_clipping_flat is not None:
-
             self.sigma_clipping_flat = sigma_clipping_flat
 
         if clip_low_flat is not None:
-
             self.clip_low_flat = clip_low_flat
 
         if clip_high_flat is not None:
-
             self.clip_high_flat = clip_high_flat
 
         return self._combine(
@@ -2440,19 +2164,15 @@ class Reducer:
         """
 
         if combinetype_dark is not None:
-
             self.combinetype_dark = combinetype_dark
 
         if sigma_clipping_dark is not None:
-
             self.sigma_clipping_dark = sigma_clipping_dark
 
         if clip_low_dark is not None:
-
             self.clip_low_dark = clip_low_dark
 
         if clip_high_dark is not None:
-
             self.clip_high_dark = clip_high_dark
 
         return self._combine(
@@ -2478,19 +2198,15 @@ class Reducer:
         """
 
         if combinetype_bias is not None:
-
             self.combinetype_bias = combinetype_bias
 
         if sigma_clipping_bias is not None:
-
             self.sigma_clipping_bias = sigma_clipping_bias
 
         if clip_low_bias is not None:
-
             self.clip_low_bias = clip_low_bias
 
         if clip_high_bias is not None:
-
             self.clip_high_bias = clip_high_bias
 
         return self._combine(
@@ -2511,41 +2227,33 @@ class Reducer:
         clip_low: float,
         clip_high: float,
     ):
-
         # Put data into a Combiner
         combiner = Combiner(ccd_data)
         weighted = False
 
         # Apply sigma clipping
         if sigma_clipping:
-
             combiner.sigma_clipping(
                 low_thresh=clip_low, high_thresh=clip_high, func=np.ma.median
             )
 
         # Image combine by median or average
         if combine_type == "median":
-
             combined_ccddata = combiner.median_combine()
 
         elif combine_type == "average":
-
             # weighted combine if exposure times are available
             if exptime:
-
                 if len(exptime) == len(ccd_data):
-
                     combiner.weights = np.array(exptime)
                     weighted = True
 
                 else:
-
                     pass
 
             combined_ccddata = combiner.average_combine()
 
         else:
-
             self.logger.error("Unknown combinetype.")
             raise RuntimeError(f"Unknown combinetype: {combine_type}.")
 
@@ -2565,13 +2273,11 @@ class Reducer:
 
         # Bias subtract
         if self.bias_main is None:
-
             self.logger.error(
                 "Main flat is not available, frame will not be flattened."
             )
 
         else:
-
             self.light_reduced = self.light_reduced.subtract(self.bias_main)
 
     def _dark_subtract(self):
@@ -2583,7 +2289,6 @@ class Reducer:
         self.dark_main, self.dark_stack_weighted = self.combine_dark()
 
         if not self.dark_filename:
-
             # Dark subtraction adjusted for exposure time
             self.light_reduced = self.light_reduced.subtract(
                 self.dark_main.divide(
@@ -2602,38 +2307,32 @@ class Reducer:
 
         # Field-flattening
         if self.flat_main is None:
-
             self.logger.warning(
                 "Main flat is not available, frame will not be flattened."
             )
 
         else:
-
             self.flat_reduced = copy.deepcopy(self.flat_main)
 
             # Dark subtract the flat field
             if self.dark_main is None:
-
                 self.logger.warning(
                     "Main dark is not available, main "
                     "flat will not be dark subtracted."
                 )
 
             else:
-
                 self.flat_reduced = self.flat_reduced.subtract(self.dark_main)
                 self.logger.info("Flat frame is flat subtracted.")
 
             # Bias subtract the flat field
             if self.bias_main is None:
-
                 self.logger.warning(
                     "Main bias is not available, main "
                     "flat will not be bias subtracted."
                 )
 
             else:
-
                 self.flat_reduced = self.flat_reduced.subtract(self.bias_main)
                 self.logger.info("Flat frame is bias subtracted.")
 
@@ -2677,7 +2376,6 @@ class Reducer:
         )
 
         if create_bad_mask:
-
             self.create_bad_mask()
 
     def create_bad_mask(self):
@@ -2687,11 +2385,9 @@ class Reducer:
         """
 
         if self.bad_pixel_mask is None:
-
             self.create_bad_pixel_mask(create_bad_mask=False)
 
         if self.saturation_mask is None:
-
             saturation_mask, saturated = create_cutoff_mask(
                 self.light_reduced,
                 self.cutoff,
@@ -2701,12 +2397,10 @@ class Reducer:
             )
 
             if self.saturation_mask is None:
-
                 self.saturation_mask = saturation_mask
                 self.saturated = saturated
 
             else:
-
                 self.saturation_mask *= saturation_mask
                 self.saturated *= saturated
 
@@ -2719,7 +2413,6 @@ class Reducer:
         """
 
         if self.light_main is None:
-
             self.light_main, self.light_stack_weighted = self.combine_light()
             self.light_total_time = np.sum(self.light_time)
 
@@ -2732,54 +2425,43 @@ class Reducer:
 
         # Process the arc
         if len(self.arc_ccddata) > 0:
-
             if self.arc_main is None:
-
                 self.arc_main, _ = self.combine_arc()
 
         # Bias subtraction
         if len(self.bias_ccddata) > 0:
-
             if self.bias_main is None:
-
                 self.bias_main, _ = self.combine_bias()
 
             self._bias_subtract()
 
         else:
-
             self.logger.warning(
                 "No bias frames. Bias subtraction is not performed."
             )
 
         # Dark subtraction
         if len(self.dark_ccddata) > 0:
-
             if self.dark_main is None:
-
                 self.dark_main, self.dark_stack_weighted = self.combine_dark()
                 self.dark_total_time = np.sum(self.dark_time)
 
             self._dark_subtract()
 
         else:
-
             self.logger.warning(
                 "No dark frames. Dark subtraction is not performed."
             )
 
         # Field flattening
         if len(self.flat_ccddata) > 0:
-
             if self.flat_main is None:
-
                 self.flat_main, self.flat_stack_weighted = self.combine_flat()
                 self.flat_total_time = np.sum(self.flat_time)
 
             self._flatfield()
 
         else:
-
             self.logger.warning(
                 "No flat frames. Field-flattening is not performed."
             )
@@ -2792,12 +2474,10 @@ class Reducer:
 
         # Heal pixel immediately
         if self.heal_pixels:
-
             self.heal_bad_pixels()
 
         # rotate the frame by 90 degrees anti-clockwise if saxis is 0
         if self.saxis == 0:
-
             self.light_reduced = np.rot90(self.light_reduced)
             self.bad_mask = np.rot90(self.bad_mask)
             self.bad_pixel_mask = np.rot90(self.bad_pixel_mask)
@@ -2822,19 +2502,15 @@ class Reducer:
         """
 
         if bad_mask is None:
-
             if self.bad_mask is None:
-
                 self.create_bad_mask()
                 self.logger.info("Created a bad_mask using the reduced data.")
 
         elif np.shape(bad_mask) == np.shape(self.light_reduced):
-
             self.bad_mask = bad_mask
             self.logger.info("Bad_mask is set to the supplied mask.")
 
         else:
-
             err_msg = (
                 "The bad_mask provided has to be the "
                 + "same shape as the data."
@@ -2858,9 +2534,7 @@ class Reducer:
 
         # Add the names of all the light frames to header
         if len(self.light_filename) > 0:
-
             for i, filename in enumerate(self.light_filename):
-
                 self.logger.debug(
                     "Light frame: %s is added to the header.",
                     filename,
@@ -2873,9 +2547,7 @@ class Reducer:
 
         # Add the names of all the biad frames to header
         if len(self.bias_filename) > 0:
-
             for i, filename in enumerate(self.bias_filename):
-
                 self.logger.debug(
                     "Bias frame: %s is added to the header.",
                     filename,
@@ -2888,9 +2560,7 @@ class Reducer:
 
         # Add the names of all the dark frames to header
         if len(self.dark_filename) > 0:
-
             for i, filename in enumerate(self.dark_filename):
-
                 self.logger.debug(
                     "Dark frame: %s is added to the header.",
                     filename,
@@ -2903,9 +2573,7 @@ class Reducer:
 
         # Add the names of all the flat frames to header
         if len(self.flat_filename) > 0:
-
             for i, filename in enumerate(self.flat_filename):
-
                 self.logger.debug(
                     "Flat frame: %s is added to the header.",
                     filename,
@@ -3229,14 +2897,12 @@ class Reducer:
         """
 
         if log:
-
             fig = go.Figure(
                 data=go.Heatmap(
                     z=np.log10(self.light_reduced), colorscale="Viridis"
                 )
             )
         else:
-
             fig = go.Figure(
                 data=go.Heatmap(z=self.light_reduced, colorscale="Viridis")
             )
@@ -3257,37 +2923,28 @@ class Reducer:
         )
 
         if filename is None:
-
             filename = "reduced_image"
 
         if save_fig:
-
             fig_type_split = fig_type.split("+")
 
             for f_type in fig_type_split:
-
                 if f_type == "iframe":
-
                     pio.write_html(
                         fig, filename + "." + f_type, auto_open=open_iframe
                     )
 
                 elif f_type in ["jpg", "png", "svg", "pdf"]:
-
                     pio.write_image(fig, filename + "." + f_type)
 
         if display:
-
             if renderer == "default":
-
                 fig.show()
 
             else:
-
                 fig.show(renderer)
 
         if return_jsonstring:
-
             return fig.to_json()
 
     def list_files(self):
@@ -3297,7 +2954,6 @@ class Reducer:
         """
 
         for i in self.filelist:
-
             print(i)
 
 
@@ -3305,7 +2961,6 @@ class ImageReduction(Reducer):
     """Wrapper class of ImageReduction that will be deprecated in the next release."""
 
     def __init_subclass__(self):
-
         import warnings
 
         warnings.warn(

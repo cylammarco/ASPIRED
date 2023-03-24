@@ -191,15 +191,12 @@ def optimal_extraction_horne86(
     is_optimal = True
 
     while (f_diff > tol) | (v_diff > tol):
-
         mask_cr = np.ones(len(P), dtype=bool)
 
         if bad_mask is not None:
-
             mask_cr = mask_cr & ~bad_mask.astype(bool)
 
         if forced:
-
             var_f = variances
 
         f0 = f1
@@ -208,18 +205,15 @@ def optimal_extraction_horne86(
         # step 6 - revise variance estimates
         # var_f is the V in Horne87
         if not forced:
-
             var_f = readnoise**2.0 + np.abs(P * f0 + sky) / gain
 
         # step 7 - cosmic ray mask, only start considering after the
         # 2nd iteration. 1 pixel is masked at a time until convergence,
         # once the pixel is masked, it will stay masked.
         if i > 1:
-
             ratio = (cosmicray_sigma**2.0 * var_f) / (f - P * f0) ** 2.0
 
             if (ratio > 1).any():
-
                 mask_cr[np.argmax(ratio)] = False
 
         denom = np.nansum((P**2.0 / var_f)[mask_cr])
