@@ -5,10 +5,14 @@
 
 import copy
 import logging
+from functools import partial
 
+from astropy import units as u
 import numpy as np
 from scipy import interpolate as itp
 from scipy import ndimage
+from specutils.spectra import Spectrum1D
+from specutils.fitting import fit_continuum
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
@@ -265,7 +269,7 @@ def grow_mask(mask, iterations, diagonal):
     return mask_grown
 
 
-def get_continuum(x, y, **kwargs):
+def get_continuum(x, y, *args):
     """
     This is a wrapper function of the lowess function from statsmodels that
     uses a different lowess_frac default value that is more appropriate in
@@ -279,8 +283,8 @@ def get_continuum(x, y, **kwargs):
         Absicissa (conventionally the first number of a coordinate pair)
     y: list or numpy.ndarray
         Ordinate (conventionally the second number of a coordinate pair)
-    **kwargs: dict
-        The keyword arguments for the lowess function.
+    *args: dict
+        The positional arguments for the specutil fitted_continuum function.
 
     """
 
@@ -290,27 +294,15 @@ def get_continuum(x, y, **kwargs):
         f"y is in shape {np.shape(y)}."
     )
 
-    if "lowess_frac" not in kwargs:
-        kwargs["frac"] = 0.01
-
-    else:
-        kwargs["frac"] = copy.deepcopy(kwargs["lowess_frac"])
-        kwargs.pop("lowess_frac")
-
-    if "return_sorted" not in kwargs:
-        kwargs["return_sorted"] = False
-
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 
     mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.0)
 
-    x_smoothed = x[mask]
-    y_smoothed = lowess(y[mask], x_smoothed, **kwargs)
+    spectrum = Spectrum1D(flux=y[mask] * u.ct, spectral_axis=x[mask] * u.AA)
+    fitted_continuum = fit_continuum(spectrum, *args)
 
-    return itp.interp1d(
-        x_smoothed, y_smoothed, kind="cubic", fill_value="extrapolate"
-    )(x)
+    return fitted_continuum(x * u.AA).to_value()
 
 
 def gaus(x, a, b, x0, sigma):

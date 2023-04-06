@@ -4254,7 +4254,7 @@ class OneDSpec:
                     "be performed."
                 )
 
-    def get_continuum(self, spec_id=None, **kwargs):
+    def get_continuum(self, spec_id=None, *args):
         """
         ** EXPERIMENTAL, as of 1 October 2021 **
 
@@ -4292,13 +4292,11 @@ class OneDSpec:
             count = science_spec.count
             flux = science_spec.flux
 
-            science_spec.add_count_continuum(
-                get_continuum(wave, count, **kwargs)
-            )
+            science_spec.add_count_continuum(get_continuum(wave, count, *args))
 
             if flux is not None:
                 science_spec.add_flux_continuum(
-                    get_continuum(wave, flux, **kwargs)
+                    get_continuum(wave, flux, *args)
                 )
 
             else:
@@ -4392,7 +4390,7 @@ class OneDSpec:
         )
 
     def get_telluric_strength(
-        self, factor=1.0, auto_apply=False, spec_id=None, **kwargs
+        self, factor=1.0, auto_apply=False, spec_id=None, *args
     ):
         """
         Get the telluric absorption profile from the standard star based on
@@ -4462,10 +4460,8 @@ class OneDSpec:
             wave = science_spec.wave
             flux = science_spec.flux
 
-            if (science_spec.flux_continuum is None) or (
-                len(kwargs.keys()) > 0
-            ):
-                self.get_continuum(i, **kwargs)
+            if (science_spec.flux_continuum is None) or (len(args) > 0):
+                self.get_continuum(i, *args)
 
             flux_continuum = science_spec.flux_continuum
 
@@ -4492,9 +4488,7 @@ class OneDSpec:
             standard_spec = self.standard_spectrum_list[0]
             wave_standard = standard_spec.wave
 
-            if (standard_spec.telluric_profile is None) or (
-                len(kwargs.keys()) > 0
-            ):
+            if (standard_spec.telluric_profile is None) or (len(args) > 0):
                 standard_spec.add_telluric_profile(
                     standard_spec.telluric_func(wave_standard)
                 )
@@ -8149,7 +8143,6 @@ class OneDSpec:
             for i in spec_id:
                 if len(spec_id) == 1:
                     filename_i = filename + "_science"
-
                 else:
                     filename_i = filename + "_science_" + str(i)
 

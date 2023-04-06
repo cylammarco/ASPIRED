@@ -94,8 +94,7 @@ class StandardLibrary:
             raise ValueError("Unknonw logging level.")
 
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
-            "%(message)s",
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%a, %d %b %Y %H:%M:%S",
         )
 
@@ -343,8 +342,10 @@ class StandardLibrary:
 
             if len(target_list) > 0:
                 self.logger.warning(
-                    "Requested standard star cannot be found, a list of the "
-                    "closest matching names are returned: %s",
+                    (
+                        "Requested standard star cannot be found, a list of the"
+                        " closest matching names are returned: %s"
+                    ),
                     target_list,
                 )
 
@@ -352,8 +353,10 @@ class StandardLibrary:
 
             else:
                 error_msg = (
-                    "Please check the name of your standard star, nothing "
-                    "share a similarity above %s.",
+                    (
+                        "Please check the name of your standard star, nothing "
+                        "share a similarity above %s."
+                    ),
                     cutoff,
                 )
                 self.logger.critical(error_msg)
@@ -456,9 +459,11 @@ class StandardLibrary:
                     self.library = libraries[0]
 
                     self.logger.warning(
-                        "The requested standard star cannot be found in the "
-                        "given library,  or the library is not specified. "
-                        "ASPIRED is using %s.",
+                        (
+                            "The requested standard star cannot be found in the"
+                            " given library,  or the library is not specified."
+                            " ASPIRED is using %s."
+                        ),
                         self.library,
                     )
 
@@ -469,8 +474,10 @@ class StandardLibrary:
                 self.library = libraries[0]
 
                 self.logger.warning(
-                    "The requested library does not exist, %s is used "
-                    "because it has the closest matching name.",
+                    (
+                        "The requested library does not exist, %s is used "
+                        "because it has the closest matching name."
+                    ),
                     self.library,
                 )
 
@@ -677,8 +684,7 @@ class FluxCalibration(StandardLibrary):
         if log_level == "DEBUG":
             logging.basicConfig(level=logging.DEBUG)
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
-            "%(message)s",
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%a, %d %b %Y %H:%M:%S",
         )
 
@@ -951,7 +957,12 @@ class FluxCalibration(StandardLibrary):
             )
         )
         # show the image on the top
-        self.logger.info(np.asarray(self.spectrum_oned.wave))
+        self.logger.debug(np.asarray(self.spectrum_oned.wave))
+        self.logger.debug(
+            self.spectrum_oned.telluric_func(
+                np.asarray(self.spectrum_oned.wave)
+            )
+        )
         fig.add_trace(
             go.Scatter(
                 x=np.asarray(self.spectrum_oned.wave),
@@ -1016,8 +1027,9 @@ class FluxCalibration(StandardLibrary):
         sorder=3,
         return_function=True,
         sens_deg=7,
-        recompute_continuum=True,
-        **kwargs,
+        use_continuum=False,
+        recompute_continuum=False,
+        *args,
     ):
         """
         The sensitivity curve is computed by dividing the true values by the
@@ -1060,10 +1072,12 @@ class FluxCalibration(StandardLibrary):
         sens_deg: int (Default: 7)
             The degree of polynomial of the sensitivity curve, only used if
             the method is 'polynomial'.
-        recompute_continuum: bool (Default: True)
+        use_continuum: bool (Default: False)
+            Set to True to use continuum for finding the sensitivity function.
+        recompute_continuum: bool (Default: False)
             Recompute the continuum before computing the sensitivity function.
-        **kwargs:
-            keyword arguments for passing to the LOWESS functionj for getting
+        *args:
+            keyword arguments for passing to the LOWESS function for getting
             the continuum, see
             `statsmodels.nonparametric.smoothers_lowess.lowess()`
 
@@ -1085,8 +1099,10 @@ class FluxCalibration(StandardLibrary):
             exptime = 1.0
 
         self.logger.info(
-            "The exposure time used for computing sensitivity curve "
-            "is %s seconds.",
+            (
+                "The exposure time used for computing sensitivity curve "
+                "is %s seconds."
+            ),
             exptime,
         )
 
@@ -1143,14 +1159,18 @@ class FluxCalibration(StandardLibrary):
             # Set the smoothing parameters
             self.spectrum_oned.add_smoothing(smooth, slength, sorder)
 
-        if (
-            getattr(self.spectrum_oned, "count_continuum") is None
-        ) or recompute_continuum:
-            self.spectrum_oned.add_count_continuum(
-                get_continuum(wave, count, **kwargs)
-            )
+        if use_continuum:
+            if (
+                getattr(self.spectrum_oned, "count_continuum") is None
+            ) or recompute_continuum:
+                self.spectrum_oned.add_count_continuum(
+                    get_continuum(wave, count, *args)
+                )
 
-        count = np.asarray(getattr(self.spectrum_oned, "count_continuum"))
+            count = np.asarray(getattr(self.spectrum_oned, "count_continuum"))
+
+        else:
+            count = np.asarray(getattr(self.spectrum_oned, "count"))
 
         # If the median resolution of the observed spectrum is higher than
         # the literature one
