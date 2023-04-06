@@ -4,7 +4,6 @@ import os
 from unittest.mock import patch
 
 import numpy as np
-
 from aspired import spectral_reduction
 from aspired.flux_calibration import FluxCalibration
 

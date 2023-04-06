@@ -3,7 +3,7 @@
 
 """ASPIRED"""
 
-from pkg_resources import get_distribution, DistributionNotFound
+from pkg_resources import DistributionNotFound, get_distribution
 
 try:
     __version__ = get_distribution(__name__).version
@@ -20,9 +20,7 @@ __credits__ = [
     "Lukasz Wyrzykowski",
 ]
 
-from . import image_reduction
-from . import spectral_reduction
-from . import standard_list
+from . import image_reduction, spectral_reduction, standard_list
 
 __all__ = [
     "image_reduction",

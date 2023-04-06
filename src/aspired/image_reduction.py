@@ -5,9 +5,9 @@
 
 import copy
 import datetime
-from typing import Union
 import logging
 import os
+from typing import Union
 
 import numpy as np
 from astropy import units as u

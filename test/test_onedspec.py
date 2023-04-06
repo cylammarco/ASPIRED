@@ -2,14 +2,12 @@
 import os
 from unittest.mock import patch
 
-from astropy.io import fits
 import numpy as np
 import pytest
-
-from aspired import image_reduction
-from aspired import spectral_reduction
-from aspired.wavelength_calibration import WavelengthCalibration
+from aspired import image_reduction, spectral_reduction
 from aspired.flux_calibration import FluxCalibration
+from aspired.wavelength_calibration import WavelengthCalibration
+from astropy.io import fits
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 

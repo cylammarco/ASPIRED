@@ -5,8 +5,8 @@
 
 from typing import Union
 
-from astropy.modeling import models, fitting
 import numpy as np
+from astropy.modeling import fitting, models
 
 
 def build_line_spread_profile(

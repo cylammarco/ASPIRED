@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 
-from astropy.io import fits
 import numpy as np
-
-from aspired import image_reduction
-from aspired import spectral_reduction
+from aspired import image_reduction, spectral_reduction
+from astropy.io import fits
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 

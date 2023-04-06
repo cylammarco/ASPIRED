@@ -4,8 +4,7 @@
 """Functions for spectral extraction"""
 
 import numpy as np
-from scipy import special
-from scipy import ndimage
+from scipy import ndimage, special
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .util import bfixpix, gaus

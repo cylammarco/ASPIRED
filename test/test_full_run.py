@@ -3,9 +3,7 @@ import os
 from unittest.mock import patch
 
 import numpy as np
-
-from aspired import image_reduction
-from aspired import spectral_reduction
+from aspired import image_reduction, spectral_reduction
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 

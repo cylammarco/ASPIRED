@@ -8,13 +8,13 @@ import difflib
 import json
 import logging
 import os
-import pkg_resources
 
 import numpy as np
+import pkg_resources
 from plotly import graph_objects as go
 from plotly import io as pio
-from scipy import signal
 from scipy import interpolate as itp
+from scipy import signal
 
 try:
     from spectres import spectres_numba as spectres

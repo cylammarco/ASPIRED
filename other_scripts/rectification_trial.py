@@ -1,7 +1,6 @@
 import numpy as np
-from scipy import ndimage
-from scipy import signal
 from matplotlib import pyplot as plt
+from scipy import ndimage, signal
 
 # 1D
 a = np.ones(100)

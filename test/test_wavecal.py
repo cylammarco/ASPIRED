@@ -5,11 +5,10 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from astropy.io import fits
-
-from aspired.wavelength_calibration import WavelengthCalibration
-from aspired.spectrum_oneD import SpectrumOneD
 from aspired import spectral_reduction
+from aspired.spectrum_oneD import SpectrumOneD
+from aspired.wavelength_calibration import WavelengthCalibration
+from astropy.io import fits
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 

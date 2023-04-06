@@ -1,43 +1,55 @@
 repos:
--   repo: https://github.com/psf/black
+  - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
-    - id: black
-      language_version: python3.10
-      args: # arguments to configure black
-        - --line-length=79
+      - id: black
+        language_version: python3.10
+        args: # arguments to configure black
+          - --line-length=79
 
--   repo: https://github.com/pre-commit/pre-commit-hooks
+  - repo: https://github.com/asottile/seed-isort-config
+    rev: v2.2.0
+    hooks:
+      - id: seed-isort-config
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.11.4
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--profile", "black", "--line-length", "79"]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:
-    # Identify invalid files
-    - id: check-ast
-    - id: check-yaml
-    - id: check-json
-    - id: check-toml
-    # git checks
-    - id: check-merge-conflict
-    - id: detect-private-key
-    - id: check-case-conflict
-    # Python checks
-    - id: check-docstring-first
-    - id: debug-statements
-    - id: requirements-txt-fixer
+      # Identify invalid files
+      - id: check-ast
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      # git checks
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-case-conflict
+      # Python checks
+      - id: check-docstring-first
+      - id: debug-statements
+      - id: requirements-txt-fixer
 
--   repo: local
+  - repo: local
     hooks:
-    - id: remarklint
-      name: remarklint
-      language: node
-      entry: remark
-      types: [markdown]
-      args: ["--frail", "--quiet"]
-      additional_dependencies:
-        [
-          remark,
-          remark-lint,
-          remark-cli,
-          remark-preset-lint-recommended,
-          remark-lint-list-item-indent,
-          remark-lint-no-undefined-references,
-        ]
+      - id: remarklint
+        name: remarklint
+        language: node
+        entry: remark
+        types: [markdown]
+        args: ["--frail", "--quiet"]
+        additional_dependencies:
+          [
+            remark,
+            remark-lint,
+            remark-cli,
+            remark-preset-lint-recommended,
+            remark-lint-list-item-indent,
+            remark-lint-no-undefined-references,
+          ]

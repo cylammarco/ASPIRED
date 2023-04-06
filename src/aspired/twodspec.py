@@ -5,10 +5,10 @@
 
 import copy
 import datetime
-from typing import Union
 import logging
 import os
 from itertools import chain
+from typing import Union
 
 import numpy as np
 from astropy.io import fits
@@ -17,28 +17,28 @@ from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
-from scipy import ndimage
-from scipy import signal
+from scipy import ndimage, signal
 
 try:
     from spectres import spectres_numba as spectres
 except ImportError as err:
     print(err)
     from spectres import spectres
+
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .extraction import (
-    tophat_extraction,
     optimal_extraction_horne86,
     optimal_extraction_marsh89,
+    tophat_extraction,
 )
-from .image_reduction import Reducer, ImageReduction
+from .image_reduction import ImageReduction, Reducer
 from .line_spread_function import (
     build_line_spread_profile,
     get_line_spread_function,
 )
 from .spectrum_oneD import SpectrumOneD
-from .util import create_bad_pixel_mask, bfixpix, gaus
+from .util import bfixpix, create_bad_pixel_mask, gaus
 
 __all__ = ["TwoDSpec"]
 

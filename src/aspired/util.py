@@ -7,12 +7,12 @@ import copy
 import logging
 from functools import partial
 
-from astropy import units as u
 import numpy as np
+from astropy import units as u
 from scipy import interpolate as itp
 from scipy import ndimage
-from specutils.spectra import Spectrum1D
 from specutils.fitting import fit_continuum
+from specutils.spectra import Spectrum1D
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 

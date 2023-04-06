@@ -3,6 +3,7 @@ astroscrappy>=1.1
 ccdproc>= 2.3
 coverage>=0.38.4
 flake8>=5.0.4
+isort>=5.11
 kaleido>=0.2
 numpy>=1.18
 plotly>=5.6

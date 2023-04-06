@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import math
 from time import time
+
 import numpy as np
-from scipy import signal
-from scipy import stats
 from astropy.io import fits
 from matplotlib.pyplot import *
+from scipy import signal, stats
 
 ion()
 

@@ -3,10 +3,10 @@ import copy
 import datetime
 import logging
 import os
-import pkg_resources
 
-from astropy.io import fits
 import numpy as np
+import pkg_resources
+from astropy.io import fits
 from plotly import graph_objects as go
 from plotly import io as pio
 
@@ -15,13 +15,14 @@ try:
 except ImportError as err:
     print(err)
     from spectres import spectres
+
 from scipy import optimize
 from scipy.interpolate import interp1d
 
-from .wavelength_calibration import WavelengthCalibration
 from .flux_calibration import FluxCalibration
 from .spectrum_oneD import SpectrumOneD
 from .util import get_continuum
+from .wavelength_calibration import WavelengthCalibration
 
 __all__ = ["OneDSpec"]
 

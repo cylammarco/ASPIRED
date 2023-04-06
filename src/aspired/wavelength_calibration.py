@@ -6,9 +6,9 @@ import os
 import numpy as np
 from plotly import graph_objects as go
 from plotly import io as pio
+from rascal.atlas import Atlas
 from rascal.calibrator import Calibrator
 from rascal.util import refine_peaks
-from rascal.atlas import Atlas
 from scipy import signal
 
 from .spectrum_oneD import SpectrumOneD

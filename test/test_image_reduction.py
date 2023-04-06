@@ -2,11 +2,10 @@
 import os
 from unittest.mock import patch
 
-from astropy.io import fits
 import numpy as np
 import pytest
-
 from aspired import image_reduction
+from astropy.io import fits
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 
