@@ -5233,16 +5233,16 @@ class OneDSpec:
             self.logger.info("Standard airmass is {}.".format(standard_am))
             self.logger.info("Science airmass is {}.".format(science_am))
 
-            interpoalted_ext = self.extinction_func(science_spec.wave)
+            _interpolated_ext = self.extinction_func(science_spec.wave)
             # Get the atmospheric extinction correction factor
             science_flux_extinction_factor = 10.0 ** (
-                -(interpoalted_ext * science_am) / 2.5
+                -(_interpolated_ext * science_am) / 2.5
             )
             # note that we are still using the science_spec.wave because we
             # want to "uncorrect" the atmospheric correction on the standard
             # star at the wavelength of of the science target
             standard_flux_extinction_factor = 10.0 ** (
-                -(interpoalted_ext * standard_am) / 2.5
+                -(_interpolated_ext * standard_am) / 2.5
             )
 
             # ratio of the +ve flux adjustment due to the airmass of the
