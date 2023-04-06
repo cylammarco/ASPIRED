@@ -465,7 +465,7 @@ class Reducer:
         Parameters
         ----------
         saxis: 0, 1 or None
-            0 for a spectrum going left-right, 1 for top-down.
+            0 for a spectrum going horizontally, 1 for vertically.
 
         """
 
