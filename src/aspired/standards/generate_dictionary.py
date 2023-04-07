@@ -1,12 +1,17 @@
 # -*- coding: utf-8 -*-
+import glob
 import json
 import os
 import sys
 
-base_dir = os.path.abspath(os.path.dirname(__file__))
+try:
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+except:
+    base_dir = os.path.abspath(os.path.dirname(__name__))
+
 sys.path.insert(0, os.path.join(base_dir, ".."))
 
-from standard_list import *
+from aspired.standard_list import library_list
 
 # ignore for now
 # (1) a dictionary to match names to unique names (the search is one-to-one)
@@ -41,37 +46,55 @@ library_rank = {
     "esoctiostan": 21,
 }
 
-# Create dictionary for libraries to unique names
-lib_to_name = {}
+
+filelist = glob.glob("*filename-to-identifier.json")
+
+
+# Create dictionary for libraries to filenames
+lib_to_filename = {}
+
+# And the mapping of designations and filename
+filename_to_designation = {}
+designation_to_filename = {}
+
+for json_filename in filelist:
+    data = json.load(open(json_filename))
+    lib_to_filename[json_filename.split("-")[0]] = list(data.keys())
+    for k, v in data.items():
+        filename_to_designation[k] = [d.replace(" ", "").lower() for d in v]
+
 
 # Loop through the library names
-for lib_name in library_list:
-    # Loop through the standard stars UNIQUE names in each library
-    for star in eval(lib_name):
-        if lib_name.lower() not in lib_to_name:
-            lib_to_name[lib_name.lower()] = [star.lower()]
+for filename, designation in filename_to_designation.items():
+    for d in designation:
+        if d.lower() not in designation_to_filename:
+            designation_to_filename[d.lower()] = [filename.lower()]
         else:
-            lib_to_name[lib_name.lower()].append(star.lower())
+            designation_to_filename[d.lower()].append(filename.lower())
 
-# Create dictionary for unique names to libraries
-name_to_lib = {}
+
+# Create dictionary for filenames to libraries
+filename_to_lib = {}
 
 # Loop through the library names
-for lib, stars in lib_to_name.items():
+for lib, stars in lib_to_filename.items():
     for s in stars:
-        if s.lower() not in name_to_lib:
-            name_to_lib[s.lower()] = [lib.lower()]
+        if s.lower() not in filename_to_lib:
+            filename_to_lib[s.lower()] = [lib.lower()]
         else:
-            name_to_lib[s.lower()].append(lib.lower())
+            filename_to_lib[s.lower()].append(lib.lower())
 
 # Sort the list of the dictionaries
-for star, libs in name_to_lib.items():
-    name_to_lib[star] = sorted(
-        name_to_lib[star], key=lambda i: library_rank[i]
+for star, libs in filename_to_lib.items():
+    filename_to_lib[star] = sorted(
+        filename_to_lib[star], key=lambda i: library_rank[i]
     )
 
-with open("lib_to_uname.json", "w") as f:
-    json.dump(lib_to_name, f)
+with open("lib_to_filename.json", "w") as f:
+    json.dump(lib_to_filename, f)
 
-with open("uname_to_lib.json", "w") as f:
-    json.dump(name_to_lib, f)
+with open("filename_to_lib.json", "w") as f:
+    json.dump(filename_to_lib, f)
+
+with open("designation_to_filename.json", "w") as f:
+    json.dump(designation_to_filename, f)

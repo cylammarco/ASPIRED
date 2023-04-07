@@ -138,18 +138,18 @@ class StandardLibrary:
 
         """
 
-        self.lib_to_uname = json.load(
+        self.lib_to_filename = json.load(
             open(
                 pkg_resources.resource_filename(
-                    "aspired", "standards/lib_to_uname.json"
+                    "aspired", "standards/lib_to_filename.json"
                 ),
                 encoding="ascii",
             )
         )
-        self.uname_to_lib = json.load(
+        self.filename_to_lib = json.load(
             open(
                 pkg_resources.resource_filename(
-                    "aspired", "standards/uname_to_lib.json"
+                    "aspired", "standards/filename_to_lib.json"
                 ),
                 encoding="ascii",
             )
@@ -324,7 +324,7 @@ class StandardLibrary:
         # Load the list of targets in the requested library
         # Only works in case of exact match
         try:
-            libraries = self.uname_to_lib[target.lower()]
+            libraries = self.filename_to_lib[target.lower()]
             return libraries, True
 
         except Exception as _warn:
@@ -335,7 +335,7 @@ class StandardLibrary:
             # difflib uses Gestalt pattern matching.
             target_list = difflib.get_close_matches(
                 target.lower(),
-                list(self.uname_to_lib.keys()),
+                list(self.filename_to_lib.keys()),
                 n=5,
                 cutoff=cutoff,
             )
@@ -385,7 +385,7 @@ class StandardLibrary:
         # Load the list of targets in the requested library
         library_name = difflib.get_close_matches(
             library,
-            list(self.lib_to_uname.keys()),
+            list(self.lib_to_filename.keys()),
             n=1,
         )
 
@@ -397,7 +397,7 @@ class StandardLibrary:
 
         # difflib uses Gestalt pattern matching.
         target_name = difflib.get_close_matches(
-            target.lower(), self.lib_to_uname[library_name], n=1, cutoff=0.3
+            target.lower(), self.lib_to_filename[library_name], n=1, cutoff=0.3
         )
         if target_name == []:
             target_name = None
