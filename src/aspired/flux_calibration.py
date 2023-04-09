@@ -8,6 +8,7 @@ import difflib
 import json
 import logging
 import os
+from typing import Callable, Union
 
 import numpy as np
 import pkg_resources
@@ -72,11 +73,11 @@ class StandardLibrary:
 
     def __init__(
         self,
-        verbose=True,
-        logger_name="StandardLibrary",
-        log_level="INFO",
-        log_file_folder="default",
-        log_file_name=None,
+        verbose: bool = True,
+        logger_name: str = "StandardLibrary",
+        log_level: str = "INFO",
+        log_file_folder: str = "default",
+        log_file_name: str = None,
     ):
         # Set-up logger
         self.logger = logging.getLogger(logger_name)
@@ -304,7 +305,7 @@ class StandardLibrary:
                 / self.standard_wave_true**2
             )
 
-    def lookup_standard_libraries(self, target, cutoff=0.4):
+    def lookup_standard_libraries(self, target: str, cutoff: float = 0.4):
         """
         Check if the requested standard and library exist. Return the three
         most similar words if the requested one does not exist. See
@@ -342,8 +343,8 @@ class StandardLibrary:
 
             if len(target_list) > 0:
                 self.logger.warning(
-                    "Requested standard star cannot be found, a list of"
-                    " the closest matching names are returned:"
+                    f"Requested standard star cannot be found, a list of"
+                    f" the closest matching names are returned:"
                     f" {{target_list}}."
                 )
 
@@ -359,7 +360,7 @@ class StandardLibrary:
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
 
-    def lookup_closet_match_in_library(self, target, library):
+    def lookup_closet_match_in_library(self, target: str, library: str):
         """
         Check if the requested standard and library exist. Only if the
         similarity is better than 0.5 a target name will be returned. See
@@ -404,7 +405,13 @@ class StandardLibrary:
 
         return target_name, library_name
 
-    def load_standard(self, target, library=None, ftype="flux", cutoff=0.4):
+    def load_standard(
+        self,
+        target: str,
+        library: str = None,
+        ftype: str = "flux",
+        cutoff: float = 0.4,
+    ):
         """
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag. The units of the data are always in
@@ -490,15 +497,15 @@ class StandardLibrary:
 
     def inspect_standard(
         self,
-        display=True,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        display: bool = True,
+        rendererLstr="default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Display the standard star plot.
@@ -630,11 +637,11 @@ class FluxCalibration(StandardLibrary):
 
     def __init__(
         self,
-        verbose=True,
-        logger_name="FluxCalibration",
-        log_level="INFO",
-        log_file_folder="default",
-        log_file_name=None,
+        verbose: bool = True,
+        logger_name: str = "FluxCalibration",
+        log_level: str = "INFO",
+        log_file_folder: str = "default",
+        log_file_name: str = None,
     ):
         """
         Initialise a FluxCalibration object.
@@ -727,7 +734,12 @@ class FluxCalibration(StandardLibrary):
         self.count_continuum = None
         self.flux_continuum = None
 
-    def from_spectrum_oned(self, spectrum_oned, merge=False, overwrite=False):
+    def from_spectrum_oned(
+        self,
+        spectrum_oned: SpectrumOneD,
+        merge: bool = False,
+        overwrite: bool = False,
+    ):
         """
         This function copies all the info from the spectrum_oned, because
         users may supply different level/combination of reduction, everything
@@ -774,7 +786,13 @@ class FluxCalibration(StandardLibrary):
         )
         self.spectrum_oned_imported = False
 
-    def load_standard(self, target, library=None, ftype="flux", cutoff=0.4):
+    def load_standard(
+        self,
+        target: str,
+        library: str = None,
+        ftype: str = "flux",
+        cutoff: float = 0.4,
+    ):
         """
         Read the standard flux/magnitude file. And return the wavelength and
         flux/mag. The units of the data are always in
@@ -805,7 +823,13 @@ class FluxCalibration(StandardLibrary):
             library=self.library, target=self.target
         )
 
-    def add_standard(self, wavelength, count, count_err=None, count_sky=None):
+    def add_standard(
+        self,
+        wavelength: Union[np.ndarray, list],
+        count: Union[np.ndarray, list],
+        count_err: Union[np.ndarray, list] = None,
+        count_sky: Union[np.ndarray, list] = None,
+    ):
         """
         Add spectrum (wavelength, count, count_err & count_sky).
 
@@ -828,11 +852,11 @@ class FluxCalibration(StandardLibrary):
 
     def get_telluric_profile(
         self,
-        wave,
-        flux,
-        continuum,
-        mask_range=[[6850, 6960], [7580, 7700]],
-        return_function=False,
+        wave: Union[np.ndarray, list],
+        flux: Union[np.ndarray, list],
+        continuum: Union[np.ndarray, list],
+        mask_range: Union[np.ndarray, list] = [[6850, 6960], [7580, 7700]],
+        return_function: bool = False,
     ):
         """
         Getting the Telluric absorption profile from the continuum of the
@@ -898,15 +922,15 @@ class FluxCalibration(StandardLibrary):
 
     def inspect_telluric_profile(
         self,
-        display=True,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        display: bool = True,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Display the Telluric profile.
@@ -1008,18 +1032,21 @@ class FluxCalibration(StandardLibrary):
 
     def get_sensitivity(
         self,
-        k=3,
-        method="interpolate",
-        mask_range=[[6850.0, 6960.0], [7580.0, 7700.0]],
-        mask_fit_order=1,
-        mask_fit_size=3,
-        smooth=False,
-        slength=5,
-        sorder=3,
-        return_function=True,
-        sens_deg=7,
-        use_continuum=False,
-        recompute_continuum=False,
+        k: int = 3,
+        method: str = "interpolate",
+        mask_range: Union[np.ndarray, list] = [
+            [6850.0, 6960.0],
+            [7580.0, 7700.0],
+        ],
+        mask_fit_order: int = 1,
+        mask_fit_size: int = 3,
+        smooth: bool = False,
+        slength: int = 5,
+        sorder: int = 3,
+        return_function: bool = True,
+        sens_deg: int = 7,
+        use_continuum: bool = False,
+        recompute_continuum: bool = False,
         *args,
     ):
         """
@@ -1253,7 +1280,7 @@ class FluxCalibration(StandardLibrary):
         if return_function:
             return sensitivity_func
 
-    def add_sensitivity_func(self, sensitivity_func):
+    def add_sensitivity_func(self, sensitivity_func: Callable):
         """
         parameters
         ----------
@@ -1280,15 +1307,15 @@ class FluxCalibration(StandardLibrary):
 
     def inspect_sensitivity(
         self,
-        display=True,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        display: bool = True,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Display the computed sensitivity curve.
@@ -1456,19 +1483,19 @@ class FluxCalibration(StandardLibrary):
 
     def apply_flux_calibration(
         self,
-        target_spectrum_oned,
-        inspect=False,
-        wave_min=None,
-        wave_max=None,
-        display=False,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        target_spectrum_oned: SpectrumOneD,
+        inspect: bool = False,
+        wave_min: float = None,
+        wave_max: float = None,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Apply the computed sensitivity curve. And resample the spectra to
@@ -1725,9 +1752,9 @@ class FluxCalibration(StandardLibrary):
 
     def create_fits(
         self,
-        output="count+wavelength+sensitivity+flux",
-        empty_primary_hdu=True,
-        recreate=False,
+        output: str = "count+wavelength+sensitivity+flux",
+        empty_primary_hdu: bool = True,
+        recreate: bool = False,
     ):
         """
         Parameters
@@ -1762,11 +1789,11 @@ class FluxCalibration(StandardLibrary):
 
     def save_fits(
         self,
-        output="count+wavelength+sensitivity+flux",
-        filename="fluxcal",
-        empty_primary_hdu=True,
-        overwrite=False,
-        recreate=False,
+        output: str = "count+wavelength+sensitivity+flux",
+        filename: str = "fluxcal",
+        empty_primary_hdu: bool = True,
+        overwrite: bool = False,
+        recreate: bool = False,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of
@@ -1821,10 +1848,10 @@ class FluxCalibration(StandardLibrary):
 
     def save_csv(
         self,
-        output="count+wavelength+sensitivity+flux",
-        filename="fluxcal",
-        overwrite=False,
-        recreate=False,
+        output: str = "count+wavelength+sensitivity+flux",
+        filename: str = "fluxcal",
+        overwrite: bool = False,
+        recreate: bool = False,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of

@@ -2,9 +2,11 @@
 import datetime
 import logging
 import os
+from typing import Callable, Union
 
 import numpy as np
 from astropy.io import fits
+from rascal import Calibrator
 from scipy import interpolate as itp
 
 __all__ = ["SpectrumOneD"]
@@ -20,12 +22,12 @@ class SpectrumOneD:
 
     def __init__(
         self,
-        spec_id=None,
-        verbose=True,
-        logger_name="SpectrumOneD",
-        log_level="INFO",
-        log_file_folder="default",
-        log_file_name=None,
+        spec_id: Union[np.ndarray, list, int] = None,
+        verbose: bool = True,
+        logger_name: str = "SpectrumOneD",
+        log_level: str = "INFO",
+        log_file_folder: str = "default",
+        log_file_name: str = None,
     ):
         """
         Initialise the object with a logger.
@@ -479,7 +481,7 @@ class SpectrumOneD:
         for d1, d2 in zip(self.hdu_name.values(), number_of_hdus.values()):
             self.n_hdu[d1] = d2
 
-    def merge(self, spectrum_oned, overwrite=False):
+    def merge(self, spectrum_oned: SpectrumOneD, overwrite: bool = False):
         """
         This function copies all the info from the supplied spectrum_oned to
         this one, including the spec_id.
@@ -508,7 +510,9 @@ class SpectrumOneD:
                 # if not overwrite, do nothing
                 pass
 
-    def add_spectrum_header(self, header):
+    def add_spectrum_header(
+        self, header: Union[fits.Header, list, np.ndarray]
+    ):
         """
         Add a header for the spectrum. Typically put the header of the
         raw 2D spectral image of the science target(s) here. Some
@@ -542,7 +546,9 @@ class SpectrumOneD:
 
         self.spectrum_header = None
 
-    def add_standard_header(self, header):
+    def add_standard_header(
+        self, header: Union[fits.Header, list, np.ndarray]
+    ):
         """
         Add a header for the standard star that it is flux calibrated
         against. The, if opted for, automatic atmospheric extinction
@@ -579,7 +585,7 @@ class SpectrumOneD:
 
         self.standard_header = None
 
-    def add_arc_header(self, header):
+    def add_arc_header(self, header: Union[fits.Header, list, np.ndarray]):
         """
         Add a header for the arc that it is wavelength calibrated
         against. Typically put the header of the raw 2D spectral image
@@ -614,7 +620,12 @@ class SpectrumOneD:
 
         self.arc_header = None
 
-    def add_trace(self, trace, trace_sigma, effective_pixel=None):
+    def add_trace(
+        self,
+        trace: Union[list, np.ndarray],
+        trace_sigma: Union[list, np.ndarray],
+        effective_pixel: Union[list, np.ndarray] = None,
+    ):
         """
         Add the trace of the spectrum.
 
@@ -684,7 +695,13 @@ class SpectrumOneD:
         self.remove_pixel_mapping_itp()
 
     def add_aperture(
-        self, widthdn, widthup, sepdn, sepup, skywidthdn, skywidthup
+        self,
+        widthdn: int,
+        widthup: int,
+        sepdn: int,
+        sepup: int,
+        skywidthdn: int,
+        skywidthup: int,
     ):
         """
         The size of the aperture in which the spectrum is extracted. This is
@@ -741,7 +758,12 @@ class SpectrumOneD:
         self.skywidthdn = skywidthdn
         self.skywidthup = skywidthup
 
-    def add_count(self, count, count_err=None, count_sky=None):
+    def add_count(
+        self,
+        count: Union[list, np.ndarray],
+        count_err: Union[list, np.ndarray] = None,
+        count_sky: Union[list, np.ndarray] = None,
+    ):
         """
         Add the photoelectron counts and the associated optional
         uncertainty and sky counts.
@@ -813,7 +835,7 @@ class SpectrumOneD:
         self.count_err = None
         self.count_sky = None
 
-    def add_variances(self, var):
+    def add_variances(self, var: Union[list, np.ndarray]):
         """
         Add the weight map of the extraction.
 
@@ -834,7 +856,9 @@ class SpectrumOneD:
 
         self.var = None
 
-    def add_line_spread_profile_upsampled(self, line_spread_profile_upsampled):
+    def add_line_spread_profile_upsampled(
+        self, line_spread_profile_upsampled: astropy.model
+    ):
         """
         Add the empirical line spread profile as measured from the upsampled image.
 
@@ -853,7 +877,7 @@ class SpectrumOneD:
 
         self.line_spread_profile_upsampled = None
 
-    def add_line_spread_profile(self, line_spread_profile):
+    def add_line_spread_profile(self, line_spread_profile: astropy.model):
         """
         Add the empirical line spread profile as measured.
 
@@ -872,7 +896,7 @@ class SpectrumOneD:
 
         self.line_spread_profile = None
 
-    def add_profile_func(self, profile_func):
+    def add_profile_func(self, profile_func: Callable):
         """
         Add the fitted trace profile.
 
@@ -891,7 +915,7 @@ class SpectrumOneD:
 
         self.profile_func = None
 
-    def add_profile(self, profile):
+    def add_profile(self, profile: Union[list, np.ndarray]):
         """
         Add the extraction profile (generated from the profile_func).
 
@@ -912,7 +936,7 @@ class SpectrumOneD:
 
         self.profile = None
 
-    def add_arc_spec(self, arc_spec):
+    def add_arc_spec(self, arc_spec: Union[list, np.ndarray]):
         """
         Add the extracted 1D spectrum of the arc.
 
@@ -935,7 +959,7 @@ class SpectrumOneD:
         """
         self.arc_spec = None
 
-    def add_effective_pixel(self, effective_pixel):
+    def add_effective_pixel(self, effective_pixel: Union[list, np.ndarray]):
         """
         Add the pixel list, which contain the effective pixel values that
         has accounted for chip gaps and non-integer pixel value.
@@ -960,7 +984,7 @@ class SpectrumOneD:
 
         self.effective_pixel = None
 
-    def add_pixel_mapping_itp(self, pixel_mapping_itp):
+    def add_pixel_mapping_itp(self, pixel_mapping_itp: Callable):
         """
         Add the interpolated callable function that convert raw pixel
         values into effective pixel values.
@@ -987,7 +1011,7 @@ class SpectrumOneD:
 
         self.pixel_mapping_itp = None
 
-    def add_peaks(self, peaks):
+    def add_peaks(self, peaks: Union[list, np.ndarray]):
         """
         Add the pixel values (int) where arc lines are located.
 
@@ -1011,7 +1035,7 @@ class SpectrumOneD:
 
         self.peaks = None
 
-    def add_peaks_refined(self, peaks_refined):
+    def add_peaks_refined(self, peaks_refined: Union[list, np.ndarray]):
         """
         Add the refined pixel values (float) where arc lines are located.
 
@@ -1035,7 +1059,7 @@ class SpectrumOneD:
 
         self.peaks_refined = None
 
-    def add_peaks_wave(self, peaks_wave):
+    def add_peaks_wave(self, peaks_wave: Union[list, np.ndarray]):
         """
         Add the wavelength (Angstrom) of the arc lines.
 
@@ -1059,7 +1083,7 @@ class SpectrumOneD:
 
         self.peaks_wave = None
 
-    def add_calibrator(self, calibrator):
+    def add_calibrator(self, calibrator: Calibrator):
         """
         Add a RASCAL Calibrator object.
 
@@ -1069,6 +1093,8 @@ class SpectrumOneD:
             A RASCAL Calibrator object.
 
         """
+
+        assert isinstance(calibrator, Calibrator)
 
         self.calibrator = calibrator
 
@@ -1081,7 +1107,7 @@ class SpectrumOneD:
         self.calibrator = None
 
     def add_atlas_wavelength_range(
-        self, min_atlas_wavelength, max_atlas_wavelength
+        self, min_atlas_wavelength: float, max_atlas_wavelength: float
     ):
         """
         Add the allowed range of wavelength calibration.
@@ -1113,7 +1139,7 @@ class SpectrumOneD:
         self.min_atlas_wavelength = None
         self.max_atlas_wavelength = None
 
-    def add_min_atlas_intensity(self, min_atlas_intensity):
+    def add_min_atlas_intensity(self, min_atlas_intensity: float):
         """
         Add the minimum allowed line intensity (theoretical NIST value)
         that were used for wavelength calibration.
@@ -1138,7 +1164,7 @@ class SpectrumOneD:
 
         self.min_atlas_intensity = None
 
-    def add_min_atlas_distance(self, min_atlas_distance):
+    def add_min_atlas_distance(self, min_atlas_distance: float):
         """
         Add the minimum allowed line distance (only consider lines that
         passed the minimum intensity threshold) that were used for
@@ -1164,7 +1190,7 @@ class SpectrumOneD:
 
         self.min_atlas_distance = None
 
-    def add_gain(self, gain):
+    def add_gain(self, gain: float):
         """
         Add the gain value of the spectral image. This value can be
         different from the one in the header as this can be overwritten
@@ -1188,7 +1214,7 @@ class SpectrumOneD:
 
         self.gain = None
 
-    def add_readnoise(self, readnoise):
+    def add_readnoise(self, readnoise: float):
         """
         Add the readnoise value of the spectral image. This value can be
         different from the one in the header as this can be overwritten
@@ -1212,7 +1238,7 @@ class SpectrumOneD:
 
         self.readnoise = None
 
-    def add_exptime(self, exptime):
+    def add_exptime(self, exptime: float):
         """
         Add the exposure time of the spectral image. This value can be
         different from the one in the header as this can be overwritten
@@ -1236,7 +1262,7 @@ class SpectrumOneD:
 
         self.exptime = None
 
-    def add_airmass(self, airmass):
+    def add_airmass(self, airmass: float):
         """
         Add the airmass when the observation was carried out. This value
         can be different from the one in the header as this can be
@@ -1260,7 +1286,7 @@ class SpectrumOneD:
 
         self.airmass = None
 
-    def add_seeing(self, seeing):
+    def add_seeing(self, seeing: float):
         """
         Add the seeing when the observation was carried out. This value
         can be different from the one in the header as this can be
@@ -1284,7 +1310,9 @@ class SpectrumOneD:
 
         self.seeing = None
 
-    def add_weather_condition(self, pressure, temperature, relative_humidity):
+    def add_weather_condition(
+        self, pressure: float, temperature: float, relative_humidity: float
+    ):
         """
         Add the pressure, temperature and relative humidity when the spectral
         image was taken. These value can be different from the ones in the
@@ -1321,7 +1349,7 @@ class SpectrumOneD:
         self.temperature = None
         self.relative_humidity = None
 
-    def add_fit_type(self, fit_type):
+    def add_fit_type(self, fit_type: str):
         """
         Add the kind of polynomial used for fitting the pixel-to-wavelength
         function.
@@ -1346,7 +1374,7 @@ class SpectrumOneD:
 
         self.fit_type = None
 
-    def add_fit_coeff(self, fit_coeff):
+    def add_fit_coeff(self, fit_coeff: Union[list, np.ndarray]):
         """
         Add the polynomial co-efficients of the pixel-to-wavelength
         function. Note that this overwrites the wavelength calibrated
@@ -1374,7 +1402,10 @@ class SpectrumOneD:
         self.fit_coeff = None
 
     def add_calibrator_properties(
-        self, num_pix, effective_pixel, plotting_library
+        self,
+        num_pix: int,
+        effective_pixel: Union[list, np.ndarray],
+        plotting_library: str,
     ):
         """
         Add the properties of the RASCAL Calibrator.
@@ -1411,13 +1442,13 @@ class SpectrumOneD:
 
     def add_hough_properties(
         self,
-        num_slopes,
-        xbins,
-        ybins,
-        min_wavelength,
-        max_wavelength,
-        range_tolerance,
-        linearity_tolerance,
+        num_slopes: int,
+        xbins: int,
+        ybins: int,
+        min_wavelength: float,
+        max_wavelength: float,
+        range_tolerance: float,
+        linearity_tolerance: float,
     ):
         """
         Add the hough transform configuration of the RASCAL Calibrator.
@@ -1471,16 +1502,16 @@ class SpectrumOneD:
 
     def add_ransac_properties(
         self,
-        sample_size,
-        top_n_candidate,
-        linear,
-        filter_close,
-        ransac_tolerance,
-        candidate_weighted,
-        hough_weight,
-        minimum_matches,
-        minimum_peak_utilisation,
-        minimum_fit_error,
+        sample_size: int,
+        top_n_candidate: int,
+        linear: bool,
+        filter_close: bool,
+        ransac_tolerance: float,
+        candidate_weighted: bool,
+        hough_weight: float,
+        minimum_matches: int,
+        minimum_peak_utilisation: float,
+        minimum_fit_error: float,
     ):
         """
         Add the RANSAC properties of the RASCAL Calibrator.
@@ -1507,6 +1538,13 @@ class SpectrumOneD:
             Set to use the hough space to weigh the fit. The theoretical
             optimal weighting is unclear. The larger the value, the heavily it
             relies on the overdensity in the hough space for a good fit.
+        minimum_matches: int
+            Minimum number of matches to accept the solution.
+        minimum_peak_utilisation: float
+            Minimum percentage of peaks used in the solution.
+        minimum_fit_error: float
+            Minimum fitting error. Probably only useful in simulated noiseless
+            case.
 
         """
 
@@ -1540,13 +1578,13 @@ class SpectrumOneD:
 
     def add_fit_output_final(
         self,
-        fit_coeff,
-        matched_peaks,
-        matched_atlas,
-        rms,
-        residual,
-        peak_utilisation,
-        atlas_utilisation,
+        fit_coeff: Union[list, np.ndarray],
+        matched_peaks: Union[list, np.ndarray],
+        matched_atlas: Union[list, np.ndarray],
+        rms: float,
+        residual: Union[list, np.ndarray],
+        peak_utilisation: float,
+        atlas_utilisation: float,
     ):
         """
         Add the final accepted polynomial solution.
@@ -1595,13 +1633,13 @@ class SpectrumOneD:
 
     def add_fit_output_rascal(
         self,
-        fit_coeff,
-        matched_peaks,
-        matched_atlas,
-        rms,
-        residual,
-        peak_utilisation,
-        atlas_utilisation,
+        fit_coeff: Union[list, np.ndarray],
+        matched_peaks: Union[list, np.ndarray],
+        matched_atlas: Union[list, np.ndarray],
+        rms: float,
+        residual: Union[list, np.ndarray],
+        peak_utilisation: float,
+        atlas_utilisation: float,
     ):
         """
         Add the RASCAL polynomial solution.
@@ -1660,13 +1698,13 @@ class SpectrumOneD:
 
     def add_fit_output_refine(
         self,
-        fit_coeff,
-        matched_peaks,
-        matched_atlas,
-        rms,
-        residual,
-        peak_utilisation,
-        atlas_utilisation,
+        fit_coeff: Union[list, np.ndarray],
+        matched_peaks: Union[list, np.ndarray],
+        matched_atlas: Union[list, np.ndarray],
+        rms: float,
+        residual: Union[list, np.ndarray],
+        peak_utilisation: float,
+        atlas_utilisation: float,
     ):
         """
         Add the refined RASCAL polynomial solution.
@@ -1723,7 +1761,7 @@ class SpectrumOneD:
         self.peak_utilisation_refine = None
         self.atlas_utilisation_refine = None
 
-    def add_wavelength(self, wave):
+    def add_wavelength(self, wave: Union[list, np.ndarray]):
         """
         Add the wavelength of each effective pixel.
 
@@ -1748,7 +1786,9 @@ class SpectrumOneD:
 
         self.wave = None
 
-    def add_wavelength_resampled(self, wave_resampled):
+    def add_wavelength_resampled(
+        self, wave_resampled: Union[list, np.ndarray]
+    ):
         """
         Add the wavelength of the resampled spectrum which has an evenly
         distributed wavelength spacing.
@@ -1778,7 +1818,10 @@ class SpectrumOneD:
         self.wave_resampled = None
 
     def add_count_resampled(
-        self, count_resampled, count_err_resampled, count_sky_resampled
+        self,
+        count_resampled: Union[list, np.ndarray],
+        count_err_resampled: Union[list, np.ndarray],
+        count_sky_resampled: Union[list, np.ndarray],
     ):
         """
         Add the photoelectron counts of the resampled spectrum which has
@@ -1809,7 +1852,7 @@ class SpectrumOneD:
         self.count_err_resampled = None
         self.count_sky_resampled = None
 
-    def add_standard_star(self, library, target):
+    def add_standard_star(self, library: str, target: str):
         """
         Add the name of the standard star and its source.
 
@@ -1834,7 +1877,7 @@ class SpectrumOneD:
         self.library = None
         self.target = None
 
-    def add_smoothing(self, smooth, slength, sorder):
+    def add_smoothing(self, smooth: bool, slength: int, sorder: int):
         """
         Add the SG smoothing parameters for computing the sensitivity curve.
 
@@ -1863,7 +1906,7 @@ class SpectrumOneD:
         self.slength = None
         self.sorder = None
 
-    def add_sensitivity_func(self, sensitivity_func):
+    def add_sensitivity_func(self, sensitivity_func: Callable):
         """
         Add the callable function of the sensitivity curve.
 
@@ -1884,7 +1927,7 @@ class SpectrumOneD:
 
         self.sensitivity_func = None
 
-    def add_sensitivity(self, sensitivity):
+    def add_sensitivity(self, sensitivity: Union[list, np.ndarray]):
         """
         Add the sensitivity values for each pixel (the list from dividing
         the literature standard by the photoelectron count).
@@ -1906,7 +1949,9 @@ class SpectrumOneD:
 
         self.sensitivity = None
 
-    def add_sensitivity_resampled(self, sensitivity_resampled):
+    def add_sensitivity_resampled(
+        self, sensitivity_resampled: Union[list, np.ndarray]
+    ):
         """
         Add the sensitivity after the spectrum is resampled.
 
@@ -1927,7 +1972,11 @@ class SpectrumOneD:
 
         self.sensitivity_resampled = None
 
-    def add_literature_standard(self, wave_literature, flux_literature):
+    def add_literature_standard(
+        self,
+        wave_literature: Union[list, np.ndarray],
+        flux_literature: Union[list, np.ndarray],
+    ):
         """
         Add the literature wavelength and flux values of the standard star
         used for calibration.
@@ -1954,7 +2003,7 @@ class SpectrumOneD:
         self.wave_literature = None
         self.flux_literature = None
 
-    def add_count_continuum(self, count_continuum):
+    def add_count_continuum(self, count_continuum: Union[list, np.ndarray]):
         """
         Add the continuum count value (should be the same size as count).
 
@@ -1975,7 +2024,9 @@ class SpectrumOneD:
 
         self.count_continuum = None
 
-    def add_count_resampled_continuum(self, count_resampled_continuum):
+    def add_count_resampled_continuum(
+        self, count_resampled_continuum: Union[list, np.ndarray]
+    ):
         """
         Add the continuum count_resampled value (should be the same size as
         count_resampled).
@@ -1998,7 +2049,7 @@ class SpectrumOneD:
 
         self.count_resampled_continuum = None
 
-    def add_flux_continuum(self, flux_continuum):
+    def add_flux_continuum(self, flux_continuum: Union[list, np.ndarray]):
         """
         Add the continuum flux value (should be the same size as flux).
 
@@ -2019,7 +2070,7 @@ class SpectrumOneD:
 
         self.flux_continuum = None
 
-    def add_telluric_func(self, telluric_func):
+    def add_telluric_func(self, telluric_func: Callable):
         """
         Add the Telluric interpolated function.
 
@@ -2040,7 +2091,7 @@ class SpectrumOneD:
 
         self.telluric_func = None
 
-    def add_telluric_profile(self, telluric_profile):
+    def add_telluric_profile(self, telluric_profile: Union[list, np.ndarray]):
         """
         Add the Telluric profile - relative intensity at each pixel.
 
@@ -2061,7 +2112,7 @@ class SpectrumOneD:
 
         self.telluric_profile = None
 
-    def add_telluric_factor(self, telluric_factor):
+    def add_telluric_factor(self, telluric_factor: float):
         """
         Add the Telluric factor.
 
@@ -2084,7 +2135,7 @@ class SpectrumOneD:
 
         self.telluric_factor = None
 
-    def add_telluric_nudge_factor(self, telluric_nudge_factor):
+    def add_telluric_nudge_factor(self, telluric_nudge_factor: float):
         """
         Add the Telluric nudge factor.
 
@@ -2107,7 +2158,12 @@ class SpectrumOneD:
 
         self.telluric_nudge_factor = None
 
-    def add_flux(self, flux, flux_err, flux_sky):
+    def add_flux(
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
+    ):
         """
         Add the flux and the associated uncertainty and sky background
         in the raw pixel sampling.
@@ -2137,7 +2193,7 @@ class SpectrumOneD:
         self.flux_err = None
         self.flux_sky = None
 
-    def add_atm_ext(self, atm_ext):
+    def add_atm_ext(self, atm_ext: Union[list, np.ndarray]):
         """
         Add the atmospheric extinction correction factor in the native
         wavelengths.
@@ -2161,7 +2217,12 @@ class SpectrumOneD:
 
         self.atm_ext = None
 
-    def add_flux_atm_ext_corrected(self, flux, flux_err, flux_sky):
+    def add_flux_atm_ext_corrected(
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
+    ):
         """
         Add the atmospheric extinction corrected flux and the associated
         uncertainty and sky background in the raw pixel sampling.
@@ -2195,7 +2256,12 @@ class SpectrumOneD:
         self.flux_err_atm_ext_corrected = None
         self.flux_sky_atm_ext_corrected = None
 
-    def add_flux_telluric_corrected(self, flux, flux_err, flux_sky):
+    def add_flux_telluric_corrected(
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
+    ):
         """
         Add the telluric flux and the associated uncertainty and sky background
         in the raw pixel sampling.
@@ -2229,7 +2295,12 @@ class SpectrumOneD:
         self.flux_err_telluric_corrected = None
         self.flux_sky_telluric_corrected = None
 
-    def add_flux_atm_ext_telluric_corrected(self, flux, flux_err, flux_sky):
+    def add_flux_atm_ext_telluric_corrected(
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
+    ):
         """
         Add the atmospheric extinction and telluric corrected flux and the
         associated uncertainty and sky background in the raw pixel sampling.
@@ -2265,7 +2336,10 @@ class SpectrumOneD:
         self.flux_sky_atm_ext_telluric_corrected = None
 
     def add_flux_resampled(
-        self, flux_resampled, flux_err_resampled, flux_sky_resampled
+        self,
+        flux_resampled: Union[list, np.ndarray],
+        flux_err_resampled: Union[list, np.ndarray],
+        flux_sky_resampled: Union[list, np.ndarray],
     ):
         """
         Add the flux and the associated uncertainty and sky background
@@ -2297,7 +2371,9 @@ class SpectrumOneD:
         self.flux_err_resampled = None
         self.flux_sky_resampled = None
 
-    def add_atm_ext_resampled(self, atm_ext_resampled):
+    def add_atm_ext_resampled(
+        self, atm_ext_resampled: Union[list, np.ndarray]
+    ):
         """
         Add the atmospheric extinction correction factor in the resampled
         wavelengths.
@@ -2321,7 +2397,12 @@ class SpectrumOneD:
 
         self.atm_ext_resampled = None
 
-    def add_flux_resampled_atm_ext_corrected(self, flux, flux_err, flux_sky):
+    def add_flux_resampled_atm_ext_corrected(
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
+    ):
         """
         Add the flux and the associated uncertainty and sky background
         of the resampled spectrumg.
@@ -2355,7 +2436,9 @@ class SpectrumOneD:
         self.flux_err_resampled_atm_ext_corrected = None
         self.flux_sky_resampled_atm_ext_corrected = None
 
-    def add_telluric_profile_resampled(self, telluric_profile_resampled):
+    def add_telluric_profile_resampled(
+        self, telluric_profile_resampled: Union[list, np.ndarray]
+    ):
         """
         Add the telluric absorption profile in the resampled wavelengths.
 
@@ -2377,7 +2460,12 @@ class SpectrumOneD:
 
         self.telluric_profile_resampled = None
 
-    def add_flux_resampled_telluric_corrected(self, flux, flux_err, flux_sky):
+    def add_flux_resampled_telluric_corrected(
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
+    ):
         """
         Add the flux and the associated uncertainty and sky background
         of the resampled spectrum.
@@ -2412,7 +2500,10 @@ class SpectrumOneD:
         self.flux_sky_resampled_telluric_corrected = None
 
     def add_flux_resampled_atm_ext_telluric_corrected(
-        self, flux, flux_err, flux_sky
+        self,
+        flux: Union[list, np.ndarray],
+        flux_err: Union[list, np.ndarray],
+        flux_sky: Union[list, np.ndarray],
     ):
         """
         Add the flux and the associated uncertainty and sky background
@@ -2448,7 +2539,9 @@ class SpectrumOneD:
         self.flux_err_resampled_atm_ext_telluric_corrected = None
         self.flux_sky_resampled_atm_ext_telluric_corrected = None
 
-    def _modify_imagehdu_data(self, hdulist, idx, method, *args):
+    def _modify_imagehdu_data(
+        self, hdulist: list, idx: int, method: str, *args: str
+    ):
         """
         Wrapper function to modify the data of an ImageHDU object.
 
@@ -2457,7 +2550,9 @@ class SpectrumOneD:
         method_to_call = getattr(hdulist[idx].data, method)
         method_to_call(*args)
 
-    def _modify_imagehdu_header(self, hdulist, idx, method, *args):
+    def _modify_imagehdu_header(
+        self, hdulist: list, idx: int, method: str, *args: str
+    ):
         """
         Wrapper function to modify the header of an ImageHDU object.
 
@@ -2472,7 +2567,7 @@ class SpectrumOneD:
         method_to_call = getattr(hdulist[idx].header, method)
         method_to_call(*args)
 
-    def modify_trace_header(self, idx, method, *args):
+    def modify_trace_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2488,7 +2583,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.trace_hdulist, idx, method, *args)
 
-    def modify_count_header(self, idx, method, *args):
+    def modify_count_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2505,7 +2600,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.count_hdulist, idx, method, *args)
 
-    def modify_weight_map_header(self, method, *args):
+    def modify_weight_map_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2520,7 +2615,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.weight_map_hdulist, 0, method, *args)
 
-    def modify_arc_spec_header(self, idx, method, *args):
+    def modify_arc_spec_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2535,7 +2630,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.arc_spec_hdulist, idx, method, *args)
 
-    def modify_arc_lines_header(self, idx, method, *args):
+    def modify_arc_lines_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2553,7 +2648,7 @@ class SpectrumOneD:
             self.arc_lines_hdulist, idx, method, *args
         )
 
-    def modify_wavecal_header(self, method, *args):
+    def modify_wavecal_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2569,7 +2664,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.wavecal_hdulist, 0, method, *args)
 
-    def modify_wavelength_header(self, method, *args):
+    def modify_wavelength_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2585,7 +2680,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.wavelength_hdulist, 0, method, *args)
 
-    def modify_wavelength_resampled_header(self, method, *args):
+    def modify_wavelength_resampled_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2603,7 +2698,7 @@ class SpectrumOneD:
             self.wavelength_resampled_hdulist, 0, method, *args
         )
 
-    def modify_count_resampled_header(self, idx, method, *args):
+    def modify_count_resampled_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2622,7 +2717,7 @@ class SpectrumOneD:
             self.count_resampled_hdulist, idx, method, *args
         )
 
-    def modify_sensitivity_header(self, method, *args):
+    def modify_sensitivity_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2639,7 +2734,7 @@ class SpectrumOneD:
             self.sensitivity_hdulist, 0, method, *args
         )
 
-    def modify_flux_header(self, idx, method, *args):
+    def modify_flux_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2656,7 +2751,7 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.flux_hdulist, idx, method, *args)
 
-    def modify_atm_ext_header(self, method, *args):
+    def modify_atm_ext_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2671,7 +2766,9 @@ class SpectrumOneD:
 
         self._modify_imagehdu_header(self.atm_ext_hdulist, 0, method, *args)
 
-    def modify_flux_atm_ext_corrected_header(self, idx, method, *args):
+    def modify_flux_atm_ext_corrected_header(
+        self, idx: int, method: str, *args: str
+    ):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2690,7 +2787,7 @@ class SpectrumOneD:
             self.flux_atm_ext_corrected_hdulist, idx, method, *args
         )
 
-    def modify_telluric_profile_header(self, method, *args):
+    def modify_telluric_profile_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2707,7 +2804,9 @@ class SpectrumOneD:
             self.telluric_profile_hdulist, 0, method, *args
         )
 
-    def modify_flux_telluric_corrected_header(self, idx, method, *args):
+    def modify_flux_telluric_corrected_header(
+        self, idx: int, method: str, *args: str
+    ):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2727,7 +2826,7 @@ class SpectrumOneD:
         )
 
     def modify_flux_atm_ext_telluric_corrected_header(
-        self, idx, method, *args
+        self, idx: int, method: str, *args: str
     ):
         """
         for method 'set', it takes
@@ -2747,7 +2846,7 @@ class SpectrumOneD:
             self.flux_atm_ext_telluric_corrected_hdulist, idx, method, *args
         )
 
-    def modify_sensitivity_resampled_header(self, method, *args):
+    def modify_sensitivity_resampled_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2764,7 +2863,7 @@ class SpectrumOneD:
             self.sensitivity_resampled_hdulist, 0, method, *args
         )
 
-    def modify_flux_resampled_header(self, idx, method, *args):
+    def modify_flux_resampled_header(self, idx: int, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2783,7 +2882,7 @@ class SpectrumOneD:
             self.flux_resampled_hdulist, idx, method, *args
         )
 
-    def modify_atm_ext_resampled_header(self, method, *args):
+    def modify_atm_ext_resampled_header(self, method: str, *args: str):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2801,7 +2900,7 @@ class SpectrumOneD:
         )
 
     def modify_flux_resampled_atm_ext_corrected_header(
-        self, idx, method, *args
+        self, idx: int, method: str, *args: str
     ):
         """
         for method 'set', it takes
@@ -2821,7 +2920,9 @@ class SpectrumOneD:
             self.flux_resampled_atm_ext_corrected_hdulist, idx, method, *args
         )
 
-    def modify_telluric_profile_resampled_header(self, method, *args):
+    def modify_telluric_profile_resampled_header(
+        self, method: str, *args: str
+    ):
         """
         for method 'set', it takes
         keyword, value=None, comment=None, before=None, after=None
@@ -2839,7 +2940,7 @@ class SpectrumOneD:
         )
 
     def modify_flux_resampled_telluric_corrected_header(
-        self, idx, method, *args
+        self, idx: int, method: str, *args: str
     ):
         """
         for method 'set', it takes
@@ -2860,7 +2961,7 @@ class SpectrumOneD:
         )
 
     def modify_flux_resampled_atm_ext_telluric_corrected_header(
-        self, idx, method, *args
+        self, idx: int, method: str, *args: str
     ):
         """
         for method 'set', it takes
@@ -5107,10 +5208,10 @@ class SpectrumOneD:
 
     def create_fits(
         self,
-        output="*",
-        recreate=True,
-        empty_primary_hdu=True,
-        return_hdu_list=False,
+        output: str = "*",
+        recreate: bool = True,
+        empty_primary_hdu: bool = True,
+        return_hdu_list: bool = False,
     ):
         """
         Create a HDU list, with a choice of any combination of the
@@ -5502,12 +5603,12 @@ class SpectrumOneD:
 
     def save_fits(
         self,
-        output,
-        filename,
-        overwrite=False,
-        recreate=True,
-        empty_primary_hdu=True,
-        create_folder=False,
+        output: str,
+        filename: str,
+        overwrite: bool = False,
+        recreate: bool = True,
+        empty_primary_hdu: bool = True,
+        create_folder: bool = False,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
@@ -5612,11 +5713,11 @@ class SpectrumOneD:
 
     def save_csv(
         self,
-        output,
-        filename,
-        overwrite=False,
-        recreate=True,
-        create_folder=False,
+        output: str,
+        filename: str,
+        overwrite: bool = False,
+        recreate: bool = True,
+        create_folder: bool = False,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the

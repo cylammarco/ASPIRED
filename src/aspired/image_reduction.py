@@ -23,7 +23,7 @@ from .util import bfixpix, create_bad_pixel_mask, create_cutoff_mask
 __all__ = ["ImageReduction", "Reducer"]
 
 
-class Reducer:
+class ImageReducer:
     """
     This class is not intented for quality data reduction, it exists for
     completeness such that users can produce a minimal pipeline with
@@ -99,8 +99,7 @@ class Reducer:
             raise ValueError(f"Unknonw logging level: {log_level}.")
 
         formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] "
-            "%(message)s",
+            "[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
             datefmt="%a, %d %b %Y %H:%M:%S",
         )
 
@@ -2623,8 +2622,10 @@ class Reducer:
         self.image_fits.header.set(
             keyword="KEYWORD",
             value=self.exptime_light_keyword,
-            comment="Automatically identified exposure time keyword of the "
-            "light frames.",
+            comment=(
+                "Automatically identified exposure time keyword of the "
+                "light frames."
+            ),
         )
         self.image_fits.header.set(
             keyword="DCOMTYPE",
@@ -2755,8 +2756,10 @@ class Reducer:
         self.image_fits.header.set(
             keyword="DIAGONAL",
             value=self.diagonal,
-            comment="If False, ITERATE is the number of pixels grown "
-            "in Mahattan distance.",
+            comment=(
+                "If False, ITERATE is the number of pixels grown "
+                "in Mahattan distance."
+            ),
         )
         self.image_fits.header.set(
             keyword="HEALED",
@@ -2957,12 +2960,16 @@ class Reducer:
             print(i)
 
 
-class ImageReduction(Reducer):
-    """Wrapper class of ImageReduction that will be deprecated in the next release."""
+class ImageReducer(Reducer):
+    """
+    Wrapper class of ImageReduction that will be deprecated in the next
+    release.
+
+    """
 
     def __init_subclass__(self):
         import warnings
 
         warnings.warn(
-            "Class has been renamed `Reducer`", DeprecationWarning, 2
+            "Class has been renamed `ImageReducer`", DeprecationWarning, 2
         )

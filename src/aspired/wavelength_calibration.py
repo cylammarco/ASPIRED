@@ -19,11 +19,11 @@ __all__ = ["WavelengthCalibration"]
 class WavelengthCalibration:
     def __init__(
         self,
-        verbose=True,
-        logger_name="WavelengthCalibration",
-        log_level="INFO",
-        log_file_folder="default",
-        log_file_name=None,
+        verbose: bool = True,
+        logger_name: str = "WavelengthCalibration",
+        log_level: str = "INFO",
+        log_file_folder: str = "default",
+        log_file_name: str = None,
     ):
         """
         This is a wrapper for using RASCAL to perform wavelength calibration,
@@ -133,7 +133,12 @@ class WavelengthCalibration:
             "cheb": np.polynomial.chebyshev.chebval,
         }
 
-    def from_spectrum_oned(self, spectrum_oned, merge=False, overwrite=False):
+    def from_spectrum_oned(
+        self,
+        spectrum_oned: SpectrumOneD,
+        merge: bool = False,
+        overwrite: bool = False,
+    ):
         """
         This function copies all the info from the spectrum_oned, because users
         may supply different level/combination of reduction, everything is
@@ -167,7 +172,7 @@ class WavelengthCalibration:
         else:
             self.spectrum_oned = spectrum_oned
 
-    def add_arc_lines(self, peaks):
+    def add_arc_lines(self, peaks: Union[list, np.ndarray]):
         """
         Provide the pixel locations of the arc lines.
 
@@ -189,7 +194,7 @@ class WavelengthCalibration:
 
         self.spectrum_oned.remove_peaks_refined()
 
-    def add_arc_spec(self, arc_spec):
+    def add_arc_spec(self, arc_spec: Union[list, np.ndarray]):
         """
         Provide the 1D spectrum of the arc image.
 
@@ -210,7 +215,7 @@ class WavelengthCalibration:
 
         self.spectrum_oned.remove_arc_spec()
 
-    def add_fit_type(self, fit_type):
+    def add_fit_type(self, fit_type: str):
         """
         Adding the polynomial type.
 
@@ -232,7 +237,7 @@ class WavelengthCalibration:
 
         self.spectrum_oned.remove_fit_type()
 
-    def add_fit_coeff(self, fit_coeff):
+    def add_fit_coeff(self, fit_coeff: Union[list, np.ndarray]):
         """
         Adding the polynomial coefficients.
 
@@ -255,15 +260,15 @@ class WavelengthCalibration:
 
     def inspect_arc_lines(
         self,
-        display=False,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
 
@@ -368,21 +373,21 @@ class WavelengthCalibration:
 
     def find_arc_lines(
         self,
-        arc_spec=None,
-        prominence=5.0,
-        top_n_peaks=None,
-        distance=5.0,
-        refine=True,
-        refine_window_width=5,
-        display=False,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        arc_spec: Union[list, np.ndarray] = None,
+        prominence: float = 5.0,
+        top_n_peaks: int = None,
+        distance: float = 5.0,
+        refine: bool = True,
+        refine_window_width: int = 5,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         This function identifies the arc lines (peaks) with
@@ -508,7 +513,11 @@ class WavelengthCalibration:
         if return_jsonstring:
             return to_return
 
-    def initialise_calibrator(self, peaks=None, arc_spec=None):
+    def initialise_calibrator(
+        self,
+        peaks: Union[list, np.ndarray] = None,
+        arc_spec: Union[list, np.ndarray] = None,
+    ):
         """
         Initialise a RASCAL calibrator.
 
@@ -588,12 +597,12 @@ class WavelengthCalibration:
 
     def set_calibrator_properties(
         self,
-        num_pix=None,
-        effective_pixel=None,
-        plotting_library="plotly",
-        seed=None,
-        logger_name="Calibrator",
-        log_level="warning",
+        num_pix: int = None,
+        effective_pixel: Union[list, np.ndarray] = None,
+        plotting_library: str = "plotly",
+        seed: int = None,
+        logger_name: str = "Calibrator",
+        log_level: str = "warning",
     ):
         """
         Set the properties of the calibrator.
@@ -639,13 +648,13 @@ class WavelengthCalibration:
 
     def set_hough_properties(
         self,
-        num_slopes=5000,
-        xbins=500,
-        ybins=500,
-        min_wavelength=3000.0,
-        max_wavelength=9000.0,
-        range_tolerance=500.0,
-        linearity_tolerance=100.0,
+        num_slopes: int = 5000,
+        xbins: int = 500,
+        ybins: int = 500,
+        min_wavelength: float = 3000.0,
+        max_wavelength: float = 9000.0,
+        range_tolerance: float = 500.0,
+        linearity_tolerance: float = 100.0,
     ):
         """
         Set the properties of the hough transform.
@@ -695,16 +704,16 @@ class WavelengthCalibration:
 
     def set_ransac_properties(
         self,
-        sample_size=5,
-        top_n_candidate=5,
-        linear=True,
-        filter_close=False,
-        ransac_tolerance=5.0,
-        candidate_weighted=True,
-        hough_weight=1.0,
-        minimum_matches=3,
-        minimum_peak_utilisation=0.0,
-        minimum_fit_error=1e-4,
+        sample_size: int = 5,
+        top_n_candidate: int = 5,
+        linear: bool = True,
+        filter_close: bool = False,
+        ransac_tolerance: float = 5.0,
+        candidate_weighted: bool = True,
+        hough_weight: float = 1.0,
+        minimum_matches: int = 3,
+        minimum_peak_utilisation: float = 0.0,
+        minimum_fit_error: float = 1e-4,
     ):
         """
         Set the properties of the RANSAC process.
@@ -768,7 +777,11 @@ class WavelengthCalibration:
             minimum_fit_error=minimum_fit_error,
         )
 
-    def set_known_pairs(self, pix=None, wave=None):
+    def set_known_pairs(
+        self,
+        pix: Union[list, np.ndarray] = None,
+        wave: Union[list, np.ndarray] = None,
+    ):
         """
         Provide manual pixel-wavelength pair(s), they will be appended to the
         list of pixel-wavelength pairs after the random sample being drawn from
@@ -793,15 +806,15 @@ class WavelengthCalibration:
 
     def add_user_atlas(
         self,
-        elements,
-        wavelengths,
-        intensities=None,
-        candidate_tolerance=10.0,
-        constrain_poly=False,
-        vacuum=False,
-        pressure=101325.0,
-        temperature=273.15,
-        relative_humidity=0.0,
+        elements: Union[list, np.ndarray],
+        wavelengths: Union[list, np.ndarray],
+        intensities: Union[list, np.ndarray] = None,
+        candidate_tolerance: float = 10.0,
+        constrain_poly: bool = False,
+        vacuum: bool = False,
+        pressure: float = 101325.0,
+        temperature: float = 273.15,
+        relative_humidity: float = 0.0,
     ):
         """
         Append the user supplied arc lines to the calibrator.
@@ -861,17 +874,17 @@ class WavelengthCalibration:
 
     def add_atlas(
         self,
-        elements,
-        min_atlas_wavelength=1000.0,
-        max_atlas_wavelength=30000.0,
-        min_intensity=10.0,
-        min_distance=10.0,
-        candidate_tolerance=10.0,
-        constrain_poly=False,
-        vacuum=False,
-        pressure=101325.0,
-        temperature=273.15,
-        relative_humidity=0.0,
+        elements: Union[list, np.ndarray],
+        min_atlas_wavelength: float = 1000.0,
+        max_atlas_wavelength: float = 30000.0,
+        min_intensity: float = 10.0,
+        min_distance: float = 10.0,
+        candidate_tolerance: float = 10.0,
+        constrain_poly: bool = False,
+        vacuum: bool = False,
+        pressure: float = 101325.0,
+        temperature: float = 273.15,
+        relative_humidity: float = 0.0,
     ):
         """
         Adds an atlas of arc lines to the calibrator, given an element.
@@ -950,7 +963,9 @@ class WavelengthCalibration:
         )
         self.spectrum_oned.calibrator._generate_pairs()
 
-    def remove_atlas_lines_range(self, wavelength, tolerance=10.0):
+    def remove_atlas_lines_range(
+        self, wavelength: float, tolerance: float = 10.0
+    ):
         """
         Remove arc lines within the given wavelength range (tolerance).
 
@@ -985,7 +1000,7 @@ class WavelengthCalibration:
         self.spectrum_oned.calibrator.clear_atlas()
         self.spectrum_oned.calibrator._generate_pairs()
 
-    def do_hough_transform(self, brute_force=False):
+    def do_hough_transform(self, brute_force: bool = False):
         """
         ** brute_force is EXPERIMENTAL as of 1 Sept 2021 **
         The brute force method is supposed to provide all the possible
@@ -1011,15 +1026,15 @@ class WavelengthCalibration:
 
     def plot_search_space(
         self,
-        fit_coeff=None,
-        top_n_candidate=3,
-        weighted=True,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        return_jsonstring=False,
-        renderer="default",
-        display=False,
+        fit_coeff: Union[list, np.ndarray] = None,
+        top_n_candidate: int = 3,
+        weighted: bool = True,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        return_jsonstring: bool = False,
+        renderer: str = "default",
+        display: bool = False,
     ):
         """
         A wrapper function to plot the search space in the Hough space.
@@ -1073,21 +1088,21 @@ class WavelengthCalibration:
 
     def fit(
         self,
-        max_tries=5000,
-        fit_deg=4,
-        fit_coeff=None,
-        fit_tolerance=5.0,
-        fit_type="poly",
-        candidate_tolerance=2.0,
-        brute_force=False,
-        progress=True,
-        return_jsonstring=False,
-        display=False,
-        renderer="default",
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        return_solution=True,
+        max_tries: int = 5000,
+        fit_deg: int = 4,
+        fit_coeff: Union[list, np.ndarray] = None,
+        fit_tolerance: float = 5.0,
+        fit_type: str = "poly",
+        candidate_tolerance: float = 2.0,
+        brute_force: bool = False,
+        progress: bool = True,
+        return_jsonstring: bool = False,
+        display: bool = False,
+        renderer: str = "default",
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        return_solution: bool = True,
     ):
         """
         A wrapper function to perform wavelength calibration with RASCAL. As of
@@ -1200,21 +1215,21 @@ class WavelengthCalibration:
 
     def robust_refit(
         self,
-        fit_coeff,
-        n_delta=None,
-        refine=False,
-        tolerance=10.0,
-        method="Nelder-Mead",
-        convergence=1e-6,
-        robust_refit=True,
-        fit_deg=None,
-        display=False,
-        renderer="default",
-        filename=None,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        return_solution=True,
+        fit_coeff: Union[list, np.ndarray],
+        n_delta: int = None,
+        refine: bool = False,
+        tolerance: float = 10.0,
+        method: str = "Nelder-Mead",
+        convergence: float = 1e-6,
+        robust_refit: bool = True,
+        fit_deg: Union[list, np.ndarray] = None,
+        display: bool = False,
+        renderer: str = "default",
+        filename: str = None,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        return_solution: bool = True,
     ):
         """
         ** refine option is EXPERIMENTAL, as of 17 Jan 2021 **
@@ -1352,7 +1367,7 @@ class WavelengthCalibration:
 
         return pw_pairs
 
-    def add_pix_wave_pair(self, pix, wave):
+    def add_pix_wave_pair(self, pix: float, wave: float):
         """
         Adding extra pixel-wavelength pair to the Calibrator for refitting.
         This DOES NOT work before the Calibrator having fit for a solution
@@ -1369,7 +1384,7 @@ class WavelengthCalibration:
 
         self.spectrum_oned.calibrator.add_pix_wave_pair(pix, wave)
 
-    def remove_pix_wave_pair(self, arg):
+    def remove_pix_wave_pair(self, arg: int):
         """
         Remove fitted pixel-wavelength pair from the Calibrator for refitting.
         The positions can be found from get_pix_wave_pairs(). One at a time.
@@ -1385,11 +1400,11 @@ class WavelengthCalibration:
 
     def manual_refit(
         self,
-        matched_peaks=None,
-        matched_atlas=None,
-        degree=None,
-        x0=None,
-        return_solution=True,
+        matched_peaks: Union[list, np.ndarray] = None,
+        matched_atlas: Union[list, np.ndarray] = None,
+        degree: int = None,
+        x0: Union[list, np.ndarray] = None,
+        return_solution: bool = True,
     ):
         """
         Perform a refinement of the matched peaks and atlas lines.
@@ -1461,11 +1476,11 @@ class WavelengthCalibration:
 
     def save_fits(
         self,
-        output="wavecal",
-        filename="wavecal",
-        overwrite=False,
-        recreate=False,
-        empty_primary_hdu=True,
+        output: str = "wavecal",
+        filename: str = "wavecal",
+        overwrite: bool = False,
+        recreate: bool = False,
+        empty_primary_hdu: bool = True,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the
@@ -1504,10 +1519,10 @@ class WavelengthCalibration:
 
     def save_csv(
         self,
-        output="wavecal",
-        filename="wavecal",
-        overwrite=False,
-        recreate=False,
+        output: str = "wavecal",
+        filename: str = "wavecal",
+        overwrite: bool = False,
+        recreate: bool = False,
     ):
         """
         Save the reduced data to disk, with a choice of any combination of the

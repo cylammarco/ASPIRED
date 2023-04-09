@@ -6,6 +6,7 @@
 import copy
 import logging
 from functools import partial
+from typing import Union
 
 import numpy as np
 from astropy import units as u
@@ -16,7 +17,12 @@ from specutils.spectra import Spectrum1D
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
-def bfixpix(data, badmask, n_nearest=4, retdat=False):
+def bfixpix(
+    data: np.ndarray,
+    badmask: np.ndarray,
+    n_nearest: int = 4,
+    retdat: bool = False,
+):
     """
     Replace pixels flagged as nonzero in a bad-pixel mask with the
     average of their nearest four good neighboring pixels.
@@ -93,7 +99,11 @@ def bfixpix(data, badmask, n_nearest=4, retdat=False):
 
 
 def create_cutoff_mask(
-    data, cutoff=65535.0, grow=False, iterations=1, diagonal=False
+    data: np.ndarray,
+    cutoff: float = 62000.0,
+    grow: bool = False,
+    iterations: int = 1,
+    diagonal: bool = False,
 ):
     """
     Create a simple mask from a numpy.ndarray, pixel values above
@@ -160,7 +170,12 @@ def create_cutoff_mask(
         return cutoff_mask, False
 
 
-def create_bad_pixel_mask(data, grow=False, iterations=1, diagonal=False):
+def create_bad_pixel_mask(
+    data: np.ndarray,
+    grow: bool = False,
+    iterations: int = 1,
+    diagonal: bool = False,
+):
     """
     Create a simple mask from a 2D numpy.ndarray, pixel with non-numeric
     values will be masked as bad pixels (True).
@@ -198,7 +213,7 @@ def create_bad_pixel_mask(data, grow=False, iterations=1, diagonal=False):
         return bad_pixel_mask, False
 
 
-def grow_mask(mask, iterations, diagonal):
+def grow_mask(mask: np.ndarray, iterations: int, diagonal: bool):
     """
     This extends the mask by the given "iterations".
 
@@ -269,7 +284,9 @@ def grow_mask(mask, iterations, diagonal):
     return mask_grown
 
 
-def get_continuum(x, y, *args):
+def get_continuum(
+    x: Union[list, np.ndarray], y: Union[list, np.ndarray], *args: str
+):
     """
     This is a wrapper function of the lowess function from statsmodels that
     uses a different lowess_frac default value that is more appropriate in
@@ -305,7 +322,7 @@ def get_continuum(x, y, *args):
     return fitted_continuum(x * u.AA).to_value()
 
 
-def gaus(x, a, b, x0, sigma):
+def gaus(x: float, a: float, b: float, x0: float, sigma: float):
     """
     Simple Gaussian function.
 

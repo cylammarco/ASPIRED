@@ -102,17 +102,17 @@ def tophat_extraction(
 
 
 def optimal_extraction_horne86(
-    source_slice,
-    sky,
-    profile=None,
-    tol=1e-6,
-    max_iter=99,
-    gain=1.0,
-    readnoise=0.0,
-    cosmicray_sigma=5.0,
-    forced=False,
-    variances=None,
-    bad_mask=None,
+    source_slice: np.ndarray,
+    sky: np.ndarray,
+    profile: np.ndarray = None,
+    tol: float = 1e-6,
+    max_iter: int = 99,
+    gain: float = 1.0,
+    readnoise: float = 0.0,
+    cosmicray_sigma: float = 5.0,
+    forced: bool = False,
+    variances: np.ndarray = None,
+    bad_mask: np.ndarray = None,
 ):
     """
     Make sure the counts are the number of photoelectrons or an equivalent
@@ -240,19 +240,19 @@ def optimal_extraction_horne86(
 
 def optimal_extraction_marsh89(
     frame,
-    residual_frame,
-    variance,
-    trace,
-    spectrum=None,
-    readnoise=0.0,
-    apwidth=7,
-    goodpixelmask=None,
-    npoly=21,
-    polyspacing=1,
-    pord=2,
-    cosmicray_sigma=5,
-    qmode="slow-nearest",
-    nreject=100,
+    residual_frame: np.ndarray,
+    variance: np.ndarray,
+    trace: np.ndarray,
+    spectrum: np.ndarray = None,
+    readnoise: float = 0.0,
+    apwidth: int = 7,
+    goodpixelmask: np.ndarray = None,
+    npoly: int = 21,
+    polyspacing: int = 1,
+    pord: int = 2,
+    cosmicray_sigma: float = 5.0,
+    qmode: str = "slow-nearest",
+    nreject: int = 100,
 ):
     """
     Optimally extract curved spectra taken and updated from
