@@ -80,6 +80,15 @@ def test_full_run(mock_show):
     lhs6328_twodspec.ap_extract(
         apwidth=15, skywidth=10, skydeg=1, optimal=True, display=False
     )
+    lhs6328_twodspec.inspect_line_spread_function(
+        display=False,
+        filename=os.path.join(
+            HERE, "test_output", "test_full_run_line_spread_function_gauss"
+        ),
+        save_fig=True,
+        fig_type="iframe+png",
+        return_jsonstring=True,
+    )
 
     # Force extraction
     lhs6328_twodspec.ap_extract(
@@ -157,7 +166,14 @@ def test_full_run(mock_show):
         log_file_folder=os.path.join(HERE, "test_output"),
     )
 
-    hilt102_twodspec.ap_trace(nspec=1, resample_factor=10, display=False)
+    hilt102_twodspec.ap_trace(
+        nspec=1,
+        resample_factor=10,
+        display=False,
+        save_fig=True,
+        fig_type="jpg+png+pdf+svg+iframe",
+        filename=os.path.join(HERE, "test_output", "test_full_run_aptrace"),
+    )
 
     hilt102_twodspec.ap_extract(
         apwidth=15, skysep=3, skywidth=5, skydeg=1, optimal=True, display=False

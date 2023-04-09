@@ -3052,7 +3052,7 @@ class TwoDSpec:
 
     def ap_extract(
         self,
-        apwidth: Union[int, list, np.ndarray] = 7,
+        apwidth: Union[int, list, np.ndarray] = 9,
         skysep: Union[int, list, np.ndarray] = 3,
         skywidth: Union[int, list, np.ndarray] = 5,
         skydeg: int = 1,
@@ -3308,6 +3308,10 @@ class TwoDSpec:
                 itrace = int(pos)
                 pix_frac = pos - itrace
 
+                # Number of pixels from the "centre" of the trace
+                # Only used in Horne86 extraction with gauss model
+                delta_trace = fitted_profile_func.mean_0 - pos
+
                 profile_start_idx = 0
 
                 # fix width if trace is too close to the edge
@@ -3477,7 +3481,7 @@ class TwoDSpec:
                     if model == "gauss":
                         # .left is the gaussian model
                         _profile_func = spec.profile_func.left
-                        _profile = _profile_func(source_pix)
+                        _profile = _profile_func(source_pix + delta_trace)
                         _profile /= np.nansum(_profile)
                         # _lower = (pos - min(source_pix)) / _profile_func.stddev
                         # _upper = (
@@ -3503,6 +3507,14 @@ class TwoDSpec:
                             "{} is given. lowess is used.".format(model)
                         )
                         model = "lowess"
+
+                    if (_profile == 0.0).all():
+                        _profile = np.ones_like(_profile)
+
+                        self.logger.warning(
+                            "Optimal profile is all zeros. Unit weighting is"
+                            " used instead."
+                        )
 
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
@@ -3973,16 +3985,16 @@ class TwoDSpec:
 
     def inspect_line_spread_function(
         self,
-        spec_id=None,
-        display=True,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        spec_id: Union[int, list, np.ndarray] = None,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Call this method to inspect the line spread function used to extract
@@ -4113,16 +4125,16 @@ class TwoDSpec:
 
     def inspect_extracted_spectrum(
         self,
-        spec_id=None,
-        display=True,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        spec_id: Union[int, list, np.ndarray] = None,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Call this method to inspect the extracted spectrum.
@@ -4306,16 +4318,16 @@ class TwoDSpec:
 
     def inspect_residual(
         self,
-        log=True,
-        display=True,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
+        log: bool = True,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
     ):
         """
         Display the reduced image with a supported plotly renderer or export
@@ -4408,17 +4420,17 @@ class TwoDSpec:
 
     def extract_arc_spec(
         self,
-        spec_width=None,
-        display=False,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
-        spec_id=None,
+        spec_width: Union[float, int] = None,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
+        spec_id: Union[int, list, np.ndarray] = None,
     ):
         """
         This function applies the trace(s) to the arc image then take median
@@ -4530,16 +4542,16 @@ class TwoDSpec:
 
     def inspect_arc_spec(
         self,
-        display=False,
-        renderer="default",
-        width=1280,
-        height=720,
-        return_jsonstring=False,
-        save_fig=False,
-        fig_type="iframe+png",
-        filename=None,
-        open_iframe=False,
-        spec_id=None,
+        display: bool = False,
+        renderer: str = "default",
+        width: int = 1280,
+        height: int = 720,
+        return_jsonstring: bool = False,
+        save_fig: bool = False,
+        fig_type: str = "iframe+png",
+        filename: str = None,
+        open_iframe: bool = False,
+        spec_id: Union[int, list, np.ndarray] = None,
     ):
         """
         Display the extracted arc spectrum.
@@ -4670,7 +4682,12 @@ class TwoDSpec:
         if return_jsonstring:
             return to_return
 
-    def create_fits(self, output="*", recreate=False, empty_primary_hdu=True):
+    def create_fits(
+        self,
+        output: str = "*",
+        recreate: bool = False,
+        empty_primary_hdu: bool = True,
+    ):
         """
         Parameters
         ----------
@@ -4715,11 +4732,11 @@ class TwoDSpec:
 
     def save_fits(
         self,
-        output="*",
-        filename=None,
-        overwrite=False,
-        recreate=False,
-        empty_primary_hdu=True,
+        output: str = "*",
+        filename: str = None,
+        overwrite: bool = False,
+        recreate: bool = False,
+        empty_primary_hdu: bool = True,
     ):
         """
         Save the reduced image to disk. Each trace is saved into a separate
@@ -4785,10 +4802,10 @@ class TwoDSpec:
 
     def save_csv(
         self,
-        output="*",
-        filename=None,
-        overwrite=False,
-        recreate=False,
+        output: str = "*",
+        filename: str = None,
+        overwrite: bool = False,
+        recreate: bool = False,
     ):
         """
         Save the reduced image to disk. Each trace is saved into a separate

@@ -92,7 +92,7 @@ def test_spectral_extraction():
         ap_faint=0,
         save_fig=True,
         fig_type="iframe+png",
-        filename=os.path.join(HERE, "test_output", "test_full_run_aptrace"),
+        filename=os.path.join(HERE, "test_output", "test_extraction_aptrace"),
         return_jsonstring=True,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
@@ -106,7 +106,9 @@ def test_spectral_extraction():
     dummy_twodspec.ap_extract(
         apwidth=5,
         optimal=False,
-        filename=os.path.join(HERE, "test_output", "test_full_run_apextract"),
+        filename=os.path.join(
+            HERE, "test_output", "test_extraction_apextract"
+        ),
         save_fig=True,
         fig_type="iframe+png",
         return_jsonstring=True,
@@ -120,7 +122,7 @@ def test_spectral_extraction():
     dummy_twodspec.inspect_extracted_spectrum(
         display=False,
         filename=os.path.join(
-            HERE, "test_output", "test_full_run_extracted_spectrum"
+            HERE, "test_output", "test_extraction_extracted_spectrum"
         ),
         save_fig=True,
         fig_type="iframe+png",
@@ -128,7 +130,7 @@ def test_spectral_extraction():
     )
 
 
-def test_gausian_spectral_extraction():
+def test_gaussian_spectral_extraction():
     # masking
     spec_mask = np.arange(10, 900)
     spatial_mask = np.arange(15, 85)
@@ -176,6 +178,15 @@ def test_gausian_spectral_extraction():
 
     # Optimal extraction (Horne86 gauss)
     dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="gauss")
+    dummy_twodspec.inspect_line_spread_function(
+        display=False,
+        filename=os.path.join(
+            HERE, "test_output", "test_extraction_line_spread_function_gauss"
+        ),
+        save_fig=True,
+        fig_type="iframe+png",
+        return_jsonstring=True,
+    )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_horne = count / count_err
@@ -190,6 +201,15 @@ def test_gausian_spectral_extraction():
         model="lowess",
         lowess_frac=0.05,
     )
+    dummy_twodspec.inspect_line_spread_function(
+        display=False,
+        filename=os.path.join(
+            HERE, "test_output", "test_extraction_line_spread_function_lowess"
+        ),
+        save_fig=True,
+        fig_type="iframe+png",
+        return_jsonstring=True,
+    )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     print(count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
@@ -200,6 +220,15 @@ def test_gausian_spectral_extraction():
 
     # Optimal extraction (Marsh89)
     dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
+    dummy_twodspec.inspect_line_spread_function(
+        display=False,
+        filename=os.path.join(
+            HERE, "test_output", "test_extraction_line_spread_function_marsh"
+        ),
+        save_fig=True,
+        fig_type="iframe+png",
+        return_jsonstring=True,
+    )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
     snr_marsh = count / count_err
@@ -510,7 +539,7 @@ def test_marsh_extraction_fast_apwidth_str():
 
 
 # Exposure time and gain should not have an effect on the extraction itself
-def test_gausian_spectral_extraction_10000s_exptime_2x_gain():
+def test_gaussian_spectral_extraction_10000s_exptime_2x_gain():
     # masking
     spec_mask = np.arange(10, 900)
     spatial_mask = np.arange(15, 85)

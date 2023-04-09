@@ -676,6 +676,6 @@ def optimal_extraction_marsh89(
         spectrum_marsh,
         spectrum_err_marsh,
         is_optimal,
-        profile,
+        profile.T,
         variance0,
     )
