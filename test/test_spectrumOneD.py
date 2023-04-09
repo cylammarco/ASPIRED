@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from aspired import spectrum_oneD
+from rascal.calibrator import Calibrator
 
 
 def test_spectrum_oned():
@@ -35,8 +36,7 @@ def test_spectrum_oned():
     spec.remove_peaks_wave()
     assert spec.peaks_wave is None
 
-    spec.add_calibrator("lalala")
-    assert spec.calibrator == "lalala"
+    spec.add_calibrator(Calibrator([100]))
     spec.remove_calibrator()
     assert spec.calibrator is None
 

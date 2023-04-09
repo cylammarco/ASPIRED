@@ -498,7 +498,7 @@ class StandardLibrary:
     def inspect_standard(
         self,
         display: bool = True,
-        rendererLstr="default",
+        renderer: str = "default",
         width: int = 1280,
         height: int = 720,
         return_jsonstring: bool = False,
@@ -1047,7 +1047,7 @@ class FluxCalibration(StandardLibrary):
         sens_deg: int = 7,
         use_continuum: bool = False,
         recompute_continuum: bool = False,
-        *args,
+        *args: str,
     ):
         """
         The sensitivity curve is computed by dividing the true values by the

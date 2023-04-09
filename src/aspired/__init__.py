@@ -27,4 +27,6 @@ __all__ = [
     "spectral_reduction",
     "standard_list",
     "util",
+    "flux_calibration",
+    "wavelength_calibration",
 ]

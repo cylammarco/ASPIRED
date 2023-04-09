@@ -20,7 +20,7 @@ from plotly import io as pio
 
 from .util import bfixpix, create_bad_pixel_mask, create_cutoff_mask
 
-__all__ = ["ImageReduction", "Reducer"]
+__all__ = ["ImageReduction", "ImageReducer"]
 
 
 class ImageReducer:
@@ -2960,7 +2960,7 @@ class ImageReducer:
             print(i)
 
 
-class ImageReducer(Reducer):
+class ImageReduction(ImageReducer):
     """
     Wrapper class of ImageReduction that will be deprecated in the next
     release.

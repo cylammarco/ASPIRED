@@ -18,31 +18,31 @@ def file_len(fname):
 
 
 def test_logger():
-    imred_debug = image_reduction.Reducer(
+    imred_debug = image_reduction.ImageReducer(
         log_level="DEBUG",
         logger_name="imred_debug",
         log_file_name="imred_debug.log",
         log_file_folder=os.path.join(HERE, "test_output"),
     )
-    imred_info = image_reduction.Reducer(
+    imred_info = image_reduction.ImageReducer(
         log_level="INFO",
         logger_name="imred_info",
         log_file_name="imred_info.log",
         log_file_folder=os.path.join(HERE, "test_output"),
     )
-    imred_warning = image_reduction.Reducer(
+    imred_warning = image_reduction.ImageReducer(
         log_level="WARNING",
         logger_name="imred_warning",
         log_file_name="imred_warning.log",
         log_file_folder=os.path.join(HERE, "test_output"),
     )
-    imred_error = image_reduction.Reducer(
+    imred_error = image_reduction.ImageReducer(
         log_level="ERROR",
         logger_name="imred_error",
         log_file_name="imred_error.log",
         log_file_folder=os.path.join(HERE, "test_output"),
     )
-    imred_critical = image_reduction.Reducer(
+    imred_critical = image_reduction.ImageReducer(
         log_level="CRITICAL",
         logger_name="imred_critical",
         log_file_name="imred_critical.log",
@@ -150,14 +150,14 @@ except Exception as e:
 
 @pytest.mark.xfail()
 def test_str_verbose_at_initialisation():
-    image_reduction.Reducer(verbose="haha", log_file_name=None)
+    image_reduction.ImageReducer(verbose="haha", log_file_name=None)
 
 
 def test_absolute_path():
     current_absolute_path = os.path.abspath(
         "test/test_data/sprat_LHS6328.list"
     )
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(filelist=current_absolute_path)
     img.load_data()
     img.reduce()
@@ -174,7 +174,7 @@ def test_absolute_path_with_deprecation_warning_for_ImageReduction():
 
 
 def test_space_separated_input():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.txt"),
         ftype="ascii",
@@ -184,7 +184,7 @@ def test_space_separated_input():
 
 
 def test_space_separated_input_2():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.txt"),
         delimiter=" ",
@@ -194,7 +194,7 @@ def test_space_separated_input_2():
 
 
 def test_tsv_input_2():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.tsv"),
         ftype="tsv",
@@ -205,7 +205,7 @@ def test_tsv_input_2():
 
 
 def test_input_with_hdu():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328_with_hdu.list")
     )
@@ -214,7 +214,7 @@ def test_input_with_hdu():
 
 
 def test_input_with_extra_bracket():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(
             HERE, "test_data", "sprat_LHS6328_fake_extra_bracket.list"
@@ -225,7 +225,7 @@ def test_input_with_extra_bracket():
 
 
 def test_input_with_data_cube():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(
             HERE, "test_data", "sprat_LHS6328_fake_data_cube.list"
@@ -236,7 +236,7 @@ def test_input_with_data_cube():
 
 
 def test_input_with_data_cube_extra_bracket():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(
             HERE,
@@ -250,7 +250,7 @@ def test_input_with_data_cube_extra_bracket():
 
 @pytest.mark.xfail()
 def test_input_with_one_dimensional_data():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(
             HERE, "test_data", "sprat_LHS6328_one_dimensional_data.list"
@@ -260,7 +260,7 @@ def test_input_with_one_dimensional_data():
 
 
 def test_input_with_wrong_light_combine_type():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -269,7 +269,7 @@ def test_input_with_wrong_light_combine_type():
 
 
 def test_input_with_wrong_dark_combine_type():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -279,7 +279,7 @@ def test_input_with_wrong_dark_combine_type():
 
 
 def test_set_everything_to_None():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -326,7 +326,7 @@ def test_set_everything_to_None():
 
 
 def test_set_everything_to_minus1():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -374,7 +374,7 @@ def test_set_everything_to_minus1():
 
 # apart from heal_pixels
 def test_set_everything_to_True():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -422,7 +422,7 @@ def test_set_everything_to_True():
 
 
 def test_set_everything_to_bla():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -472,7 +472,7 @@ def test_set_everything_to_bla():
 # The bad combinetype does not affect the reduction because
 # there is not any flat frame
 def test_input_with_wrong_flat_combine_type():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -482,7 +482,7 @@ def test_input_with_wrong_flat_combine_type():
 
 
 def test_input_with_wrong_bias_combine_type():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -493,7 +493,7 @@ def test_input_with_wrong_bias_combine_type():
 
 @pytest.mark.xfail(raises=RuntimeError)
 def test_input_with_only_one_column():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(
             HERE, "test_data", "sprat_LHS6328_expect_fail.list"
@@ -502,7 +502,7 @@ def test_input_with_only_one_column():
 
 
 def test_cosmicray_cleaning_x_then_y():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -514,7 +514,7 @@ def test_cosmicray_cleaning_x_then_y():
 
 
 def test_cosmicray_cleaning_y_then_x():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -526,7 +526,7 @@ def test_cosmicray_cleaning_y_then_x():
 
 
 def test_cosmicray_cleaning():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -538,7 +538,7 @@ def test_cosmicray_cleaning():
 
 
 def test_input_with_multiple_frames_to_combine_and_reduction():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(
             HERE, "test_data", "sprat_LHS6328_repeated_data.list"
@@ -550,7 +550,7 @@ def test_input_with_multiple_frames_to_combine_and_reduction():
 
 
 def test_input_with_one_line_and_reduction():
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328_one_line.list")
     )
@@ -566,7 +566,7 @@ def test_input_with_numpy_array_and_reduction():
     )
     for i, filepath in enumerate(filelist[:, 1]):
         filelist[:, 1][i] = os.path.join(HERE, "test_data", filepath.strip())
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(filelist=filelist)
     img.load_data()
     img.reduce()
@@ -574,7 +574,7 @@ def test_input_with_numpy_array_and_reduction():
 
 @patch("plotly.graph_objects.Figure.show")
 def test_reduction_and_save(mock_show):
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(
         filelist=os.path.join(HERE, "test_data", "sprat_LHS6328.list")
     )
@@ -603,7 +603,7 @@ def test_input_with_numpy_array_and_clean_bad_pixels():
         filelist[:, 1][i] = os.path.join(
             os.path.join(HERE, "test_data"), filepath.strip()
         )
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(filelist=filelist)
     img.load_data()
     img.reduce()
@@ -620,7 +620,7 @@ def test_input_with_numpy_array_and_set_every_pixel_bad():
         filelist[:, 1][i] = os.path.join(
             os.path.join(HERE, "test_data"), filepath.strip()
         )
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(filelist=filelist)
     img.load_data()
     img.reduce()
@@ -638,7 +638,7 @@ def test_input_with_numpy_array_and_clean_bad_pixels_expect_fail():
         filelist[:, 1][i] = os.path.join(
             os.path.join(HERE, "test_data"), filepath.strip()
         )
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     img.add_filelist(filelist=filelist)
     img.load_data()
     img.reduce()
@@ -656,7 +656,7 @@ def test_input_with_fits_data_object():
         filelist[:, 1][i] = os.path.join(
             os.path.join(HERE, "test_data"), filepath.strip()
         )
-    img = image_reduction.Reducer(log_file_name=None)
+    img = image_reduction.ImageReducer(log_file_name=None)
     imtype = filelist[:, 0].astype("object")
     impath = filelist[:, 1].astype("object")
 

@@ -32,7 +32,7 @@ from .extraction import (
     optimal_extraction_marsh89,
     tophat_extraction,
 )
-from .image_reduction import ImageReduction, Reducer
+from .image_reduction import ImageReducer, ImageReduction
 from .line_spread_function import (
     build_line_spread_profile,
     get_line_spread_function,
@@ -56,7 +56,7 @@ class TwoDSpec:
             fits.hdu.hdulist.HDUList,
             fits.hdu.hdulist.PrimaryHDU,
             fits.hdu.hdulist.ImageHDU,
-            Reducer,
+            ImageReducer,
             ImageReduction,
         ] = None,
         header: fits.Header = None,
@@ -233,7 +233,7 @@ class TwoDSpec:
             "SEEDIMM",
             "DSEEING",
         ]
-        # AEPOSURE is the average exposure time computed in Reducer
+        # AEPOSURE is the average exposure time computed in ImageReducer
         # it is the effective exposure time suitable for computing
         # the sensitivity curve.
         self.exptime_keyword = [
@@ -262,14 +262,14 @@ class TwoDSpec:
             fits.hdu.hdulist.PrimaryHDU,
             fits.hdu.hdulist.ImageHDU,
             CCDData,
-            Reducer,
+            ImageReducer,
             ImageReduction,
         ],
         header: fits.Header = None,
     ):
         """
         Adding the 2D image data to be processed. The data can be a 2D numpy
-        array, an AstroPy ImageHDU/Primary HDU object or an Reducer
+        array, an AstroPy ImageHDU/Primary HDU object or an ImageReducer
         object.
 
         parameters
@@ -324,10 +324,10 @@ class TwoDSpec:
             self.bad_mask = create_bad_pixel_mask(self.img)[0]
             self.logger.info("A CCDData is loaded as data.")
 
-        # If it is an Reducer object
-        elif isinstance(data, (Reducer, ImageReduction)):
+        # If it is an ImageReducer object
+        elif isinstance(data, (ImageReducer, ImageReduction)):
             # If the data is not reduced, reduce it here. Error handling is
-            # done by the Reducer class
+            # done by the ImageReducer class
             if data.image_fits is None:
                 data.create_image_fits()
 
@@ -343,7 +343,7 @@ class TwoDSpec:
 
             else:
                 self.logger.warning(
-                    "Arc frame is not in the Reducer "
+                    "Arc frame is not in the ImageReducer "
                     "object, please supplied manually if you wish to perform "
                     "wavelength calibration."
                 )
@@ -380,7 +380,7 @@ class TwoDSpec:
             error_msg = (
                 "Please provide a numpy array, an "
                 + "astropy.io.fits.hdu.image.PrimaryHDU object "
-                + "or an Reducer object."
+                + "or an ImageReducer object."
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
@@ -1142,7 +1142,7 @@ class TwoDSpec:
 
         Parameters
         ----------
-        bad_mask: numpy.ndarray, PrimaryHDU/ImageHDU, Reducer, str
+        bad_mask: numpy.ndarray, PrimaryHDU/ImageHDU, ImageReducer, str
             The bad pixel mask of the image, make sure it is of the same size
             as the image and the right orientation.
 
@@ -1245,7 +1245,7 @@ class TwoDSpec:
 
         Parameters
         ----------
-        arc: numpy.ndarray, PrimaryHDU/ImageHDU, Reducer, str
+        arc: numpy.ndarray, PrimaryHDU/ImageHDU, ImageReducer, str
             The image of the arc image.
         header: FITS header (deafult: None)
             An astropy.io.fits.Header object. This is not used if arc is
@@ -1345,7 +1345,7 @@ class TwoDSpec:
                 "astropy.io.fits.hdu.image.PrimaryHDU object, an "
                 "astropy.io.fits.hdu.image.ImageHDU object, an "
                 "astropy.io.fits.HDUList object, or an "
-                "aspired.Reducer object."
+                "aspired.ImageReducer object."
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)

@@ -4,9 +4,10 @@ import logging
 import os
 from typing import Callable, Union
 
+import astropy
 import numpy as np
 from astropy.io import fits
-from rascal import Calibrator
+from rascal.calibrator import Calibrator
 from scipy import interpolate as itp
 
 __all__ = ["SpectrumOneD"]
@@ -94,10 +95,8 @@ class SpectrumOneD:
             self.handler = logging.StreamHandler()
         else:
             if log_file_name == "default":
-                log_file_name = "{}_{}.log".format(
-                    logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
-                )
+                t_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                log_file_name = "{logger_name}_{t_str}.log"
             # Save log to file
             if log_file_folder == "default":
                 log_file_folder = ""
@@ -114,7 +113,7 @@ class SpectrumOneD:
         # spectrum ID
         if spec_id is None:
             self.spec_id = 0
-        elif type(spec_id) == int:
+        elif isinstance(spec_id, int):
             self.spec_id = spec_id
         else:
             error_msg = (
@@ -481,7 +480,7 @@ class SpectrumOneD:
         for d1, d2 in zip(self.hdu_name.values(), number_of_hdus.values()):
             self.n_hdu[d1] = d2
 
-    def merge(self, spectrum_oned: SpectrumOneD, overwrite: bool = False):
+    def merge(self, spectrum_oned, overwrite: bool = False):
         """
         This function copies all the info from the supplied spectrum_oned to
         this one, including the spec_id.
@@ -525,10 +524,10 @@ class SpectrumOneD:
         """
 
         if header is not None:
-            if type(header) == fits.Header:
+            if isinstance(header, fits.Header):
                 self.spectrum_header = header
                 self.logger.info("spectrum_header is stored.")
-            elif type(header[0]) == fits.Header:
+            elif isinstance(header[0], fits.Header):
                 self.spectrum_header = header[0]
                 self.logger.info("spectrum_header is stored.")
             else:
@@ -564,10 +563,10 @@ class SpectrumOneD:
         """
 
         if header is not None:
-            if type(header) == fits.Header:
+            if isinstance(header, fits.Header):
                 self.standard_header = header
                 self.logger.info("standard_header is stored.")
-            elif type(header[0]) == fits.Header:
+            elif isinstance(header[0], fits.Header):
                 self.standard_header = header[0]
                 self.logger.info("standard_header is stored.")
             else:
@@ -857,14 +856,14 @@ class SpectrumOneD:
         self.var = None
 
     def add_line_spread_profile_upsampled(
-        self, line_spread_profile_upsampled: astropy.model
+        self, line_spread_profile_upsampled: astropy.modeling.Fittable1DModel
     ):
         """
         Add the empirical line spread profile as measured from the upsampled image.
 
         Parameters
         ----------
-        profile_func: a fitted astropy.model
+        profile_func: a fitted astropy.modeling.Fittable1DModel
             The fitted trace profile.
         """
 
@@ -877,13 +876,15 @@ class SpectrumOneD:
 
         self.line_spread_profile_upsampled = None
 
-    def add_line_spread_profile(self, line_spread_profile: astropy.model):
+    def add_line_spread_profile(
+        self, line_spread_profile: astropy.modeling.Fittable1DModel
+    ):
         """
         Add the empirical line spread profile as measured.
 
         Parameters
         ----------
-        profile_func: a fitted astropy.model
+        profile_func: a fitted astropy.modeling.Fittable1DModel
             The fitted trace profile.
         """
 
@@ -902,7 +903,7 @@ class SpectrumOneD:
 
         Parameters
         ----------
-        profile_func: a fitted astropy.model
+        profile_func: a fitted astropy.modeling.Fittable1DModel
             The fitted trace profile.
         """
 

@@ -2,6 +2,7 @@
 import datetime
 import logging
 import os
+from typing import Union
 
 import numpy as np
 from plotly import graph_objects as go
@@ -95,10 +96,8 @@ class WavelengthCalibration:
             self.handler = logging.StreamHandler()
         else:
             if log_file_name == "default":
-                log_file_name = "{}_{}.log".format(
-                    logger_name,
-                    datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S"),
-                )
+                t_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                log_file_name = f"{logger_name}_{t_str}.log"
             # Save log to file
             if log_file_folder == "default":
                 log_file_folder = ""
