@@ -3290,7 +3290,7 @@ class TwoDSpec:
                 ) = self._build_line_spread_function(
                     img=self.img,
                     trace=spec.trace,
-                    trace_width=width_dn + width_up,
+                    trace_width=int(np.nanmedian(spec.trace_sigma) * 3),
                     resample_factor=self.resample_factor,
                 )
 
