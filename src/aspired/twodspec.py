@@ -38,7 +38,7 @@ from .line_spread_function import (
     get_line_spread_function,
 )
 from .spectrum_oneD import SpectrumOneD
-from .util import bfixpix, create_bad_pixel_mask, gaus
+from .util import bfixpix, create_bad_pixel_mask
 
 __all__ = ["TwoDSpec"]
 
@@ -2171,7 +2171,7 @@ class TwoDSpec:
             ) = self._build_line_spread_function(
                 img=self.img,
                 trace=aper,
-                trace_width=5.0,
+                trace_width=7.0,
                 resample_factor=self.resample_factor,
             )
 
@@ -3290,7 +3290,7 @@ class TwoDSpec:
                 ) = self._build_line_spread_function(
                     img=self.img,
                     trace=spec.trace,
-                    trace_width=5.0,
+                    trace_width=width_dn + width_up,
                     resample_factor=self.resample_factor,
                 )
 
@@ -3504,7 +3504,7 @@ class TwoDSpec:
                     else:
                         self.logger.error(
                             "The provided model has to be gauss or lowess, "
-                            "{} is given. lowess is used.".format(model)
+                            f"{model} is given. lowess is used."
                         )
                         model = "lowess"
 

@@ -342,11 +342,9 @@ class StandardLibrary:
 
             if len(target_list) > 0:
                 self.logger.warning(
-                    (
-                        "Requested standard star cannot be found, a list of the"
-                        " closest matching names are returned: %s"
-                    ),
-                    target_list,
+                    "Requested standard star cannot be found, a list of"
+                    " the closest matching names are returned:"
+                    f" {{target_list}}."
                 )
 
                 return target_list, False
@@ -355,9 +353,8 @@ class StandardLibrary:
                 error_msg = (
                     (
                         "Please check the name of your standard star, nothing "
-                        "share a similarity above %s."
+                        f"share a similarity above {cutoff}."
                     ),
-                    cutoff,
                 )
                 self.logger.critical(error_msg)
                 raise ValueError(error_msg)
@@ -459,12 +456,9 @@ class StandardLibrary:
                     self.library = libraries[0]
 
                     self.logger.warning(
-                        (
-                            "The requested standard star cannot be found in the"
-                            " given library,  or the library is not specified."
-                            " ASPIRED is using %s."
-                        ),
-                        self.library,
+                        "The requested standard star cannot be found in the"
+                        " given library, or the library is not specified."
+                        f" ASPIRED is using {self.library}."
                     )
 
             else:
@@ -474,18 +468,15 @@ class StandardLibrary:
                 self.library = libraries[0]
 
                 self.logger.warning(
-                    (
-                        "The requested library does not exist, %s is used "
-                        "because it has the closest matching name."
-                    ),
-                    self.library,
+                    f"The requested library does not exist, {self.library} "
+                    "is used because it has the closest matching name."
                 )
 
         if not self.verbose:
             if self.library is None:
                 # Use the default library order
                 self.logger.warning(
-                    "Standard library is not given, %s is used.", self.library
+                    f"Standard library is not given, {self.library} is used."
                 )
 
         if self.library.startswith("iraf"):
@@ -1101,9 +1092,8 @@ class FluxCalibration(StandardLibrary):
         self.logger.info(
             (
                 "The exposure time used for computing sensitivity curve "
-                "is %s seconds."
+                f"is {exptime} seconds."
             ),
-            exptime,
         )
 
         # Mask regions before smoothing and avoiding telluric absorptions
@@ -1540,8 +1530,7 @@ class FluxCalibration(StandardLibrary):
             exptime = 1.0
 
         self.logger.info(
-            "The exposure time used for flux calibration is %s seconds.",
-            exptime,
+            f"The exposure time used for flux calibration is {exptime} seconds."
         )
 
         if getattr(target_spectrum_oned, "count_continuum") is None:
