@@ -1015,13 +1015,13 @@ def test_calibrator_science():
     onedspec.add_user_atlas(
         spec_id=[1],
         elements=["HeXe"] * 10,
-        wavelengths=np.arange(10) * 1000,
+        wavelengths=np.arange(10, 20) * 1000,
         stype="science",
     )
     onedspec.add_user_atlas(
         spec_id=[11, 75],
         elements=["HeXe"] * 10,
-        wavelengths=np.arange(10) * 1000,
+        wavelengths=np.arange(10, 20) * 1000,
         stype="science",
     )
 
@@ -1059,7 +1059,7 @@ def test_calibrator_science():
                 1
             ].spectrum_oned.calibrator.atlas.atlas_lines
         )
-        == 18
+        == 19
     )
 
     onedspec.clear_atlas()
@@ -1086,7 +1086,7 @@ def test_calibrator_science():
 
 
 # Fail at the RASCAL initilisation
-@pytest.mark.xfail(raises=TypeError)
+@pytest.mark.xfail(raises=ValueError)
 def test_calibrator_science2():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
