@@ -129,6 +129,10 @@ class StandardLibrary:
         self.ftype = "flux"
         self.cutoff = 0.4
 
+        self.designation_to_filename = None
+        self.lib_to_filename = None
+        self.filename_to_lib = None
+
         self.spectrum_oned_imported = False
 
         self._load_standard_dictionary()
@@ -139,6 +143,14 @@ class StandardLibrary:
 
         """
 
+        self.designation_to_filename = json.load(
+            open(
+                pkg_resources.resource_filename(
+                    "aspired", "standards/designation_to_filename.json"
+                ),
+                encoding="ascii",
+            )
+        )
         self.lib_to_filename = json.load(
             open(
                 pkg_resources.resource_filename(
@@ -155,6 +167,10 @@ class StandardLibrary:
                 encoding="ascii",
             )
         )
+
+        self.designation_list = self.designation_to_filename.keys()
+        self.lib_list = self.lib_to_filename.keys()
+        self.filename_list = self.filename_to_lib.keys()
 
     def _get_eso_standard(self):
         """
@@ -312,60 +328,84 @@ class StandardLibrary:
 
             https://docs.python.org/3.7/library/difflib.html
 
+        This method tries to match the designation of the standard star
+        that is available on SIMBAD or as named by the Isaac Newton Group of
+        Telescopes. All comparisons are performed in lower case, all space
+        and special symbols (expect ".", "+", "-", "_") are stripped.
+
         Parameters
         ----------
         target: str
-            Name of the standard star
+            Name/designation of the standard star
         cutoff: float (Default: 0.4)
             The similarity toleranceold
             [0 (completely different) - 1 (identical)]
 
         """
 
-        # Load the list of targets in the requested library
-        # Only works in case of exact match
-        try:
-            libraries = self.filename_to_lib[target.lower()]
-            return libraries, True
+        library_list = []
+        filename_list = []
 
-        except Exception as _warn:
-            self.logger.warning(str(_warn))
+        if not isinstance(target, str):
+            error_msg = f"Target name has to be of type str, {type(target)} is provided."
+            self.logger.critical(error_msg)
 
+        # If the provided designation exists
+        if target.lower() in self.designation_list:
+            _filename_list = self.designation_to_filename[target.lower()]
+
+            exact_match = True
+
+        else:
             # If the requested target is not in any library, suggest the
             # closest match, Top 5 are returned.
             # difflib uses Gestalt pattern matching.
-            target_list = difflib.get_close_matches(
+            designation_list = difflib.get_close_matches(
                 target.lower(),
-                list(self.filename_to_lib.keys()),
+                list(self.designation_to_filename.keys()),
                 n=5,
                 cutoff=cutoff,
             )
 
-            if len(target_list) > 0:
-                self.logger.warning(
-                    f"Requested standard star cannot be found, a list of"
-                    f" the closest matching names are returned:"
-                    f" {{target_list}}."
-                )
+            for designation in designation_list:
+                _filename_list = self.designation_to_filename[designation]
 
-                return target_list, False
+            exact_match = False
 
-            else:
-                error_msg = (
-                    (
-                        "Please check the name of your standard star, nothing "
-                        f"share a similarity above {cutoff}."
-                    ),
-                )
-                self.logger.critical(error_msg)
-                raise ValueError(error_msg)
+        for filename in _filename_list:
+            _library_list = self.filename_to_lib[filename]
+            for l in _library_list:
+                filename_list.append(filename)
+                library_list.append(l)
 
-    def lookup_closet_match_in_library(self, target: str, library: str):
+        if len(filename_list) > 0:
+            self.logger.warning(
+                f"Requested standard star cannot be found, a list of"
+                f" the closest matching names are returned:"
+                f" {filename_list}."
+            )
+        else:
+            error_msg = (
+                (
+                    "Please check the name of your standard star, nothing "
+                    f"share a similarity above {cutoff}."
+                ),
+            )
+            self.logger.critical(error_msg)
+            raise ValueError(error_msg)
+
+        return [
+            (f, l) for l, f in zip(library_list, filename_list)
+        ], exact_match
+
+    def lookup_closet_match_in_library(
+        self, target: str, library: str, cutoff: float = 0.2
+    ):
         """
         Check if the requested standard and library exist. Only if the
-        similarity is better than 0.5 a target name will be returned. See
+        similarity is better than (by default) 0.2 a target name will be returned. See
 
-            https://docs.python.org/3.7/library/difflib.html
+            https://docs.python.org/3.11/library/difflib.html
 
         Parameters
         ----------
@@ -373,6 +413,8 @@ class StandardLibrary:
             Name of the standard star
         library: str
             Name of the library
+        cutoff: float (Default: 0.4)
+            The toleranceold for the word similarity in the range of [0, 1].
 
         Return:
         -------
@@ -380,11 +422,9 @@ class StandardLibrary:
 
         """
 
-        # Load the list of targets in the requested library
+        # Load the list of libraries
         library_name = difflib.get_close_matches(
-            library,
-            list(self.lib_to_filename.keys()),
-            n=1,
+            library, list(self.lib_to_filename.keys()), n=1, cutoff=cutoff
         )
 
         if library_name == []:
@@ -395,7 +435,10 @@ class StandardLibrary:
 
         # difflib uses Gestalt pattern matching.
         target_name = difflib.get_close_matches(
-            target.lower(), self.lib_to_filename[library_name], n=1, cutoff=0.3
+            target.lower(),
+            self.lib_to_filename[library_name],
+            n=1,
+            cutoff=cutoff,
         )
         if target_name == []:
             target_name = None
@@ -439,7 +482,7 @@ class StandardLibrary:
 
         # If there is a close match from the user-provided library, use
         # that first, it will only accept the library and target if the
-        # similarity is above 0.5
+        # cutoff is above 0.4
         self.library = library
         if self.library is not None:
             (
@@ -456,12 +499,9 @@ class StandardLibrary:
             libraries, success = self.lookup_standard_libraries(self.target)
 
             if success:
-                if np.in1d([library], libraries):
-                    self.library = library
+                self.target, self.library = libraries[0]
 
-                else:
-                    self.library = libraries[0]
-
+                if not np.in1d([library], libraries):
                     self.logger.warning(
                         "The requested standard star cannot be found in the"
                         " given library, or the library is not specified."
@@ -470,9 +510,7 @@ class StandardLibrary:
 
             else:
                 # When success is Flase, the libraries is a list of standards
-                self.target = libraries[0]
-                libraries, _ = self.lookup_standard_libraries(self.target)
-                self.library = libraries[0]
+                self.target, self.library = libraries[0]
 
                 self.logger.warning(
                     f"The requested library does not exist, {self.library} "
