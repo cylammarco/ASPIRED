@@ -10,15 +10,9 @@ import pkg_resources
 from astropy.io import fits
 from plotly import graph_objects as go
 from plotly import io as pio
-
-try:
-    from spectres import spectres_numba as spectres
-except ImportError as err:
-    print(err)
-    from spectres import spectres
-
 from scipy import optimize
 from scipy.interpolate import interp1d
+from spectresc import spectres
 
 from .flux_calibration import FluxCalibration
 from .spectrum_oneD import SpectrumOneD

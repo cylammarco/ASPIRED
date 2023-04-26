@@ -18,13 +18,7 @@ from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import ndimage, signal
-
-try:
-    from spectres import spectres_numba as spectres
-except ImportError as err:
-    print(err)
-    from spectres import spectres
-
+from spectresc import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .extraction import (

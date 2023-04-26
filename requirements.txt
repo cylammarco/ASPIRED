@@ -6,6 +6,6 @@ numpy>=1.18
 plotly>=5.6
 rascal<0.4
 scipy>=1.7
-spectres>=2.1.1
+spectresc>=1.0.1
 specutils>=1.8
 statsmodels>=0.13

@@ -50,6 +50,7 @@ Version 0.5.0-dev
   * `get_continuum` is now checking input array/list size and throw error if they don't match.
   * OneDSpec and spectrum1D expanded to accommodate wavelength_resampled
   * spectrum1D exapanded to handle atmospheric extinction corrected spectrum as an independent data list
+  * Use SpectResC instead of SpectRes in spectral resampling.
 
 Version 0.4.7
 -------------

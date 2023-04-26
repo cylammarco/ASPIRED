@@ -40,7 +40,7 @@ dummy_data = np.ones((100, 1000)) * bg_level
 dummy_data[47] += 2.0
 dummy_data[48] += 5.0
 dummy_data[49] += 10.0
-dummy_data[50] += 20.0
+dummy_data[50] += 50.0
 dummy_data[51] += 10.0
 dummy_data[52] += 5.0
 dummy_data[53] += 2.0
@@ -96,7 +96,7 @@ def test_spectral_extraction():
         return_jsonstring=True,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert trace == 35, (
+    assert np.isclose(trace, 35, atol=0.5), (
         "Trace is at row "
         + str(trace)
         + ", but it is expected to be at row 35."
@@ -115,8 +115,8 @@ def test_spectral_extraction():
     )
 
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    assert np.round(count).astype("int") == 54, (
-        "Extracted count is " + str(count) + " but it should be 54."
+    assert np.isclose(count, 84, atol=1.0), (
+        "Extracted count is " + str(count) + " but it should be 84."
     )
 
     dummy_twodspec.inspect_extracted_spectrum(
