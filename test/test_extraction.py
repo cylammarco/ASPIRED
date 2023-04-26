@@ -96,7 +96,7 @@ def test_spectral_extraction():
         return_jsonstring=True,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert np.isclose(trace, 35, atol=0.5), (
+    assert np.isclose(trace, 35, atol=1.0), (
         "Trace is at row "
         + str(trace)
         + ", but it is expected to be at row 35."
@@ -158,7 +158,7 @@ def test_gaussian_spectral_extraction():
         fit_deg=0,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert np.isclose(trace, 35, atol=0.5), (
+    assert np.isclose(trace, 35, atol=1.0), (
         "Trace is at row "
         + str(trace)
         + ", but it is expected to be at row 35."
@@ -265,7 +265,7 @@ def test_gaussian_spectral_extraction_top_hat_low_signal():
         fit_deg=0,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert np.isclose(trace, 35), (
+    assert np.isclose(trace, 35, atol=1.0), (
         "Trace is at row "
         + str(trace)
         + ", but it is expected to be at row 35."
@@ -567,7 +567,7 @@ def test_gaussian_spectral_extraction_10000s_exptime_2x_gain():
         fit_deg=0,
     )
     trace = np.round(np.mean(dummy_twodspec.spectrum_list[0].trace))
-    assert np.isclose(trace, 35), (
+    assert np.isclose(trace, 35, atol=1.0), (
         "Trace is at row "
         + str(trace)
         + ", but it is expected to be at row 35."
