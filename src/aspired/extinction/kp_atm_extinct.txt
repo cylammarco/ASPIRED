@@ -80,7 +80,3 @@
 9832. 0.053
 10256. 0.023
 10400. 0.024
-
-
-# Last four extinction coefficients from CTIO list - no data available
-# for KPNO.

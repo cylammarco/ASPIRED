@@ -4679,6 +4679,12 @@ class OneDSpec:
         THE ESO USERS MANUAL 1993
         https://www.eso.org/public/archives/techdocs/pdf/report_0003.pdf
 
+        The KP (Kitt Peak) atmospheric extinction correction table is taken
+        from iraf
+
+        The CT (Cerro Tololo) atmospheric extinctioncorrection table is taken
+        from iraf
+
         Parameters
         ----------
         location: str (Default: orm)
@@ -4687,6 +4693,8 @@ class OneDSpec:
             (2) mk - Mauna Kea (4205 m)
             (3) cp - Cerro Paranal (2635 m)
             (4) ls - La Silla (2400 m) [up to 9000A only]
+            (5) kp - Kitt Peak (2096 m)
+            (6) ct - Cerro Tololo (2207 m)
             Only used if extinction_func is None.
         extinction_func: callable function (Default: None)
             Input wavelength in Angstrom, output magnitude of extinction per

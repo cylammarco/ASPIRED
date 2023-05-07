@@ -124,7 +124,7 @@ class StandardLibrary:
         self.ftype = "flux"
         self.cutoff = 0.4
 
-        self.designation_to_filename = None
+        self.designation_to_lib_filename = None
         self.lib_to_filename = None
         self.filename_to_lib = None
 
@@ -138,10 +138,10 @@ class StandardLibrary:
 
         """
 
-        self.designation_to_filename = json.load(
+        self.designation_to_lib_filename = json.load(
             open(
                 pkg_resources.resource_filename(
-                    "aspired", "standards/designation_to_filename.json"
+                    "aspired", "standards/designation_to_lib_filename.json"
                 ),
                 encoding="ascii",
             )
@@ -163,7 +163,7 @@ class StandardLibrary:
             )
         )
 
-        self.designation_list = self.designation_to_filename.keys()
+        self.designation_list = self.designation_to_lib_filename.keys()
         self.lib_list = self.lib_to_filename.keys()
         self.filename_list = self.filename_to_lib.keys()
 
@@ -205,18 +205,14 @@ class StandardLibrary:
 
         """
 
-        folder = self.library.split("_")[0]
+        folder = self.library
 
         # the first part of the file name
         filename = self.target
-        extension = self.library.split("_")[-1]
+        extension = self.library[3:]
 
         # last letter (or nothing) of the file name
         if self.ftype == "flux":
-            # .mas only contain magnitude files
-            if extension == "mas":
-                filename += "a"
-
             if (filename == "g24" or filename == "g157") and (
                 extension == "fg"
             ):
@@ -347,7 +343,7 @@ class StandardLibrary:
 
         # If the provided designation exists
         if target.lower() in self.designation_list:
-            _filename_list = self.designation_to_filename[target.lower()]
+            _filename_list = self.designation_to_lib_filename[target.lower()]
 
             exact_match = True
 
@@ -357,21 +353,19 @@ class StandardLibrary:
             # difflib uses Gestalt pattern matching.
             designation_list = difflib.get_close_matches(
                 target.lower(),
-                list(self.designation_to_filename.keys()),
+                list(self.designation_to_lib_filename.keys()),
                 n=5,
                 cutoff=cutoff,
             )
 
             for designation in designation_list:
-                _filename_list = self.designation_to_filename[designation]
+                _filename_list = self.designation_to_lib_filename[designation]
 
             exact_match = False
 
-        for filename in _filename_list:
-            _library_list = self.filename_to_lib[filename]
-            for l in _library_list:
-                filename_list.append(filename)
-                library_list.append(l)
+        for libname, filename in _filename_list.items():
+            filename_list.append(filename)
+            library_list.append(libname)
 
         if len(filename_list) > 0:
             self.logger.warning(
