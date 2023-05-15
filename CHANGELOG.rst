@@ -15,6 +15,8 @@ Version 0.5.0-dev
   * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
   * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
   * Added `recompute_continuum`` when generating sensitivity curve.
+  * Continuum is switched from using statsmodels.lowess to specutils.get_continuum
+  * Standard stars can be recognised using any of the designations used by CDS.
 
 * Major bug fixes:
 
@@ -51,6 +53,33 @@ Version 0.5.0-dev
   * OneDSpec and spectrum1D expanded to accommodate wavelength_resampled
   * spectrum1D exapanded to handle atmospheric extinction corrected spectrum as an independent data list
   * Use SpectResC instead of SpectRes in spectral resampling.
+  * Cosmic Ray rejection is defaulted to off in both ImageReduction and TwoDSpec.
+
+Version 0.4.9
+-------------
+
+:Date 11-2-2023
+
+* Minor bug fixes
+
+  * Fixed a upper/lowercase bug in loading standard stars
+  * Fixed `OneDSpec` CSV export issue with `weigth_map` and `arc_spec`
+
+* Other changes
+
+  * Adopted astropy models for fitting gaussian functions
+  * `TwoDSpec` can now export CSV
+  * `spectres_numba` is supported
+  * require plotly!=5.12.0
+  * capped `rascal` minor version number
+  * Atempting to auto-publish to conda
+
+Version 0.4.8
+-------------
+
+:Date 1-12-2022
+
+(Duplicate)
 
 Version 0.4.7
 -------------

@@ -146,10 +146,14 @@ class TwoDSpec:
         self.img_residual = None
         self.img_rectified = None
         self.img_residual_rectified = None
+        self.img_mean = None
+        self.img_median = None
         self.header = None
         self.arc = None
         self.arc_rectified = None
         self.arc_header = None
+        self.arc_mean = None
+        self.arc_median = None
         self.bad_mask = None
 
         self.saxis = 1
@@ -332,8 +336,7 @@ class TwoDSpec:
             else:
                 self.set_header(header)
             if data.arc_main is not None:
-                self.arc = data.arc_main
-                self.arc_header = data.arc_header[0]
+                self.add_arc(data.arc_main, data.arc_header[0])
 
             else:
                 self.logger.warning(
@@ -388,6 +391,8 @@ class TwoDSpec:
             self.img_residual = self.img.copy()
             self._get_image_size()
             self._get_image_zminmax()
+            self.img_mean = np.nanmean(self.img)
+            self.img_median = np.nanmedian(self.img)
 
     def set_properties(
         self,
@@ -444,14 +449,14 @@ class TwoDSpec:
         Parameters
         ----------
         saxis: int (Default: 1)
-            Spectral direction, 0 for vertical, 1 for horizontal.
+            dispersion direction, 0 for vertical, 1 for horizontal.
         variance: 2D numpy array (M, N)
             The per-pixel-variance of the frame.
         spatial_mask: 1D numpy array (size: N. Default is (1,))
             Mask in the spatial direction, can be the indices of the pixels
             to be included (size <N) or a 1D numpy array of True/False (size N)
         spec_mask: 1D numpy array (Size: M. Default: (1,))
-            Mask in the spectral direction, can be the indices of the pixels
+            Mask in the dispersion direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
         flip: bool (Deafult: False)
             If the frame has to be left-right flipped, set to True.
@@ -659,7 +664,7 @@ class TwoDSpec:
 
                 self.spatial_mask_applied = True
 
-            # the valid x-range of the chip (i.e. spectral direction)
+            # the valid x-range of the chip (i.e. dispersion direction)
             if len(self.spec_mask) > 1:
                 if self.saxis == 1:
                     self.img = self.img[:, self.spec_mask]
@@ -1344,6 +1349,10 @@ class TwoDSpec:
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
 
+        # Only compute if no error is raised
+        self.arc_mean = np.nanmean(self.arc)
+        self.arc_median = np.nanmedian(self.arc)
+
     def set_arc_header(self, header: fits.Header):
         """
         Adding the header for the arc.
@@ -1411,7 +1420,7 @@ class TwoDSpec:
         parameters
         ----------
         spec_mask: 1D numpy array (M)
-            Mask in the spectral direction, can be the indices of the pixels
+            Mask in the dispersion direction, can be the indices of the pixels
             to be included (size <M) or a 1D numpy array of True/False (size M)
             (Default is (1,) i.e. keep everything)
 
@@ -1784,15 +1793,21 @@ class TwoDSpec:
             trace=ndimage.zoom(trace, resample_factor) * resample_factor,
             trace_width=trace_width * resample_factor,
         )
-        line_spread_profile_upsampled = (
+        self.logger.info(
+            "The upsampled empirical line spread profile:"
+            f" {line_spread_profile_upsampled}"
+        )
+        line_spread_profile_upsampled /= np.nansum(
             line_spread_profile_upsampled
-            / np.nansum(line_spread_profile_upsampled)
         )
         line_spread_profile = ndimage.zoom(
             line_spread_profile_upsampled, 1.0 / resample_factor
         )
         line_spread_profile = line_spread_profile / np.nansum(
             line_spread_profile
+        )
+        self.logger.info(
+            f"The empirical line spread profile: {line_spread_profile}"
         )
 
         fitted_profile_func = get_line_spread_function(
@@ -1839,7 +1854,7 @@ class TwoDSpec:
 
         Each spectral slice is convolved with the adjacent one in the spectral
         direction. Basic tests show that the geometrical distortion from one
-        end to the other in the spectral direction is small. With LT/SPRAT, the
+        end to the other in the dispersion direction is small. With LT/SPRAT, the
         linear distortion is less than 0.5%, thus, even provided as an option,
         the rescale option is set to False by default. Given how unlikely a
         geometrical distortion correction is needed, higher order correction
@@ -2005,7 +2020,7 @@ class TwoDSpec:
                         np.arange(int(nresample * scale)) / scale,
                         np.arange(len(lines_ref)),
                         lines_ref,
-                        fill=0.0,
+                        fill=self.img_median,
                         verbose=False,
                     )
 
@@ -2035,7 +2050,7 @@ class TwoDSpec:
                 np.arange(nresample),
                 np.array(pix).reshape(-1),
                 np.array(lines).reshape(-1),
-                fill=0.0,
+                fill=self.img_median,
                 verbose=False,
             )
             spatial_profile_tmp[np.isnan(spatial_profile_tmp)] = np.nanmin(
@@ -2089,7 +2104,7 @@ class TwoDSpec:
         for i in range(1, len(self.spec_pix)):
             self.spec_pix[i] += self.spec_pix[i - 1]
 
-        self.spec_pix = np.array(self.spec_pix).astype("int")
+        self.spec_pix = np.round(self.spec_pix).astype("int")
 
         # Looping through pixels larger than middle pixel
         for i in range(self.start_window_idx + 1, nwindow):
@@ -2108,7 +2123,7 @@ class TwoDSpec:
                     self.spec_idx[:, i + 1] * self.resample_factor
                     - shift_solution[i]
                 )
-                / (int(nresample * scale_solution[i + 1]) / nresample)
+                / (np.round(nresample * scale_solution[i + 1]) / nresample)
                 / self.resample_factor
             )
 
@@ -2146,14 +2161,14 @@ class TwoDSpec:
             aper = np.polyval(
                 aper_p, np.arange(self.spec_size) * self.resample_factor
             )
+            self.logger.info("Only logging 10 evenly-spaced points.")
             self.logger.info(
                 "The trace is found at %s.",
                 [
                     (x, y)
                     for (x, y) in zip(
-                        np.arange(self.spec_size)[::100]
-                        * self.resample_factor,
-                        aper,
+                        np.arange(self.spec_size)[:: self.spec_size // 10],
+                        aper[:: self.spec_size // 10],
                     )
                 ],
             )
@@ -2165,7 +2180,7 @@ class TwoDSpec:
             ) = self._build_line_spread_function(
                 img=self.img,
                 trace=aper,
-                trace_width=7.0,
+                trace_width=9.0,
                 resample_factor=self.resample_factor,
             )
 
@@ -2367,7 +2382,7 @@ class TwoDSpec:
     ):
         """
         Add user-supplied trace. The trace has to have the size as the 2D
-        spectral image in the spectral direction.
+        spectral image in the dispersion direction.
 
         Parameters
         ----------
@@ -2526,54 +2541,53 @@ class TwoDSpec:
         """
 
         spec = self.spectrum_list[0]
-        spec_size_tmp = spec.len_trace * upsample_factor
 
-        # Upsample and shift in the dispersion direction
-        img_tmp = ndimage.zoom(
-            self.img.astype(float), zoom=upsample_factor, order=spline_order
-        )
-        y_tmp = (
-            ndimage.zoom(
-                np.array(spec.trace), zoom=upsample_factor, order=spline_order
-            )
-            * upsample_factor
-        )
+        img_tmp = self.img.astype(float)
 
         if self.arc is None:
             self.logger.warning(
                 "Arc frame is not available, only the data image "
                 "will be rectified."
             )
-
             use_arc = False
 
         elif isinstance(self.arc, CCDData):
-            arc_tmp = ndimage.zoom(
-                self.arc.data.astype(float),
-                zoom=upsample_factor,
-                order=spline_order,
-            )
-            self.logger.info("The arc frame is upsampled.")
+            arc_tmp = self.arc.data.astype(float)
 
         else:
-            arc_tmp = ndimage.zoom(
-                self.arc.astype(float),
-                zoom=upsample_factor,
-                order=spline_order,
-            )
-            self.logger.info("The arc frame is upsampled.")
+            arc_tmp = self.arc.astype(float)
+
+        y_tmp = np.array(spec.trace).copy()
 
         # Shift the spectrum to spatially aligned to the trace at ref
         ref = y_tmp[len(y_tmp) // 2]
-        for i in range(self.spec_size * upsample_factor):
-            shift_i = int(np.round(y_tmp[i] - ref))
 
-            img_tmp[:, i] = np.roll(img_tmp[:, i], -shift_i)
+        # The x/y-coordinates of the trace
+        pix_x = np.arange(self.spec_size)
+        pix_y = np.arange(self.spatial_size).astype("float")
+
+        # This shifts the spectrum in the sptial direction using the trace
+        for i in range(spec.len_trace):
+            shift_i = y_tmp[i] - ref
+            # resample here
+            img_tmp[:, i] = spectres(
+                pix_y + shift_i,
+                pix_y,
+                img_tmp[:, i],
+                fill=self.img_median,
+                verbose=False,
+            )
 
             if self.arc is not None:
-                arc_tmp[:, i] = np.roll(arc_tmp[:, i], -shift_i)
+                arc_tmp[:, i] = spectres(
+                    pix_y + shift_i,
+                    pix_y,
+                    arc_tmp[:, i],
+                    fill=self.img_median,
+                    verbose=False,
+                )
 
-        # Now start working with the shift in the spectral direction
+        # Now start working with the shift in the dispersion direction
         if coeff is not None:
             n_down = None
             n_up = None
@@ -2606,69 +2620,65 @@ class TwoDSpec:
                 n_down = 5
                 n_up = 5
 
-            bin_half_size = bin_size / 2 * upsample_factor
-
-            # The x-coordinates of the trace (of length len_trace)
-            x = np.arange(spec.len_trace * upsample_factor).astype("int")
+            bin_half_size = bin_size / 2
 
             # s for "flattened signal of the slice"
             if use_arc:
-                s = [
-                    np.nansum(
-                        [
-                            img_tmp[
-                                int(np.round(ref - bin_half_size)) : int(
-                                    np.round(ref + bin_half_size)
-                                ),
-                                i,
-                            ]
-                            + arc_tmp[
-                                int(np.round(ref - bin_half_size)) : int(
-                                    np.round(ref + bin_half_size)
-                                ),
-                                i,
-                            ]
-                            for i in x
-                        ],
-                        axis=1,
-                    )
-                ]
+                s = np.nanmedian(
+                    [
+                        img_tmp[
+                            int(np.round(ref - bin_half_size)) : int(
+                                np.round(ref + bin_half_size)
+                            ),
+                            i,
+                        ]
+                        + arc_tmp[
+                            int(np.round(ref - bin_half_size)) : int(
+                                np.round(ref + bin_half_size)
+                            ),
+                            i,
+                        ]
+                        for i in pix_x
+                    ],
+                    axis=1,
+                )
 
             else:
-                s = [
-                    np.nansum(
-                        [
-                            img_tmp[
-                                int(np.round(ref - bin_half_size)) : int(
-                                    np.round(ref + bin_half_size)
-                                ),
-                                i,
-                            ]
-                            for i in x
-                        ],
-                        axis=1,
-                    )
-                ]
+                s = np.nanmedian(
+                    [
+                        img_tmp[
+                            int(np.round(ref - bin_half_size)) : int(
+                                np.round(ref + bin_half_size)
+                            ),
+                            i,
+                        ]
+                        for i in pix_x
+                    ],
+                    axis=1,
+                )
 
             # Get the length of 10% of the dispersion direction
             # Do not use the first and last 10% for cross-correlation
-            one_tenth = len(s[0]) // 10
+            one_tenth = len(s) // 10
 
-            s[0] -= np.nanpercentile(s[0], 5.0)
-            s[0] -= min(s[0][one_tenth:-one_tenth])
-            s[0] /= max(s[0][one_tenth:-one_tenth])
+            s -= np.nanpercentile(s, 5.0)
+            s -= min(s[one_tenth:-one_tenth])
+            s /= max(s[one_tenth:-one_tenth])
             s_down = []
             s_up = []
+            y_down = []
+            y_up = []
 
             # Loop through the spectra below the trace
             for k in range(n_down):
                 start = k * bin_half_size
-                end = start + bin_size * upsample_factor + 1
+                end = start + bin_size
+                y_down.append(ref - (start + end) / 2.0)
                 # Note the start and end are counting up, while the
                 # indices are becoming smaller.
                 if use_arc:
                     s_down.append(
-                        np.nansum(
+                        np.nanmedian(
                             [
                                 arc_tmp[
                                     int(np.round(ref - end)) : int(
@@ -2682,7 +2692,7 @@ class TwoDSpec:
                                     ),
                                     i,
                                 ]
-                                for i in x
+                                for i in pix_x
                             ],
                             axis=1,
                         )
@@ -2690,7 +2700,7 @@ class TwoDSpec:
 
                 else:
                     s_down.append(
-                        np.nansum(
+                        np.nanmedian(
                             [
                                 img_tmp[
                                     int(np.round(ref - end)) : int(
@@ -2698,7 +2708,7 @@ class TwoDSpec:
                                     ),
                                     i,
                                 ]
-                                for i in x
+                                for i in pix_x
                             ],
                             axis=1,
                         )
@@ -2711,11 +2721,11 @@ class TwoDSpec:
             # Loop through the spectra above the trace
             for k in range(n_up):
                 start = k * bin_half_size
-                end = start + bin_size * upsample_factor + 1
-
+                end = start + bin_size
+                y_up.append(ref + (start + end) / 2.0)
                 if use_arc:
                     s_up.append(
-                        np.nansum(
+                        np.nanmedian(
                             [
                                 arc_tmp[
                                     int(np.round(ref + start)) : int(
@@ -2729,7 +2739,7 @@ class TwoDSpec:
                                     ),
                                     i,
                                 ]
-                                for i in x
+                                for i in pix_x
                             ],
                             axis=1,
                         )
@@ -2737,7 +2747,7 @@ class TwoDSpec:
 
                 else:
                     s_up.append(
-                        np.nansum(
+                        np.nanmedian(
                             [
                                 img_tmp[
                                     int(np.round(ref + start)) : int(
@@ -2745,7 +2755,7 @@ class TwoDSpec:
                                     ),
                                     i,
                                 ]
-                                for i in x
+                                for i in pix_x
                             ],
                             axis=1,
                         )
@@ -2754,61 +2764,52 @@ class TwoDSpec:
                 s_up[k] -= min(s_up[k][one_tenth:-one_tenth])
                 s_up[k] /= max(s_up[k][one_tenth:-one_tenth])
 
-            s_all = s_down[::-1] + s + s_up
+            s_all = s_down[::-1] + [s] + s_up
+            y_all = y_down[::-1] + [ref] + y_up
 
             self.logger.info(
-                "%s subspectra are used for cross-correlation.", s_all
-            )
-
-            y_trace_upsampled = (
-                np.arange(-n_down + 1, n_up + 1) * bin_half_size + ref
+                "%s subspectra are used for cross-correlation.", len(s_all)
             )
 
             # correlate with the neighbouring slice to compute the shifts
-            shift_upsampled = np.zeros_like(y_trace_upsampled)
+            shift = np.zeros_like(y_all[:-1]).astype("float")
 
-            for i in range(1, len(s_all)):
+            for i in range(len(s_all) - 1):
                 # Note: indice n_down is s
                 corr = signal.correlate(
-                    s_all[i][one_tenth:-one_tenth],
-                    s_all[i - 1][one_tenth:-one_tenth],
+                    ndimage.zoom(
+                        s_all[i][one_tenth:-one_tenth], upsample_factor
+                    ),
+                    ndimage.zoom(
+                        s_all[i + 1][one_tenth:-one_tenth], upsample_factor
+                    ),
+                    mode="same",
                 )
-                # spec_size_tmp is the number of pixel in the upsampled axis
-                shift_upsampled[i - 1 :] += (
-                    spec_size_tmp
-                    - 2 * one_tenth
-                    - np.argwhere(corr == corr[np.argmax(corr)])[0]
-                    - 1
+                self.logger.info(np.argmax(corr))
+                self.logger.info(upsample_factor)
+                self.logger.info((self.spec_size - 2 * one_tenth) * 0.5)
+                shift[i:] += (
+                    np.argmax(corr) / upsample_factor
+                    - (self.spec_size - 2 * one_tenth) * 0.5
                 )
 
             # Turn the shift to relative to the spectrum
-            shift_upsampled -= shift_upsampled[n_down]
-
-            self.logger.info(
-                (
-                    "The upsampled y-coordinates of subspectra are: %s and the"
-                    " corresponding upsampled shifts are: %s."
-                ),
-                y_trace_upsampled,
-                shift_upsampled,
-            )
+            shift -= shift[n_down]
 
             self.logger.info(
                 (
                     "The y-coordinates of subspectra are: %s and the "
                     "corresponding shifts are: %s."
                 ),
-                y_trace_upsampled / upsample_factor,
-                shift_upsampled / upsample_factor,
+                y_all,
+                shift,
             )
 
-            # fit the distortion in the spectral direction as a function
-            # of y-pixel. The coeff is in the upsampled resolution
+            # fit the distortion in the dispersion direction as a function
+            # of y-pixel.
             coeff = np.polynomial.polynomial.polyfit(
-                y_trace_upsampled,
-                lowess(
-                    shift_upsampled, y_trace_upsampled, return_sorted=False
-                ),
+                (np.array(y_all)[:-1] + np.array(y_all)[1:]) / 2.0,
+                shift,
                 order,
             )
             self.logger.info(
@@ -2819,19 +2820,36 @@ class TwoDSpec:
                 coeff,
             )
 
-        # shift in the spectral direction, the shift is as a function
+        # shift in the dispersion direction, the shift is as a function
         # of distance from the trace at ref
         # For each row j (sort of a line of spectrum...)
-        for j, _ in enumerate(img_tmp):
+        shifts = np.polynomial.polynomial.polyval(
+            np.arange(self.spatial_size), coeff
+        )
+
+        pix_x = pix_x.astype("float")
+        for j, shift_j in enumerate(shifts):
             shift_j = np.polynomial.polynomial.polyval(j, coeff)
 
             if j % 10 == 0:
                 self.logger.info("The shift at line j = %s is %s.", j, shift_j)
 
-            img_tmp[j] = np.roll(img_tmp[j], int(np.round(shift_j)))
+            img_tmp[j] = spectres(
+                pix_x - shift_j,
+                pix_x,
+                img_tmp[j],
+                fill=self.img_median,
+                verbose=False,
+            )
 
             if self.arc is not None:
-                arc_tmp[j] = np.roll(arc_tmp[j], int(np.round(shift_j)))
+                arc_tmp[j] = spectres(
+                    pix_x - shift_j,
+                    pix_x,
+                    arc_tmp[j],
+                    fill=self.arc_median,
+                    verbose=False,
+                )
 
         self.rec_coeff = coeff
         self.rec_n_down = n_down
@@ -2841,15 +2859,11 @@ class TwoDSpec:
         self.rec_n_bin = n_bin
         self.rec_spline_order = spline_order
         self.rec_order = order
-        self.img_rectified = ndimage.zoom(
-            img_tmp, zoom=1.0 / upsample_factor, order=spline_order
-        )
+        self.img_rectified = img_tmp
         self.img_residual_rectified = copy.deepcopy(self.img_rectified)
 
         if self.arc is not None:
-            self.arc_rectified = ndimage.zoom(
-                arc_tmp, zoom=1.0 / upsample_factor, order=spline_order
-            )
+            self.arc_rectified = arc_tmp
 
         if apply:
             self.apply_rectification()
@@ -2865,8 +2879,8 @@ class TwoDSpec:
                 go.Heatmap(
                     z=np.log10(self.img_rectified),
                     colorscale="Viridis",
-                    zmin=np.nanpercentile(np.log10(self.img_rectified), 10),
-                    zmax=np.nanpercentile(np.log10(self.img_rectified), 90),
+                    zmin=np.nanpercentile(np.log10(self.img_rectified), 5),
+                    zmax=np.nanpercentile(np.log10(self.img_rectified), 95),
                     xaxis="x",
                     yaxis="y",
                     colorbar=dict(title="log( e- count )"),
@@ -2877,11 +2891,9 @@ class TwoDSpec:
                     go.Heatmap(
                         z=np.log10(self.arc_rectified),
                         colorscale="Viridis",
-                        zmin=np.nanpercentile(
-                            np.log10(self.arc_rectified), 10
-                        ),
+                        zmin=np.nanpercentile(np.log10(self.arc_rectified), 5),
                         zmax=np.nanpercentile(
-                            np.log10(self.arc_rectified), 90
+                            np.log10(self.arc_rectified), 95
                         ),
                         xaxis="x2",
                         yaxis="y2",
@@ -3058,7 +3070,7 @@ class TwoDSpec:
         lowess_it: int = 3,
         lowess_delta: float = 0.0,
         tolerance: float = 1e-6,
-        cosmicray_sigma: float = 4.0,
+        cosmicray_sigma: float = 4.5,
         max_iter: int = 99,
         forced: bool = False,
         variances: Union[list, np.ndarray] = None,
@@ -3135,7 +3147,7 @@ class TwoDSpec:
             linear-interpolation instead of weighted regression.
         tolerance: float (Default: 1e-6)
             The tolerance limit for the convergence of the optimal extraction
-        cosmicray_sigma: float (Deafult: 4.0)
+        cosmicray_sigma: float (Deafult: 4.5)
             Cosmic ray sigma clipping limit. This is for rejecting pixels when
             using horne87 and marsh89 optimal cleaning. Use sigclip in kwargs
             for configuring cosmicray cleaning with astroscrappy.
@@ -3276,7 +3288,7 @@ class TwoDSpec:
             profile = np.zeros((len_trace, width_dn + width_up + 1))
             is_optimal = np.zeros(len_trace, dtype=bool)
 
-            if self.fitted_profile_func is None:
+            if optimal & (self.fitted_profile_func is None):
                 (
                     line_spread_profile_upsampled,
                     line_spread_profile,
@@ -3284,9 +3296,10 @@ class TwoDSpec:
                 ) = self._build_line_spread_function(
                     img=self.img,
                     trace=spec.trace,
-                    trace_width=int(np.nanmedian(spec.trace_sigma) * 3),
+                    trace_width=int((width_dn + width_up) * 3),
                     resample_factor=self.resample_factor,
                 )
+                self.logger.info(fitted_profile_func)
 
                 fitted_profile_func.slope_1 = 0.0
                 fitted_profile_func.intercept_1 = 0.0
@@ -3302,17 +3315,13 @@ class TwoDSpec:
                 itrace = int(pos)
                 pix_frac = pos - itrace
 
-                # Number of pixels from the "centre" of the trace
-                # Only used in Horne86 extraction with gauss model
-                delta_trace = fitted_profile_func.mean_0 - pos
-
                 profile_start_idx = 0
 
                 # fix width if trace is too close to the edge
                 if itrace + width_up > self.spatial_size:
                     self.logger.info(
                         (
-                            "Extration is over the upper edge of the detector "
+                            "Extraction is over the upper edge of the detector "
                             "plane. Fixing indices. width_up is changed from "
                             "%s to %s."
                         ),
@@ -3473,7 +3482,10 @@ class TwoDSpec:
                         var_i = None
 
                     if model == "gauss":
-                        # .left is the gaussian model
+                        # Number of pixels from the "centre" of the trace
+                        # Only used in Horne86 extraction with gauss model
+                        delta_trace = spec.profile_func.mean_0 - pos
+                        # .left is the gaussian mode
                         _profile_func = spec.profile_func.left
                         _profile = _profile_func(source_pix + delta_trace)
                         _profile /= np.nansum(_profile)
@@ -3888,6 +3900,7 @@ class TwoDSpec:
                     name="Target e- count",
                 )
             )
+
             # Decorative stuff
             fig.update_layout(
                 xaxis=dict(showticklabels=False),
@@ -4377,7 +4390,7 @@ class TwoDSpec:
             xaxis=dict(
                 zeroline=False,
                 showgrid=False,
-                title="Spectral Direction / pixel",
+                title="dispersion direction / pixel",
             ),
             bargap=0,
             hovermode="closest",

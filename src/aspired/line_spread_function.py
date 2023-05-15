@@ -103,7 +103,8 @@ def get_line_spread_function(
     gauss_prof = models.Gaussian1D(
         amplitude=np.nanmax(line_spread_profile),
         mean=np.nanmean(trace),
-        stddev=2.0,
+        stddev=2.5,
+        bounds={"amplitude": [0.0, None]},
     )
     bkg_prof = models.Linear1D(
         slope=0.0,
@@ -113,11 +114,17 @@ def get_line_spread_function(
     # combined profile
     total_prof = gauss_prof + bkg_prof
 
+    pix = (
+        np.arange(len(line_spread_profile))
+        - len(line_spread_profile) // 2
+        + np.nanmean(trace)
+    )
+
     # Fit the profile
     fitter = fitting.LevMarLSQFitter()
     fitted_profile_func = fitter(
         total_prof,
-        np.arange(len(line_spread_profile)) + np.nanmean(trace),
+        pix,
         line_spread_profile,
     )
 

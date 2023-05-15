@@ -997,10 +997,9 @@ class SpectrumOneD:
 
         """
 
-        assert (
-            type(pixel_mapping_itp) == itp.interpolate.interp1d
-        ), "pixel_mapping_itp has to be a "
-        "scipy.interpolate.interpolate.interp1d object."
+        assert callable(
+            pixel_mapping_itp
+        ), "pixel_mapping_itp has to be a Callable function."
         self.pixel_mapping_itp = pixel_mapping_itp
 
     def remove_pixel_mapping_itp(self):

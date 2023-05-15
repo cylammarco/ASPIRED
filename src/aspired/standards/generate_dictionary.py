@@ -118,7 +118,7 @@ with open("lib_to_filename.json", "w") as f:
 with open("filename_to_lib.json", "w") as f:
     json.dump(filename_to_lib, f)
 
-with open("lib_filename_to_designation_position", "w") as f:
+with open("lib_filename_to_designation_position.json", "w") as f:
     json.dump(lib_filename_to_designation_position, f)
 
 with open("designation_to_lib_filename.json", "w") as f:

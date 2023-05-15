@@ -8,6 +8,7 @@ from aspired import image_reduction, spectral_reduction
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 
+
 # Line list
 atlas = [
     4193.5,
@@ -152,37 +153,40 @@ def test_rectify_simulated_spectrum():
     simulated_twodspec.get_rectification(
         order=1, upsample_factor=1, use_arc=False
     )
-    reconstructed_x1 = simulated_twodspec.img_rectified.copy()
+    reconstructed_x1_coeff = simulated_twodspec.rec_coeff.copy()
     simulated_twodspec.get_rectification(
         order=1, upsample_factor=2, use_arc=False
     )
-    reconstructed_x2 = simulated_twodspec.img_rectified.copy()
+    reconstructed_x2_coeff = simulated_twodspec.rec_coeff.copy()
     simulated_twodspec.get_rectification(
         order=1, upsample_factor=3, use_arc=False
     )
-    reconstructed_x3 = simulated_twodspec.img_rectified.copy()
+    reconstructed_x3_coeff = simulated_twodspec.rec_coeff.copy()
     simulated_twodspec.get_rectification(
         order=1, upsample_factor=4, use_arc=False
     )
-    reconstructed_x4 = simulated_twodspec.img_rectified.copy()
+    reconstructed_x4_coeff = simulated_twodspec.rec_coeff.copy()
     simulated_twodspec.get_rectification(
         order=1, upsample_factor=5, use_arc=False
     )
-    reconstructed_x5 = simulated_twodspec.img_rectified.copy()
+    reconstructed_x5_coeff = simulated_twodspec.rec_coeff.copy()
     simulated_twodspec.get_rectification(
         order=1, upsample_factor=10, use_arc=False
     )
-    reconstructed_x10 = simulated_twodspec.img_rectified.copy()
+    reconstructed_x10_coeff = simulated_twodspec.rec_coeff.copy()
 
-    max_x1 = np.argmax(np.sum(reconstructed_x1, axis=0))
-    max_x2 = np.argmax(np.sum(reconstructed_x2, axis=0))
-    max_x3 = np.argmax(np.sum(reconstructed_x3, axis=0))
-    max_x4 = np.argmax(np.sum(reconstructed_x4, axis=0))
-    max_x5 = np.argmax(np.sum(reconstructed_x5, axis=0))
-    max_x10 = np.argmax(np.sum(reconstructed_x10, axis=0))
-
-    assert np.isclose(max_x1, max_x2)
-    assert np.isclose(max_x1, max_x3)
-    assert np.isclose(max_x1, max_x4)
-    assert np.isclose(max_x1, max_x5)
-    assert np.isclose(max_x1, max_x10)
+    assert np.isclose(
+        reconstructed_x1_coeff, reconstructed_x2_coeff, atol=0.1, rtol=0.01
+    ).all()
+    assert np.isclose(
+        reconstructed_x1_coeff, reconstructed_x3_coeff, atol=0.1, rtol=0.01
+    ).all()
+    assert np.isclose(
+        reconstructed_x1_coeff, reconstructed_x4_coeff, atol=0.1, rtol=0.01
+    ).all()
+    assert np.isclose(
+        reconstructed_x1_coeff, reconstructed_x5_coeff, atol=0.1, rtol=0.01
+    ).all()
+    assert np.isclose(
+        reconstructed_x1_coeff, reconstructed_x10_coeff, atol=0.1, rtol=0.01
+    ).all()

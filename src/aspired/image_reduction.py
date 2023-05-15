@@ -159,7 +159,7 @@ class ImageReducer:
         self.clip_low_arc_default = 5.0
         self.clip_high_arc_default = 5.0
 
-        self.cosmicray_default = True
+        self.cosmicray_default = False
         self.gain_default = 1.0
         self.readnoise_default = 0.0
         self.fsmode_default = "convolve"
