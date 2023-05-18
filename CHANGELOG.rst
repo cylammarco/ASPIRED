@@ -54,6 +54,7 @@ Version 0.5.0-dev
   * spectrum1D exapanded to handle atmospheric extinction corrected spectrum as an independent data list
   * Use SpectResC instead of SpectRes in spectral resampling.
   * Cosmic Ray rejection is defaulted to off in both ImageReduction and TwoDSpec.
+  * Rectification is now performed with `SpectResC` instead of `scipy.ndimage.zoom` which provides a reasonable performance gain.
 
 Version 0.4.9
 -------------

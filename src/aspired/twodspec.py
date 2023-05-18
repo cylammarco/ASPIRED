@@ -2785,9 +2785,6 @@ class TwoDSpec:
                     ),
                     mode="same",
                 )
-                self.logger.info(np.argmax(corr))
-                self.logger.info(upsample_factor)
-                self.logger.info((self.spec_size - 2 * one_tenth) * 0.5)
                 shift[i:] += (
                     np.argmax(corr) / upsample_factor
                     - (self.spec_size - 2 * one_tenth) * 0.5
