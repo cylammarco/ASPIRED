@@ -260,15 +260,13 @@ def test_full_run(mock_show):
     lhs6328_onedspec.get_pix_wave_pairs()
 
     # get all the calibrators
-    cal = lhs6328_onedspec.get_calibrator()
+    _ = lhs6328_onedspec.get_calibrator()
 
     # Apply the wavelength calibration and display it
     lhs6328_onedspec.apply_wavelength_calibration(stype="science+standard")
 
     # Get the standard from the library
     lhs6328_onedspec.load_standard(target="hiltner102")
-
-    lhs6328_onedspec.get_continuum()
 
     lhs6328_onedspec.get_sensitivity(
         sens_deg=11, method="polynomial", mask_fit_size=1
@@ -280,6 +278,8 @@ def test_full_run(mock_show):
 
     lhs6328_onedspec.apply_flux_calibration(stype="science+standard")
     lhs6328_onedspec.inspect_reduced_spectrum()
+
+    lhs6328_onedspec.get_flux_continuum()
 
     lhs6328_onedspec.get_telluric_profile()
     lhs6328_onedspec.inspect_telluric_profile(display=False)

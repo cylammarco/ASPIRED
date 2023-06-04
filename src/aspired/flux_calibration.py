@@ -17,9 +17,9 @@ from plotly import io as pio
 from scipy import interpolate as itp
 from scipy import signal
 from spectresc import spectres
+from statsmodels.nonparametric.smoothers_lowess import lowess
 
 from .spectrum_oneD import SpectrumOneD
-from .util import get_continuum
 
 base_dir = os.path.dirname(__file__)
 
@@ -338,7 +338,10 @@ class StandardLibrary:
         filename_list = []
 
         if not isinstance(target, str):
-            error_msg = f"Target name has to be of type str, {type(target)} is provided."
+            error_msg = (
+                f"Target name has to be of type str, {type(target)} is"
+                " provided."
+            )
             self.logger.critical(error_msg)
 
         # If the provided designation exists
@@ -369,8 +372,8 @@ class StandardLibrary:
 
         if len(filename_list) > 0:
             self.logger.warning(
-                f"Requested standard star cannot be found, a list of"
-                f" the closest matching names are returned:"
+                "Requested standard star cannot be found, a list of"
+                " the closest matching names are returned:"
                 f" {filename_list}."
             )
         else:
@@ -1012,7 +1015,7 @@ class FluxCalibration(StandardLibrary):
                     np.asarray(self.spectrum_oned.wave)
                 ),
                 line=dict(color="royalblue", width=4),
-                name="Count / s (Observed)",
+                name="Flux",
             )
         )
 
@@ -1022,7 +1025,7 @@ class FluxCalibration(StandardLibrary):
             showlegend=True,
             xaxis_title=r"$\text{Wavelength / A}$",
             yaxis_title="Arbitrary",
-            yaxis=dict(title="Count / s"),
+            yaxis=dict(title="Flux"),
             legend=go.layout.Legend(
                 x=0,
                 y=1,
@@ -1067,23 +1070,17 @@ class FluxCalibration(StandardLibrary):
         ],
         mask_fit_order: int = 1,
         mask_fit_size: int = 3,
-        smooth: bool = False,
-        slength: int = 5,
-        sorder: int = 3,
+        smooth: bool = True,
         return_function: bool = True,
         sens_deg: int = 7,
         use_continuum: bool = False,
-        recompute_continuum: bool = False,
-        *args: str,
+        **kwargs: str,
     ):
         """
         The sensitivity curve is computed by dividing the true values by the
         wavelength calibrated standard spectrum, which is resampled with the
         spectres.spectres(). The curve is then interpolated with a cubic spline
         by default and is stored as a scipy interp1d object.
-
-        A Savitzky-Golay filter is available for smoothing before the
-        interpolation but it is not used by default.
 
         6850 - 6960, 7575 - 7700, and 8925 - 9050 A are masked by
         default.
@@ -1106,11 +1103,8 @@ class FluxCalibration(StandardLibrary):
         mask_fit_size: int (Default: 3)
             Number of "pixels" to be fitted on each side of the masked regions.
         smooth: bool (Default: False)
-            set to smooth the input spectrum with scipy.signal.savgol_filter
-        slength: int (Default: 5)
-            SG-filter window size
-        sorder: int (Default: 3)
-            SG-filter polynomial order
+            set to smooth the input spectrum with a lowess function with
+            statsmodels
         return_function: bool (Default: True)
             Set to True to explicity return the interpolated function of the
             sensitivity curve.
@@ -1119,9 +1113,8 @@ class FluxCalibration(StandardLibrary):
             the method is 'polynomial'.
         use_continuum: bool (Default: False)
             Set to True to use continuum for finding the sensitivity function.
-        recompute_continuum: bool (Default: False)
-            Recompute the continuum before computing the sensitivity function.
-        *args:
+            If used, the smoothing filter will be applied on the continuum.
+        **kwargs:
             keyword arguments for passing to the LOWESS function for getting
             the continuum, see
             `statsmodels.nonparametric.smoothers_lowess.lowess()`
@@ -1136,9 +1129,14 @@ class FluxCalibration(StandardLibrary):
         # resampling both the observed and the database standard spectra
         # in unit of flux per second. The higher resolution spectrum is
         # resampled to match the lower resolution one.
-        count = np.asarray(getattr(self.spectrum_oned, "count"))
-        count_err = np.asarray(getattr(self.spectrum_oned, "count_err"))
-        wave = np.asarray(getattr(self.spectrum_oned, "wave"))
+        if use_continuum:
+            count = np.array(getattr(self.spectrum_oned, "count_continuum"))
+
+        else:
+            count = np.array(getattr(self.spectrum_oned, "count"))
+
+        count_err = np.array(getattr(self.spectrum_oned, "count_err"))
+        wave = np.array(getattr(self.spectrum_oned, "wave"))
         exptime = getattr(self.spectrum_oned, "exptime")
         if exptime is None:
             exptime = 1.0
@@ -1197,24 +1195,23 @@ class FluxCalibration(StandardLibrary):
                     wave[left_end:right_start], coeff
                 )
 
-        # apply a Savitzky-Golay filter
+        # This applies a lowess filter from statsmodels that
+        # uses a different lowess_frac default value that is more appropriate in
+        # getting a first guess continuum which reject "outliers" much more
+        # aggressively.
         if smooth:
-            count = signal.savgol_filter(count, slength, sorder)
+            if kwargs is None:
+                kwargs = {}
+
+            if "frac" not in kwargs:
+                kwargs["frac"] = 0.1
+
+            if "return_sorted" not in kwargs:
+                kwargs["return_sorted"] = False
+
+            count = lowess(count, wave, **kwargs)
             # Set the smoothing parameters
-            self.spectrum_oned.add_smoothing(smooth, slength, sorder)
-
-        if use_continuum:
-            if (
-                getattr(self.spectrum_oned, "count_continuum") is None
-            ) or recompute_continuum:
-                self.spectrum_oned.add_count_continuum(
-                    get_continuum(wave, count, *args)
-                )
-
-            count = np.asarray(getattr(self.spectrum_oned, "count_continuum"))
-
-        else:
-            count = np.asarray(getattr(self.spectrum_oned, "count"))
+            self.spectrum_oned.add_smoothing(smooth, **kwargs)
 
         # If the median resolution of the observed spectrum is higher than
         # the literature one
@@ -1284,25 +1281,6 @@ class FluxCalibration(StandardLibrary):
 
         # Add to each SpectrumOneD object
         self.spectrum_oned.add_sensitivity_func(sensitivity_func)
-        self.spectrum_oned.add_count_continuum(count)
-        self.spectrum_oned.add_flux_continuum(count * sensitivity_func(wave))
-
-        (
-            telluric_func,
-            telluric_profile,
-            telluric_factor,
-        ) = self.get_telluric_profile(
-            wave,
-            getattr(self.spectrum_oned, "count")
-            * 10.0 ** sensitivity_func(wave),
-            count * 10.0 ** sensitivity_func(wave),
-            mask_range=mask_range,
-            return_function=True,
-        )
-
-        self.spectrum_oned.add_telluric_func(telluric_func)
-        self.spectrum_oned.add_telluric_profile(telluric_profile)
-        self.spectrum_oned.add_telluric_factor(telluric_factor)
 
         if return_function:
             return sensitivity_func
@@ -1587,13 +1565,6 @@ class FluxCalibration(StandardLibrary):
             f"The exposure time used for flux calibration is {exptime} seconds."
         )
 
-        if getattr(target_spectrum_oned, "count_continuum") is None:
-            target_spectrum_oned.add_count_continuum(
-                get_continuum(wave, count)
-            )
-
-        count_continuum = getattr(target_spectrum_oned, "count_continuum")
-
         # apply the flux calibration
         sensitivity_func = getattr(self.spectrum_oned, "sensitivity_func")
         sensitivity = 10.0 ** sensitivity_func(wave) / exptime
@@ -1605,10 +1576,6 @@ class FluxCalibration(StandardLibrary):
 
         if count_sky is not None:
             flux_sky = sensitivity * count_sky
-
-        flux_continuum = sensitivity * count_continuum
-
-        target_spectrum_oned.add_flux_continuum(flux_continuum)
 
         target_spectrum_oned.add_flux(flux, flux_err, flux_sky)
         target_spectrum_oned.add_sensitivity(sensitivity)
@@ -1716,16 +1683,6 @@ class FluxCalibration(StandardLibrary):
                         y=flux_sky,
                         line=dict(color="orange"),
                         name="Sky Flux",
-                    )
-                )
-
-            if flux_continuum is not None:
-                fig.add_trace(
-                    go.Scatter(
-                        x=wave,
-                        y=flux_continuum,
-                        line=dict(color="grey"),
-                        name="Continuum",
                     )
                 )
 

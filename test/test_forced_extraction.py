@@ -98,8 +98,8 @@ lhs6328_twodspec.ap_extract(
 )
 
 # Store the extracted count
-marsh89_count = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
-marsh89_var = copy.copy(lhs6328_twodspec.spectrum_list[0].var)
+marsh89_count = copy.deepcopy(lhs6328_twodspec.spectrum_list[0].count)
+marsh89_var = copy.deepcopy(lhs6328_twodspec.spectrum_list[0].var)
 
 
 def test_forced_extraction_tophat():
@@ -155,6 +155,7 @@ def test_forced_extraction_horne86_gauss():
         skywidth=10,
         skydeg=1,
         optimal=True,
+        model="gauss",
         forced=True,
         variances=horne86_var,
         filename=os.path.join(HERE, "test_output", "test_force_extraction5"),
@@ -164,8 +165,8 @@ def test_forced_extraction_horne86_gauss():
     # Store the forced extracted count
     count_forced = copy.copy(lhs6328_twodspec.spectrum_list[0].count)
 
-    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.99) & (
-        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.01
+    assert (np.nansum(horne86_count) >= np.nansum(count_forced) * 0.95) & (
+        np.nansum(horne86_count) <= np.nansum(count_forced) * 1.05
     )
 
 

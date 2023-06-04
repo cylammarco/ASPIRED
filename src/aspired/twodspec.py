@@ -148,12 +148,14 @@ class TwoDSpec:
         self.img_residual_rectified = None
         self.img_mean = None
         self.img_median = None
+        self.img_1_percentile = None
         self.header = None
         self.arc = None
         self.arc_rectified = None
         self.arc_header = None
         self.arc_mean = None
         self.arc_median = None
+        self.arc_1_percentile = None
         self.bad_mask = None
 
         self.saxis = 1
@@ -212,7 +214,6 @@ class TwoDSpec:
         # profile
         self.line_spread_profile_upsampled = None
         self.line_spread_profile = None
-        self.fitted_profile_func = None
 
         self.verbose = verbose
         self.logger_name = logger_name
@@ -393,6 +394,12 @@ class TwoDSpec:
             self._get_image_zminmax()
             self.img_mean = np.nanmean(self.img)
             self.img_median = np.nanmedian(self.img)
+            self.img_1_percentile = np.nanpercentile(self.img, 1.0)
+            self.logger.info(f"mean value of the image is {self.img_mean}")
+            self.logger.info(f"median value of the image is {self.img_median}")
+            self.logger.info(
+                f"0.1 percentile of the image is {self.img_1_percentile}"
+            )
 
     def set_properties(
         self,
@@ -1352,6 +1359,7 @@ class TwoDSpec:
         # Only compute if no error is raised
         self.arc_mean = np.nanmean(self.arc)
         self.arc_median = np.nanmedian(self.arc)
+        self.arc_1_percentile = np.nanpercentile(self.arc, 1.0)
 
     def set_arc_header(self, header: fits.Header):
         """
@@ -1785,7 +1793,7 @@ class TwoDSpec:
             self.set_gain()
 
     def _build_line_spread_function(
-        self, img, trace, trace_width=5.0, resample_factor=1.0
+        self, img, trace, trace_width=10.0, resample_factor=5.0, bounds=None
     ):
         # img_tmp is already upsampled
         line_spread_profile_upsampled = build_line_spread_profile(
@@ -1797,21 +1805,18 @@ class TwoDSpec:
             "The upsampled empirical line spread profile:"
             f" {line_spread_profile_upsampled}"
         )
-        line_spread_profile_upsampled /= np.nansum(
-            line_spread_profile_upsampled
-        )
+
         line_spread_profile = ndimage.zoom(
             line_spread_profile_upsampled, 1.0 / resample_factor
         )
-        line_spread_profile = line_spread_profile / np.nansum(
-            line_spread_profile
-        )
+        line_spread_profile -= np.nanmin(line_spread_profile)
+        line_spread_profile /= np.nansum(line_spread_profile)
         self.logger.info(
             f"The empirical line spread profile: {line_spread_profile}"
         )
 
         fitted_profile_func = get_line_spread_function(
-            trace=trace, line_spread_profile=line_spread_profile
+            trace=trace, line_spread_profile=line_spread_profile, bounds=bounds
         )
 
         return (
@@ -1827,6 +1832,7 @@ class TwoDSpec:
         nwindow: int = 20,
         spec_sep: int = 5,
         trace_width: int = 15,
+        bounds: dict = None,
         resample_factor: int = 4,
         rescale: bool = False,
         scaling_min: float = 0.9995,
@@ -1891,6 +1897,9 @@ class TwoDSpec:
             sources on the longslit).
         trace_width: int
             Distance from trace centre to be taken for profile fitting.
+        bounds: dict
+            Limits of the gaussian function: 'amplitude', 'mean' and 'stddev'.
+            e.g. {'amplitude': [0.0, 100.0]}
         resample_factor: int
             Number of times the collapsed 1D slices in the spatial directions
             are to be upsampled.
@@ -2020,7 +2029,7 @@ class TwoDSpec:
                         np.arange(int(nresample * scale)) / scale,
                         np.arange(len(lines_ref)),
                         lines_ref,
-                        fill=self.img_median,
+                        fill=self.img_1_percentile,
                         verbose=False,
                     )
 
@@ -2050,7 +2059,7 @@ class TwoDSpec:
                 np.arange(nresample),
                 np.array(pix).reshape(-1),
                 np.array(lines).reshape(-1),
-                fill=self.img_median,
+                fill=self.img_1_percentile,
                 verbose=False,
             )
             spatial_profile_tmp[np.isnan(spatial_profile_tmp)] = np.nanmin(
@@ -2180,8 +2189,9 @@ class TwoDSpec:
             ) = self._build_line_spread_function(
                 img=self.img,
                 trace=aper,
-                trace_width=9.0,
+                trace_width=10.0,
                 resample_factor=self.resample_factor,
+                bounds=bounds,
             )
 
             ap_sigma = fitted_profile_func.stddev_0.value
@@ -2232,7 +2242,7 @@ class TwoDSpec:
 
     def inspect_trace(
         self,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,
@@ -2574,7 +2584,7 @@ class TwoDSpec:
                 pix_y + shift_i,
                 pix_y,
                 img_tmp[:, i],
-                fill=self.img_median,
+                fill=self.img_1_percentile,
                 verbose=False,
             )
 
@@ -2583,7 +2593,7 @@ class TwoDSpec:
                     pix_y + shift_i,
                     pix_y,
                     arc_tmp[:, i],
-                    fill=self.img_median,
+                    fill=self.arc_1_percentile,
                     verbose=False,
                 )
 
@@ -2835,7 +2845,7 @@ class TwoDSpec:
                 pix_x - shift_j,
                 pix_x,
                 img_tmp[j],
-                fill=self.img_median,
+                fill=self.img_1_percentile,
                 verbose=False,
             )
 
@@ -2844,7 +2854,7 @@ class TwoDSpec:
                     pix_x - shift_j,
                     pix_x,
                     arc_tmp[j],
-                    fill=self.arc_median,
+                    fill=self.arc_1_percentile,
                     verbose=False,
                 )
 
@@ -3063,7 +3073,8 @@ class TwoDSpec:
         optimal: bool = True,
         algorithm: str = "horne86",
         model: str = "gauss",
-        lowess_frac: float = 0.2,
+        bounds: dict = None,
+        lowess_frac: float = 0.1,
         lowess_it: int = 3,
         lowess_delta: float = 0.0,
         tolerance: float = 1e-6,
@@ -3134,6 +3145,10 @@ class TwoDSpec:
             Available algorithms are horne86 and marsh89
         model: str (Default: 'lowess')
             Choice of model: 'lowess' and 'gauss'.
+        bounds: dict
+            Limits of the gaussian function: 'amplitude', 'mean' and 'stddev'.
+            e.g. {'amplitude': [0.0, 100.0]}
+            This is only used if the trace was provided manually.
         lowess_frac: float (Default: 0.1)
             Fraction of "good data" retained for LOWESS fit.
         lowess_it: int (Default: 3)
@@ -3285,7 +3300,8 @@ class TwoDSpec:
             profile = np.zeros((len_trace, width_dn + width_up + 1))
             is_optimal = np.zeros(len_trace, dtype=bool)
 
-            if optimal & (self.fitted_profile_func is None):
+            # This should only happen if a trace is provided manually
+            if optimal & (spec.profile_func is None):
                 (
                     line_spread_profile_upsampled,
                     line_spread_profile,
@@ -3293,8 +3309,9 @@ class TwoDSpec:
                 ) = self._build_line_spread_function(
                     img=self.img,
                     trace=spec.trace,
-                    trace_width=int((width_dn + width_up) * 3),
+                    trace_width=int(width_dn + width_up),
                     resample_factor=self.resample_factor,
+                    bounds=bounds,
                 )
                 self.logger.info(fitted_profile_func)
 
@@ -3485,6 +3502,7 @@ class TwoDSpec:
                         # .left is the gaussian mode
                         _profile_func = spec.profile_func.left
                         _profile = _profile_func(source_pix + delta_trace)
+                        _profile[_profile < 0] = 0.0
                         _profile /= np.nansum(_profile)
                         # _lower = (pos - min(source_pix)) / _profile_func.stddev
                         # _upper = (
@@ -3625,7 +3643,7 @@ class TwoDSpec:
 
     def inspect_extraction(
         self,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,
@@ -3990,7 +4008,7 @@ class TwoDSpec:
     def inspect_line_spread_function(
         self,
         spec_id: Union[int, list, np.ndarray] = None,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,
@@ -4130,7 +4148,7 @@ class TwoDSpec:
     def inspect_extracted_spectrum(
         self,
         spec_id: Union[int, list, np.ndarray] = None,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,
@@ -4323,7 +4341,7 @@ class TwoDSpec:
     def inspect_residual(
         self,
         log: bool = True,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,
@@ -4546,7 +4564,7 @@ class TwoDSpec:
 
     def inspect_arc_spec(
         self,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,

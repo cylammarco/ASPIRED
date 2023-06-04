@@ -278,14 +278,10 @@ def test_spectrum_oned():
     assert spec.count_err_resampled is None
     assert spec.count_sky_resampled is None
 
-    spec.add_smoothing(smooth=True, slength=11, sorder=3)
+    spec.add_smoothing(smooth=True)
     assert spec.smooth
-    assert spec.slength == 11
-    assert spec.sorder == 3
     spec.remove_smoothing()
     assert spec.smooth is None
-    assert spec.slength is None
-    assert spec.sorder is None
 
     spec.add_sensitivity_func(np.poly1d)
     assert spec.sensitivity_func == np.poly1d

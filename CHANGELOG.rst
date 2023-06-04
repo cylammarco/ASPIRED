@@ -15,7 +15,7 @@ Version 0.5.0-dev
   * Added `TwoDSpec.inspect_line_spread_function()` to view the line spread function used for extraction.
   * Using Horne86+Gaussian for optimal extraction now includes aperture correction.
   * Added `recompute_continuum`` when generating sensitivity curve.
-  * Continuum is switched from using statsmodels.lowess to specutils.get_continuum
+  * Continuum is now supporting both statsmodels.lowess and specutils.get_continuum
   * Standard stars can be recognised using any of the designations used by CDS.
 
 * Major bug fixes:

@@ -259,7 +259,7 @@ class WavelengthCalibration:
 
     def inspect_arc_lines(
         self,
-        display: bool = False,
+        display: bool = True,
         renderer: str = "default",
         width: int = 1280,
         height: int = 720,

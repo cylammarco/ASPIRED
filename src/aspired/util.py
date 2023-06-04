@@ -10,9 +10,10 @@ from typing import Union
 
 import numpy as np
 from astropy import units as u
+from astropy.modeling.polynomial import Chebyshev1D
 from scipy import interpolate as itp
 from scipy import ndimage
-from specutils.fitting import fit_continuum
+from specutils.fitting import fit_generic_continuum
 from specutils.spectra import Spectrum1D
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
@@ -285,7 +286,10 @@ def grow_mask(mask: np.ndarray, iterations: int, diagonal: bool):
 
 
 def get_continuum(
-    x: Union[list, np.ndarray], y: Union[list, np.ndarray], *args: str
+    x: Union[list, np.ndarray],
+    y: Union[list, np.ndarray],
+    method: str = "lowess",
+    **kwargs: str,
 ):
     """
     This is a wrapper function of the lowess function from statsmodels that
@@ -300,8 +304,12 @@ def get_continuum(
         Absicissa (conventionally the first number of a coordinate pair)
     y: list or numpy.ndarray
         Ordinate (conventionally the second number of a coordinate pair)
-    *args: dict
-        The positional arguments for the specutil fitted_continuum function.
+    method: str
+        "lowess" or "fit". The former uses the lowess function from
+        statsmodels. The latter fits with specutil's fit_generic_continuum.
+    **keargs: dict
+        The keyword arguments for the lowess function or the
+        fit_generic_continuum function.
 
     """
 
@@ -316,10 +324,21 @@ def get_continuum(
 
     mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.0)
 
-    spectrum = Spectrum1D(flux=y[mask] * u.ct, spectral_axis=x[mask] * u.AA)
-    fitted_continuum = fit_continuum(spectrum, *args)
+    assert method in ["fit", "lowess"], (
+        "Please choose from 'fit' and " f"'lowess', {method} is provided."
+    )
 
-    return fitted_continuum(x * u.AA).to_value()
+    if method == "fit":
+        spectrum = Spectrum1D(
+            flux=y[mask] * u.ct, spectral_axis=x[mask] * u.AA
+        )
+        fitted_continuum = fit_generic_continuum(spectrum, **kwargs)
+        continuum = fitted_continuum(x * u.AA).to_value()
+
+    else:
+        continuum = lowess(y[mask], x[mask], xvals=x, **kwargs)
+
+    return continuum
 
 
 def gaus(x: float, a: float, b: float, x0: float, sigma: float):

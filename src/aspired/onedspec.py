@@ -1,4 +1,8 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""For One Dimensional operations"""
+
 import copy
 import datetime
 import logging
@@ -8,6 +12,7 @@ from typing import Callable, Union
 import numpy as np
 import pkg_resources
 from astropy.io import fits
+from astropy.modeling.polynomial import Chebyshev1D
 from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import optimize
@@ -1758,7 +1763,6 @@ class OneDSpec:
                     spec_id = [spec_id]
 
                 if spec_id is not None:
-                    print(list(self.science_spectrum_list.keys()))
                     if not set(spec_id).issubset(
                         list(self.science_spectrum_list.keys())
                     ):
@@ -1841,7 +1845,7 @@ class OneDSpec:
 
     def inspect_arc_lines(
         self,
-        display: bool = False,
+        display: bool = True,
         width: int = 1280,
         height: int = 720,
         return_jsonstring: bool = False,
@@ -3459,7 +3463,7 @@ class OneDSpec:
 
     def inspect_standard(
         self,
-        display: bool = False,
+        display: bool = True,
         width: int = 1280,
         height: int = 720,
         return_jsonstring: bool = False,
@@ -3525,12 +3529,10 @@ class OneDSpec:
         mask_range: list = [[6850, 6960], [7580, 7700]],
         mask_fit_order: int = 1,
         mask_fit_size: int = 5,
-        smooth: bool = False,
-        slength: int = 5,
-        sorder: int = 3,
+        smooth: bool = True,
         return_function: bool = False,
         sens_deg: int = 7,
-        recompute_continuum: bool = True,
+        use_continuum: bool = False,
         **kwargs,
     ):
         """
@@ -3552,25 +3554,33 @@ class OneDSpec:
             Order of polynomial to be fitted over the masked regions
         mask_fit_size: int (Default: 5)
             Number of "pixels" to be fitted on each side of the masked regions.
-        smooth: bool (Default: False)
-            set to smooth the input spectrum with scipy.signal.savgol_filter
-        slength: int (Default:5)
-            SG-filter window size
-        sorder: int (Default: 3)
-            SG-filter polynomial order
+        smooth: bool (Default: True)
+            set to smooth the input spectrum with a lowess function with
+            statsmodels
         return_function: bool (Default: False)
             Set to True to return the callable function of the sensitivity
             curve.
         sens_deg: int (Default: 7)
             The degree of polynomial of the sensitivity curve, only used if
             the method is 'polynomial'.
-        recompute_continuum: bool (Default: True)
-            Recompute the continuum before computing the sensitivity function.
+        use_continuum: bool (Default: False)
+            Set to True to use continuum for finding the sensitivity function.
+            If used, the smoothing filter will be applied on the continuum.
         **kwargs:
-            keyword arguments for passing to the LOWESS function, see
+            keyword arguments for passing to the LOWESS function for getting
+            the continuum, see
             `statsmodels.nonparametric.smoothers_lowess.lowess()`
 
         """
+
+        if getattr(self.standard_spectrum_list[0], "count_continuum") is None:
+            self.logger.warning(
+                "Continuum is not available, we are runing "
+                "get_count_continuum with the default params which "
+                "is certainly not optimal. Please check your "
+                "results carefully."
+            )
+            self.get_count_continuum()
 
         if self.standard_wavelength_calibrated:
             self.fluxcal.get_sensitivity(
@@ -3580,11 +3590,9 @@ class OneDSpec:
                 mask_fit_order=mask_fit_order,
                 mask_fit_size=mask_fit_size,
                 smooth=smooth,
-                slength=slength,
-                sorder=sorder,
                 return_function=return_function,
                 sens_deg=sens_deg,
-                recompute_continuum=recompute_continuum,
+                use_continuum=use_continuum,
                 **kwargs,
             )
             self.logger.info("Sensitivity curve computed.")
@@ -3631,7 +3639,7 @@ class OneDSpec:
 
     def inspect_sensitivity(
         self,
-        display: bool = False,
+        display: bool = True,
         width: int = 1280,
         height: int = 720,
         return_jsonstring: bool = False,
@@ -3691,7 +3699,7 @@ class OneDSpec:
 
     def apply_flux_calibration(
         self,
-        inspect: bool = False,
+        inspect: bool = True,
         wave_min: float = 3500.0,
         wave_max: float = 8500.0,
         display: bool = False,
@@ -3821,7 +3829,6 @@ class OneDSpec:
         flux: Union[list, np.ndarray],
         telluric_profile: Union[list, np.ndarray],
         continuum: Union[list, np.ndarray],
-        sigma: float = 4.5,
     ):
         """
         ** EXPERIMENTAL, as of 1 October 2021 **
@@ -3840,8 +3847,6 @@ class OneDSpec:
             0 being outside the Telluric regions.
         continuum: list or 1-d array (N)
             Continuum flux array.
-        sigma: float (default: 4.5)
-            Level of sigma clipping.
 
         """
 
@@ -3939,11 +3944,15 @@ class OneDSpec:
                     "be performed."
                 )
 
-    def get_continuum(
-        self, spec_id: Union[int, list, np.ndarray] = None, *args: str
+    def get_count_continuum(
+        self,
+        spec_id: Union[int, list, np.ndarray] = None,
+        method: str = "lowess",
+        stype: str = "science+standard",
+        **kwargs: dict,
     ):
         """
-        ** EXPERIMENTAL, as of 1 October 2021 **
+        ** fit_generic_continuum is EXPERIMENTAL, as of 23 May 2023 **
 
         Get the continnum from the wave, count and flux.
 
@@ -3951,37 +3960,159 @@ class OneDSpec:
         ----------
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum_oned object
+        method: str
+            "lowess" or "fit". The former uses the lowess function from
+            statsmodels. The latter fits with specutil's fit_generic_continuum.
         **kwargs: dictionary
-            The keyword arguments to be passed to the lowess function
-            for generating the continuum.
+            The keyword arguments for the lowess function or the
+            fit_generic_continuum function.
 
         """
 
-        spec_id = self._check_spec_id(spec_id)
-        # Get the continuum here
-        for i in spec_id:
-            science_spec = self.science_spectrum_list[i]
+        stype_split = stype.split("+")
 
-            wave = science_spec.wave
-            count = science_spec.count
-            flux = science_spec.flux
+        if kwargs is None:
+            sci_kwargs = {}
+            std_kwargs = {}
 
-            science_spec.add_count_continuum(get_continuum(wave, count, *args))
+        else:
+            sci_kwargs = kwargs.copy()
+            std_kwargs = kwargs.copy()
 
-            if flux is not None:
-                science_spec.add_flux_continuum(
-                    get_continuum(wave, flux, *args)
+        # Note that the order of polynomial is higher in the science than in standard
+        if "science" in stype_split:
+            spec_id = self._check_spec_id(spec_id)
+            # Get the continuum here
+            for i in spec_id:
+                science_spec = self.science_spectrum_list[i]
+
+                wave = science_spec.wave
+                count = science_spec.count
+
+                if method == "fit":
+                    if "model" not in sci_kwargs:
+                        sci_kwargs["model"] = Chebyshev1D(15)
+
+                    if "median_window" not in sci_kwargs:
+                        sci_kwargs["median_window"] = 11
+
+                else:
+                    if "frac" not in sci_kwargs:
+                        sci_kwargs["frac"] = 0.1
+
+                science_spec.add_count_continuum(
+                    get_continuum(wave, count, method=method, **sci_kwargs)
                 )
+
+        if "standard" in stype_split:
+            # Add to the standard spectrum
+            standard_spec = self.standard_spectrum_list[0]
+
+            wave = standard_spec.wave
+            count = standard_spec.count
+
+            if method == "fit":
+                if "model" not in std_kwargs:
+                    std_kwargs["model"] = Chebyshev1D(6)
+
+                if "median_window" not in std_kwargs:
+                    std_kwargs["median_window"] = 11
 
             else:
-                self.logger.warning(
-                    "flux is None, only count_continuum is found."
+                if "frac" not in std_kwargs:
+                    std_kwargs["frac"] = 0.1
+
+            standard_spec.add_count_continuum(
+                get_continuum(wave, count, method=method, **std_kwargs)
+            )
+
+    def get_flux_continuum(
+        self,
+        spec_id: Union[int, list, np.ndarray] = None,
+        method: str = "lowess",
+        stype: str = "science+standard",
+        **kwargs: dict,
+    ):
+        """
+        ** fit_generic_continuum is EXPERIMENTAL, as of 23 May 2023 **
+
+        Get the continnum from the wave, count and flux.
+
+        Parameters
+        ----------
+        spec_id: int or None (Default: None)
+            The ID corresponding to the spectrum_oned object
+        method: str
+            "lowess" or "fit". The former uses the lowess function from
+            statsmodels. The latter fits with specutil's fit_generic_continuum.
+        **kwargs: dictionary
+            The keyword arguments for the lowess function or the
+            fit_generic_continuum function.
+
+        """
+
+        stype_split = stype.split("+")
+
+        if kwargs is None:
+            sci_kwargs = {}
+            std_kwargs = {}
+
+        else:
+            sci_kwargs = kwargs.copy()
+            std_kwargs = kwargs.copy()
+
+        # Note that the order of polynomial is higher in the science than in standard
+        if "science" in stype_split:
+            spec_id = self._check_spec_id(spec_id)
+            # Get the continuum here
+            for i in spec_id:
+                science_spec = self.science_spectrum_list[i]
+
+                wave = science_spec.wave
+                flux = science_spec.flux
+
+                if method == "fit":
+                    if "model" not in sci_kwargs:
+                        sci_kwargs["model"] = Chebyshev1D(15)
+
+                    if "median_window" not in sci_kwargs:
+                        sci_kwargs["median_window"] = 11
+
+                else:
+                    if "frac" not in sci_kwargs:
+                        sci_kwargs["frac"] = 0.1
+
+                science_spec.add_flux_continuum(
+                    get_continuum(wave, flux, method=method, **sci_kwargs)
                 )
+
+        if "standard" in stype_split:
+            # Add to the standard spectrum
+            standard_spec = self.standard_spectrum_list[0]
+
+            wave = standard_spec.wave
+            flux = standard_spec.flux
+
+            if method == "fit":
+                if "model" not in std_kwargs:
+                    std_kwargs["model"] = Chebyshev1D(6)
+
+                if "median_window" not in std_kwargs:
+                    std_kwargs["median_window"] = 11
+
+            else:
+                if "frac" not in std_kwargs:
+                    std_kwargs["frac"] = 0.1
+
+            standard_spec.add_flux_continuum(
+                get_continuum(wave, flux, method=method, **std_kwargs)
+            )
 
     def get_telluric_profile(
         self,
         spec_id: Union[int, list, np.ndarray] = None,
         mask_range: list = [[6850, 6960], [7580, 7700]],
+        use_continuum: bool = False,
         return_function: bool = False,
     ):
         """
@@ -4001,17 +4132,41 @@ class OneDSpec:
 
         """
 
-        (
-            telluric_func,
-            telluric_profile,
-            telluric_factor,
-        ) = self.fluxcal.get_telluric_profile(
-            wave=self.standard_spectrum_list[0].wave,
-            flux=self.standard_spectrum_list[0].flux,
-            continuum=self.standard_spectrum_list[0].flux_continuum,
-            mask_range=mask_range,
-            return_function=True,
-        )
+        if self.standard_spectrum_list[0].flux_continuum is None:
+            self.logger.error(
+                "Flux continuum is not available, please provide a set of"
+                " continuum or run get_flux_continuum."
+            )
+
+        if use_continuum:
+            (
+                telluric_func,
+                telluric_profile,
+                telluric_factor,
+            ) = self.fluxcal.get_telluric_profile(
+                wave=self.standard_spectrum_list[0].wave,
+                flux=self.standard_spectrum_list[0].flux,
+                continuum=self.standard_spectrum_list[0].flux_continuum,
+                mask_range=mask_range,
+                return_function=True,
+            )
+
+        else:
+            (
+                telluric_func,
+                telluric_profile,
+                telluric_factor,
+            ) = self.fluxcal.get_telluric_profile(
+                wave=self.standard_spectrum_list[0].wave,
+                flux=self.standard_spectrum_list[0].flux,
+                continuum=spectres(
+                    self.standard_spectrum_list[0].wave,
+                    self.standard_spectrum_list[0].wave_literature,
+                    self.standard_spectrum_list[0].flux_literature,
+                ),
+                mask_range=mask_range,
+                return_function=True,
+            )
 
         self.logger.info(
             "Copying the telluric absorption profile to "
@@ -4118,7 +4273,7 @@ class OneDSpec:
             flux = science_spec.flux
 
             if (science_spec.flux_continuum is None) or (len(args) > 0):
-                self.get_continuum(i, *args)
+                self.get_flux_continuum(i, *args)
 
             flux_continuum = science_spec.flux_continuum
 
@@ -4174,7 +4329,7 @@ class OneDSpec:
 
     def inspect_telluric_profile(
         self,
-        display: bool = False,
+        display: bool = True,
         width: int = 1280,
         height: int = 720,
         return_jsonstring: bool = False,
@@ -4235,7 +4390,7 @@ class OneDSpec:
     def inspect_telluric_correction(
         self,
         factor: float = 1.0,
-        display: bool = False,
+        display: bool = True,
         width: int = 1280,
         height: int = 720,
         return_jsonstring: bool = False,
@@ -4722,7 +4877,7 @@ class OneDSpec:
                 **kwargs,
             )
             self.logger.info(
-                "{location.lower()} extinction correction function is loaded."
+                f"{location.lower()} extinction correction function is loaded."
             )
 
         self.atmospheric_extinction_correction_available = True
@@ -4937,7 +5092,7 @@ class OneDSpec:
         wave_max: float = 8500.0,
         atm_ext_corrected: bool = True,
         telluric_corrected: bool = True,
-        display: bool = False,
+        display: bool = True,
         width: int = 1280,
         height: int = 720,
         renderer: str = "default",
@@ -7503,6 +7658,13 @@ class OneDSpec:
                     if spec.hdu_content[j]:
                         output_filtered.append(j)
 
+                    elif not spec.hdu_content[j]:
+                        self.create_fits(j)
+                        output_filtered.append(j)
+
+                    else:
+                        pass
+
                 spec.save_fits(
                     output="+".join(output_filtered),
                     filename=filename_i,
@@ -7522,6 +7684,13 @@ class OneDSpec:
             for j in output_split:
                 if spec.hdu_content[j]:
                     output_filtered.append(j)
+
+                elif not spec.hdu_content[j]:
+                    self.create_fits(j)
+                    output_filtered.append(j)
+
+                else:
+                    pass
 
             spec.save_fits(
                 output="+".join(output_filtered),
@@ -7694,6 +7863,12 @@ class OneDSpec:
                     if ("resampled" in j) and (not spec.hdu_content[j]):
                         self.resample(stype="science")
 
+                    elif not spec.hdu_content[j]:
+                        self.create_fits(j)
+
+                    else:
+                        pass
+
                     if spec.hdu_content[j]:
                         output_filtered.append(j)
 
@@ -7721,6 +7896,12 @@ class OneDSpec:
             for j in output_split:
                 if ("resampled" in j) and (not spec.hdu_content[j]):
                     self.resample(stype="standard")
+
+                elif not spec.hdu_content[j]:
+                    self.create_fits(j)
+
+                else:
+                    pass
 
                 if spec.hdu_content[j]:
                     output_filtered.append(j)

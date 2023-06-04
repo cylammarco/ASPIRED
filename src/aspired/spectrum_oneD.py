@@ -262,11 +262,16 @@ class SpectrumOneD:
         # Continuum
         self.count_continuum = None
         self.count_resampled_continuum = None
+        self.flux_continuum = None
+        self.flux_resampled_continuum = None
 
         # Sensitivity curve smoothing properties
         self.smooth = None
-        self.slength = None
-        self.sorder = None
+        self.lowess_kwargs = None
+
+        # standard star
+        self.library = None
+        self.target = None
 
         # Tellurics
         self.telluric_func = None
@@ -1877,7 +1882,7 @@ class SpectrumOneD:
         self.library = None
         self.target = None
 
-    def add_smoothing(self, smooth: bool, slength: int, sorder: int):
+    def add_smoothing(self, smooth: bool, **kwargs: dict):
         """
         Add the SG smoothing parameters for computing the sensitivity curve.
 
@@ -1885,16 +1890,13 @@ class SpectrumOneD:
         ----------
         smooth: bool
             Indicate if smoothing was applied.
-        slength: int
-            The size of the smoothing window.
-        sorder: int
-            The order of polynomial used for SG smoothing.
+        kwargs: dict
+            Other keyword arguments passed to the lowess smoothing function
 
         """
 
         self.smooth = smooth
-        self.slength = slength
-        self.sorder = sorder
+        self.lowess_kwargs = kwargs
 
     def remove_smoothing(self):
         """
@@ -5301,14 +5303,17 @@ class SpectrumOneD:
                 "flux_resampled_atm_ext_telluric_corrected"
             )
 
+        self.logger.info(f"{output} is read.")
+
         output_split = output.split("+")
+        self.logger.info(f"HDUs of {output_split} are to be created.")
 
         # If to recreate the FITS, set all contents to False
         if recreate:
-            self.logger.info("HDUList is cleared.")
-
             for k, v in self.hdu_content.items():
                 self.hdu_content[k] = False
+
+            self.logger.info("HDUList is cleared.")
 
         # If the requested list of HDUs is already good to go
         if set([k for k, v in self.hdu_content.items() if v]) == set(
@@ -5346,7 +5351,9 @@ class SpectrumOneD:
             # Join the list(s)
             if "trace" in output_split:
                 if not self.hdu_content["trace"]:
+                    self.logger.info("Creating trace HDU now.")
                     self.create_trace_fits()
+                    self.logger.info("Created trace HDU.")
 
                 if (self.trace_hdulist is not None) and (
                     self.trace is not None
@@ -5356,7 +5363,9 @@ class SpectrumOneD:
 
             if "count" in output_split:
                 if not self.hdu_content["count"]:
+                    self.logger.info("Creating count HDU now.")
                     self.create_count_fits()
+                    self.logger.info("Created trace HDU.")
 
                 if (self.count_hdulist is not None) and (
                     self.count is not None
@@ -5366,7 +5375,9 @@ class SpectrumOneD:
 
             if "weight_map" in output_split:
                 if not self.hdu_content["weight_map"]:
+                    self.logger.info("Creating weight_map HDU now.")
                     self.create_weight_map_fits()
+                    self.logger.info("Created weight_map HDU.")
 
                 if (self.weight_map_hdulist is not None) and (
                     self.var is not None
@@ -5376,7 +5387,9 @@ class SpectrumOneD:
 
             if "arc_spec" in output_split:
                 if not self.hdu_content["arc_spec"]:
+                    self.logger.info("Creating arc_spec HDU now.")
                     self.create_arc_spec_fits()
+                    self.logger.info("Created arc_spec HDU.")
 
                 if (self.arc_spec_hdulist is not None) and (
                     self.arc_spec is not None
@@ -5386,7 +5399,9 @@ class SpectrumOneD:
 
             if "arc_lines" in output_split:
                 if not self.hdu_content["arc_lines"]:
+                    self.logger.info("Creating arc_lines HDU now.")
                     self.create_arc_lines_fits()
+                    self.logger.info("Created HDU.")
 
                 if self.arc_lines_hdulist is not None:
                     hdu_output += self.arc_lines_hdulist
@@ -5394,7 +5409,9 @@ class SpectrumOneD:
 
             if "wavecal_coefficients" in output_split:
                 if not self.hdu_content["wavecal_coefficients"]:
+                    self.logger.info("Creat wavecal_coefficients HDU now.")
                     self.create_wavecal_fits()
+                    self.logger.info("Creat wavecal_coefficients HDU.")
 
                 if (self.wavecal_hdulist is not None) and (
                     self.fit_coeff is not None
@@ -5404,7 +5421,9 @@ class SpectrumOneD:
 
             if "wavelength" in output_split:
                 if not self.hdu_content["wavelength"]:
+                    self.logger.info("Creating wavelength HDU now.")
                     self.create_wavelength_fits()
+                    self.logger.info("Created wavelength HDU.")
 
                 if (self.wavelength_hdulist is not None) and (
                     self.wave is not None
@@ -5414,7 +5433,9 @@ class SpectrumOneD:
 
             if "wavelength_resampled" in output_split:
                 if not self.hdu_content["wavelength_resampled"]:
+                    self.logger.info("Creating wavelength_resampled HDU now.")
                     self.create_wavelength_resampled_fits()
+                    self.logger.info("Created wavelength_resampled HDU.")
 
                 if (self.wavelength_resampled_hdulist is not None) and (
                     self.wave_resampled is not None
@@ -5424,7 +5445,9 @@ class SpectrumOneD:
 
             if "count_resampled" in output_split:
                 if not self.hdu_content["count_resampled"]:
+                    self.logger.info("Creating count_resampled HDU now.")
                     self.create_count_resampled_fits()
+                    self.logger.info("Created count_resampled HDU.")
 
                 if (self.count_resampled_hdulist is not None) and (
                     self.count_resampled is not None
@@ -5434,7 +5457,9 @@ class SpectrumOneD:
 
             if "sensitivity" in output_split:
                 if not self.hdu_content["sensitivity"]:
+                    self.logger.info("Creating sensitivity HDU now.")
                     self.create_sensitivity_fits()
+                    self.logger.info("Created sensitivity HDU.")
 
                 if (self.sensitivity_hdulist is not None) and (
                     self.sensitivity is not None
@@ -5444,7 +5469,9 @@ class SpectrumOneD:
 
             if "flux" in output_split:
                 if not self.hdu_content["flux"]:
+                    self.logger.info("Creating flux HDU now.")
                     self.create_flux_fits()
+                    self.logger.info("Created flux HDU.")
 
                 if (self.flux_hdulist is not None) and (self.flux is not None):
                     hdu_output += self.flux_hdulist
@@ -5452,7 +5479,9 @@ class SpectrumOneD:
 
             if "atm_ext" in output_split:
                 if not self.hdu_content["atm_ext"]:
+                    self.logger.info("Creating atm_ext HDU now.")
                     self.create_atm_ext_fits()
+                    self.logger.info("Created atm_ext HDU.")
 
                 if (self.atm_ext_hdulist is not None) and (
                     self.atm_ext is not None
@@ -5462,7 +5491,11 @@ class SpectrumOneD:
 
             if "flux_atm_ext_corrected" in output_split:
                 if not self.hdu_content["flux_atm_ext_corrected"]:
+                    self.logger.info(
+                        "Creating flux_atm_ext_corrected HDU now."
+                    )
                     self.create_flux_atm_ext_corrected_fits()
+                    self.logger.info("Created flux_atm_ext_corrected HDU.")
 
                 if (self.flux_atm_ext_corrected_hdulist is not None) and (
                     self.flux_atm_ext_corrected is not None
@@ -5472,7 +5505,9 @@ class SpectrumOneD:
 
             if "telluric_profile" in output_split:
                 if not self.hdu_content["telluric_profile"]:
+                    self.logger.info("Creating telluric_profile HDU now.")
                     self.create_telluric_profile_fits()
+                    self.logger.info("Created telluric_profile HDU.")
 
                 if (self.telluric_profile_hdulist is not None) and (
                     self.telluric_profile is not None
@@ -5482,7 +5517,11 @@ class SpectrumOneD:
 
             if "flux_telluric_corrected" in output_split:
                 if not self.hdu_content["flux_telluric_corrected"]:
+                    self.logger.info(
+                        "Creating flux_telluric_corrected HDU now."
+                    )
                     self.create_flux_telluric_corrected_fits()
+                    self.logger.info("Created flux_telluric_corrected HDU.")
 
                 if (self.flux_telluric_corrected_hdulist is not None) and (
                     self.flux_telluric_corrected is not None
@@ -5492,7 +5531,13 @@ class SpectrumOneD:
 
             if "flux_atm_ext_telluric_corrected" in output_split:
                 if not self.hdu_content["flux_atm_ext_telluric_corrected"]:
+                    self.logger.info(
+                        "Creating flux_atm_ext_telluric_corrected HDU now."
+                    )
                     self.create_flux_atm_ext_telluric_corrected_fits()
+                    self.logger.info(
+                        "Created flux_atm_ext_telluric_corrected HDU."
+                    )
 
                 if (
                     self.flux_atm_ext_telluric_corrected_hdulist is not None
@@ -5502,7 +5547,9 @@ class SpectrumOneD:
 
             if "sensitivity_resampled" in output_split:
                 if not self.hdu_content["sensitivity_resampled"]:
+                    self.logger.info("Creating sensitivity_resampled HDU now.")
                     self.create_sensitivity_resampled_fits()
+                    self.logger.info("Created sensitivity_resampled HDU.")
 
                 if (self.sensitivity_resampled_hdulist is not None) and (
                     self.sensitivity_resampled is not None
@@ -5512,7 +5559,9 @@ class SpectrumOneD:
 
             if "flux_resampled" in output_split:
                 if not self.hdu_content["flux_resampled"]:
+                    self.logger.info("Creating flux_resampled HDU now.")
                     self.create_flux_resampled_fits()
+                    self.logger.info("Created flux_resampled HDU.")
 
                 if (self.flux_resampled_hdulist is not None) and (
                     self.flux_resampled is not None
@@ -5522,7 +5571,9 @@ class SpectrumOneD:
 
             if "atm_ext_resampled" in output_split:
                 if not self.hdu_content["atm_ext_resampled"]:
+                    self.logger.info("Creating atm_ext_resampled HDU now.")
                     self.create_atm_ext_resampled_fits()
+                    self.logger.info("Created atm_ext_resampled HDU.")
 
                 if (self.atm_ext_resampled_hdulist is not None) and (
                     self.atm_ext_resampled is not None
@@ -5532,7 +5583,13 @@ class SpectrumOneD:
 
             if "flux_resampled_atm_ext_corrected" in output_split:
                 if not self.hdu_content["flux_resampled_atm_ext_corrected"]:
+                    self.logger.info(
+                        "Creating flux_resampled_atm_ext_corrected HDU now."
+                    )
                     self.create_flux_resampled_atm_ext_corrected_fits()
+                    self.logger.info(
+                        "Created flux_resampled_atm_ext_corrected HDU."
+                    )
 
                 if (
                     self.flux_resampled_atm_ext_corrected_hdulist is not None
@@ -5542,7 +5599,11 @@ class SpectrumOneD:
 
             if "telluric_profile_resampled" in output_split:
                 if not self.hdu_content["telluric_profile_resampled"]:
+                    self.logger.info(
+                        "Creating telluric_profile_resampled HDU now."
+                    )
                     self.create_telluric_profile_resampled_fits()
+                    self.logger.info("Created telluric_profile_resampled HDU.")
 
                 if (self.telluric_profile_resampled_hdulist is not None) and (
                     self.telluric_profile_resampled is not None
@@ -5552,7 +5613,13 @@ class SpectrumOneD:
 
             if "flux_resampled_telluric_corrected" in output_split:
                 if not self.hdu_content["flux_resampled_telluric_corrected"]:
+                    self.logger.info(
+                        "Creating flux_resampled_telluric_corrected HDU now."
+                    )
                     self.create_flux_resampled_telluric_corrected_fits()
+                    self.logger.info(
+                        "Created flux_resampled_telluric_corrected HDU."
+                    )
 
                 if (
                     self.flux_resampled_telluric_corrected_hdulist is not None
@@ -5568,7 +5635,13 @@ class SpectrumOneD:
                 if not self.hdu_content[
                     "flux_resampled_atm_ext_telluric_corrected"
                 ]:
+                    self.logger.info(
+                        "Creating flux_resampled_atm_ext_telluric_corrected HDU now."
+                    )
                     self.create_flux_resampled_atm_ext_telluric_corrected_fits()
+                    self.logger.info(
+                        "Created flux_resampled_atm_ext_telluric_corrected HDU."
+                    )
 
                 if (
                     self.flux_resampled_atm_ext_telluric_corrected_hdulist
@@ -5584,17 +5657,16 @@ class SpectrumOneD:
                     ] = True
 
             # If the primary HDU is not chosen to be empty
-            if not empty_primary_hdu:
+            if empty_primary_hdu:
+                hdu_output.update_extend()
+                self.empty_primary_hdu = True
+            else:
                 # Convert the first HDU to PrimaryHDU
                 hdu_output[0] = fits.PrimaryHDU(
                     hdu_output[0].data, hdu_output[0].header
                 )
                 hdu_output.update_extend()
                 self.empty_primary_hdu = False
-
-            else:
-                hdu_output.update_extend()
-                self.empty_primary_hdu = True
 
             self.hdu_output = hdu_output
 

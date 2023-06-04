@@ -71,8 +71,6 @@ def build_line_spread_profile(
             (np.zeros(start_pad), spec[start:end], np.zeros(end_pad))
         )
 
-    spectrum[spectrum <= 0] = np.nan
-
     line_spread_profile = np.nanmedian(spectrum, axis=0)
     line_spread_profile[np.isnan(line_spread_profile)] = np.nanmin(
         line_spread_profile
@@ -85,6 +83,7 @@ def build_line_spread_profile(
 def get_line_spread_function(
     trace: Union[list, np.ndarray],
     line_spread_profile: Union[list, np.ndarray],
+    bounds: dict = None,
 ):
     """
     function refers to the fitted model
@@ -96,15 +95,50 @@ def get_line_spread_function(
     line_spread_profile: 1D list or array (N)
         The line spread profile to be fitted with a gaussian and a linear
         background.
+    bounds: dict
+        Limits of the gaussian function: amplitude, mean and stddev.
 
     """
+
+    if bounds is None:
+        bounds = {}
+
+    # impose some weak constraint on the amplitude
+    if "amplitude" not in bounds:
+        bounds["amplitude"] = [np.nanmedian(line_spread_profile), None]
+
+    elif bounds["amplitude"] is None:
+        bounds["amplitude"] = [np.nanmedian(line_spread_profile), None]
+
+    else:
+        pass
+
+    # impose some weak constraint on the mean
+    if "mean" not in bounds:
+        bounds["mean"] = [0, None]
+
+    elif bounds["mean"] is None:
+        bounds["mean"] = [0, None]
+
+    else:
+        pass
+
+    # impose some weak constraint on the standard deviation
+    if "stddev" not in bounds:
+        bounds["stddev"] = [0.5, 10.0]
+
+    elif bounds["stddev"] is None:
+        bounds["stddev"] = [0.5, 10.0]
+
+    else:
+        pass
 
     # construct the guassian and background profile
     gauss_prof = models.Gaussian1D(
         amplitude=np.nanmax(line_spread_profile),
         mean=np.nanmean(trace),
         stddev=2.5,
-        bounds={"amplitude": [0.0, None]},
+        bounds=bounds,
     )
     bkg_prof = models.Linear1D(
         slope=0.0,
