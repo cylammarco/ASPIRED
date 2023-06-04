@@ -59,7 +59,8 @@ autodoc_mock_imports = [
     "rascal",
     "plotly",
     "scipy",
-    "spectres",
+    "spectresc",
+    "specutils",
     "statsmodels",
 ]
 
