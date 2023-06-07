@@ -461,16 +461,16 @@ def test_add_wavelength_science_expect_fail_wrong_shape():
     )
 
 
-@pytest.mark.xfail(raises=RuntimeError)
-def test_add_wavelength_science_fail_no_science_data():
+# This doesn't fail because we check for a Calibrator despite no science data
+def test_add_wavelength_science_no_science_data():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
     onedspec.add_wavelength(np.arange(100), stype="science")
 
 
-@pytest.mark.xfail(raises=RuntimeError)
-def test_add_wavelength_science_fail_no_science_data_2():
+# This doesn't fail because we check for a Calibrator despite no science data
+def test_add_wavelength_science_no_science_data_2():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -514,7 +514,7 @@ def test_add_wavelength_standard():
     onedspec.add_wavelength([np.arange(100)], spec_id=0, stype="standard")
 
 
-@pytest.mark.xfail(raises=RuntimeError)
+# This doesn't fail because we check for a Calibrator despite no standard data
 def test_add_wavelength_standard_fail_no_standard_data():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
@@ -522,7 +522,7 @@ def test_add_wavelength_standard_fail_no_standard_data():
     onedspec.add_wavelength(np.arange(100), stype="standard")
 
 
-@pytest.mark.xfail(raises=RuntimeError)
+# This doesn't fail because we check for a Calibrator despite no standard data
 def test_add_wavelength_standard_fail_no_standard_data_2():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
@@ -608,16 +608,16 @@ def test_add_wavelength_resampled_science_two_spec_expect_fail():
     )
 
 
-@pytest.mark.xfail(raises=RuntimeError)
-def test_add_wavelength_resampled_science_fail_no_science_data():
+# This doesn't fail because we check for a Calibrator despite no science data
+def test_add_wavelength_resampled_science_no_science_data():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
     onedspec.add_wavelength_resampled(np.arange(100), stype="science")
 
 
-@pytest.mark.xfail(raises=RuntimeError)
-def test_add_wavelength_resampled_science_fail_no_science_data_2():
+# This doesn't fail because we check for a Calibrator despite no standard data
+def test_add_wavelength_resampled_science_fail_science_data_2():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
@@ -667,16 +667,16 @@ def test_add_wavelength_resampled_standard():
     )
 
 
-@pytest.mark.xfail(raises=RuntimeError)
-def test_add_wavelength_resampled_standard_fail_no_standard_data():
+# This doesn't fail because we check for a Calibrator despite no standard data
+def test_add_wavelength_resampled_standard_fail_standard_data():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )
     onedspec.add_wavelength_resampled(np.arange(100), stype="standard")
 
 
-@pytest.mark.xfail(raises=RuntimeError)
-def test_add_wavelength_resampled_standard_fail_no_standard_data_2():
+# This doesn't fail because we check for a Calibrator despite no standard data
+def test_add_wavelength_resampled_standard_fail_standard_data_2():
     onedspec = spectral_reduction.OneDSpec(
         log_file_name=None, log_level="ERROR"
     )

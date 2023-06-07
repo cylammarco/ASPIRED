@@ -40,6 +40,7 @@ def test_telluric_square_wave():
     onedspec.science_spectrum_list[0].add_wavelength(wave)
     onedspec.science_spectrum_list[0].add_flux(flux_sci, None, None)
     onedspec.science_spectrum_list[0].add_flux_continuum(flux_sci_continuum)
+    onedspec.science_data_available = True
     # onedspec.fluxcal.spectrum_oned.add_wavelength(wave)
     # onedspec.fluxcal.spectrum_oned.add_flux(flux_std, None, None)
     # onedspec.fluxcal.spectrum_oned.add_flux_continuum(flux_std_continuum)
@@ -86,6 +87,7 @@ def test_telluric_real_data(mock_show):
     onedspec.science_spectrum_list[0].add_wavelength(sci_wave)
     onedspec.science_spectrum_list[0].add_flux(sci_flux, None, None)
     onedspec.science_spectrum_list[0].add_flux_continuum(sci_flux_continuum)
+    onedspec.science_data_available = True
     onedspec.fluxcal.spectrum_oned.add_wavelength(std_wave)
     onedspec.fluxcal.spectrum_oned.add_flux(std_flux, None, None)
     onedspec.fluxcal.spectrum_oned.add_flux_continuum(std_flux_continuum)

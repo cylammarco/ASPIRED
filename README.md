@@ -56,8 +56,8 @@ See the examples of these use cases at [aspired-example](https://github.com/cyla
 * [astroscrappy](https://github.com/astropy/astroscrappy) >= 1.1
 * [ccdproc](https://github.com/astropy/ccdproc)
 * [plotly](https://github.com/plotly/plotly.py) >= 5.0
-* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.4
-* [spectresc](https://github.com/cylammarco/SpectResC) >= 1.0.1
+* [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.10
+* [spectresc](https://github.com/cylammarco/SpectResC) >= 1.0.2
 * [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.13
 
 ## Installation

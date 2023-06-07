@@ -174,12 +174,16 @@ class OneDSpec:
         self.science_arc_lines_available = False
         self.standard_arc_lines_available = False
 
+        self.science_wavelength_calibrator_available = False
+        self.standard_wavelength_calibrator_available = False
+
         self.science_atlas_available = False
         self.standard_atlas_available = False
 
         self.science_hough_pairs_available = False
         self.standard_hough_pairs_available = False
 
+        # this means the wavelength is fitted, but not necessarily applied
         self.science_wavecal_coefficients_available = False
         self.standard_wavecal_coefficients_available = False
 
@@ -191,8 +195,13 @@ class OneDSpec:
 
         # This concerns the extinction itself
         self.atmospheric_extinction_correction_available = False
-        self.telluric_profile_available = False
-        self.telluric_strength_available = False
+
+        self.science_telluric_profile_available = False
+        self.standard_telluric_profile_available = False
+        self.science_telluric_function_available = False
+        self.standard_telluric_function_available = False
+        self.science_telluric_strength_available = False
+        self.standard_telluric_strength_available = False
 
         # This concerns the spectrum being corrected or not
         self.atmospheric_extinction_corrected = False
@@ -207,7 +216,7 @@ class OneDSpec:
         self.standard_flux_calibrated = False
 
         self.science_flux_resampled = False
-        self.standard_flux_calibrated = False
+        self.standard_flux_resampled = False
 
         self.science_wavelength_resampled_calibrated = False
         self.standard_wavelength_resampled_calibrated = False
@@ -464,8 +473,7 @@ class OneDSpec:
 
                 else:
                     error_msg = (
-                        "wave must be the same length of shape "
-                        + "as spec_id."
+                        "wave must be the same length of shape as spec_id."
                     )
                     self.logger.critical(error_msg)
                     raise ValueError(error_msg)
@@ -494,11 +502,10 @@ class OneDSpec:
 
             else:
                 err_msg = (
-                    "science data is not available, wavelength "
+                    "Science data is not available, wavelength "
                     + "cannot be added."
                 )
-                self.logger.critical(err_msg)
-                raise RuntimeError(err_msg)
+                self.logger.warning(err_msg)
 
         if "standard" in stype_split:
             if self.standard_data_available:
@@ -517,11 +524,10 @@ class OneDSpec:
 
             else:
                 err_msg = (
-                    "standard data is not available, wavelength "
+                    "Standard data is not available, wavelength "
                     + "cannot be added."
                 )
-                self.logger.critical(err_msg)
-                raise RuntimeError(err_msg)
+                self.logger.warning(err_msg)
 
     def add_wavelength_resampled(
         self,
@@ -617,8 +623,7 @@ class OneDSpec:
                     "science data is not available, "
                     + "wavelength_resampled cannot be added."
                 )
-                self.logger.critical(err_msg)
-                raise RuntimeError(err_msg)
+                self.logger.warning(err_msg)
 
         if "standard" in stype_split:
             if self.standard_data_available:
@@ -638,7 +643,6 @@ class OneDSpec:
                         + "size to that of the extracted standard spectrum."
                     )
                     self.logger.critical(err_msg)
-                    raise RuntimeError(err_msg)
 
                 self.standard_wavelength_resampled_calibrated = True
 
@@ -647,8 +651,7 @@ class OneDSpec:
                     "standard data is not available, "
                     + "wavelength_resampled cannot be added."
                 )
-                self.logger.critical(err_msg)
-                raise RuntimeError(err_msg)
+                self.logger.warning(err_msg)
 
     def add_spec(
         self,
@@ -995,27 +998,7 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            if isinstance(spec_id, int):
-                spec_id = [spec_id]
-
-            if spec_id is not None:
-                if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())
-                ):
-                    for i in spec_id:
-                        if i not in list(self.science_spectrum_list.keys()):
-                            self.add_science_spectrum_oned(i)
-
-                            self.logger.warning(
-                                f"The given spec_id, {spec_id}, does not "
-                                "exist. A new spectrum_oned is created. "
-                                "Please check you are providing the "
-                                "correct spec_id."
-                            )
-
-            else:
-                # if spec_id is None, calibrators are initialised to all
-                spec_id = list(self.science_spectrum_list.keys())
+            spec_id = self._check_spec_id(spec_id, add_missing=True)
 
             # Check the sizes of the wave and spec_id and convert wave
             # into a dictionary
@@ -1137,74 +1120,69 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            if self.science_data_available:
-                spec_id = self._check_spec_id(spec_id)
+            spec_id = self._check_spec_id(spec_id, add_missing=True)
 
-                # Check the sizes of the wave and spec_id and convert wave
-                # into a dictionary
-                if len(fit_coeff) == len(spec_id):
-                    fit_coeff = {
-                        spec_id[i]: fit_coeff[i] for i in range(len(spec_id))
-                    }
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(fit_coeff) == len(spec_id):
+                fit_coeff = {
+                    spec_id[i]: fit_coeff[i] for i in range(len(spec_id))
+                }
 
-                elif len(fit_coeff) == 1:
-                    fit_coeff = {
-                        spec_id[i]: fit_coeff[0] for i in range(len(spec_id))
-                    }
+            elif len(fit_coeff) == 1:
+                fit_coeff = {
+                    spec_id[i]: fit_coeff[0] for i in range(len(spec_id))
+                }
 
-                else:
-                    error_msg = (
-                        "fit_coeff must be the same length of "
-                        + "shape as spec_id."
-                    )
-                    self.logger.critical(error_msg)
-                    raise RuntimeError(error_msg)
+            else:
+                error_msg = (
+                    "fit_coeff must be the same length of "
+                    + "shape as spec_id."
+                )
+                self.logger.critical(error_msg)
+                raise RuntimeError(error_msg)
 
-                # Check the sizes of the wave and spec_id and convert wave
-                # into a dictionary
-                if len(fit_type) == len(spec_id):
-                    fit_type = {
-                        spec_id[i]: fit_type[i] for i in range(len(spec_id))
-                    }
+            # Check the sizes of the wave and spec_id and convert wave
+            # into a dictionary
+            if len(fit_type) == len(spec_id):
+                fit_type = {
+                    spec_id[i]: fit_type[i] for i in range(len(spec_id))
+                }
 
-                elif len(fit_type) == 1:
-                    fit_type = {
-                        spec_id[i]: fit_type[0] for i in range(len(spec_id))
-                    }
+            elif len(fit_type) == 1:
+                fit_type = {
+                    spec_id[i]: fit_type[0] for i in range(len(spec_id))
+                }
 
-                else:
-                    error_msg = (
-                        "wave must be the same length of shape "
-                        + "as spec_id."
-                    )
-                    self.logger.critical(error_msg)
-                    raise ValueError(error_msg)
+            else:
+                error_msg = (
+                    "wave must be the same length of shape " + "as spec_id."
+                )
+                self.logger.critical(error_msg)
+                raise ValueError(error_msg)
 
-                for i in spec_id:
-                    self.science_spectrum_list[i].add_fit_coeff(
-                        fit_coeff=fit_coeff[i]
-                    )
-                    self.science_spectrum_list[i].add_fit_type(
-                        fit_type=fit_type[i]
-                    )
-                    self.logger.info(
-                        "Added fit_coeff and fit_type to"
-                        f"science_spectrum_list for spec_id: {i}."
-                    )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_fit_coeff(
+                    fit_coeff=fit_coeff[i]
+                )
+                self.science_spectrum_list[i].add_fit_type(
+                    fit_type=fit_type[i]
+                )
+                self.logger.info(
+                    "Added fit_coeff and fit_type to"
+                    f"science_spectrum_list for spec_id: {i}."
+                )
 
             self.science_wavecal_coefficients_available = True
 
         if "standard" in stype_split:
-            if self.standard_data_available:
-                self.standard_spectrum_list[0].add_fit_coeff(
-                    fit_coeff=fit_coeff[0]
-                )
-                self.standard_spectrum_list[0].add_fit_type(
-                    fit_type=fit_type[0]
-                )
-                self.logger.info(
-                    "Added fit_coeff and fit_type tostandard_spectrum_list."
-                )
+            self.standard_spectrum_list[0].add_fit_coeff(
+                fit_coeff=fit_coeff[0]
+            )
+            self.standard_spectrum_list[0].add_fit_type(fit_type=fit_type[0])
+            self.logger.info(
+                "Added fit_coeff and fit_type tostandard_spectrum_list."
+            )
 
             self.standard_wavecal_coefficients_available = True
 
@@ -1234,6 +1212,10 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
+            # This cannot use the _check_spec_id because it is looking up the
+            # number of spec_id in the TWODSPEC, not ONEDSPEC here
+            # spec_id = self._check_spec_id(spec_id)
+
             if isinstance(spec_id, int):
                 spec_id = [spec_id]
 
@@ -1512,7 +1494,10 @@ class OneDSpec:
             self.standard_arc_spec_available = True
 
     def add_variance(
-        self, variance: Union[list, np.ndarray], stype: str, spec_id: int = 0
+        self,
+        variance: Union[list, np.ndarray],
+        stype: str,
+        spec_id: int = None,
     ):
         """
         Add variance manually.
@@ -1529,6 +1514,7 @@ class OneDSpec:
         """
 
         if stype == "science":
+            spec_id = self._check_spec_id(spec_id)
             self.science_spectrum_list[spec_id].add_variances(
                 variance,
             )
@@ -1541,7 +1527,7 @@ class OneDSpec:
         else:
             self.logger.error(f"Unknown stype: {stype}.")
 
-    def add_gain(self, gain: float, stype: str, spec_id: int = 0):
+    def add_gain(self, gain: float, stype: str, spec_id: int = None):
         """
         Add arc_spec manually.
 
@@ -1557,6 +1543,7 @@ class OneDSpec:
         """
 
         if stype == "science":
+            spec_id = self._check_spec_id(spec_id)
             self.science_spectrum_list[spec_id].add_gain(
                 gain,
             )
@@ -1569,7 +1556,7 @@ class OneDSpec:
         else:
             self.logger.error(f"Unknown stype: {stype}.")
 
-    def add_readnoise(self, readnoise: float, stype: str, spec_id: int = 0):
+    def add_readnoise(self, readnoise: float, stype: str, spec_id: int = None):
         """
         Add arc_spec manually.
 
@@ -1585,6 +1572,7 @@ class OneDSpec:
         """
 
         if stype == "science":
+            spec_id = self._check_spec_id(spec_id)
             self.science_spectrum_list[spec_id].add_readnoise(
                 readnoise,
             )
@@ -1613,6 +1601,7 @@ class OneDSpec:
         """
 
         if stype == "science":
+            spec_id = self._check_spec_id(spec_id)
             self.science_spectrum_list[spec_id].add_exptime(
                 exptime,
             )
@@ -1641,6 +1630,7 @@ class OneDSpec:
         """
 
         if stype == "science":
+            spec_id = self._check_spec_id(spec_id)
             self.science_spectrum_list[spec_id].add_seeing(
                 seeing,
             )
@@ -1669,6 +1659,7 @@ class OneDSpec:
         """
 
         if stype == "science":
+            spec_id = self._check_spec_id(spec_id)
             self.science_spectrum_list[spec_id].add_airmass(
                 airmass,
             )
@@ -1759,20 +1750,7 @@ class OneDSpec:
 
         if "science" in stype_split:
             if self.science_arc_spec_available:
-                if isinstance(spec_id, int):
-                    spec_id = [spec_id]
-
-                if spec_id is not None:
-                    if not set(spec_id).issubset(
-                        list(self.science_spectrum_list.keys())
-                    ):
-                        error_msg = "The given spec_id does not exist."
-                        self.logger.critical(error_msg)
-                        raise ValueError(error_msg)
-
-                else:
-                    # if spec_id is None
-                    spec_id = list(self.science_spectrum_list.keys())
+                spec_id = self._check_spec_id(spec_id)
 
                 if filename is None:
                     filename = "arc_lines"
@@ -1810,7 +1788,10 @@ class OneDSpec:
                 self.science_arc_lines_available = True
 
             else:
-                self.logger.warning("Science arc spectrum/a are not imported.")
+                self.logger.warning(
+                    "Science arc spectrum/a are not imported."
+                    "Unable to find arc lines."
+                )
 
         if "standard" in stype_split:
             if self.standard_arc_spec_available:
@@ -1841,6 +1822,7 @@ class OneDSpec:
             else:
                 self.logger.warning(
                     "Standard arc spectrum/a are not imported."
+                    "Unable to find arc lines."
                 )
 
     def inspect_arc_lines(
@@ -1922,7 +1904,10 @@ class OneDSpec:
                     )
 
             else:
-                self.logger.warning("Science arc spectrum/a are not imported.")
+                self.logger.warning(
+                    "Science arc spectrum/a are not imported."
+                    "Nothing to inspect."
+                )
 
         if "standard" in stype_split:
             if self.standard_arc_lines_available:
@@ -1940,7 +1925,8 @@ class OneDSpec:
 
             else:
                 self.logger.warning(
-                    "Standard arc spectrum/a are not imported."
+                    "Standard arc spectrum/a are not imported. Nothing to"
+                    " inspect."
                 )
 
     def initialise_calibrator(
@@ -1988,6 +1974,8 @@ class OneDSpec:
                     f"science_spectrum_list for spec_id: {i}."
                 )
 
+            self.science_wavelength_calibrator_available = True
+
         if "standard" in stype_split:
             self.standard_wavecal.from_spectrum_oned(
                 self.standard_spectrum_list[0]
@@ -2002,6 +1990,7 @@ class OneDSpec:
             self.logger.info(
                 "Calibrator is initialised for the standard_spectrum_list."
             )
+            self.standard_wavelength_calibrator_available = True
 
     # placeholder for rascal v0.4
     def set_calibrator_logger(
@@ -2031,19 +2020,33 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].set_logger(
+                for i in spec_id:
+                    self.science_wavecal[i].set_logger(
+                        logger_name=logger_name,
+                        log_level=log_level,
+                    )
+
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.set_logger(
                     logger_name=logger_name,
                     log_level=log_level,
                 )
 
-        if "standard" in stype_split:
-            self.standard_wavecal.set_logger(
-                logger_name=logger_name,
-                log_level=log_level,
-            )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def set_calibrator_properties(
         self,
@@ -2076,28 +2079,43 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].set_calibrator_properties(
+                for i in spec_id:
+                    self.science_wavecal[i].set_calibrator_properties(
+                        num_pix=num_pix,
+                        effective_pixel=effective_pixel,
+                        plotting_library=plotting_library,
+                    )
+                    self.logger.info(
+                        "Calibrator properties are set for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.set_calibrator_properties(
                     num_pix=num_pix,
                     effective_pixel=effective_pixel,
                     plotting_library=plotting_library,
                 )
                 self.logger.info(
-                    "Calibrator properties are set for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "Calibrator properties are set for the"
+                    " standard_spectrum_list."
                 )
 
-        if "standard" in stype_split:
-            self.standard_wavecal.set_calibrator_properties(
-                num_pix=num_pix,
-                effective_pixel=effective_pixel,
-                plotting_library=plotting_library,
-            )
-            self.logger.info(
-                "Calibrator properties are set for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def set_hough_properties(
         self,
@@ -2142,10 +2160,32 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].set_hough_properties(
+                for i in spec_id:
+                    self.science_wavecal[i].set_hough_properties(
+                        num_slopes=num_slopes,
+                        xbins=xbins,
+                        ybins=ybins,
+                        min_wavelength=min_wavelength,
+                        max_wavelength=max_wavelength,
+                        range_tolerance=range_tolerance,
+                        linearity_tolerance=linearity_tolerance,
+                    )
+                    self.logger.info(
+                        "Hough properties are set for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.set_hough_properties(
                     num_slopes=num_slopes,
                     xbins=xbins,
                     ybins=ybins,
@@ -2155,23 +2195,13 @@ class OneDSpec:
                     linearity_tolerance=linearity_tolerance,
                 )
                 self.logger.info(
-                    "Hough properties are set for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "Hough properties are set for the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_wavecal.set_hough_properties(
-                num_slopes=num_slopes,
-                xbins=xbins,
-                ybins=ybins,
-                min_wavelength=min_wavelength,
-                max_wavelength=max_wavelength,
-                range_tolerance=range_tolerance,
-                linearity_tolerance=linearity_tolerance,
-            )
-            self.logger.info(
-                "Hough properties are set for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def set_ransac_properties(
         self,
@@ -2234,10 +2264,34 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].set_ransac_properties(
+                for i in spec_id:
+                    self.science_wavecal[i].set_ransac_properties(
+                        sample_size=sample_size,
+                        top_n_candidate=top_n_candidate,
+                        linear=linear,
+                        filter_close=filter_close,
+                        ransac_tolerance=ransac_tolerance,
+                        candidate_weighted=candidate_weighted,
+                        hough_weight=hough_weight,
+                        minimum_matches=minimum_matches,
+                        minimum_peak_utilisation=minimum_peak_utilisation,
+                        minimum_fit_error=minimum_fit_error,
+                    )
+                    self.logger.info(
+                        "Ransac properties are set for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.set_ransac_properties(
                     sample_size=sample_size,
                     top_n_candidate=top_n_candidate,
                     linear=linear,
@@ -2250,26 +2304,14 @@ class OneDSpec:
                     minimum_fit_error=minimum_fit_error,
                 )
                 self.logger.info(
-                    "Ransac properties are set for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "Ransac properties are set for the standard_spectrum_list."
                 )
 
-        if "standard" in stype_split:
-            self.standard_wavecal.set_ransac_properties(
-                sample_size=sample_size,
-                top_n_candidate=top_n_candidate,
-                linear=linear,
-                filter_close=filter_close,
-                ransac_tolerance=ransac_tolerance,
-                candidate_weighted=candidate_weighted,
-                hough_weight=hough_weight,
-                minimum_matches=minimum_matches,
-                minimum_peak_utilisation=minimum_peak_utilisation,
-                minimum_fit_error=minimum_fit_error,
-            )
-            self.logger.info(
-                "Ransac properties are set for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def set_known_pairs(
         self,
@@ -2296,21 +2338,33 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].set_known_pairs(pix=pix, wave=wave)
-                self.logger.info(
-                    "Known pixel-wavelength pairs are added to "
-                    f"science_spectrum_list for spec_id: {i}."
+                for i in spec_id:
+                    self.science_wavecal[i].set_known_pairs(pix=pix, wave=wave)
+                    self.logger.info(
+                        "Known pixel-wavelength pairs are added to "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
                 )
 
         if "standard" in stype_split:
-            self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
-            self.logger.info(
-                "Known pixel-wavelength pairs are added to "
-                "standard_spectrum_list."
-            )
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.set_known_pairs(pix=pix, wave=wave)
+                self.logger.info(
+                    "Known pixel-wavelength pairs are added to "
+                    "standard_spectrum_list."
+                )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def add_user_atlas(
         self,
@@ -2389,10 +2443,37 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].add_user_atlas(
+                for i in spec_id:
+                    self.science_wavecal[i].add_user_atlas(
+                        elements=elements,
+                        wavelengths=wavelengths,
+                        intensities=intensities,
+                        candidate_tolerance=candidate_tolerance,
+                        constrain_poly=constrain_poly,
+                        vacuum=vacuum,
+                        pressure=pressure,
+                        temperature=temperature,
+                        relative_humidity=relative_humidity,
+                    )
+                    self.logger.info(
+                        "Added user supplied atlas to "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+
+                self.science_atlas_available = True
+
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.add_user_atlas(
                     elements=elements,
                     wavelengths=wavelengths,
                     intensities=intensities,
@@ -2404,29 +2485,15 @@ class OneDSpec:
                     relative_humidity=relative_humidity,
                 )
                 self.logger.info(
-                    "Added user supplied atlas to "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "Added user supplied atlas to standard_spectrum_list."
                 )
 
-            self.science_atlas_available = True
-
-        if "standard" in stype_split:
-            self.standard_wavecal.add_user_atlas(
-                elements=elements,
-                wavelengths=wavelengths,
-                intensities=intensities,
-                candidate_tolerance=candidate_tolerance,
-                constrain_poly=constrain_poly,
-                vacuum=vacuum,
-                pressure=pressure,
-                temperature=temperature,
-                relative_humidity=relative_humidity,
-            )
-            self.logger.info(
-                "Added user supplied atlas to standard_spectrum_list."
-            )
-
-            self.standard_atlas_available = True
+                self.standard_atlas_available = True
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def add_atlas(
         self,
@@ -2485,10 +2552,38 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].add_atlas(
+                for i in spec_id:
+                    self.science_wavecal[i].add_atlas(
+                        elements=elements,
+                        min_atlas_wavelength=min_atlas_wavelength,
+                        max_atlas_wavelength=max_atlas_wavelength,
+                        min_intensity=min_intensity,
+                        min_distance=min_distance,
+                        candidate_tolerance=candidate_tolerance,
+                        constrain_poly=constrain_poly,
+                        vacuum=vacuum,
+                        pressure=pressure,
+                        temperature=temperature,
+                        relative_humidity=relative_humidity,
+                    )
+                    self.logger.info(
+                        "Added atlas to science_spectrum_list for spec_id:"
+                        f" {i}."
+                    )
+
+                self.science_atlas_available = True
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.add_atlas(
                     elements=elements,
                     min_atlas_wavelength=min_atlas_wavelength,
                     max_atlas_wavelength=max_atlas_wavelength,
@@ -2501,29 +2596,14 @@ class OneDSpec:
                     temperature=temperature,
                     relative_humidity=relative_humidity,
                 )
-                self.logger.info(
-                    f"Added atlas to science_spectrum_list for spec_id: {i}."
+                self.logger.info("Added atlas to standard_spectrum_list")
+
+                self.standard_atlas_available = True
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
                 )
-
-            self.science_atlas_available = True
-
-        if "standard" in stype_split:
-            self.standard_wavecal.add_atlas(
-                elements=elements,
-                min_atlas_wavelength=min_atlas_wavelength,
-                max_atlas_wavelength=max_atlas_wavelength,
-                min_intensity=min_intensity,
-                min_distance=min_distance,
-                candidate_tolerance=candidate_tolerance,
-                constrain_poly=constrain_poly,
-                vacuum=vacuum,
-                pressure=pressure,
-                temperature=temperature,
-                relative_humidity=relative_humidity,
-            )
-            self.logger.info("Added atlas to standard_spectrum_list")
-
-            self.standard_atlas_available = True
 
     def remove_atlas_lines_range(
         self,
@@ -2698,26 +2778,41 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_wavecal[i].do_hough_transform(
+                for i in spec_id:
+                    self.science_wavecal[i].do_hough_transform(
+                        brute_force=brute_force
+                    )
+                    self.logger.info(
+                        "Hough Transform is performed on "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+
+                self.science_hough_pairs_available = True
+
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrator_available:
+                self.standard_wavecal.do_hough_transform(
                     brute_force=brute_force
                 )
                 self.logger.info(
-                    "Hough Transform is performed on "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "Hough Transform is performed on standard_spectrum_list."
                 )
 
-            self.science_hough_pairs_available = True
-
-        if "standard" in stype_split:
-            self.standard_wavecal.do_hough_transform(brute_force=brute_force)
-            self.logger.info(
-                "Hough Transform is performed on standard_spectrum_list."
-            )
-
-            self.standard_hough_pairs_available = True
+                self.standard_hough_pairs_available = True
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def plot_search_space(
         self,
@@ -2796,7 +2891,7 @@ class OneDSpec:
                     )
 
             else:
-                self.logger.warning("Science atlas is not available.")
+                self.logger.warning("Science hough pairs are not available.")
 
         if "standard" in stype_split:
             if self.standard_hough_pairs_available:
@@ -2817,7 +2912,7 @@ class OneDSpec:
                 )
 
             else:
-                self.logger.warning("Standard atlas is not available.")
+                self.logger.warning("Standard hour pairs are not available.")
 
     def fit(
         self,
@@ -2962,7 +3057,7 @@ class OneDSpec:
                 self.standard_wavecal_coefficients_available = True
 
             else:
-                self.logger.warning("Standard spectrum/a are not imported.")
+                self.logger.warning("Standard hough pairs are not imported.")
 
         if return_solution:
             return solution
@@ -3068,7 +3163,10 @@ class OneDSpec:
                 solution["science"] = solution_science
 
             else:
-                self.logger.warning("Science spectrum/a are not imported.")
+                self.logger.warning(
+                    "Wavelength solution is not fitted for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
         if "standard" in stype_split:
             if self.standard_wavecal_coefficients_available:
@@ -3098,7 +3196,10 @@ class OneDSpec:
                 )
 
             else:
-                self.logger.warning("Standard spectrum/a are not imported.")
+                self.logger.warning(
+                    "Wavelength solution is not fitted for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
         if return_solution:
             return solution
@@ -3143,13 +3244,20 @@ class OneDSpec:
                     )
 
                 pw_pairs["science"] = pw_pairs_science
+            else:
+                self.logger.warning(
+                    "Science pix-wave pairs are not available."
+                )
 
         if "standard" in stype_split:
             if self.standard_wavecal_coefficients_available:
                 pw_pairs_standard = self.standard_wavecal.get_pix_wave_pairs()
 
                 pw_pairs["standard"] = pw_pairs_standard
-
+            else:
+                self.logger.warning(
+                    "Standard pix-wave pairs are not available."
+                )
         return pw_pairs
 
     def add_pix_wave_pair(
@@ -3185,10 +3293,20 @@ class OneDSpec:
 
                 for i in spec_id:
                     self.science_wavecal[i].add_pix_wave_pair(pix, wave)
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
         if "standard" in stype_split:
             if self.standard_wavecal_coefficients_available:
                 self.standard_wavecal.add_pix_wave_pair(pix, wave)
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def remove_pix_wave_pair(
         self,
@@ -3219,10 +3337,20 @@ class OneDSpec:
 
                 for i in spec_id:
                     self.science_wavecal[i].remove_pix_wave_pair(arg)
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
         if "standard" in stype_split:
             if self.standard_wavecal_coefficients_available:
                 self.standard_wavecal.remove_pix_wave_pair(arg)
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
     def manual_refit(
         self,
@@ -3292,6 +3420,11 @@ class OneDSpec:
                     )
 
                 solution["science"] = solution_science
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
         if "standard" in stype_split:
             if self.standard_wavecal_coefficients_available:
@@ -3301,6 +3434,11 @@ class OneDSpec:
                     degree=degree,
                     x0=x0,
                     return_solution=return_solution,
+                )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
                 )
 
         if return_solution:
@@ -3316,35 +3454,34 @@ class OneDSpec:
         calibrators = {}
 
         if "science" in stype_split:
-            if isinstance(spec_id, int):
-                spec_id = [spec_id]
+            if self.science_wavelength_calibrator_available:
+                spec_id = self._check_spec_id(spec_id)
+                calibrator_science = []
 
-            if spec_id is not None:
-                if not set(spec_id).issubset(
-                    list(self.science_spectrum_list.keys())
-                ):
-                    error_msg = "The given spec_id does not exist."
-                    self.logger.critical(error_msg)
-                    raise ValueError(error_msg)
-            else:
-                # if spec_id is None, calibrators are initialised to all
-                spec_id = list(self.science_spectrum_list.keys())
-
-            calibrator_science = []
-
-            for i in spec_id:
-                calibrator_science.append(
-                    getattr(
-                        self.science_wavecal[i].spectrum_oned, "calibrator"
+                for i in spec_id:
+                    calibrator_science.append(
+                        getattr(
+                            self.science_wavecal[i].spectrum_oned, "calibrator"
+                        )
                     )
+
+                calibrators["science"] = calibrator_science
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the science"
+                    " spectrum/a, please initialise one before proceeding."
                 )
 
-            calibrators["science"] = calibrator_science
-
         if "standard" in stype_split:
-            calibrators["standard"] = getattr(
-                self.standard_wavecal.spectrum_oned, "calibrator"
-            )
+            if self.standard_wavelength_calibrator_available:
+                calibrators["standard"] = getattr(
+                    self.standard_wavecal.spectrum_oned, "calibrator"
+                )
+            else:
+                self.logger.warning(
+                    "Wavelength calibrator is not available for the standard"
+                    " spectrum/a, please initialise one before proceeding."
+                )
 
         return calibrators
 
@@ -3393,7 +3530,10 @@ class OneDSpec:
                 self.science_wavelength_calibrated = True
 
             else:
-                self.logger.warning("Science spectrum/a are not imported.")
+                self.logger.warning(
+                    "Science wavelength calibration cofficients are not"
+                    " available."
+                )
 
         if "standard" in stype_split:
             if self.standard_wavecal_coefficients_available:
@@ -3413,7 +3553,10 @@ class OneDSpec:
                 self.standard_wavelength_calibrated = True
 
             else:
-                self.logger.warning("Standard spectrum is not imported.")
+                self.logger.warning(
+                    "Standard wavelength calibration cofficients are not"
+                    " available."
+                )
 
     def lookup_standard_libraries(self, target: str, cutoff: float = 0.4):
         """
@@ -3881,68 +4024,86 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                science_spec = self.science_spectrum_list[i]
+                for i in spec_id:
+                    science_spec = self.science_spectrum_list[i]
+
+                    if callable(telluric):
+                        science_spec.add_telluric_func(telluric)
+                        self.science_telluric_function_available = True
+
+                    elif isinstance(telluric, (np.ndarray, list)):
+                        science_spec.add_telluric_func(
+                            interp1d(telluric[0], telluric[1])
+                        )
+                        self.science_telluric_function_available = True
+
+                    else:
+                        self.logger.warning(
+                            "telluric provided has to be a callable function, "
+                            "a list or a np.ndarray. "
+                            f"{type(telluric)} is given"
+                        )
+
+                    if science_spec.wave is not None:
+                        science_spec.add_telluric_profile(
+                            science_spec.telluric_func(science_spec.wave)
+                        )
+                        self.science_telluric_profile_available = True
+
+                    else:
+                        self.logger.warning(
+                            "wave is not available. Telluric correction cannot"
+                            "be performed."
+                        )
+            else:
+                err_msg = (
+                    "science data is not available, "
+                    + "wavelength_resampled cannot be added."
+                )
+                self.logger.warning(err_msg)
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                # Add to the standard spectrum
+                standard_spec = self.standard_spectrum_list[0]
 
                 if callable(telluric):
-                    science_spec.add_telluric_func(telluric)
+                    standard_spec.add_telluric_func(telluric)
+                    self.standard_telluric_function_available = True
 
                 elif isinstance(telluric, (np.ndarray, list)):
-                    science_spec.add_telluric_func(
+                    standard_spec.add_telluric_func(
                         interp1d(telluric[0], telluric[1])
                     )
+                    self.standard_telluric_function_available = True
 
                 else:
                     self.logger.warning(
                         "telluric provided has to be a callable function, "
                         "a list or a np.ndarray. "
-                        f"{type(telluric)} is given"
+                        "{type(telluric)} is given"
                     )
 
-                if science_spec.wave is not None:
-                    science_spec.add_telluric_profile(
-                        science_spec.telluric_func(science_spec.wave)
+                if standard_spec.wave is not None:
+                    standard_spec.add_telluric_profile(
+                        standard_spec.telluric_func(standard_spec.wave)
                     )
-                    self.telluric_profile_available = True
+                    self.standard_telluric_profile_available = True
 
                 else:
                     self.logger.warning(
                         "wave is not available. Telluric correction cannot"
                         "be performed."
                     )
-
-        if "standard" in stype_split:
-            # Add to the standard spectrum
-            standard_spec = self.standard_spectrum_list[0]
-
-            if callable(telluric):
-                standard_spec.add_telluric_func(telluric)
-
-            elif isinstance(telluric, (np.ndarray, list)):
-                standard_spec.add_telluric_func(
-                    interp1d(telluric[0], telluric[1])
-                )
-
             else:
-                self.logger.warning(
-                    "telluric provided has to be a callable function, "
-                    "a list or a np.ndarray. "
-                    "{type(telluric)} is given"
+                err_msg = (
+                    "standard data is not available, "
+                    + "wavelength_resampled cannot be added."
                 )
-
-            if standard_spec.wave is not None:
-                standard_spec.add_telluric_profile(
-                    standard_spec.telluric_func(standard_spec.wave)
-                )
-                self.telluric_profile_available = True
-
-            else:
-                self.logger.warning(
-                    "wave is not available. Telluric correction cannot"
-                    "be performed."
-                )
+                self.logger.warning(err_msg)
 
     def get_count_continuum(
         self,
@@ -3981,50 +4142,58 @@ class OneDSpec:
 
         # Note that the order of polynomial is higher in the science than in standard
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
-            # Get the continuum here
-            for i in spec_id:
-                science_spec = self.science_spectrum_list[i]
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
+                # Get the continuum here
+                for i in spec_id:
+                    science_spec = self.science_spectrum_list[i]
 
-                wave = science_spec.wave
-                count = science_spec.count
+                    wave = science_spec.wave
+                    count = science_spec.count
 
-                if method == "fit":
-                    if "model" not in sci_kwargs:
-                        sci_kwargs["model"] = Chebyshev1D(15)
+                    if method == "fit":
+                        if "model" not in sci_kwargs:
+                            sci_kwargs["model"] = Chebyshev1D(15)
 
-                    if "median_window" not in sci_kwargs:
-                        sci_kwargs["median_window"] = 11
+                        if "median_window" not in sci_kwargs:
+                            sci_kwargs["median_window"] = 11
 
-                else:
-                    if "frac" not in sci_kwargs:
-                        sci_kwargs["frac"] = 0.1
+                    else:
+                        if "frac" not in sci_kwargs:
+                            sci_kwargs["frac"] = 0.1
 
-                science_spec.add_count_continuum(
-                    get_continuum(wave, count, method=method, **sci_kwargs)
-                )
+                    science_spec.add_count_continuum(
+                        get_continuum(wave, count, method=method, **sci_kwargs)
+                    )
+            else:
+                err_msg = "science data is not available."
+                self.logger.warning(err_msg)
 
         if "standard" in stype_split:
-            # Add to the standard spectrum
-            standard_spec = self.standard_spectrum_list[0]
+            if self.standard_data_available:
+                # Add to the standard spectrum
+                standard_spec = self.standard_spectrum_list[0]
 
-            wave = standard_spec.wave
-            count = standard_spec.count
+                wave = standard_spec.wave
+                count = standard_spec.count
 
-            if method == "fit":
-                if "model" not in std_kwargs:
-                    std_kwargs["model"] = Chebyshev1D(6)
+                if method == "fit":
+                    if "model" not in std_kwargs:
+                        std_kwargs["model"] = Chebyshev1D(6)
 
-                if "median_window" not in std_kwargs:
-                    std_kwargs["median_window"] = 11
+                    if "median_window" not in std_kwargs:
+                        std_kwargs["median_window"] = 11
 
+                else:
+                    if "frac" not in std_kwargs:
+                        std_kwargs["frac"] = 0.1
+
+                standard_spec.add_count_continuum(
+                    get_continuum(wave, count, method=method, **std_kwargs)
+                )
             else:
-                if "frac" not in std_kwargs:
-                    std_kwargs["frac"] = 0.1
-
-            standard_spec.add_count_continuum(
-                get_continuum(wave, count, method=method, **std_kwargs)
-            )
+                err_msg = "standard data is not available."
+                self.logger.warning(err_msg)
 
     def get_flux_continuum(
         self,
@@ -4063,50 +4232,59 @@ class OneDSpec:
 
         # Note that the order of polynomial is higher in the science than in standard
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
-            # Get the continuum here
-            for i in spec_id:
-                science_spec = self.science_spectrum_list[i]
+            if self.science_flux_calibrated:
+                spec_id = self._check_spec_id(spec_id)
+                # Get the continuum here
+                for i in spec_id:
+                    science_spec = self.science_spectrum_list[i]
 
-                wave = science_spec.wave
-                flux = science_spec.flux
+                    wave = science_spec.wave
+                    flux = science_spec.flux
 
-                if method == "fit":
-                    if "model" not in sci_kwargs:
-                        sci_kwargs["model"] = Chebyshev1D(15)
+                    if method == "fit":
+                        if "model" not in sci_kwargs:
+                            sci_kwargs["model"] = Chebyshev1D(15)
 
-                    if "median_window" not in sci_kwargs:
-                        sci_kwargs["median_window"] = 11
+                        if "median_window" not in sci_kwargs:
+                            sci_kwargs["median_window"] = 11
 
-                else:
-                    if "frac" not in sci_kwargs:
-                        sci_kwargs["frac"] = 0.1
+                    else:
+                        if "frac" not in sci_kwargs:
+                            sci_kwargs["frac"] = 0.1
 
-                science_spec.add_flux_continuum(
-                    get_continuum(wave, flux, method=method, **sci_kwargs)
-                )
-
-        if "standard" in stype_split:
-            # Add to the standard spectrum
-            standard_spec = self.standard_spectrum_list[0]
-
-            wave = standard_spec.wave
-            flux = standard_spec.flux
-
-            if method == "fit":
-                if "model" not in std_kwargs:
-                    std_kwargs["model"] = Chebyshev1D(6)
-
-                if "median_window" not in std_kwargs:
-                    std_kwargs["median_window"] = 11
+                    science_spec.add_flux_continuum(
+                        get_continuum(wave, flux, method=method, **sci_kwargs)
+                    )
 
             else:
-                if "frac" not in std_kwargs:
-                    std_kwargs["frac"] = 0.1
+                err_msg = "Science flux is not calibrated."
+                self.logger.warning(err_msg)
 
-            standard_spec.add_flux_continuum(
-                get_continuum(wave, flux, method=method, **std_kwargs)
-            )
+        if "standard" in stype_split:
+            if self.standard_flux_calibrated:
+                # Add to the standard spectrum
+                standard_spec = self.standard_spectrum_list[0]
+
+                wave = standard_spec.wave
+                flux = standard_spec.flux
+
+                if method == "fit":
+                    if "model" not in std_kwargs:
+                        std_kwargs["model"] = Chebyshev1D(6)
+
+                    if "median_window" not in std_kwargs:
+                        std_kwargs["median_window"] = 11
+
+                else:
+                    if "frac" not in std_kwargs:
+                        std_kwargs["frac"] = 0.1
+
+                standard_spec.add_flux_continuum(
+                    get_continuum(wave, flux, method=method, **std_kwargs)
+                )
+            else:
+                err_msg = "Standard flux is not calibrated."
+                self.logger.warning(err_msg)
 
     def get_telluric_profile(
         self,
@@ -4188,7 +4366,10 @@ class OneDSpec:
         self.standard_spectrum_list[0].add_telluric_profile(telluric_profile)
         self.standard_spectrum_list[0].add_telluric_factor(telluric_factor)
 
-        self.telluric_profile_available = True
+        self.science_telluric_profile_available = True
+        self.standard_telluric_profile_available = True
+        self.science_telluric_function_available = True
+        self.standard_telluric_function_available = True
 
         if return_function:
             return telluric_func
@@ -4206,9 +4387,36 @@ class OneDSpec:
                 "Please use get_telluric_strength()."
             )
         )
-        self.get_telluric_strength(
-            factor=factor, auto_apply=auto_apply, spec_id=spec_id, **kwargs
-        )
+        if self.standard_telluric_profile_available:
+            self.get_telluric_strength(
+                factor=factor, auto_apply=auto_apply, spec_id=spec_id, **kwargs
+            )
+        elif self.science_telluric_profile_available:
+            self.standard_spectrum_list[0].add_telluric_func(
+                self.science_spectrum_list[0].telluric_func
+            )
+            self.standard_spectrum_list[0].add_telluric_profile(
+                self.science_spectrum_list[0].telluric_profile
+            )
+            self.standard_spectrum_list[0].add_telluric_factor(
+                self.science_spectrum_list[0].telluric_factor
+            )
+            self.standard_telluric_profile_available = True
+            self.get_telluric_strength(
+                factor=factor, auto_apply=auto_apply, spec_id=spec_id, **kwargs
+            )
+            err_msg = (
+                "Telluric profile is missing in the standard, the profile "
+                + "from the science is copied over."
+            )
+            self.logger.warning(err_msg)
+
+        else:
+            err_msg = (
+                "Telluric profile is missing, try getting one with"
+                + "get_telluric_profile()."
+            )
+            self.logger.warning(err_msg)
 
     def get_telluric_strength(
         self,
@@ -4240,7 +4448,9 @@ class OneDSpec:
 
         """
 
-        if not self.telluric_profile_available:
+        if (not self.science_telluric_profile_available) & (
+            not self.standard_telluric_profile_available
+        ):
             error_msg = (
                 "Telluric profile is not available. Please provide "
                 "one or get one with get_telluric_profile(). Fine tuning can "
@@ -4251,76 +4461,104 @@ class OneDSpec:
         spec_id = self._check_spec_id(spec_id)
         # Get the telluric profile
         for i in spec_id:
-            science_spec = self.science_spectrum_list[i]
-
-            # If there isn't a telluric profile, try to get it from the
-            # standard star
-            if science_spec.telluric_func is None:
-                if self.standard_spectrum_list[0].telluric_func is None:
-                    err_msg = (
-                        "Telluric profile is not available, please "
-                        + "compute from the standard star, or manually "
-                        + "supply one."
+            if self.science_data_available:
+                if not self.science_telluric_function_available:
+                    self.standard_spectrum_list[0].add_telluric_func(
+                        self.science_spectrum_list[0].telluric_func
                     )
-                    self.logger.error(err_msg)
-
-                else:
-                    science_spec.add_telluric_func(
-                        self.standard_spectrum_list[0].telluric_func
+                    self.standard_spectrum_list[0].add_telluric_profile(
+                        self.science_spectrum_list[0].telluric_profile
                     )
+                    self.standard_spectrum_list[0].add_telluric_factor(
+                        self.science_spectrum_list[0].telluric_factor
+                    )
+                    self.science_telluric_function_available = True
 
-            wave = science_spec.wave
-            flux = science_spec.flux
+                science_spec = self.science_spectrum_list[i]
 
-            if (science_spec.flux_continuum is None) or (len(args) > 0):
-                self.get_flux_continuum(i, *args)
+                # If there isn't a telluric profile, try to get it from the
+                # standard star
+                if science_spec.telluric_func is None:
+                    if self.standard_spectrum_list[0].telluric_func is None:
+                        err_msg = (
+                            "Telluric profile is not available, please "
+                            + "compute from the standard star, or manually "
+                            + "supply one."
+                        )
+                        self.logger.error(err_msg)
 
-            flux_continuum = science_spec.flux_continuum
+                    else:
+                        science_spec.add_telluric_func(
+                            self.standard_spectrum_list[0].telluric_func
+                        )
+                        self.science_telluric_function_available = True
 
-            if science_spec.telluric_profile is None:
-                science_spec.add_telluric_profile(
-                    science_spec.telluric_func(wave)
-                )
+                wave = science_spec.wave
+                flux = science_spec.flux
 
-            telluric_factor = optimize.minimize(
-                self._min_std,
-                np.nanmedian(np.abs(flux)),
-                args=(flux, science_spec.telluric_profile, flux_continuum),
-                tol=1e-20,
-                method="Nelder-Mead",
-                options={"maxiter": 10000},
-            ).x
+                if (science_spec.flux_continuum is None) or (len(args) > 0):
+                    self.get_flux_continuum(i, *args)
 
-            science_spec.add_telluric_factor(telluric_factor)
-            self.logger.info(f"telluric_factor is {telluric_factor}.")
+                flux_continuum = science_spec.flux_continuum
 
-            self.telluric_strength_available = True
-
-        if self.standard_wavelength_calibrated:
-            standard_spec = self.standard_spectrum_list[0]
-            wave_standard = standard_spec.wave
-
-            if (standard_spec.telluric_profile is None) or (len(args) > 0):
-                standard_spec.add_telluric_profile(
-                    standard_spec.telluric_func(wave_standard)
-                )
-
+                if science_spec.telluric_profile is None:
+                    science_spec.add_telluric_profile(
+                        science_spec.telluric_func(wave)
+                    )
+                    self.science_telluric_profile_available = True
                 telluric_factor = optimize.minimize(
                     self._min_std,
-                    np.nanmedian(np.abs(standard_spec.flux)),
-                    args=(
-                        standard_spec.flux,
-                        standard_spec.telluric_profile,
-                        standard_spec.flux_continuum,
-                    ),
+                    np.nanmedian(np.abs(flux)),
+                    args=(flux, science_spec.telluric_profile, flux_continuum),
                     tol=1e-20,
                     method="Nelder-Mead",
                     options={"maxiter": 10000},
                 ).x
 
+                science_spec.add_telluric_factor(telluric_factor)
                 self.logger.info(f"telluric_factor is {telluric_factor}.")
 
-                standard_spec.add_telluric_factor(telluric_factor)
+                self.science_telluric_strength_available = True
+
+            else:
+                err_msg = "science data is not available."
+                self.logger.warning(err_msg)
+
+        if self.standard_wavelength_calibrated:
+            if (
+                self.standard_data_available
+                & self.standard_telluric_function_available
+            ):
+                standard_spec = self.standard_spectrum_list[0]
+                wave_standard = standard_spec.wave
+
+                if (standard_spec.telluric_profile is None) or (len(args) > 0):
+                    standard_spec.add_telluric_profile(
+                        standard_spec.telluric_func(wave_standard)
+                    )
+
+                    telluric_factor = optimize.minimize(
+                        self._min_std,
+                        np.nanmedian(np.abs(standard_spec.flux)),
+                        args=(
+                            standard_spec.flux,
+                            standard_spec.telluric_profile,
+                            standard_spec.flux_continuum,
+                        ),
+                        tol=1e-20,
+                        method="Nelder-Mead",
+                        options={"maxiter": 10000},
+                    ).x
+
+                    self.logger.info(f"telluric_factor is {telluric_factor}.")
+
+                    standard_spec.add_telluric_factor(telluric_factor)
+
+                    self.standard_telluric_strength_available = True
+
+            else:
+                err_msg = "standard data is not available."
+                self.logger.warning(err_msg)
 
         if auto_apply:
             self.apply_telluric_correction(
@@ -4373,6 +4611,18 @@ class OneDSpec:
         JSON strings if return_jsonstring is set to True.
 
         """
+
+        if not self.standard_telluric_profile_available:
+            self.standard_spectrum_list[0].add_telluric_func(
+                self.science_spectrum_list[0].telluric_func
+            )
+            self.standard_spectrum_list[0].add_telluric_profile(
+                self.science_spectrum_list[0].telluric_profile
+            )
+            self.standard_spectrum_list[0].add_telluric_factor(
+                self.science_spectrum_list[0].telluric_factor
+            )
+            self.standard_telluric_profile_available = True
 
         self.fluxcal.inspect_telluric_profile(
             display=display,
@@ -4444,7 +4694,9 @@ class OneDSpec:
 
         """
 
-        if not self.telluric_profile_available:
+        if (not self.science_telluric_profile_available) & (
+            not self.standard_telluric_profile_available
+        ):
             error_msg = (
                 "Telluric profile is not available. Please provide "
                 "one or get one with get_telluric_profile(). Fine tuning can "
@@ -4452,7 +4704,7 @@ class OneDSpec:
             )
             raise ValueError(error_msg)
 
-        if not self.telluric_strength_available:
+        if not self.science_telluric_strength_available:
             error_msg = (
                 "Telluric strength is not available. executing "
                 "get_telluric_strength()."
@@ -4664,9 +4916,11 @@ class OneDSpec:
 
         """
 
-        if not self.telluric_profile_available:
+        if (not self.science_telluric_function_available) and (
+            not self.standard_telluric_function_available
+        ):
             error_msg = (
-                "Telluric profile is not available. Please provide "
+                "Telluric function is not available. Please provide "
                 "one or get one with get_telluric_profile(). Fine tuning can "
                 "be done using also get_continuum() on the standard spectrum."
             )
@@ -4675,142 +4929,152 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            if not self.telluric_strength_available:
-                error_msg = (
-                    "Telluric strength is not available. executing "
-                    "get_telluric_strength()."
-                )
-                self.get_telluric_strength()
-
-            spec_id = self._check_spec_id(spec_id)
-
-            # Get the telluric profile
-            for i in spec_id:
-                science_spec = self.science_spectrum_list[i]
-
-                if science_spec.telluric_profile is None:
-                    self.logger.warning(
-                        "A resampled telluric profile is not available, "
-                        "please construct a profile with "
-                        "get_telluric_profile()."
+            if self.science_data_available:
+                if not self.science_telluric_strength_available:
+                    error_msg = (
+                        "Telluric strength is not available. executing "
+                        "get_telluric_strength()."
                     )
+                    self.get_telluric_strength()
 
-                else:
-                    case_a = (
-                        self.science_telluric_corrected
-                        & self.atmospheric_extinction_corrected
-                    )
-                    case_b = (
-                        not self.science_telluric_corrected
-                    ) & self.atmospheric_extinction_corrected
-                    # case_c = self.science_telluric_corrected & (
-                    #    not self.atmospheric_extinction_corrected
-                    # )
-                    # case_d = (not self.science_telluric_corrected) & (
-                    #    not self.atmospheric_extinction_corrected
-                    # )
+                spec_id = self._check_spec_id(spec_id)
 
-                    if factor is None:
-                        factor = science_spec.telluric_nudge_factor
+                # Get the telluric function
+                for i in spec_id:
+                    science_spec = self.science_spectrum_list[i]
+
+                    if science_spec.telluric_func is None:
+                        self.logger.warning(
+                            "A resampled telluric function is not available, "
+                            "please construct a function with "
+                            "get_telluric_profile()."
+                        )
 
                     else:
-                        science_spec.add_telluric_nudge_factor(factor)
+                        case_a = (
+                            self.science_telluric_corrected
+                            & self.atmospheric_extinction_corrected
+                        )
+                        case_b = (
+                            not self.science_telluric_corrected
+                        ) & self.atmospheric_extinction_corrected
+                        # case_c = self.science_telluric_corrected & (
+                        #    not self.atmospheric_extinction_corrected
+                        # )
+                        # case_d = (not self.science_telluric_corrected) & (
+                        #    not self.atmospheric_extinction_corrected
+                        # )
 
-                    # in all cases
-                    flux_telluric_corrected = (
-                        science_spec.flux
-                        + science_spec.telluric_func(science_spec.wave)
-                        * science_spec.telluric_factor
-                        * factor
-                    )
-                    science_spec.add_flux_telluric_corrected(
-                        flux_telluric_corrected,
-                        science_spec.flux_err,
-                        science_spec.flux_sky,
-                    )
+                        if factor is None:
+                            factor = science_spec.telluric_nudge_factor
 
-                    if case_a or case_b:
-                        flux_atm_ext_telluric_corrected = (
-                            science_spec.flux_atm_ext_corrected
+                        else:
+                            science_spec.add_telluric_nudge_factor(factor)
+
+                        # in all cases
+                        flux_telluric_corrected = (
+                            science_spec.flux
                             + science_spec.telluric_func(science_spec.wave)
                             * science_spec.telluric_factor
                             * factor
                         )
-                        science_spec.add_flux_atm_ext_telluric_corrected(
-                            flux_atm_ext_telluric_corrected,
-                            science_spec.flux_err_atm_ext_corrected,
-                            science_spec.flux_sky_atm_ext_corrected,
+                        science_spec.add_flux_telluric_corrected(
+                            flux_telluric_corrected,
+                            science_spec.flux_err,
+                            science_spec.flux_sky,
                         )
 
-            # Flag it as corrected
-            self.science_telluric_corrected = True
-            self.logger.info(
-                "Telluric absorption in the science spectrum is corrected."
-            )
+                        if case_a or case_b:
+                            flux_atm_ext_telluric_corrected = (
+                                science_spec.flux_atm_ext_corrected
+                                + science_spec.telluric_func(science_spec.wave)
+                                * science_spec.telluric_factor
+                                * factor
+                            )
+                            science_spec.add_flux_atm_ext_telluric_corrected(
+                                flux_atm_ext_telluric_corrected,
+                                science_spec.flux_err_atm_ext_corrected,
+                                science_spec.flux_sky_atm_ext_corrected,
+                            )
+
+                # Flag it as corrected
+                self.science_telluric_corrected = True
+                self.logger.info(
+                    "Telluric absorption in the science spectrum is corrected."
+                )
+            else:
+                err_msg = "science data is not available."
+                self.logger.warning(err_msg)
 
         if "standard" in stype_split:
-            standard_spec = self.standard_spectrum_list[0]
+            if self.standard_data_available:
+                standard_spec = self.standard_spectrum_list[0]
 
-            if standard_spec.telluric_profile is None:
-                self.logger.warning(
-                    "A resampled telluric profile is not available, "
-                    "please construct a profile with "
-                    "get_telluric_profile()."
-                )
-
-            else:
-                if factor is None:
-                    factor = standard_spec.telluric_nudge_factor
+                if standard_spec.telluric_func is None:
+                    self.logger.warning(
+                        "A resampled telluric function is not available, "
+                        "please construct a function with "
+                        "get_telluric_profile()."
+                    )
 
                 else:
-                    standard_spec.add_telluric_nudge_factor(factor)
+                    if factor is None:
+                        factor = standard_spec.telluric_nudge_factor
 
-                case_a = (
-                    self.standard_telluric_corrected
-                    & self.atmospheric_extinction_corrected
-                )
-                case_b = (
-                    not self.standard_telluric_corrected
-                ) & self.atmospheric_extinction_corrected
-                # case_c = self.standard_telluric_corrected & (
-                #    not self.atmospheric_extinction_corrected
-                # )
-                # case_d = (not self.standard_telluric_corrected) & (
-                #    not self.atmospheric_extinction_corrected
-                # )
+                    else:
+                        standard_spec.add_telluric_nudge_factor(factor)
 
-                # in all cases
-                flux_telluric_corrected = (
-                    standard_spec.flux
-                    + standard_spec.telluric_func(standard_spec.wave)
-                    * standard_spec.telluric_factor
-                    * factor
-                )
-                standard_spec.add_flux_telluric_corrected(
-                    flux_telluric_corrected,
-                    standard_spec.flux_err,
-                    standard_spec.flux_sky,
-                )
+                    case_a = (
+                        self.standard_telluric_corrected
+                        & self.atmospheric_extinction_corrected
+                    )
+                    case_b = (
+                        not self.standard_telluric_corrected
+                    ) & self.atmospheric_extinction_corrected
+                    # case_c = self.standard_telluric_corrected & (
+                    #    not self.atmospheric_extinction_corrected
+                    # )
+                    # case_d = (not self.standard_telluric_corrected) & (
+                    #    not self.atmospheric_extinction_corrected
+                    # )
 
-                if case_a or case_b:
-                    # standard doesn't require atmospheic extinction correction
-                    flux_atm_ext_telluric_corrected = (
+                    # in all cases
+                    flux_telluric_corrected = (
                         standard_spec.flux
                         + standard_spec.telluric_func(standard_spec.wave)
                         * standard_spec.telluric_factor
                         * factor
                     )
-                    standard_spec.add_flux_atm_ext_telluric_corrected(
-                        flux_atm_ext_telluric_corrected,
-                        standard_spec.flux_err_atm_ext_corrected,
-                        standard_spec.flux_sky_atm_ext_corrected,
+                    standard_spec.add_flux_telluric_corrected(
+                        flux_telluric_corrected,
+                        standard_spec.flux_err,
+                        standard_spec.flux_sky,
                     )
 
-                # Flag it as corrected
-                self.standard_telluric_corrected = True
-                self.logger.info(
-                    "Telluric absorption in the standard spectrum is corrected."
-                )
+                    if case_a or case_b:
+                        # standard doesn't require atmospheic extinction correction
+                        flux_atm_ext_telluric_corrected = (
+                            standard_spec.flux
+                            + standard_spec.telluric_func(standard_spec.wave)
+                            * standard_spec.telluric_factor
+                            * factor
+                        )
+                        standard_spec.add_flux_atm_ext_telluric_corrected(
+                            flux_atm_ext_telluric_corrected,
+                            standard_spec.flux_err_atm_ext_corrected,
+                            standard_spec.flux_sky_atm_ext_corrected,
+                        )
+
+                    # Flag it as corrected
+                    self.standard_telluric_corrected = True
+                    self.logger.info(
+                        "Telluric absorption in the standard spectrum is"
+                        " corrected."
+                    )
+
+            else:
+                err_msg = "Standard data is not available."
+                self.logger.warning(err_msg)
 
     def set_atmospheric_extinction(
         self,
@@ -5768,9 +6032,232 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
-            for i in spec_id:
-                spec = self.science_spectrum_list[i]
+            if self.science_wavelength_calibrated:
+                spec_id = self._check_spec_id(spec_id)
+                for i in spec_id:
+                    spec = self.science_spectrum_list[i]
+
+                    if spec.wave is not None:
+                        # Adjust for pixel shift due to chip gaps
+                        wave = spec.wave
+
+                        # compute the new equally-spaced wavelength array
+                        if wave_bin is None:
+                            wave_bin = np.nanmedian(np.ediff1d(wave))
+
+                        if wave_start is None:
+                            wave_start = wave[0]
+
+                        if wave_end is None:
+                            wave_end = wave[-1]
+
+                        wave_resampled = np.arange(
+                            wave_start, wave_end, wave_bin
+                        )
+                        spec.add_wavelength_resampled(wave_resampled)
+                        self.science_wavelength_resampled = True
+
+                        if spec.count is not None:
+                            count_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.count).reshape(-1),
+                                verbose=True,
+                            )
+
+                            count_err_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.count_err).reshape(-1),
+                                verbose=True,
+                            )
+
+                            count_sky_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.count_sky).reshape(-1),
+                                verbose=True,
+                            )
+
+                            spec.add_count_resampled(
+                                count_resampled,
+                                count_err_resampled,
+                                count_sky_resampled,
+                            )
+
+                            self.logger.info(
+                                f"count is resampled for spec_id: {i}."
+                            )
+
+                        if spec.sensitivity is not None:
+                            sensitivity_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.sensitivity).reshape(-1),
+                                verbose=True,
+                            )
+
+                            spec.add_sensitivity_resampled(
+                                sensitivity_resampled,
+                            )
+
+                        if spec.flux is not None:
+                            flux_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.flux).reshape(-1),
+                                verbose=True,
+                            )
+
+                            flux_err_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.flux_err).reshape(-1),
+                                verbose=True,
+                            )
+
+                            flux_sky_resampled = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.flux_sky).reshape(-1),
+                                verbose=True,
+                            )
+
+                            spec.add_flux_resampled(
+                                flux_resampled,
+                                flux_err_resampled,
+                                flux_sky_resampled,
+                            )
+
+                            self.logger.info(
+                                f"flux is resampled for spec_id: {i}."
+                            )
+
+                        if spec.flux_atm_ext_corrected is not None:
+                            flux_resampled_atm_ext_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.flux_atm_ext_corrected).reshape(
+                                    -1
+                                ),
+                                verbose=True,
+                            )
+
+                            flux_err_resampled_atm_ext_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_err_atm_ext_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+
+                            flux_sky_resampled_atm_ext_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_sky_atm_ext_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+
+                            spec.add_flux_resampled_atm_ext_corrected(
+                                flux_resampled_atm_ext_corrected,
+                                flux_err_resampled_atm_ext_corrected,
+                                flux_sky_resampled_atm_ext_corrected,
+                            )
+                            self.logger.info(
+                                "flux_atm_ext_corrected is resampled for "
+                                f"spec_id: {i}."
+                            )
+
+                        if spec.flux_telluric_corrected is not None:
+                            flux_resampled_telluric_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(spec.flux_telluric_corrected).reshape(
+                                    -1
+                                ),
+                                verbose=True,
+                            )
+
+                            flux_err_resampled_telluric_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_err_telluric_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+
+                            flux_sky_resampled_telluric_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_sky_telluric_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+
+                            spec.add_flux_resampled_telluric_corrected(
+                                flux_resampled_telluric_corrected,
+                                flux_err_resampled_telluric_corrected,
+                                flux_sky_resampled_telluric_corrected,
+                            )
+                            self.logger.info(
+                                "flux_telluric_corrected is resampled for "
+                                f"spec_id: {i}."
+                            )
+
+                        if spec.flux_atm_ext_telluric_corrected is not None:
+                            flux_resampled_atm_ext_telluric_corrected = (
+                                spectres(
+                                    np.array(wave_resampled).reshape(-1),
+                                    np.array(wave).reshape(-1),
+                                    np.array(
+                                        spec.flux_atm_ext_telluric_corrected
+                                    ).reshape(-1),
+                                    verbose=True,
+                                )
+                            )
+
+                            flux_err_resampled_atm_ext_telluric_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_err_atm_ext_telluric_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+
+                            flux_sky_resampled_atm_ext_telluric_corrected = spectres(
+                                np.array(wave_resampled).reshape(-1),
+                                np.array(wave).reshape(-1),
+                                np.array(
+                                    spec.flux_sky_atm_ext_telluric_corrected
+                                ).reshape(-1),
+                                verbose=True,
+                            )
+
+                            spec.add_flux_resampled_atm_ext_telluric_corrected(
+                                flux_resampled_atm_ext_telluric_corrected,
+                                flux_err_resampled_atm_ext_telluric_corrected,
+                                flux_sky_resampled_atm_ext_telluric_corrected,
+                            )
+                            self.logger.info(
+                                "flux_resampled_atm_ext_telluric_corrected is "
+                                f"resampled for spec_id: {i}."
+                            )
+
+            else:
+                err_msg = (
+                    "Science wavelength is not calibrated, cannot resample."
+                )
+                self.logger.warning(err_msg)
+
+        if "standard" in stype_split:
+            if self.standard_wavelength_calibrated:
+                spec = self.standard_spectrum_list[0]
 
                 if spec.wave is not None:
                     # Adjust for pixel shift due to chip gaps
@@ -5788,7 +6275,7 @@ class OneDSpec:
 
                     wave_resampled = np.arange(wave_start, wave_end, wave_bin)
                     spec.add_wavelength_resampled(wave_resampled)
-                    self.science_wavelength_resampled = True
+                    self.standard_wavelength_resampled = True
 
                     if spec.count is not None:
                         count_resampled = spectres(
@@ -5818,9 +6305,10 @@ class OneDSpec:
                             count_sky_resampled,
                         )
 
-                        self.logger.info(
-                            f"count is resampled for spec_id: {i}."
-                        )
+                    self.logger.info(
+                        "Wavelength calibration is applied for the "
+                        "standard_spectrum_list."
+                    )
 
                     if spec.sensitivity is not None:
                         sensitivity_resampled = spectres(
@@ -5862,10 +6350,6 @@ class OneDSpec:
                             flux_sky_resampled,
                         )
 
-                        self.logger.info(
-                            f"flux is resampled for spec_id: {i}."
-                        )
-
                     if spec.flux_atm_ext_corrected is not None:
                         flux_resampled_atm_ext_corrected = spectres(
                             np.array(wave_resampled).reshape(-1),
@@ -5896,10 +6380,6 @@ class OneDSpec:
                             flux_resampled_atm_ext_corrected,
                             flux_err_resampled_atm_ext_corrected,
                             flux_sky_resampled_atm_ext_corrected,
-                        )
-                        self.logger.info(
-                            "flux_atm_ext_corrected is resampled for "
-                            f"spec_id: {i}."
                         )
 
                     if spec.flux_telluric_corrected is not None:
@@ -5932,10 +6412,6 @@ class OneDSpec:
                             flux_resampled_telluric_corrected,
                             flux_err_resampled_telluric_corrected,
                             flux_sky_resampled_telluric_corrected,
-                        )
-                        self.logger.info(
-                            "flux_telluric_corrected is resampled for "
-                            f"spec_id: {i}."
                         )
 
                     if spec.flux_atm_ext_telluric_corrected is not None:
@@ -5975,194 +6451,12 @@ class OneDSpec:
                             flux_err_resampled_atm_ext_telluric_corrected,
                             flux_sky_resampled_atm_ext_telluric_corrected,
                         )
-                        self.logger.info(
-                            "flux_resampled_atm_ext_telluric_corrected is "
-                            f"resampled for spec_id: {i}."
-                        )
 
-        if "standard" in stype_split:
-            spec = self.standard_spectrum_list[0]
-
-            if spec.wave is not None:
-                # Adjust for pixel shift due to chip gaps
-                wave = spec.wave
-
-                # compute the new equally-spaced wavelength array
-                if wave_bin is None:
-                    wave_bin = np.nanmedian(np.ediff1d(wave))
-
-                if wave_start is None:
-                    wave_start = wave[0]
-
-                if wave_end is None:
-                    wave_end = wave[-1]
-
-                wave_resampled = np.arange(wave_start, wave_end, wave_bin)
-                spec.add_wavelength_resampled(wave_resampled)
-                self.standard_wavelength_resampled = True
-
-                if spec.count is not None:
-                    count_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.count).reshape(-1),
-                        verbose=True,
-                    )
-
-                    count_err_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.count_err).reshape(-1),
-                        verbose=True,
-                    )
-
-                    count_sky_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.count_sky).reshape(-1),
-                        verbose=True,
-                    )
-
-                    spec.add_count_resampled(
-                        count_resampled,
-                        count_err_resampled,
-                        count_sky_resampled,
-                    )
-
-                self.logger.info(
-                    "Wavelength calibration is applied for the "
-                    "standard_spectrum_list."
+            else:
+                err_msg = (
+                    "Standard wavelength is not calibrated, cannot resample."
                 )
-
-                if spec.sensitivity is not None:
-                    sensitivity_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.sensitivity).reshape(-1),
-                        verbose=True,
-                    )
-
-                    spec.add_sensitivity_resampled(
-                        sensitivity_resampled,
-                    )
-
-                if spec.flux is not None:
-                    flux_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_err_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_err).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_sky_resampled = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_sky).reshape(-1),
-                        verbose=True,
-                    )
-
-                    spec.add_flux_resampled(
-                        flux_resampled,
-                        flux_err_resampled,
-                        flux_sky_resampled,
-                    )
-
-                if spec.flux_atm_ext_corrected is not None:
-                    flux_resampled_atm_ext_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_atm_ext_corrected).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_err_resampled_atm_ext_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_err_atm_ext_corrected).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_sky_resampled_atm_ext_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_sky_atm_ext_corrected).reshape(-1),
-                        verbose=True,
-                    )
-
-                    spec.add_flux_resampled_atm_ext_corrected(
-                        flux_resampled_atm_ext_corrected,
-                        flux_err_resampled_atm_ext_corrected,
-                        flux_sky_resampled_atm_ext_corrected,
-                    )
-
-                if spec.flux_telluric_corrected is not None:
-                    flux_resampled_telluric_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_telluric_corrected).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_err_resampled_telluric_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_err_telluric_corrected).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_sky_resampled_telluric_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_sky_telluric_corrected).reshape(-1),
-                        verbose=True,
-                    )
-
-                    spec.add_flux_resampled_telluric_corrected(
-                        flux_resampled_telluric_corrected,
-                        flux_err_resampled_telluric_corrected,
-                        flux_sky_resampled_telluric_corrected,
-                    )
-
-                if spec.flux_atm_ext_telluric_corrected is not None:
-                    flux_resampled_atm_ext_telluric_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(spec.flux_atm_ext_telluric_corrected).reshape(
-                            -1
-                        ),
-                        verbose=True,
-                    )
-
-                    flux_err_resampled_atm_ext_telluric_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(
-                            spec.flux_err_atm_ext_telluric_corrected
-                        ).reshape(-1),
-                        verbose=True,
-                    )
-
-                    flux_sky_resampled_atm_ext_telluric_corrected = spectres(
-                        np.array(wave_resampled).reshape(-1),
-                        np.array(wave).reshape(-1),
-                        np.array(
-                            spec.flux_sky_atm_ext_telluric_corrected
-                        ).reshape(-1),
-                        verbose=True,
-                    )
-
-                    spec.add_flux_resampled_atm_ext_telluric_corrected(
-                        flux_resampled_atm_ext_telluric_corrected,
-                        flux_err_resampled_atm_ext_telluric_corrected,
-                        flux_sky_resampled_atm_ext_telluric_corrected,
-                    )
+                self.logger.warning(err_msg)
 
     def create_fits(
         self,
@@ -6308,41 +6602,47 @@ class OneDSpec:
             raise ValueError(error_msg)
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                spec = self.science_spectrum_list[i]
+                for i in spec_id:
+                    spec = self.science_spectrum_list[i]
+                    for j in output_split:
+                        if ("resampled" in j) and (not spec.hdu_content[j]):
+                            self.resample(stype="science")
+
+                    spec.create_fits(
+                        output=output,
+                        recreate=recreate,
+                        empty_primary_hdu=empty_primary_hdu,
+                    )
+
+                    self.logger.info(
+                        "FITS is created for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                spec = self.standard_spectrum_list[0]
+
                 for j in output_split:
-                    if ("resampled" in j) and (not spec.hdu_content[j]):
-                        self.resample(stype="science")
+                    if ("resampled" in j) & (not spec.hdu_content[j]):
+                        self.resample(stype="standard")
 
                 spec.create_fits(
                     output=output,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu,
                 )
-
                 self.logger.info(
                     "FITS is created for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    f"standard_spectrum_list for spec_id: {i}."
                 )
-
-        if "standard" in stype_split:
-            spec = self.standard_spectrum_list[0]
-
-            for j in output_split:
-                if ("resampled" in j) & (not spec.hdu_content[j]):
-                    self.resample(stype="standard")
-
-            spec.create_fits(
-                output=output,
-                recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu,
-            )
-            self.logger.info(
-                "FITS is created for the "
-                f"standard_spectrum_list for spec_id: {i}."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_trace_header(
         self,
@@ -6374,24 +6674,30 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_trace_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_trace_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "trace header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_trace_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "trace header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "trace header is moldified for the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_trace_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "trace header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_count_header(
         self,
@@ -6423,24 +6729,30 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_count_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_count_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "count header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_count_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "count header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "count header is moldified for the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_count_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "count header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_weight_map_header(
         self,
@@ -6472,24 +6784,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_weight_map_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_weight_map_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "weight_map header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_weight_map_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "weight_map header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "weight_map header is moldified for the"
+                    " standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_weight_map_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "weight_map header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_arc_spec_header(
         self,
@@ -6521,24 +6840,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_arc_spec_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_arc_spec_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "arc_spec header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_arc_spec_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "arc_spec header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "arc_spec header is moldified for the"
+                    " standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_arc_spec_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "arc_spec header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_arc_lines_header(
         self,
@@ -6570,24 +6896,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_arc_lines_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_arc_lines_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "arc_lines header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_arc_lines_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "arc_lines header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "arc_lines header is moldified for the"
+                    " standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_arc_lines_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "arc_lines header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_wavecal_header(
         self,
@@ -6619,24 +6952,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_wavecal_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_wavecal_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "wavecal header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_wavecal_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "wavecal header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "wavecal header is moldified for the"
+                    " standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_wavecal_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "wavecal header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_wavelength_header(
         self,
@@ -6667,24 +7007,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_wavelength_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_wavelength_header(
+                        method, *args
+                    )
+                    self.logger.info(
+                        "wavelength header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_wavelength_header(
                     method, *args
                 )
                 self.logger.info(
-                    "wavelength header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "wavelength header is moldified for the"
+                    " standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_wavelength_header(
-                method, *args
-            )
-            self.logger.info(
-                "wavelength header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_wavelength_resampled_header(
         self,
@@ -6715,24 +7062,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
-                ].modify_wavelength_resampled_header(method, *args)
-                self.logger.info(
-                    "wavelength header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
-                )
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_wavelength_resampled_header(method, *args)
+                    self.logger.info(
+                        "wavelength header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
 
         if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_wavelength_resampled_header(
-                method, *args
-            )
-            self.logger.info(
-                "wavelength header is moldified for the standard_spectrum_list."
-            )
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
+                ].modify_wavelength_resampled_header(method, *args)
+                self.logger.info(
+                    "wavelength header is moldified for the"
+                    " standard_spectrum_list."
+                )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_count_resampled_header(
         self,
@@ -6764,25 +7118,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_count_resampled_header(
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_count_resampled_header(idx, method, *args)
+                    self.logger.info(
+                        "count_resampled header is moldified for "
+                        f"the science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_count_resampled_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "count_resampled header is moldified for "
-                    f"the science_spectrum_list for spec_id: {i}."
+                    "count_resampled header is moldified for the "
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_count_resampled_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "count_resampled header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_sensitivity_header(
         self,
@@ -6813,25 +7173,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_sensitivity_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_sensitivity_header(
+                        method, *args
+                    )
+                    self.logger.info(
+                        "sensitivity header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_sensitivity_header(
                     method, *args
                 )
                 self.logger.info(
                     "sensitivity header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_sensitivity_header(
-                method, *args
-            )
-            self.logger.info(
-                "sensitivity header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_header(
         self,
@@ -6863,24 +7229,30 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_flux_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_flux_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "flux header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_flux_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "flux header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "flux header is moldified for the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_flux_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "flux header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_atm_ext_header(
         self,
@@ -6911,22 +7283,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_atm_ext_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_atm_ext_header(
+                        method, *args
+                    )
+                    self.logger.info(
+                        "atm_ext header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_atm_ext_header(
                     method, *args
                 )
                 self.logger.info(
-                    "atm_ext header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "atm_ext header is moldified for the"
+                    " standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_atm_ext_header(method, *args)
-            self.logger.info(
-                "atm_ext header is moldified for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_atm_ext_corrected_header(
         self,
@@ -6958,25 +7339,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_flux_atm_ext_corrected_header(idx, method, *args)
+                    self.logger.info(
+                        "flux_atm_ext_corrected header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_flux_atm_ext_corrected_header(idx, method, *args)
                 self.logger.info(
                     "flux_atm_ext_corrected header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_flux_atm_ext_corrected_header(idx, method, *args)
-            self.logger.info(
-                "flux_atm_ext_corrected header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_telluric_profile_header(
         self,
@@ -7007,25 +7394,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_telluric_profile_header(
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_telluric_profile_header(method, *args)
+                    self.logger.info(
+                        "telluric_profile header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_telluric_profile_header(
                     method, *args
                 )
                 self.logger.info(
                     "telluric_profile header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_telluric_profile_header(
-                method, *args
-            )
-            self.logger.info(
-                "telluric_profile header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_telluric_corrected_header(
         self,
@@ -7057,25 +7450,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_flux_telluric_corrected_header(idx, method, *args)
+                    self.logger.info(
+                        "flux_telluric_corrected header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_flux_telluric_corrected_header(idx, method, *args)
                 self.logger.info(
                     "flux_telluric_corrected header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_flux_telluric_corrected_header(idx, method, *args)
-            self.logger.info(
-                "flux_telluric_corrected header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_atm_ext_telluric_corrected_header(
         self,
@@ -7107,27 +7506,35 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_flux_atm_ext_telluric_corrected_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "flux_atm_ext_telluric_corrected header is moldified"
+                        f" for the science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_flux_atm_ext_telluric_corrected_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "flux_atm_ext_telluric_corrected header is moldified for "
-                    f"the science_spectrum_list for spec_id: {i}."
+                    "flux_atm_ext_telluric_corrected header is moldified for"
+                    " the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_flux_atm_ext_telluric_corrected_header(idx, method, *args)
-            self.logger.info(
-                "flux_atm_ext_telluric_corrected header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_sensitivity_resampled_header(
         self,
@@ -7156,25 +7563,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
-                ].modify_sensitivity_resampled_header(method, *args)
-                self.logger.info(
-                    "sensitivity_resampled header is moldified "
-                    f"for the science_spectrum_list for spec_id: {i}."
-                )
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_sensitivity_resampled_header(method, *args)
+                    self.logger.info(
+                        "sensitivity_resampled header is moldified "
+                        f"for the science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
 
         if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_sensitivity_resampled_header(
-                method, *args
-            )
-            self.logger.info(
-                "sensitivity_resampled header is moldified for "
-                "the standard_spectrum_list."
-            )
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
+                ].modify_sensitivity_resampled_header(method, *args)
+                self.logger.info(
+                    "sensitivity_resampled header is moldified for "
+                    "the standard_spectrum_list."
+                )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_resampled_header(
         self,
@@ -7206,25 +7619,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_flux_resampled_header(
+                for i in spec_id:
+                    self.science_spectrum_list[i].modify_flux_resampled_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "flux_resampled header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_flux_resampled_header(
                     idx, method, *args
                 )
                 self.logger.info(
                     "flux_resampled header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_flux_resampled_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "flux_resampled header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_atm_ext_resampled_header(
         self,
@@ -7256,25 +7675,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[i].modify_atm_ext_resampled_header(
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_atm_ext_resampled_header(method, *args)
+                    self.logger.info(
+                        "atm_ext_resampled header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[0].modify_atm_ext_resampled_header(
                     method, *args
                 )
                 self.logger.info(
                     "atm_ext_resampled header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[0].modify_atm_ext_resampled_header(
-                method, *args
-            )
-            self.logger.info(
-                "atm_ext_resampled header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_resampled_atm_ext_corrected_header(
         self,
@@ -7307,29 +7732,35 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_flux_resampled_atm_ext_corrected_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "flux_resampled_atm_ext header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_flux_resampled_atm_ext_corrected_header(
                     idx, method, *args
                 )
                 self.logger.info(
                     "flux_resampled_atm_ext header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_flux_resampled_atm_ext_corrected_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "flux_resampled_atm_ext header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_telluric_profile_resampled_header(
         self,
@@ -7360,25 +7791,31 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_telluric_profile_resampled_header(method, *args)
+                    self.logger.info(
+                        "telluric_profile_resampled header is moldified for"
+                        f" the science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_telluric_profile_resampled_header(method, *args)
                 self.logger.info(
                     "telluric_profile_resampled header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_telluric_profile_resampled_header(method, *args)
-            self.logger.info(
-                "telluric_profile_resampled header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_resampled_telluric_corrected_header(
         self,
@@ -7411,29 +7848,35 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_flux_resampled_telluric_corrected_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "flux_resampled_telluric header is moldified for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_flux_resampled_telluric_corrected_header(
                     idx, method, *args
                 )
                 self.logger.info(
                     "flux_resampled_telluric header is moldified for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    "standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_flux_resampled_telluric_corrected_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "flux_resampled_telluric header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def modify_flux_resampled_atm_ext_telluric_corrected_header(
         self,
@@ -7466,29 +7909,35 @@ class OneDSpec:
         stype_split = stype.split("+")
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                self.science_spectrum_list[
-                    i
+                for i in spec_id:
+                    self.science_spectrum_list[
+                        i
+                    ].modify_flux_resampled_atm_ext_telluric_corrected_header(
+                        idx, method, *args
+                    )
+                    self.logger.info(
+                        "flux_resampled_atm_ext_telluric header is moldified"
+                        f" for the science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                self.standard_spectrum_list[
+                    0
                 ].modify_flux_resampled_atm_ext_telluric_corrected_header(
                     idx, method, *args
                 )
                 self.logger.info(
-                    "flux_resampled_atm_ext_telluric header is moldified for "
-                    f"the science_spectrum_list for spec_id: {i}."
+                    "flux_resampled_atm_ext_telluric header is moldified for"
+                    " the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            self.standard_spectrum_list[
-                0
-            ].modify_flux_resampled_atm_ext_telluric_corrected_header(
-                idx, method, *args
-            )
-            self.logger.info(
-                "flux_resampled_atm_ext_telluric header is moldified for the "
-                "standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def save_fits(
         self,
@@ -7643,15 +8092,46 @@ class OneDSpec:
             raise ValueError(error_msg)
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
 
-            for i in spec_id:
-                if len(spec_id) == 1:
-                    filename_i = filename + "_science"
-                else:
-                    filename_i = filename + "_science_" + str(i)
+                for i in spec_id:
+                    if len(spec_id) == 1:
+                        filename_i = filename + "_science"
+                    else:
+                        filename_i = filename + "_science_" + str(i)
 
-                spec = self.science_spectrum_list[i]
+                    spec = self.science_spectrum_list[i]
+                    output_filtered = []
+
+                    for j in output_split:
+                        if spec.hdu_content[j]:
+                            output_filtered.append(j)
+
+                        elif not spec.hdu_content[j]:
+                            self.create_fits(j)
+                            output_filtered.append(j)
+
+                        else:
+                            pass
+
+                    spec.save_fits(
+                        output="+".join(output_filtered),
+                        filename=filename_i,
+                        overwrite=overwrite,
+                        recreate=recreate,
+                        empty_primary_hdu=empty_primary_hdu,
+                    )
+                    self.logger.info(
+                        f"FITS file is saved to {filename_i} for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                spec = self.standard_spectrum_list[0]
                 output_filtered = []
 
                 for j in output_split:
@@ -7667,42 +8147,17 @@ class OneDSpec:
 
                 spec.save_fits(
                     output="+".join(output_filtered),
-                    filename=filename_i,
+                    filename=filename + "_standard",
                     overwrite=overwrite,
                     recreate=recreate,
                     empty_primary_hdu=empty_primary_hdu,
                 )
                 self.logger.info(
-                    f"FITS file is saved to {filename_i} for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    f"FITS file is saved to {filename}_standard "
+                    "for the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            spec = self.standard_spectrum_list[0]
-            output_filtered = []
-
-            for j in output_split:
-                if spec.hdu_content[j]:
-                    output_filtered.append(j)
-
-                elif not spec.hdu_content[j]:
-                    self.create_fits(j)
-                    output_filtered.append(j)
-
-                else:
-                    pass
-
-            spec.save_fits(
-                output="+".join(output_filtered),
-                filename=filename + "_standard",
-                overwrite=overwrite,
-                recreate=recreate,
-                empty_primary_hdu=empty_primary_hdu,
-            )
-            self.logger.info(
-                f"FITS file is saved to {filename}_standard "
-                "for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
 
     def save_csv(
         self,
@@ -7854,14 +8309,52 @@ class OneDSpec:
             raise ValueError(error_msg)
 
         if "science" in stype_split:
-            spec_id = self._check_spec_id(spec_id)
-            for i in spec_id:
-                spec = self.science_spectrum_list[i]
+            if self.science_data_available:
+                spec_id = self._check_spec_id(spec_id)
+                for i in spec_id:
+                    spec = self.science_spectrum_list[i]
+                    output_filtered = []
+
+                    for j in output_split:
+                        if ("resampled" in j) and (not spec.hdu_content[j]):
+                            self.resample(stype="science")
+
+                        elif not spec.hdu_content[j]:
+                            self.create_fits(j)
+
+                        else:
+                            pass
+
+                        if spec.hdu_content[j]:
+                            output_filtered.append(j)
+
+                    if len(spec_id) == 1:
+                        filename_i = filename + "_science"
+
+                    else:
+                        filename_i = filename + "_science_" + str(i)
+
+                    spec.save_csv(
+                        output="+".join(output_filtered),
+                        filename=filename_i,
+                        recreate=recreate,
+                        overwrite=overwrite,
+                    )
+                    self.logger.info(
+                        f"CSV file is saved to {filename_i} for the "
+                        f"science_spectrum_list for spec_id: {i}."
+                    )
+            else:
+                self.logger.warning("Science data is not available.")
+
+        if "standard" in stype_split:
+            if self.standard_data_available:
+                spec = self.standard_spectrum_list[0]
                 output_filtered = []
 
                 for j in output_split:
                     if ("resampled" in j) and (not spec.hdu_content[j]):
-                        self.resample(stype="science")
+                        self.resample(stype="standard")
 
                     elif not spec.hdu_content[j]:
                         self.create_fits(j)
@@ -7872,47 +8365,15 @@ class OneDSpec:
                     if spec.hdu_content[j]:
                         output_filtered.append(j)
 
-                if len(spec_id) == 1:
-                    filename_i = filename + "_science"
-
-                else:
-                    filename_i = filename + "_science_" + str(i)
-
                 spec.save_csv(
                     output="+".join(output_filtered),
-                    filename=filename_i,
+                    filename=filename + "_standard",
                     recreate=recreate,
                     overwrite=overwrite,
                 )
                 self.logger.info(
-                    f"CSV file is saved to {filename_i} for the "
-                    f"science_spectrum_list for spec_id: {i}."
+                    f"FITS file is saved to {filename}_standard "
+                    "for the standard_spectrum_list."
                 )
-
-        if "standard" in stype_split:
-            spec = self.standard_spectrum_list[0]
-            output_filtered = []
-
-            for j in output_split:
-                if ("resampled" in j) and (not spec.hdu_content[j]):
-                    self.resample(stype="standard")
-
-                elif not spec.hdu_content[j]:
-                    self.create_fits(j)
-
-                else:
-                    pass
-
-                if spec.hdu_content[j]:
-                    output_filtered.append(j)
-
-            spec.save_csv(
-                output="+".join(output_filtered),
-                filename=filename + "_standard",
-                recreate=recreate,
-                overwrite=overwrite,
-            )
-            self.logger.info(
-                f"FITS file is saved to {filename}_standard "
-                "for the standard_spectrum_list."
-            )
+            else:
+                self.logger.warning("Standard data is not available.")
