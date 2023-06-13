@@ -20,7 +20,7 @@ To install the stable version on the main branch, use
 
 `pip install git+https://github.com/cylammarco/ASPIRED.git`
 
-or the development (dec) branch with
+or the development (dev) branch with
 
 `pip install git+https://github.com/cylammarco/ASPIRED.git@dev`.
 
