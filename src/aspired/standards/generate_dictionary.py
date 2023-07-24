@@ -55,6 +55,7 @@ filelist = glob.glob("*filename-to-identifier.json")
 
 # Create dictionary for libraries to filenames
 lib_to_filename = {}
+lib_to_designation = {}
 
 # And the mapping of designations and filename
 lib_filename_to_designation_position = {}
@@ -77,6 +78,7 @@ for json_filename in filelist:
             )
             ra = c.ra.value
             dec = c.dec.value
+        lib_to_designation[lib_name] = [d.replace(" ", "").lower() for d in v]
         lib_filename_to_designation_position[lib_name + "/" + k] = [
             [d.replace(" ", "").lower(), ra, dec] for d in v
         ]
@@ -114,6 +116,9 @@ for star, libs in filename_to_lib.items():
 
 with open("lib_to_filename.json", "w") as f:
     json.dump(lib_to_filename, f)
+
+with open("lib_to_designation.json", "w") as f:
+    json.dump(lib_to_designation, f)
 
 with open("filename_to_lib.json", "w") as f:
     json.dump(filename_to_lib, f)

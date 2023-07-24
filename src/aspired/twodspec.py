@@ -223,7 +223,7 @@ class TwoDSpec:
 
         # Default keywords to be searched in the order in the list
         self.readnoise_keyword = ["RDNOISE", "RNOISE", "RN"]
-        self.gain_keyword = ["GAIN"]
+        self.gain_keyword = ["GAIN", "EGAIN"]
         self.seeing_keyword = [
             "SEEING",
             "L1SEEING",
@@ -231,6 +231,9 @@ class TwoDSpec:
             "DIMMSEE",
             "SEEDIMM",
             "DSEEING",
+            "FWHM",
+            "L1FWHM",
+            "AGFWHM",
         ]
         # AEPOSURE is the average exposure time computed in ImageReducer
         # it is the effective exposure time suitable for computing
@@ -331,6 +334,7 @@ class TwoDSpec:
                 data.create_image_fits()
 
             self.img = data.image_fits.data
+            self.logger.info("An ImageReudction object is loaded as data.")
 
             if header is None:
                 self.set_header(data.image_fits.header)

@@ -603,10 +603,10 @@ class SpectrumOneD:
         """
 
         if header is not None:
-            if type(header) == fits.Header:
+            if isinstance(header, fits.Header):
                 self.arc_header = header
                 self.logger.info("arc_header is stored.")
-            elif type(header[0]) == fits.Header:
+            elif isinstance(header[0], fits.Header):
                 self.arc_header = header[0]
                 self.logger.info("arc_header is stored.")
             else:
@@ -5636,7 +5636,8 @@ class SpectrumOneD:
                     "flux_resampled_atm_ext_telluric_corrected"
                 ]:
                     self.logger.info(
-                        "Creating flux_resampled_atm_ext_telluric_corrected HDU now."
+                        "Creating flux_resampled_atm_ext_telluric_corrected HDU"
+                        " now."
                     )
                     self.create_flux_resampled_atm_ext_telluric_corrected_fits()
                     self.logger.info(

@@ -121,11 +121,13 @@ class StandardLibrary:
 
         self.library = None
         self.target = None
+        self.designation = None
         self.ftype = "flux"
         self.cutoff = 0.4
 
         self.designation_to_lib_filename = None
         self.lib_to_filename = None
+        self.lib_to_designation = None
         self.filename_to_lib = None
 
         self.spectrum_oned_imported = False
@@ -150,6 +152,14 @@ class StandardLibrary:
             open(
                 pkg_resources.resource_filename(
                     "aspired", "standards/lib_to_filename.json"
+                ),
+                encoding="ascii",
+            )
+        )
+        self.lib_to_designation = json.load(
+            open(
+                pkg_resources.resource_filename(
+                    "aspired", "standards/lib_to_designation.json"
                 ),
                 encoding="ascii",
             )
@@ -182,8 +192,10 @@ class StandardLibrary:
         else:
             filename = "m"
 
-        # the rest of the file name
-        filename += self.target
+        # match the target designation to the file name
+        filename += self.designation_to_lib_filename[self.designation][
+            self.library
+        ]
 
         # the extension
         filename += ".dat"
@@ -208,7 +220,9 @@ class StandardLibrary:
         folder = self.library
 
         # the first part of the file name
-        filename = self.target
+        filename = self.designation_to_lib_filename[self.designation][
+            self.library
+        ]
         extension = self.library[3:]
 
         # last letter (or nothing) of the file name
@@ -293,7 +307,10 @@ class StandardLibrary:
         folder = self.library
 
         # file name and extension
-        filename = self.target + ".dat"
+        filename = (
+            self.designation_to_lib_filename[self.designation][self.library]
+            + ".dat"
+        )
 
         filepath = os.path.join(base_dir, "standards", folder, filename)
 
@@ -386,6 +403,7 @@ class StandardLibrary:
             self.logger.critical(error_msg)
             raise ValueError(error_msg)
 
+        # Return pair(s) of filename and library
         return [
             (f, l) for l, f in zip(library_list, filename_list)
         ], exact_match
@@ -402,7 +420,7 @@ class StandardLibrary:
         Parameters
         ----------
         target: str
-            Name of the standard star
+            Desination of the standard star
         library: str
             Name of the library
         cutoff: float (Default: 0.4)
@@ -410,13 +428,13 @@ class StandardLibrary:
 
         Return:
         -------
-        The closest names to the target in that (closet) library.
+        The closest designation to the target in that (closet) library.
 
         """
 
         # Load the list of libraries
         library_name = difflib.get_close_matches(
-            library, list(self.lib_to_filename.keys()), n=1, cutoff=cutoff
+            library, list(self.lib_to_designation.keys()), n=1, cutoff=cutoff
         )
 
         if library_name == []:
@@ -426,19 +444,19 @@ class StandardLibrary:
             library_name = library_name[0]
 
         # difflib uses Gestalt pattern matching.
-        target_name = difflib.get_close_matches(
+        target_designation = difflib.get_close_matches(
             target.lower(),
-            self.lib_to_filename[library_name],
+            self.lib_to_designation[library_name],
             n=1,
             cutoff=cutoff,
         )
-        if target_name == []:
-            target_name = None
+        if target_designation == []:
+            target_designation = None
 
         else:
-            target_name = target_name[0]
+            target_designation = target_designation[0]
 
-        return target_name, library_name
+        return target_designation, library_name
 
     def load_standard(
         self,
@@ -478,13 +496,17 @@ class StandardLibrary:
         self.library = library
         if self.library is not None:
             (
-                _target,
+                _designation,
                 _library,
             ) = self.lookup_closet_match_in_library(self.target, self.library)
 
-            if _target is not None:
-                self.target = _target
+            if _designation is not None:
+                self.designation = _designation
                 self.library = _library
+                self.logger.info(
+                    f"The requested standard star {self.target} is found in the"
+                    f" given library {self.library}."
+                )
 
         # If not, search again with the first one returned from lookup.
         else:
@@ -509,12 +531,9 @@ class StandardLibrary:
                     "is used because it has the closest matching name."
                 )
 
-        if not self.verbose:
-            if self.library is None:
-                # Use the default library order
-                self.logger.warning(
-                    f"Standard library is not given, {self.library} is used."
-                )
+            self.designation, _ = self.lookup_closet_match_in_library(
+                self.target, self.library
+            )
 
         if self.library.startswith("iraf"):
             self._get_iraf_standard()

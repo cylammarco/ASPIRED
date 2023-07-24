@@ -3602,7 +3602,10 @@ class OneDSpec:
         self.fluxcal.load_standard(
             target=target, library=library, ftype=ftype, cutoff=cutoff
         )
-        self.logger.info(f"Loaded standard: {target} from {library}")
+        self.logger.info(
+            f"Loaded standard: {self.fluxcal.target} from"
+            f" {self.fluxcal.library}"
+        )
 
     def inspect_standard(
         self,

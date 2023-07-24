@@ -1,9 +1,20 @@
 We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
 
-Version 0.5.0-dev
+Version 0.5.1
 -----------------
 
-:Date X-X-2022
+:Date 24-7-2022
+
+* Minor bug fixes:
+
+  * Fixed a bug that mixed up the filenames and the designations of standard stars.
+  * Fixed a bug that stops ImageReducer recognising compressed FITS file as a valid format.
+
+
+Version 0.5.0
+-----------------
+
+:Date 13-6-2022
 
 * New Freatures:
 

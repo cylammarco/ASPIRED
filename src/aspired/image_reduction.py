@@ -1629,10 +1629,12 @@ class ImageReducer:
             self.logger.debug("Loading light frame: %s.", self.light_list[i])
             light = fits.open(self.light_list[i])[self.light_hdunum[i]]
 
-            data, header, exposure_time = self._get_data_and_header(
-                light, self.exptime_light_keyword
-            )
-            self.add_light(data, header, exposure_time)
+            (
+                light_data,
+                light_header,
+                light_exposure_time,
+            ) = self._get_data_and_header(light, self.exptime_light_keyword)
+            self.add_light(light_data, light_header, light_exposure_time)
 
             # Cosmic ray cleaning
             if self.cosmicray:
@@ -1740,8 +1742,8 @@ class ImageReducer:
                 # Open all the light frames
                 arc = fits.open(self.arc_list[i])[self.arc_hdunum[i]]
 
-                data, header, _ = self._get_data_and_header(arc)
-                self.add_arc(data, header)
+                arc_data, arc_header, _ = self._get_data_and_header(arc)
+                self.add_arc(arc_data, arc_header)
 
                 self.logger.debug("Arc frame header: %s.", self.arc_header[i])
 
@@ -1760,10 +1762,12 @@ class ImageReducer:
                 # Open all the dark frames
                 dark = fits.open(self.dark_list[i])[self.dark_hdunum[i]]
 
-                data, header, exposure_time = self._get_data_and_header(
-                    dark, self.exptime_dark_keyword
-                )
-                self.add_dark(data, header, exposure_time)
+                (
+                    dark_data,
+                    dark_header,
+                    dark_exposure_time,
+                ) = self._get_data_and_header(dark, self.exptime_dark_keyword)
+                self.add_dark(dark_data, dark_header, dark_exposure_time)
 
                 self.logger.debug(
                     "Dark frame header: %s.", self.dark_header[i]
@@ -1784,10 +1788,12 @@ class ImageReducer:
                 # Open all the flatfield frames
                 flat = fits.open(self.flat_list[i])[self.flat_hdunum[i]]
 
-                data, header, exposure_time = self._get_data_and_header(
-                    flat, self.exptime_flat_keyword
-                )
-                self.add_flat(data, header, exposure_time)
+                (
+                    flat_data,
+                    flat_header,
+                    flat_exposure_time,
+                ) = self._get_data_and_header(flat, self.exptime_flat_keyword)
+                self.add_flat(flat_data, flat_header, flat_exposure_time)
 
                 self.logger.debug(
                     "Flat frame header: %s.", self.flat_header[i]
@@ -1808,8 +1814,8 @@ class ImageReducer:
                 # Open all the flatfield frames
                 bias = fits.open(self.bias_list[i])[self.bias_hdunum[i]]
 
-                data, header, _ = self._get_data_and_header(bias)
-                self.add_bias(data, header)
+                bias_data, bias_header, _ = self._get_data_and_header(bias)
+                self.add_bias(bias_data, bias_header)
 
                 self.logger.debug(
                     "Flat frame header: %s.", self.bias_header[i]
