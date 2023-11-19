@@ -13,7 +13,39 @@ We aim to provide a suite of publicly available spectral data reduction software
 
 ASPIRED is written for use with python 3.7, 3.8, 3.9, 3.10 and 3.11, and is intentionally developed as a self-consistent reduction pipeline with its own diagnostics and error handling. The pipeline should be able to reduce 2D spectral data from raw image to wavelength and flux calibrated 1D spectrum automatically without any user input (quicklook quality). However, the real goal is to provide a set of easily configurable routines to build pipelines for long slit spectrographs on different telescopes (science quality). We use SPRAT as a test case for this development, but our aim is to support a much wider range of instruments. By delivering near real-time data reduction we will facilitate automated or interactive decision making, allowing "on-the-fly" modification of observing strategies and rapid triggering of other facilities.
 
-Further information can be referred to this [AJ article](https://iopscience.iop.org/article/10.3847/1538-3881/acd75c).
+The most up-to-date description can be referred to this [AJ article](https://iopscience.iop.org/article/10.3847/1538-3881/acd75c). Please use the DOI 10.5281/zenodo.4127294 for general referencing to the software. If you would like to reference a specific version, please look up the corresponding DOI on [Zenodo](https://zenodo.org/records/8179037). The bibtex below is referencing the latest release.
+
+```bash
+@ARTICLE{2023AJ....166...13L,
+       author = {{Lam}, Marco C. and {Smith}, Robert J. and {Arcavi}, Iair and {Steele}, Iain A. and {Veitch-Michaelis}, Josh and {Wyrzykowski}, Lukasz},
+        title = "{Automated SpectroPhotometric Image REDuction (ASPIRED)}",
+      journal = {\aj},
+     keywords = {Astronomy data reduction, Spectroscopy, Open source software, Publicly available software, Astronomy software, Observational astronomy, Astronomical techniques, Astronomical methods, 1861, 1558, 1866, 1864, 1855, 1145, 1684, 1043, Astrophysics - Instrumentation and Methods for Astrophysics},
+         year = 2023,
+        month = jul,
+       volume = {166},
+       number = {1},
+          eid = {13},
+        pages = {13},
+          doi = {10.3847/1538-3881/acd75c},
+archivePrefix = {arXiv},
+       eprint = {2111.02127},
+ primaryClass = {astro-ph.IM},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2023AJ....166...13L},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+@software{lam_2023_8179037,
+  author       = {Lam, Marco C and Smith, Robert J},
+  title        = {{ASPIRED: A Python-based spectral data reduction toolkit}},
+  month        = jul,
+  year         = 2023,
+  publisher    = {Zenodo},
+  version      = {0.5.1},
+  doi          = {10.5281/zenodo.8179037},
+  url          = {https://doi.org/10.5281/zenodo.8179037}
+}
+```
 
 Early stage development efforts can be referred to this [ASPC article](https://ui.adsabs.harvard.edu/abs/2020ASPC..527..655L/abstract) and this [arXiv article](https://ui.adsabs.harvard.edu/abs/2020arXiv201203505L/abstract). This is in concurrent development with the automated wavelength calibration software [RASCAL](https://github.com/jveitchmichaelis/rascal), further information can be referred to this [ASPC article](https://ui.adsabs.harvard.edu/abs/2020ASPC..527..627V/abstract) and it will appear in the same volume of ASPCS.
 
