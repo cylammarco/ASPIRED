@@ -126,12 +126,12 @@ Some more complete examples are available in the tutorials.
 License and Attribution
 =======================
 
-Copyright 2019-2021
+Copyright 2019-2023
 
 If you make use of ASPIRED in your work, please cite our paper
-(`arXiv <https://arxiv.org/abs/2012.03505>`_,
-`ADS <https://ui.adsabs.harvard.edu/abs/2020arXiv201203505L/abstract>`_,
-`BibTeX <https://ui.adsabs.harvard.edu/abs/2020arXiv201203505L/exportcitation>`_);
+(`arXiv <https://arxiv.org/abs/2111.02127>`_,
+`ADS <https://ui.adsabs.harvard.edu/abs/2023AJ....166...13L>`_,
+`BibTeX <https://ui.adsabs.harvard.edu/abs/2023AJ....166...13L/exportcitation>`_);
 
 and the specific Software version should it be relevant
 
@@ -142,7 +142,7 @@ and the specific Software version should it be relevant
 Acknowledgement
 ===============
 
-This research made use of Astropy,\footnote{http://www.astropy.org} a community-developed core Python package for Astronomy \citep{astropy:2013, astropy:2018}.
+This research made use of Astropy,\footnote{http://www.astropy.org} a community-developed core Python package for Astronomy.
 
 This software has also made some use of the `Astro-Python <https://crossfield.ku.edu/python/>`_ code.
 
