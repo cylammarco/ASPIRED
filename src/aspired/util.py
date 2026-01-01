@@ -3,15 +3,11 @@
 
 """some helper functions"""
 
-import copy
 import logging
-from functools import partial
 from typing import Union
 
 import numpy as np
 from astropy import units as u
-from astropy.modeling.polynomial import Chebyshev1D
-from scipy import interpolate as itp
 from scipy import ndimage
 from specutils.fitting import fit_generic_continuum
 from specutils.spectra import Spectrum1D

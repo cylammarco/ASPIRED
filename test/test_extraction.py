@@ -171,7 +171,6 @@ def test_gaussian_spectral_extraction():
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_tophat = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )
@@ -189,7 +188,6 @@ def test_gaussian_spectral_extraction():
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_horne = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )
@@ -213,7 +211,6 @@ def test_gaussian_spectral_extraction():
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     print(count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_horne = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )
@@ -228,12 +225,6 @@ def test_gaussian_spectral_extraction():
         save_fig=True,
         fig_type="iframe+png",
         return_jsonstring=True,
-    )
-    count = np.mean(dummy_twodspec.spectrum_list[0].count)
-    count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_marsh = count / count_err
-    assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
-        "Extracted count is " + str(count) + " but it should be ~10000."
     )
 
 
@@ -278,7 +269,6 @@ def test_gaussian_spectral_extraction_top_hat_low_signal():
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_tophat = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
@@ -318,7 +308,6 @@ def test_gaussian_spectral_extraction_horne86_gaussian_low_signal():
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_horne = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
@@ -361,7 +350,6 @@ def test_gaussian_spectral_extraction_horne86_lowess_low_signal():
     )
     count = np.median(dummy_twodspec.spectrum_list[0].count)
     count_err = np.median(dummy_twodspec.spectrum_list[0].count_err)
-    snr_horne = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err * 2.0), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
@@ -399,7 +387,6 @@ def test_gaussian_spectral_extraction_marsh89_low_signal():
     dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
     count = np.median(dummy_twodspec.spectrum_list[0].count)
     count_err = np.median(dummy_twodspec.spectrum_list[0].count_err)
-    snr_marsh = count / count_err
     assert np.isclose(count, 100.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~100."
     )
@@ -580,7 +567,6 @@ def test_gaussian_spectral_extraction_10000s_exptime_2x_gain():
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_tophat = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )
@@ -589,7 +575,6 @@ def test_gaussian_spectral_extraction_10000s_exptime_2x_gain():
     dummy_twodspec.ap_extract(apwidth=5, optimal=True, model="gauss")
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_horne = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )
@@ -603,7 +588,6 @@ def test_gaussian_spectral_extraction_10000s_exptime_2x_gain():
     )
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_horne = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )
@@ -612,7 +596,6 @@ def test_gaussian_spectral_extraction_10000s_exptime_2x_gain():
     dummy_twodspec.ap_extract(apwidth=5, optimal=True, algorithm="marsh89")
     count = np.mean(dummy_twodspec.spectrum_list[0].count)
     count_err = np.mean(dummy_twodspec.spectrum_list[0].count_err)
-    snr_marsh = count / count_err
     assert np.isclose(count, 10000.0, rtol=0.01, atol=count_err), (
         "Extracted count is " + str(count) + " but it should be ~10000."
     )

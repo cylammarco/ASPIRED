@@ -96,7 +96,7 @@ class SpectrumOneD:
         else:
             if log_file_name == "default":
                 t_str = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-                log_file_name = "{logger_name}_{t_str}.log"
+                log_file_name = f"{logger_name}_{t_str}.log"
             # Save log to file
             if log_file_folder == "default":
                 log_file_folder = ""
@@ -1366,7 +1366,7 @@ class SpectrumOneD:
 
         """
 
-        assert type(fit_type) == str, "fit_type has to be a string"
+        assert type(fit_type) is str, "fit_type has to be a string"
         assert fit_type in ["poly", "leg", "cheb"], "fit_type must be "
         "(1) poly(nomial); (2) leg(endre); or (3) cheb(yshev)."
         self.fit_type = fit_type
@@ -5627,9 +5627,9 @@ class SpectrumOneD:
                     hdu_output += (
                         self.flux_resampled_telluric_corrected_hdulist
                     )
-                    self.hdu_content[
-                        "flux_resampled_telluric_corrected"
-                    ] = True
+                    self.hdu_content["flux_resampled_telluric_corrected"] = (
+                        True
+                    )
 
             if "flux_resampled_atm_ext_telluric_corrected" in output_split:
                 if not self.hdu_content[

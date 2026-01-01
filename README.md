@@ -51,15 +51,15 @@ We are to cover as many use cases as possible. If you would like to apply some r
 See the examples of these use cases at [aspired-example](https://github.com/cylammarco/ASPIRED-example/).
 
 ## Dependencies
-* python >= 3.8 (It should work on 3.6 and 3.7 if you can sort out the astropy (>=5.0) requirement of >=3.8)
-* [numpy](https://numpy.org/doc/stable/index.html) >= 1.21
-* [scipy](https://scipy.org/) >= 1.7
-* [astropy](https://github.com/astropy/astropy) >= 4.3
+* python >= 3.10
+* [numpy](https://numpy.org/doc/stable/index.html) >= 1.26
+* [scipy](https://scipy.org/) >= 1.9
+* [astropy](https://github.com/astropy/astropy) >= 5.3
 * [astroscrappy](https://github.com/astropy/astroscrappy) >= 1.1
 * [ccdproc](https://github.com/astropy/ccdproc)
-* [plotly](https://github.com/plotly/plotly.py) >= 5.0
+* [plotly](https://github.com/plotly/plotly.py) >= 5.24
 * [rascal](https://github.com/jveitchmichaelis/rascal) >= 0.3.10, < 4.0
-* [spectresc](https://github.com/cylammarco/SpectResC) >= 1.0.2
+* [spectresc](https://github.com/cylammarco/SpectResC) >= 1.1
 * [statsmodels](https://www.statsmodels.org/stable/index.html) >= 0.13
 
 ## Installation
@@ -82,7 +82,7 @@ Style -- black. See the .pre-commit-config.yaml for the other requirements.
 2. Polish NCN grant Daina No. 2017/27/L/ST9/03221
 (May - June 2020)
 3. European Research Council Starting Grant (grant agreement No. 852097)
-(Sept 2020 - Current)
+(Sept 2020 - Sept 2023)
 
 ## Citation
 If you make use of the ASPIRED toolkit, we would appreciate if you can refernce the two articles and two pieces of software listed below:

@@ -3605,11 +3605,19 @@ class TwoDSpec:
 
                     if (_profile == 0.0).all():
                         _profile = np.ones_like(_profile)
-
                         self.logger.warning(
                             "Optimal profile is all zeros. Unit weighting is"
                             " used instead."
                         )
+
+                    # Normalise profile to avoid flux mis-normalisation with asymmetric LSF
+                    _profile = np.nan_to_num(
+                        _profile, nan=0.0, posinf=0.0, neginf=0.0
+                    )
+                    _profile = np.clip(_profile, 0.0, None)
+                    prof_sum = np.sum(_profile)
+                    if prof_sum > 0:
+                        _profile = _profile / prof_sum
 
                     # source_pix is the native pixel position
                     # pos is the trace at the native pixel position
