@@ -16,6 +16,17 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../../src"))
 
+# -- Project information -----------------------------------------------------
+
+project = "ASPIRED"
+copyright = "2017-2026, Marco C Lam"
+author = "Marco C Lam"
+__version__ = "0.6.0"
+
+# The full version, including alpha/beta/rc tags
+version = __version__
+release = __version__
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -66,7 +77,10 @@ autodoc_mock_imports = [
 
 autoclass_content = "both"
 
-mathjax_path = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+mathjax_path = (
+    "https://cdn.mathjax.org/mathjax/latest/MathJax.js?"
+    + "config=TeX-AMS-MML_HTMLorMML"
+)
 
 # -- Options for HTML output -------------------------------------------------
 
