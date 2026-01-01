@@ -807,7 +807,7 @@ class TwoDSpec:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                readnoise_keyword_matched = np.in1d(
+                readnoise_keyword_matched = np.isin(
                     self.readnoise_keyword, self.header
                 )
 
@@ -883,7 +883,7 @@ class TwoDSpec:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                gain_keyword_matched = np.in1d(self.gain_keyword, self.header)
+                gain_keyword_matched = np.isin(self.gain_keyword, self.header)
 
                 if gain_keyword_matched.any():
                     self.gain = self.header[
@@ -954,7 +954,7 @@ class TwoDSpec:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                seeing_keyword_matched = np.in1d(
+                seeing_keyword_matched = np.isin(
                     self.seeing_keyword, self.header
                 )
 
@@ -1029,7 +1029,7 @@ class TwoDSpec:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                exptime_keyword_matched = np.in1d(
+                exptime_keyword_matched = np.isin(
                     self.exptime_keyword, self.header
                 )
 
@@ -1107,7 +1107,7 @@ class TwoDSpec:
             # if None is given and header is provided, check if the read noise
             # keyword exists in the default list.
             if self.header is not None:
-                airmass_keyword_matched = np.in1d(
+                airmass_keyword_matched = np.isin(
                     self.airmass_keyword, self.header
                 )
 
@@ -2042,7 +2042,7 @@ class TwoDSpec:
 
                 # only consider the defined range of shift tolerance
                 corr = corr[
-                    nresample - 1 - shift_tol_len : nresample + shift_tol_len
+                    nresample - 1 - shift_tol_len:nresample + shift_tol_len
                 ]
 
                 # Maximum corr position is the shift
@@ -2152,7 +2152,7 @@ class TwoDSpec:
                     img_split[j], sigma=3, masked=True
                 ).data
                 ap_val[j] = np.nansum(
-                    np.nansum(subspec_cleaned, axis=1)[idx - 3 : idx + 3]
+                    np.nansum(subspec_cleaned, axis=1)[idx - 3:idx + 3]
                 ) / 7 - np.nanmedian(subspec_cleaned)
 
             # Mask out the faintest ap_faint percent of trace
@@ -2465,7 +2465,7 @@ class TwoDSpec:
             spec_id = [spec_id]
 
         if spec_id is not None:
-            assert np.in1d(
+            assert np.isin(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
@@ -2641,13 +2641,13 @@ class TwoDSpec:
                 s = np.nanmedian(
                     [
                         img_tmp[
-                            int(np.round(ref - bin_half_size)) : int(
+                            int(np.round(ref - bin_half_size)):int(
                                 np.round(ref + bin_half_size)
                             ),
                             i,
                         ]
                         + arc_tmp[
-                            int(np.round(ref - bin_half_size)) : int(
+                            int(np.round(ref - bin_half_size)):int(
                                 np.round(ref + bin_half_size)
                             ),
                             i,
@@ -2661,7 +2661,7 @@ class TwoDSpec:
                 s = np.nanmedian(
                     [
                         img_tmp[
-                            int(np.round(ref - bin_half_size)) : int(
+                            int(np.round(ref - bin_half_size)):int(
                                 np.round(ref + bin_half_size)
                             ),
                             i,
@@ -2695,13 +2695,13 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 arc_tmp[
-                                    int(np.round(ref - end)) : int(
+                                    int(np.round(ref - end)):int(
                                         np.round(ref - start)
                                     ),
                                     i,
                                 ]
                                 + img_tmp[
-                                    int(np.round(ref - end)) : int(
+                                    int(np.round(ref - end)):int(
                                         np.round(ref - start)
                                     ),
                                     i,
@@ -2717,7 +2717,7 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 img_tmp[
-                                    int(np.round(ref - end)) : int(
+                                    int(np.round(ref - end)):int(
                                         np.round(ref - start)
                                     ),
                                     i,
@@ -2742,13 +2742,13 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 arc_tmp[
-                                    int(np.round(ref + start)) : int(
+                                    int(np.round(ref + start)):int(
                                         np.round(ref + end)
                                     ),
                                     i,
                                 ]
                                 + img_tmp[
-                                    int(np.round(ref + start)) : int(
+                                    int(np.round(ref + start)):int(
                                         np.round(ref + end)
                                     ),
                                     i,
@@ -2764,7 +2764,7 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 img_tmp[
-                                    int(np.round(ref + start)) : int(
+                                    int(np.round(ref + start)):int(
                                         np.round(ref + end)
                                     ),
                                     i,
@@ -3033,7 +3033,7 @@ class TwoDSpec:
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_up] = True
-            sky_mask[-(sky_width_dn + 1) : -1] = True
+            sky_mask[-(sky_width_dn + 1):-1] = True
 
             sky_mask *= ~extraction_bad_mask
             sky_bad_mask = ~sigma_clip(
@@ -3227,7 +3227,7 @@ class TwoDSpec:
             spec_id = [spec_id]
 
         if spec_id is not None:
-            assert np.in1d(
+            assert np.isin(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
@@ -3483,7 +3483,7 @@ class TwoDSpec:
 
                             # If the spectrum is outside of the frame
                             if itrace - apwidth < 0:
-                                var_i = var_i[apwidth - width_dn :]
+                                var_i = var_i[apwidth - width_dn:]
 
                             # If the spectrum is outside of the frame
                             elif itrace + apwidth > self.spatial_size:
@@ -3564,7 +3564,7 @@ class TwoDSpec:
                     )
                     if var_i is None:
                         var[
-                            i, offset : offset + width_dn + width_up + 1
+                            i, offset:offset + width_dn + width_up + 1
                         ] = var_temp
 
                     else:
@@ -3693,7 +3693,7 @@ class TwoDSpec:
             spec_id = [spec_id]
 
         if spec_id is not None:
-            assert np.in1d(
+            assert np.isin(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
@@ -3731,7 +3731,7 @@ class TwoDSpec:
                 self.img[
                     max(
                         0, min_trace - width_dn - sep_dn - sky_width_dn - 3
-                    ) : min(
+                    ):min(
                         max_trace + width_up + sep_up + sky_width_up,
                         len(self.img[0]),
                     )
@@ -4060,7 +4060,7 @@ class TwoDSpec:
             spec_id = [spec_id]
 
         if spec_id is not None:
-            assert np.in1d(
+            assert np.isin(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
@@ -4199,7 +4199,7 @@ class TwoDSpec:
             spec_id = [spec_id]
 
         if spec_id is not None:
-            assert np.in1d(
+            assert np.isin(
                 spec_id, list(self.spectrum_list.keys())
             ).all(), "Some spec_id provided are not in the spectrum_list."
 
@@ -4538,7 +4538,7 @@ class TwoDSpec:
                 trace_width = spec_width
 
             arc_trace = self.arc[
-                max(0, int(trace - trace_width - 1)) : min(
+                max(0, int(trace - trace_width - 1)):min(
                     int(trace + trace_width), len_trace
                 ),
                 :,

@@ -11,6 +11,7 @@ from rascal.atlas import Atlas
 from rascal.calibrator import Calibrator
 from rascal.util import refine_peaks
 from scipy import signal
+import types
 
 from .spectrum_oneD import SpectrumOneD
 
@@ -1019,9 +1020,59 @@ class WavelengthCalibration:
 
         """
 
-        self.spectrum_oned.calibrator.do_hough_transform(
-            brute_force=brute_force
-        )
+        # Work around a rascal bug: `if self.pairs == []` crashes when `pairs` is a numpy array.
+        cal = self.spectrum_oned.calibrator
+
+        orig_do_hough = getattr(cal, "do_hough_transform", None)
+
+        def _safe_to_do_hough_transform(self_, brute_force=False):
+            # Safely determine emptiness
+            pairs_empty = False
+            if getattr(self_, "pairs", None) is None:
+                pairs_empty = True
+            elif isinstance(self_.pairs, np.ndarray):
+                pairs_empty = self_.pairs.size == 0
+            else:
+                try:
+                    pairs_empty = len(self_.pairs) == 0
+                except Exception:
+                    pairs_empty = False
+
+            if pairs_empty:
+                logging.warning("pairs list is empty. Try generating now.")
+                self_._generate_pairs()
+                # If still empty, log error but continue to let downstream raise if needed
+                if isinstance(self_.pairs, np.ndarray) and self_.pairs.size == 0:
+                    logging.error("pairs list is still empty.")
+
+            # Proceed as in rascal
+            self_.ht.set_constraints(
+                self_.min_slope,
+                self_.max_slope,
+                self_.min_intercept,
+                self_.max_intercept,
+            )
+
+            if brute_force:
+                self_.ht.generate_hough_points_brute_force(
+                    self_.pairs[:, 0], self_.pairs[:, 1]
+                )
+            else:
+                self_.ht.generate_hough_points(
+                    self_.pairs[:, 0], self_.pairs[:, 1], num_slopes=self_.num_slopes
+                )
+
+            self_.ht.bin_hough_points(self_.xbins, self_.ybins)
+            self_.hough_points = self_.ht.hough_points
+            self_.hough_lines = self_.ht.hough_lines
+
+        # Temporarily monkey-patch and call
+        try:
+            cal.do_hough_transform = types.MethodType(_safe_to_do_hough_transform, cal)
+            cal.do_hough_transform(brute_force=brute_force)
+        finally:
+            if orig_do_hough is not None:
+                cal.do_hough_transform = orig_do_hough
 
     def plot_search_space(
         self,

@@ -15,7 +15,6 @@ import pkg_resources
 from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import interpolate as itp
-from scipy import signal
 from spectresc import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
@@ -405,7 +404,7 @@ class StandardLibrary:
 
         # Return pair(s) of filename and library
         return [
-            (f, l) for l, f in zip(library_list, filename_list)
+            (f, li) for li, f in zip(library_list, filename_list)
         ], exact_match
 
     def lookup_closet_match_in_library(
@@ -515,7 +514,7 @@ class StandardLibrary:
             if success:
                 self.target, self.library = libraries[0]
 
-                if not np.in1d([library], libraries):
+                if not np.isin([library], libraries):
                     self.logger.warning(
                         "The requested standard star cannot be found in the"
                         " given library, or the library is not specified."

@@ -475,7 +475,7 @@ class ImageReducer:
             else:
                 self.saxis = 1
 
-        elif np.in1d(saxis, [0, 1]).any():
+        elif np.isin(saxis, [0, 1]).any():
             self.saxis = saxis
 
         else:
@@ -2027,10 +2027,10 @@ class ImageReducer:
 
         # If the exposure_time is still None, loop through the default list
         if exposure_time is None:
-            if np.in1d(self.exptime_keyword_list, input_header).any():
+            if np.isin(self.exptime_keyword_list, input_header).any():
                 # Get the exposure time for the light frames
                 exptime_keyword_idx = int(
-                    np.where(np.in1d(self.exptime_keyword_list, input_header))[
+                    np.where(np.isin(self.exptime_keyword_list, input_header))[
                         0
                     ][0]
                 )

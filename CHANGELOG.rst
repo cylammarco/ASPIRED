@@ -1,7 +1,13 @@
 We aim to track and report as many changes as possible, but this is not an exhaustive list of all the changes.
 
+Version 0.5.2
+-------------
+
+:Date X-X-2026
+
+
 Version 0.5.1
------------------
+-------------
 
 :Date 24-7-2022
 
@@ -12,7 +18,7 @@ Version 0.5.1
 
 
 Version 0.5.0
------------------
+-------------
 
 :Date 13-6-2022
 
