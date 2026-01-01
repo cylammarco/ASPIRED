@@ -54,32 +54,29 @@ def build_line_spread_profile(
             f"({np.shape(spectrum2D)})."
         )
 
-    # Get the centre of the upsampled spectrum
+    # Get window around trace
     first_pix = trace - trace_width
     last_pix = trace + trace_width + 1
 
-    first_pix = np.around(first_pix).astype("int")
-    last_pix = np.around(last_pix).astype("int")
+    first_pix = np.floor(first_pix).astype(int)
+    last_pix = np.ceil(last_pix).astype(int)
 
-    spectrum = np.zeros((len(trace), int(2 * trace_width + 1)))
+    win_len = int(2 * trace_width + 1)
+    spectrum = np.zeros((len(trace), win_len))
 
-    # compute ONE sigma for each trace
     for i, spec in enumerate(_spectrum2D):
-        if first_pix[i] < 0:
-            start = 0
-            start_pad = start - first_pix[i]
-        else:
-            start = first_pix[i]
-            start_pad = 0
-        if last_pix[i] > spatial_size:
-            end = spatial_size
-            end_pad = last_pix[i] - spatial_size
-        else:
-            end = last_pix[i]
-            end_pad = 0
-        spectrum[i] = np.concatenate(
-            (np.zeros(start_pad), spec[start:end], np.zeros(end_pad))
-        )
+        start = max(first_pix[i], 0)
+        end = min(last_pix[i], spatial_size)
+        seg = spec[start:end]
+        pad_left = max(0, -first_pix[i])
+        pad_right = max(0, last_pix[i] - spatial_size)
+        row = np.concatenate((np.zeros(pad_left), seg, np.zeros(pad_right)))
+        # enforce fixed window length
+        if len(row) > win_len:
+            row = row[:win_len]
+        elif len(row) < win_len:
+            row = np.concatenate((row, np.zeros(win_len - len(row))))
+        spectrum[i] = row
 
     line_spread_profile = np.nanmedian(spectrum, axis=0)
     line_spread_profile[np.isnan(line_spread_profile)] = np.nanmin(
