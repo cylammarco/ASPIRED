@@ -1815,8 +1815,22 @@ class TwoDSpec:
         line_spread_profile = ndimage.zoom(
             line_spread_profile_upsampled, 1.0 / resample_factor
         )
-        line_spread_profile -= np.nanmin(line_spread_profile)
-        line_spread_profile /= np.nansum(line_spread_profile)
+        # Normalize safely; handle all-zero or NaN profile
+        if np.all(~np.isfinite(line_spread_profile)) or np.nanmax(line_spread_profile) == 0:
+            self.logger.warning("Line spread profile is non-finite or zero; falling back to a narrow Gaussian prior.")
+            line_spread_profile = np.zeros_like(line_spread_profile)
+            mid = len(line_spread_profile) // 2
+            line_spread_profile[mid] = 1.0
+        else:
+            line_spread_profile -= np.nanmin(line_spread_profile)
+            denom = np.nansum(line_spread_profile)
+            if denom == 0 or not np.isfinite(denom):
+                self.logger.warning("Line spread profile sum is zero/non-finite; using unit impulse normalization.")
+                line_spread_profile = np.zeros_like(line_spread_profile)
+                mid = len(line_spread_profile) // 2
+                line_spread_profile[mid] = 1.0
+            else:
+                line_spread_profile /= denom
         self.logger.info(
             f"The empirical line spread profile: {line_spread_profile}"
         )

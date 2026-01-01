@@ -79,9 +79,13 @@ def build_line_spread_profile(
         spectrum[i] = row
 
     line_spread_profile = np.nanmedian(spectrum, axis=0)
-    line_spread_profile[np.isnan(line_spread_profile)] = np.nanmin(
-        line_spread_profile
-    )
+    # Replace NaNs safely
+    if not np.isfinite(np.nanmin(line_spread_profile)):
+        line_spread_profile = np.nan_to_num(line_spread_profile, nan=0.0)
+    else:
+        line_spread_profile[np.isnan(line_spread_profile)] = np.nanmin(
+            line_spread_profile
+        )
     line_spread_profile -= np.nanmin(line_spread_profile)
 
     return line_spread_profile
@@ -163,10 +167,16 @@ def get_line_spread_function(
 
     # Fit the profile
     fitter = fitting.LevMarLSQFitter()
+    # Filter non-finite values which break SciPy leastsq on Py3.14 stack
+    finite_mask = np.isfinite(pix) & np.isfinite(line_spread_profile)
+    if not np.any(finite_mask):
+        # Fallback: return the initial model without fitting
+        return total_prof
     fitted_profile_func = fitter(
         total_prof,
-        pix,
-        line_spread_profile,
+        pix[finite_mask],
+        line_spread_profile[finite_mask],
+        filter_non_finite=True,
     )
 
     return fitted_profile_func
