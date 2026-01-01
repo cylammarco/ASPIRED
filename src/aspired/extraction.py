@@ -4,10 +4,8 @@
 """Functions for spectral extraction"""
 
 import numpy as np
-from scipy import ndimage, special
-from statsmodels.nonparametric.smoothers_lowess import lowess
 
-from .util import bfixpix, gaus
+from .util import bfixpix
 
 
 def tophat_extraction(
@@ -70,23 +68,33 @@ def tophat_extraction(
         _sky_source_slice = sky_source_slice
 
     # Get the total count
-    source_plus_sky = (
-        np.nansum(_source_slice)
-        - pix_frac * _source_slice[0]
-        - (1 - pix_frac) * _source_slice[-1]
-    )
+    if _source_slice.size == 0:
+        source_plus_sky = 0.0
+    else:
+        source_plus_sky = (
+            np.nansum(_source_slice)
+            - pix_frac * _source_slice[0]
+            - (1 - pix_frac) * _source_slice[-1]
+        )
 
     # finally, compute the error in this pixel
-    sky = (
-        np.nansum(_sky_source_slice)
-        - pix_frac * _sky_source_slice[0]
-        - (1 - pix_frac) * _sky_source_slice[-1]
-    )
+    if _sky_source_slice.size == 0:
+        sky = 0.0
+    else:
+        sky = (
+            np.nansum(_sky_source_slice)
+            - pix_frac * _sky_source_slice[0]
+            - (1 - pix_frac) * _sky_source_slice[-1]
+        )
 
     # number of bkgd pixels
     nB = sky_width_dn + sky_width_up - np.sum(np.isnan(_sky_source_slice))
+    if nB <= 0:
+        nB = 1
     # number of aperture pixels
     nA = width_dn + width_up - np.sum(np.isnan(_source_slice))
+    if nA <= 0:
+        nA = 1
 
     # Based on aperture phot err description by F. Masci,
     # Caltech:
@@ -96,7 +104,11 @@ def tophat_extraction(
     # multiply by the exposure time when computing the
     # uncertainty
     _signal = source_plus_sky - sky
-    _noise = np.sqrt(_signal / gain + (nA + nA**2.0 / nB) * var_sky)
+    # guard against invalid combinations
+    term = (_signal / gain) if gain > 0 else 0.0
+    bg_term = (nA + nA**2.0 / nB) * var_sky if np.isfinite(var_sky) else 0.0
+    total_var = max(0.0, term + bg_term)
+    _noise = np.sqrt(total_var)
 
     return _signal, _noise, False
 
