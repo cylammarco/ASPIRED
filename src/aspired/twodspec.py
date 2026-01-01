@@ -3446,9 +3446,9 @@ class TwoDSpec:
                 )
 
                 count_sky_source_slice = count_sky_extraction_slice[
-                    source_pix - itrace
+                    source_pix - extraction_pix[0]
                 ].copy()
-                var_sky = np.nanvar(extraction_slice[source_pix - itrace])
+                var_sky = np.nanvar(extraction_slice[source_pix - extraction_pix[0]])
 
                 count_sky[i] = (
                     np.nansum(count_sky_source_slice)
