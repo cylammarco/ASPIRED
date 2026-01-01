@@ -5,26 +5,33 @@ on:
     types: [published]
 
 jobs:
-  build:
-
+  upload_pypi:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
+    # or, alternatively, upload to PyPI on every tag starting with 'v' (remove on: release above to use this)
+    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install setuptools wheel twine
-        pip install -r requirements.txt
-        pip install -e .
-    - name: Build and publish
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        python setup.py sdist bdist_wheel
-        twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+      - uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: build wheel
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel twine
+          pip install -r requirements.txt
+          pip install -e .
+          python setup.py sdist bdist_wheel
+
+      - uses: actions/download-artifact@v4
+        with:
+          # unpacks all CIBW artifacts into dist/
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://upload.pypi.org/legacy/
