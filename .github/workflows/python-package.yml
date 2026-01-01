@@ -42,6 +42,7 @@ jobs:
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
         coverage run -m pytest --disable-warnings -p no:warnings test
+        coverage xml
     - name: Coveralls
       if: startsWith(matrix.os, 'ubuntu') && endsWith(matrix.python-version, '3.14')
       uses: coverallsapp/github-action@v2
@@ -90,3 +91,14 @@ jobs:
       uses: AndreMiras/coveralls-python-action@develop
       with:
         parallel-finished: true
+
+  codacy-coverage-reporter:
+    runs-on: ubuntu-latest
+    name: codacy-coverage-reporter
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run codacy-coverage-reporter
+        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        with:
+          api-token: ${{ secrets.CODACY_API_TOKEN }}
+          coverage-reports: coverage.xml
