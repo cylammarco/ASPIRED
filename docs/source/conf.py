@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # -- Project information -----------------------------------------------------
 
 project = "ASPIRED"
-copyright = "2017-2026, Marco C Lam"
+project_copyright = "2017-2026, Marco C Lam"
 author = "Marco C Lam"
 __version__ = "0.6.0"
 
