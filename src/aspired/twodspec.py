@@ -3617,7 +3617,7 @@ class TwoDSpec:
                         count[i],
                         count_err[i],
                         is_optimal[i],
-                        profile[i][profile_start_idx:profile_end_idx],
+                        extracted_profile,
                         var_temp,
                     ) = optimal_extraction_horne86(
                         source_slice=source_slice,
@@ -3632,6 +3632,18 @@ class TwoDSpec:
                         variances=var_i,
                         bad_mask=source_bad_mask,
                     )
+
+                    # Safely assign the extracted profile slice to avoid broadcasting errors
+                    prof_len = profile_end_idx - profile_start_idx
+                    if prof_len > 0:
+                        profile[i][profile_start_idx:profile_end_idx] = (
+                            extracted_profile[:prof_len]
+                        )
+                    else:
+                        self.logger.warning(
+                            "Empty profile slice (start >= end); skipping profile assignment."
+                        )
+
                     if var_i is None:
                         var[i, offset : offset + width_dn + width_up + 1] = (
                             var_temp
