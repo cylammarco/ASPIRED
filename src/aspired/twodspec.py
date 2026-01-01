@@ -3074,11 +3074,29 @@ class TwoDSpec:
 
             elif sky_polyfit_order > 0:
                 # fit a polynomial to the sky in this column
-                polyfit_coeff = np.polynomial.polynomial.polyfit(
-                    np.arange(extraction_slice.size)[sky_mask][sky_bad_mask],
-                    extraction_slice[sky_mask][sky_bad_mask],
-                    sky_polyfit_order,
-                )
+                x_sky = np.arange(extraction_slice.size)[sky_mask][sky_bad_mask]
+                y_sky = extraction_slice[sky_mask][sky_bad_mask]
+                if x_sky.size == 0 or y_sky.size == 0:
+                    # No valid sky samples; fallback to constant sky = nanmean
+                    const = np.nanmean(extraction_slice[sky_mask])
+                    count_sky_extraction_slice = np.full(extraction_slice.size, const)
+                else:
+                    polyfit_coeff = np.polynomial.polynomial.polyfit(
+                        x_sky,
+                        y_sky,
+                        sky_polyfit_order,
+                    )
+
+                    # evaluate the polynomial across the extraction_slice, and sum
+                    count_sky_extraction_slice = np.polynomial.polynomial.polyval(
+                        np.arange(extraction_slice.size), polyfit_coeff
+                    )
+
+
+                    # ensure we have a vector even if polyfit failed
+                    if count_sky_extraction_slice is None:
+                        const = np.nanmean(extraction_slice[sky_mask])
+                        count_sky_extraction_slice = np.full(extraction_slice.size, const)
 
                 # evaluate the polynomial across the extraction_slice, and sum
                 count_sky_extraction_slice = np.polynomial.polynomial.polyval(
