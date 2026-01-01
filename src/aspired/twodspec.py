@@ -151,6 +151,8 @@ class TwoDSpec:
         self.img_1_percentile = None
         self.header = None
         self.arc = None
+        # Control whether to heal bad pixels immediately on load
+        self.heal_on_add = False
         self.arc_rectified = None
         self.arc_header = None
         self.arc_mean = None
@@ -389,7 +391,7 @@ class TwoDSpec:
 
         if self.img is not None:
             # We perform the tracing on a *pixel healed* temporary image
-            if self.bad_mask is not None:
+            if self.heal_on_add and self.bad_mask is not None:
                 if self.bad_mask.shape == self.img.shape:
                     self.img = bfixpix(self.img, self.bad_mask, retdat=True)
 
@@ -2571,6 +2573,9 @@ class TwoDSpec:
         else:
             arc_tmp = self.arc.astype(float)
 
+        fill_img = np.nanpercentile(img_tmp, 0.1)
+        fill_arc = np.nanpercentile(arc_tmp, 0.1) if self.arc is not None else None
+
         y_tmp = np.array(spec.trace).copy()
 
         # Shift the spectrum to spatially aligned to the trace at ref
@@ -2588,7 +2593,7 @@ class TwoDSpec:
                 pix_y + shift_i,
                 pix_y,
                 img_tmp[:, i],
-                fill=self.img_1_percentile,
+                fill=fill_img,
                 verbose=False,
             )
 
@@ -2597,7 +2602,7 @@ class TwoDSpec:
                     pix_y + shift_i,
                     pix_y,
                     arc_tmp[:, i],
-                    fill=self.arc_1_percentile,
+                    fill=fill_arc if fill_arc is not None else 0.0,
                     verbose=False,
                 )
 
@@ -2849,7 +2854,7 @@ class TwoDSpec:
                 pix_x - shift_j,
                 pix_x,
                 img_tmp[j],
-                fill=self.img_1_percentile,
+                fill=fill_img,
                 verbose=False,
             )
 
@@ -2858,9 +2863,17 @@ class TwoDSpec:
                     pix_x - shift_j,
                     pix_x,
                     arc_tmp[j],
-                    fill=self.arc_1_percentile,
+                    fill=fill_arc if fill_arc is not None else 0.0,
                     verbose=False,
                 )
+        # Renormalise to preserve total flux
+        denominator = np.sum(img_tmp)
+        if denominator > 0:
+            img_tmp *= (np.sum(self.img) / denominator)
+        if self.arc is not None:
+            denominator_arc = np.sum(arc_tmp)
+            if denominator_arc > 0:
+                arc_tmp *= (np.sum(self.arc if not isinstance(self.arc, CCDData) else self.arc.data) / denominator_arc)
 
         self.rec_coeff = coeff
         self.rec_n_down = n_down
