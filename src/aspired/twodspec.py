@@ -1816,8 +1816,13 @@ class TwoDSpec:
             line_spread_profile_upsampled, 1.0 / resample_factor
         )
         # Normalize safely; handle all-zero or NaN profile
-        if np.all(~np.isfinite(line_spread_profile)) or np.nanmax(line_spread_profile) == 0:
-            self.logger.warning("Line spread profile is non-finite or zero; falling back to a narrow Gaussian prior.")
+        if (
+            np.all(~np.isfinite(line_spread_profile))
+            or np.nanmax(line_spread_profile) == 0
+        ):
+            self.logger.warning(
+                "Line spread profile is non-finite or zero; falling back to a narrow Gaussian prior."
+            )
             line_spread_profile = np.zeros_like(line_spread_profile)
             mid = len(line_spread_profile) // 2
             line_spread_profile[mid] = 1.0
@@ -1825,7 +1830,9 @@ class TwoDSpec:
             line_spread_profile -= np.nanmin(line_spread_profile)
             denom = np.nansum(line_spread_profile)
             if denom == 0 or not np.isfinite(denom):
-                self.logger.warning("Line spread profile sum is zero/non-finite; using unit impulse normalization.")
+                self.logger.warning(
+                    "Line spread profile sum is zero/non-finite; using unit impulse normalization."
+                )
                 line_spread_profile = np.zeros_like(line_spread_profile)
                 mid = len(line_spread_profile) // 2
                 line_spread_profile[mid] = 1.0
@@ -1978,9 +1985,9 @@ class TwoDSpec:
         # Get the shape of the 2D spectrum and define upsampling ratio
         img_tmp = self.img.astype(float)
         img_tmp[np.isnan(img_tmp)] = 0.0
-        img_tmp[
-            img_tmp < np.nanpercentile(img_tmp, percentile)
-        ] = np.nanpercentile(img_tmp, percentile)
+        img_tmp[img_tmp < np.nanpercentile(img_tmp, percentile)] = (
+            np.nanpercentile(img_tmp, percentile)
+        )
 
         if smooth:
             img_tmp = signal.medfilt2d(img_tmp, kernel_size=3)
@@ -2058,7 +2065,7 @@ class TwoDSpec:
 
                 # only consider the defined range of shift tolerance
                 corr = corr[
-                    nresample - 1 - shift_tol_len:nresample + shift_tol_len
+                    nresample - 1 - shift_tol_len : nresample + shift_tol_len
                 ]
 
                 # Maximum corr position is the shift
@@ -2168,7 +2175,7 @@ class TwoDSpec:
                     img_split[j], sigma=3, masked=True
                 ).data
                 ap_val[j] = np.nansum(
-                    np.nansum(subspec_cleaned, axis=1)[idx - 3:idx + 3]
+                    np.nansum(subspec_cleaned, axis=1)[idx - 3 : idx + 3]
                 ) / 7 - np.nanmedian(subspec_cleaned)
 
             # Mask out the faintest ap_faint percent of trace
@@ -2588,7 +2595,9 @@ class TwoDSpec:
             arc_tmp = self.arc.astype(float)
 
         fill_img = np.nanpercentile(img_tmp, 0.1)
-        fill_arc = np.nanpercentile(arc_tmp, 0.1) if self.arc is not None else None
+        fill_arc = (
+            np.nanpercentile(arc_tmp, 0.1) if self.arc is not None else None
+        )
 
         y_tmp = np.array(spec.trace).copy()
 
@@ -2660,13 +2669,13 @@ class TwoDSpec:
                 s = np.nanmedian(
                     [
                         img_tmp[
-                            int(np.round(ref - bin_half_size)):int(
+                            int(np.round(ref - bin_half_size)) : int(
                                 np.round(ref + bin_half_size)
                             ),
                             i,
                         ]
                         + arc_tmp[
-                            int(np.round(ref - bin_half_size)):int(
+                            int(np.round(ref - bin_half_size)) : int(
                                 np.round(ref + bin_half_size)
                             ),
                             i,
@@ -2680,7 +2689,7 @@ class TwoDSpec:
                 s = np.nanmedian(
                     [
                         img_tmp[
-                            int(np.round(ref - bin_half_size)):int(
+                            int(np.round(ref - bin_half_size)) : int(
                                 np.round(ref + bin_half_size)
                             ),
                             i,
@@ -2714,13 +2723,13 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 arc_tmp[
-                                    int(np.round(ref - end)):int(
+                                    int(np.round(ref - end)) : int(
                                         np.round(ref - start)
                                     ),
                                     i,
                                 ]
                                 + img_tmp[
-                                    int(np.round(ref - end)):int(
+                                    int(np.round(ref - end)) : int(
                                         np.round(ref - start)
                                     ),
                                     i,
@@ -2736,7 +2745,7 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 img_tmp[
-                                    int(np.round(ref - end)):int(
+                                    int(np.round(ref - end)) : int(
                                         np.round(ref - start)
                                     ),
                                     i,
@@ -2761,13 +2770,13 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 arc_tmp[
-                                    int(np.round(ref + start)):int(
+                                    int(np.round(ref + start)) : int(
                                         np.round(ref + end)
                                     ),
                                     i,
                                 ]
                                 + img_tmp[
-                                    int(np.round(ref + start)):int(
+                                    int(np.round(ref + start)) : int(
                                         np.round(ref + end)
                                     ),
                                     i,
@@ -2783,7 +2792,7 @@ class TwoDSpec:
                         np.nanmedian(
                             [
                                 img_tmp[
-                                    int(np.round(ref + start)):int(
+                                    int(np.round(ref + start)) : int(
                                         np.round(ref + end)
                                     ),
                                     i,
@@ -2883,11 +2892,18 @@ class TwoDSpec:
         # Renormalise to preserve total flux
         denominator = np.sum(img_tmp)
         if denominator > 0:
-            img_tmp *= (np.sum(self.img) / denominator)
+            img_tmp *= np.sum(self.img) / denominator
         if self.arc is not None:
             denominator_arc = np.sum(arc_tmp)
             if denominator_arc > 0:
-                arc_tmp *= (np.sum(self.arc if not isinstance(self.arc, CCDData) else self.arc.data) / denominator_arc)
+                arc_tmp *= (
+                    np.sum(
+                        self.arc
+                        if not isinstance(self.arc, CCDData)
+                        else self.arc.data
+                    )
+                    / denominator_arc
+                )
 
         self.rec_coeff = coeff
         self.rec_n_down = n_down
@@ -3060,7 +3076,7 @@ class TwoDSpec:
             # get the sky region(s)
             sky_mask = np.zeros_like(extraction_slice, dtype=bool)
             sky_mask[0:sky_width_up] = True
-            sky_mask[-(sky_width_dn + 1):-1] = True
+            sky_mask[-(sky_width_dn + 1) : -1] = True
 
             sky_mask *= ~extraction_bad_mask
             sky_bad_mask = ~sigma_clip(
@@ -3074,12 +3090,16 @@ class TwoDSpec:
 
             elif sky_polyfit_order > 0:
                 # fit a polynomial to the sky in this column
-                x_sky = np.arange(extraction_slice.size)[sky_mask][sky_bad_mask]
+                x_sky = np.arange(extraction_slice.size)[sky_mask][
+                    sky_bad_mask
+                ]
                 y_sky = extraction_slice[sky_mask][sky_bad_mask]
                 if x_sky.size == 0 or y_sky.size == 0:
                     # No valid sky samples; fallback to constant sky = nanmean
                     const = np.nanmean(extraction_slice[sky_mask])
-                    count_sky_extraction_slice = np.full(extraction_slice.size, const)
+                    count_sky_extraction_slice = np.full(
+                        extraction_slice.size, const
+                    )
                 else:
                     polyfit_coeff = np.polynomial.polynomial.polyfit(
                         x_sky,
@@ -3088,14 +3108,20 @@ class TwoDSpec:
                     )
 
                     # evaluate the polynomial across the extraction_slice
-                    count_sky_extraction_slice = np.polynomial.polynomial.polyval(
-                        np.arange(extraction_slice.size), polyfit_coeff
+                    count_sky_extraction_slice = (
+                        np.polynomial.polynomial.polyval(
+                            np.arange(extraction_slice.size), polyfit_coeff
+                        )
                     )
 
                     # ensure we have a vector even if polyfit failed
-                    if count_sky_extraction_slice is None or not np.any(np.isfinite(count_sky_extraction_slice)):
+                    if count_sky_extraction_slice is None or not np.any(
+                        np.isfinite(count_sky_extraction_slice)
+                    ):
                         const = np.nanmean(extraction_slice[sky_mask])
-                        count_sky_extraction_slice = np.full(extraction_slice.size, const)
+                        count_sky_extraction_slice = np.full(
+                            extraction_slice.size, const
+                        )
 
             else:
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
@@ -3448,17 +3474,22 @@ class TwoDSpec:
                 count_sky_source_slice = count_sky_extraction_slice[
                     source_pix - extraction_pix[0]
                 ].copy()
-                var_sky = np.nanvar(extraction_slice[source_pix - extraction_pix[0]])
-
-                count_sky[i] = (
-                    np.nansum(count_sky_source_slice)
-                    - pix_frac * count_sky_source_slice[0]
-                    - (1 - pix_frac) * count_sky_source_slice[-1]
+                var_sky = np.nanvar(
+                    extraction_slice[source_pix - extraction_pix[0]]
                 )
 
-                self.img_residual[
-                    source_pix, i
-                ] = count_sky_source_slice.copy()
+                if count_sky_source_slice.size == 0:
+                    count_sky[i] = 0.0
+                else:
+                    count_sky[i] = (
+                        np.nansum(count_sky_source_slice)
+                        - pix_frac * count_sky_source_slice[0]
+                        - (1 - pix_frac) * count_sky_source_slice[-1]
+                    )
+
+                self.img_residual[source_pix, i] = (
+                    count_sky_source_slice.copy()
+                )
 
                 self.logger.debug(
                     "count_sky at pixel %s is %s.", i, count_sky[i]
@@ -3522,7 +3553,7 @@ class TwoDSpec:
 
                             # If the spectrum is outside of the frame
                             if itrace - apwidth < 0:
-                                var_i = var_i[apwidth - width_dn:]
+                                var_i = var_i[apwidth - width_dn :]
 
                             # If the spectrum is outside of the frame
                             elif itrace + apwidth > self.spatial_size:
@@ -3602,9 +3633,9 @@ class TwoDSpec:
                         bad_mask=source_bad_mask,
                     )
                     if var_i is None:
-                        var[
-                            i, offset:offset + width_dn + width_up + 1
-                        ] = var_temp
+                        var[i, offset : offset + width_dn + width_up + 1] = (
+                            var_temp
+                        )
 
                     else:
                         var[i] = var_i
@@ -3770,7 +3801,7 @@ class TwoDSpec:
                 self.img[
                     max(
                         0, min_trace - width_dn - sep_dn - sky_width_dn - 3
-                    ):min(
+                    ) : min(
                         max_trace + width_up + sep_up + sky_width_up,
                         len(self.img[0]),
                     )
@@ -4577,7 +4608,7 @@ class TwoDSpec:
                 trace_width = spec_width
 
             arc_trace = self.arc[
-                max(0, int(trace - trace_width - 1)):min(
+                max(0, int(trace - trace_width - 1)) : min(
                     int(trace + trace_width), len_trace
                 ),
                 :,
