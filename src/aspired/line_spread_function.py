@@ -30,6 +30,16 @@ def build_line_spread_profile(
 
     trace = np.asarray(trace)
     _a, _b = np.shape(spectrum2D)
+
+    # If trace provided as sparse (x, y) points, interpolate to full length
+    if trace.ndim == 2 and trace.shape[1] == 2:
+        xs = trace[:, 0]
+        ys = trace[:, 1]
+        # Choose axis length that matches x coordinate range best
+        target_len = _b if np.nanmax(xs) <= _b - 1 else _a
+        full_x = np.arange(target_len)
+        trace = np.interp(full_x, xs, ys)
+
     if _a == len(trace):
         spatial_size = _b
         # rotate here so the for loop will go across the image spatially
