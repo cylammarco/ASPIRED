@@ -945,9 +945,9 @@ class FluxCalibration(StandardLibrary):
             left_telluric_start = int(max(left_of_mask))
             right_telluric_end = int(min(right_of_mask)) + 1
 
-            telluric_profile[
-                left_telluric_start:right_telluric_end
-            ] = residual[left_telluric_start:right_telluric_end]
+            telluric_profile[left_telluric_start:right_telluric_end] = (
+                residual[left_telluric_start:right_telluric_end]
+            )
 
         # normalise the profile
         telluric_factor = np.ptp(telluric_profile)
@@ -1270,12 +1270,25 @@ class FluxCalibration(StandardLibrary):
         standard_flux_masked = standard_flux_true[mask]
 
         if method == "interpolate":
-            tck = itp.splrep(
-                standard_wave_masked, np.log10(sensitivity_masked), k=k
-            )
+            m = len(standard_wave_masked)
+            ylog = np.log10(sensitivity_masked)
+            if m < 2:
+                const_val = ylog[0] if m == 1 else np.nan
 
-            def sensitivity_func(_x):
-                return itp.splev(_x, tck)
+                def sensitivity_func(_x):
+                    return np.full_like(
+                        np.asarray(_x, dtype=float), const_val, dtype=float
+                    )
+
+            else:
+                # Ensure 1-D, sorted, unique x with matching y
+                x = np.asarray(standard_wave_masked, dtype=float).ravel()
+                y = np.asarray(ylog, dtype=float).ravel()
+                k_eff = min(k, len(x) - 1)
+                tck = itp.splrep(x, y, k=k_eff)
+
+                def sensitivity_func(_x):
+                    return itp.splev(_x, tck)
 
         elif method == "polynomial":
             coeff = np.polynomial.polynomial.polyfit(

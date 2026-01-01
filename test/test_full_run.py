@@ -52,7 +52,7 @@ def test_full_run(mock_show):
     element = ["Xe"] * len(atlas)
 
     spatial_mask = np.arange(20, 200)
-    spec_mask = np.arange(100, 1024)
+    spec_mask = np.arange(110, 1024)
 
     # Science frame
     lhs6328_frame = image_reduction.ImageReduction(
