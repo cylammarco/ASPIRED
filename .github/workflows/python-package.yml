@@ -42,12 +42,11 @@ jobs:
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
         coverage run -m pytest --disable-warnings -p no:warnings test
-        cp .coverage .coverage.${{ matrix.os }}.${{ matrix.python-version }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-data
-        path: .coverage.*
+        name: coverage-data-${{ matrix.os }}-${{ matrix.python-version }}
+        path: .coverage
     - name: Coveralls
       if: startsWith(matrix.os, 'ubuntu') && endsWith(matrix.python-version, '3.14')
       uses: coverallsapp/github-action@v2
