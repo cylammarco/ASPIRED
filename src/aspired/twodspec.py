@@ -3087,21 +3087,15 @@ class TwoDSpec:
                         sky_polyfit_order,
                     )
 
-                    # evaluate the polynomial across the extraction_slice, and sum
+                    # evaluate the polynomial across the extraction_slice
                     count_sky_extraction_slice = np.polynomial.polynomial.polyval(
                         np.arange(extraction_slice.size), polyfit_coeff
                     )
 
-
                     # ensure we have a vector even if polyfit failed
-                    if count_sky_extraction_slice is None:
+                    if count_sky_extraction_slice is None or not np.any(np.isfinite(count_sky_extraction_slice)):
                         const = np.nanmean(extraction_slice[sky_mask])
                         count_sky_extraction_slice = np.full(extraction_slice.size, const)
-
-                # evaluate the polynomial across the extraction_slice, and sum
-                count_sky_extraction_slice = np.polynomial.polynomial.polyval(
-                    np.arange(extraction_slice.size), polyfit_coeff
-                )
 
             else:
                 count_sky_extraction_slice = np.zeros_like(extraction_slice)
