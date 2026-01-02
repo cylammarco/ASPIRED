@@ -46,6 +46,11 @@ jobs:
         ls -la
         cp .coverage .coverage_${{ matrix.os }}_${{ matrix.python-version }}
         ls -la
+    - name: List coverage files
+      if: always()
+      shell: bash
+      run: |
+        ls -la
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
