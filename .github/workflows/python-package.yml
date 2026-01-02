@@ -38,6 +38,7 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
+      shell: bash
       continue-on-error: ${{ startsWith(matrix.os, 'windows') &&
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
@@ -45,12 +46,11 @@ jobs:
         ls -la
         cp .coverage .coverage_${{ matrix.os }}_${{ matrix.python-version }}
         ls -la
-        - uses: actions/upload-artifact@v4
-          if: always()  # Upload even if tests fail
-          with:
-            name: coverage-data-${{ matrix.os }}-${{ matrix.python-version }}
-            path: .coverage_${{ matrix.os }}_${{ matrix.python-version }}
-
+    - name: Upload coverage data
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-data-${{ matrix.os }}-${{ matrix.python-version }}
+        path: .coverage_${{ matrix.os }}_${{ matrix.python-version }}
     - name: Coveralls
       if: startsWith(matrix.os, 'ubuntu') && endsWith(matrix.python-version, '3.14')
       uses: coverallsapp/github-action@v2
