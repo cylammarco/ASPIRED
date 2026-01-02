@@ -122,13 +122,12 @@ jobs:
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
-          name: coverage-data
           path: coverage-data
-
+          merge-multiple: true
       - name: Combine coverage
         run: |
           ls -la coverage-data
-          coverage combine coverage-data/.coverage.*
+          coverage combine coverage-data/.coverage_*
           coverage xml
           coverage report
 
