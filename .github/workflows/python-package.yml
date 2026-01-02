@@ -42,6 +42,13 @@ jobs:
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
         pytest --disable-warnings -p no:warnings test --cov=aspired --cov-report=xml --cov-report=term --cov-config=setup.cfg --cov-branch
+        # Check if .coverage file exists before copying
+        if [ -f .coverage ]; then
+          cp .coverage .coverage.${{ matrix.os }}.${{ matrix.python-version }}
+        else
+          echo "Warning: .coverage file not found in $(pwd)"
+          ls -la
+        fi
         cp .coverage .coverage.${{ matrix.os }}.${{ matrix.python-version }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
