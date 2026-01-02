@@ -41,7 +41,7 @@ jobs:
       continue-on-error: ${{ startsWith(matrix.os, 'windows') &&
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
-        coverage run -m pytest --disable-warnings -p no:warnings test --cov=. --cov-append --cov-report=xml
+        coverage run -m pytest --disable-warnings -p no:warnings test --cov=aspired --cov-append --cov-report=xml
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
@@ -51,7 +51,7 @@ jobs:
       if: startsWith(matrix.os, 'ubuntu') && endsWith(matrix.python-version, '3.14')
       uses: coverallsapp/github-action@v2
       with:
-        coverage-format: cobertura
+        format: cobertura
         file: coverage.xml
         parallel: true
         flag-name: Unit Test
