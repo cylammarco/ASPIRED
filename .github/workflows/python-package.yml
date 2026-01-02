@@ -41,12 +41,13 @@ jobs:
       continue-on-error: ${{ startsWith(matrix.os, 'windows') &&
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
-        pytest --disable-warnings -p no:warnings test --cov=aspired --cov-append --cov-report=xml --cov-branch
+        pytest --disable-warnings -p no:warnings test --cov=aspired --cov-report=xml --cov-report=term --cov-config=setup.cfg --cov-branch
+        cp .coverage .coverage.${{ matrix.os }}.${{ matrix.python-version }}
     - name: Upload coverage data
       uses: actions/upload-artifact@v4
       with:
         name: coverage-data-${{ matrix.os }}-${{ matrix.python-version }}
-        path: .coverage
+        path: .coverage.${{ matrix.os }}.${{ matrix.python-version }}
     - name: Coveralls
       if: startsWith(matrix.os, 'ubuntu') && endsWith(matrix.python-version, '3.14')
       uses: coverallsapp/github-action@v2
@@ -124,7 +125,7 @@ jobs:
       - name: Combine coverage
         run: |
           ls -la coverage-data
-          coverage combine coverage-data
+          coverage combine coverage-data/.coverage.*
           coverage xml
           coverage report
 
