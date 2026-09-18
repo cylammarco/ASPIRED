@@ -8,10 +8,10 @@ import difflib
 import json
 import logging
 import os
+from importlib.resources import files
 from typing import Callable, Union
 
 import numpy as np
-import pkg_resources
 from plotly import graph_objects as go
 from plotly import io as pio
 from scipy import interpolate as itp
@@ -141,33 +141,27 @@ class StandardLibrary:
 
         self.designation_to_lib_filename = json.load(
             open(
-                pkg_resources.resource_filename(
-                    "aspired", "standards/designation_to_lib_filename.json"
+                files("aspired").joinpath(
+                    "standards/designation_to_lib_filename.json"
                 ),
                 encoding="ascii",
             )
         )
         self.lib_to_filename = json.load(
             open(
-                pkg_resources.resource_filename(
-                    "aspired", "standards/lib_to_filename.json"
-                ),
+                files("aspired").joinpath("standards/lib_to_filename.json"),
                 encoding="ascii",
             )
         )
         self.lib_to_designation = json.load(
             open(
-                pkg_resources.resource_filename(
-                    "aspired", "standards/lib_to_designation.json"
-                ),
+                files("aspired").joinpath("standards/lib_to_designation.json"),
                 encoding="ascii",
             )
         )
         self.filename_to_lib = json.load(
             open(
-                pkg_resources.resource_filename(
-                    "aspired", "standards/filename_to_lib.json"
-                ),
+                files("aspired").joinpath("standards/filename_to_lib.json"),
                 encoding="ascii",
             )
         )
