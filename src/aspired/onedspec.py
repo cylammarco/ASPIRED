@@ -7,10 +7,10 @@ import copy
 import datetime
 import logging
 import os
+from importlib.resources import files
 from typing import Callable, Union
 
 import numpy as np
-import pkg_resources
 from astropy.io import fits
 from astropy.modeling.polynomial import Chebyshev1D
 from plotly import graph_objects as go
@@ -1271,9 +1271,9 @@ class OneDSpec:
             )
             self.standard_wavecal.from_spectrum_oned(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum_oned(twodspec.spectrum_list[0])
-            self.standard_spectrum_list[
-                0
-            ] = self.standard_wavecal.spectrum_oned
+            self.standard_spectrum_list[0] = (
+                self.standard_wavecal.spectrum_oned
+            )
 
             self.logger.info(
                 "Referenced SpectrumOneD of the"
@@ -1480,9 +1480,9 @@ class OneDSpec:
                 self.standard_spectrum_list[0]
             )
             self.fluxcal.from_spectrum_oned(self.standard_spectrum_list[0])
-            self.standard_spectrum_list[
-                0
-            ] = self.standard_wavecal.spectrum_oned
+            self.standard_spectrum_list[0] = (
+                self.standard_wavecal.spectrum_oned
+            )
 
             self.logger.info(
                 "Referenced SpectrumOneD of the"
@@ -5131,9 +5131,8 @@ class OneDSpec:
             )
 
         else:
-            filename = pkg_resources.resource_filename(
-                "aspired",
-                f"extinction/{location.lower()}_atm_extinct.txt",
+            filename = files("aspired").joinpath(
+                f"extinction/{location.lower()}_atm_extinct.txt"
             )
             extinction_table = np.loadtxt(filename, delimiter=",")
             self.extinction_func = interp1d(
