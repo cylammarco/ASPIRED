@@ -1515,9 +1515,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_variances(
-                variance,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_variances(
+                    variance,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_variances(
@@ -1544,9 +1545,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_gain(
-                gain,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_gain(
+                    gain,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_gain(
@@ -1573,9 +1575,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_readnoise(
-                readnoise,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_readnoise(
+                    readnoise,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_readnoise(
@@ -1602,9 +1605,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_exptime(
-                exptime,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_exptime(
+                    exptime,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_exptime(
@@ -1631,9 +1635,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_seeing(
-                seeing,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_seeing(
+                    seeing,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_seeing(
@@ -1660,9 +1665,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_airmass(
-                airmass,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_airmass(
+                    airmass,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_airmass(
