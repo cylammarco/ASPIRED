@@ -6,6 +6,8 @@ import numpy as np
 from aspired import image_reduction, spectral_reduction
 
 HERE = os.path.dirname(os.path.realpath(__file__))
+FIGURE_TYPES = "iframe" if os.name == "nt" else "iframe+png"
+ALL_FIGURE_TYPES = "iframe" if os.name == "nt" else "jpg+png+pdf+svg+iframe"
 
 
 @patch("plotly.graph_objects.Figure.show")
@@ -86,7 +88,7 @@ def test_full_run(mock_show):
             HERE, "test_output", "test_full_run_line_spread_function_gauss"
         ),
         save_fig=True,
-        fig_type="iframe+png",
+        fig_type=FIGURE_TYPES,
         return_jsonstring=True,
     )
 
@@ -171,7 +173,7 @@ def test_full_run(mock_show):
         resample_factor=10,
         display=False,
         save_fig=True,
-        fig_type="jpg+png+pdf+svg+iframe",
+        fig_type=ALL_FIGURE_TYPES,
         filename=os.path.join(HERE, "test_output", "test_full_run_aptrace"),
     )
 
@@ -181,7 +183,7 @@ def test_full_run(mock_show):
     hilt102_twodspec.inspect_line_spread_function(
         display=True,
         save_fig=True,
-        fig_type="jpg+png+pdf+svg+iframe",
+        fig_type=ALL_FIGURE_TYPES,
         filename=os.path.join(HERE, "test_output", "test_full_run_lsf"),
         return_jsonstring=True,
     )
@@ -190,7 +192,7 @@ def test_full_run(mock_show):
     lhs6328_twodspec.extract_arc_spec(
         display=True,
         save_fig=True,
-        fig_type="jpg+png+pdf+svg+iframe",
+        fig_type=ALL_FIGURE_TYPES,
         filename=os.path.join(HERE, "test_output", "test_full_run_arc_spec"),
         return_jsonstring=True,
     )
@@ -354,7 +356,7 @@ def test_full_run(mock_show):
         filename=os.path.join(HERE, "test_output", "test_full_run"),
         display=False,
         save_fig=True,
-        fig_type="iframe+png",
+        fig_type=FIGURE_TYPES,
     )
 
     # Plot the hough search space
@@ -364,5 +366,5 @@ def test_full_run(mock_show):
         ),
         display=False,
         save_fig=True,
-        fig_type="iframe+png",
+        fig_type=FIGURE_TYPES,
     )
