@@ -29,8 +29,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip Cython
-        python -m pip install -r requirements-dev.txt
-        python -m pip install -e .
+        python -m pip install -e ".[dev]"
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -77,10 +76,8 @@ jobs:
       - name: build wheel
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-          pip install -r requirements.txt
-          pip install -e .
-          python setup.py sdist bdist_wheel
+          pip install build twine
+          python -m build
 
       - uses: actions/download-artifact@v4
         with:
