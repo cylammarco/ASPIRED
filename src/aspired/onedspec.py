@@ -7,10 +7,10 @@ import copy
 import datetime
 import logging
 import os
+from importlib.resources import files
 from typing import Callable, Union
 
 import numpy as np
-import pkg_resources
 from astropy.io import fits
 from astropy.modeling.polynomial import Chebyshev1D
 from plotly import graph_objects as go
@@ -1271,9 +1271,9 @@ class OneDSpec:
             )
             self.standard_wavecal.from_spectrum_oned(twodspec.spectrum_list[0])
             self.fluxcal.from_spectrum_oned(twodspec.spectrum_list[0])
-            self.standard_spectrum_list[
-                0
-            ] = self.standard_wavecal.spectrum_oned
+            self.standard_spectrum_list[0] = (
+                self.standard_wavecal.spectrum_oned
+            )
 
             self.logger.info(
                 "Referenced SpectrumOneD of the"
@@ -1480,9 +1480,9 @@ class OneDSpec:
                 self.standard_spectrum_list[0]
             )
             self.fluxcal.from_spectrum_oned(self.standard_spectrum_list[0])
-            self.standard_spectrum_list[
-                0
-            ] = self.standard_wavecal.spectrum_oned
+            self.standard_spectrum_list[0] = (
+                self.standard_wavecal.spectrum_oned
+            )
 
             self.logger.info(
                 "Referenced SpectrumOneD of the"
@@ -1515,9 +1515,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_variances(
-                variance,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_variances(
+                    variance,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_variances(
@@ -1544,9 +1545,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_gain(
-                gain,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_gain(
+                    gain,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_gain(
@@ -1573,9 +1575,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_readnoise(
-                readnoise,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_readnoise(
+                    readnoise,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_readnoise(
@@ -1602,9 +1605,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_exptime(
-                exptime,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_exptime(
+                    exptime,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_exptime(
@@ -1631,9 +1635,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_seeing(
-                seeing,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_seeing(
+                    seeing,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_seeing(
@@ -1660,9 +1665,10 @@ class OneDSpec:
 
         if stype == "science":
             spec_id = self._check_spec_id(spec_id)
-            self.science_spectrum_list[spec_id].add_airmass(
-                airmass,
-            )
+            for i in spec_id:
+                self.science_spectrum_list[i].add_airmass(
+                    airmass,
+                )
 
         elif stype == "standard":
             self.standard_spectrum_list[spec_id].add_airmass(
@@ -5131,9 +5137,8 @@ class OneDSpec:
             )
 
         else:
-            filename = pkg_resources.resource_filename(
-                "aspired",
-                f"extinction/{location.lower()}_atm_extinct.txt",
+            filename = files("aspired").joinpath(
+                f"extinction/{location.lower()}_atm_extinct.txt"
             )
             extinction_table = np.loadtxt(filename, delimiter=",")
             self.extinction_func = interp1d(

@@ -207,15 +207,14 @@ def optimal_extraction_horne86(
         if bad_mask is not None:
             mask_cr = mask_cr & ~bad_mask.astype(bool)
 
-        if forced:
-            var_f = variances
-
         f0 = f1
         v0 = v1
 
         # step 6 - revise variance estimates
         # var_f is the V in Horne87
-        if not forced:
+        if forced:
+            var_f = variances
+        else:
             var_f = readnoise**2.0 + np.abs(P * f0 + sky) / gain
 
         # step 7 - cosmic ray mask, only start considering after the
@@ -292,7 +291,7 @@ def optimal_extraction_marsh89(
         Detector readnoise, in electrons.
     apwidth: int or list of int (default: 7)
         The size of the aperture for extraction.
-    goodpixelmask : 2-d numpy array (M, N) (Default: None)
+    goodpixelmask: 2-d numpy array (M, N) (Default: None)
         Equals 0 for bad pixels, 1 for good pixels
     npoly: int (Default: 21)
         Number of profile to be use for polynomial fitting to evaluate

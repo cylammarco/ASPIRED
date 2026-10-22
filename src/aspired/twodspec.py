@@ -17,7 +17,7 @@ from astropy.stats import sigma_clip
 from astroscrappy import detect_cosmics
 from plotly import graph_objects as go
 from plotly import io as pio
-from scipy import ndimage, signal
+from scipy import ndimage, signal, stats
 from spectresc import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
@@ -1821,7 +1821,8 @@ class TwoDSpec:
             or np.nanmax(line_spread_profile) == 0
         ):
             self.logger.warning(
-                "Line spread profile is non-finite or zero; falling back to a narrow Gaussian prior."
+                "Line spread profile is non-finite or zero; falling back to a "
+                "narrow Gaussian prior."
             )
             line_spread_profile = np.zeros_like(line_spread_profile)
             mid = len(line_spread_profile) // 2
@@ -1831,7 +1832,7 @@ class TwoDSpec:
             denom = np.nansum(line_spread_profile)
             if denom == 0 or not np.isfinite(denom):
                 self.logger.warning(
-                    "Line spread profile sum is zero/non-finite; using unit impulse normalization."
+                    "Line spread profile sum is zero/non-finite."
                 )
                 line_spread_profile = np.zeros_like(line_spread_profile)
                 mid = len(line_spread_profile) // 2
@@ -1887,11 +1888,11 @@ class TwoDSpec:
 
         Each spectral slice is convolved with the adjacent one in the spectral
         direction. Basic tests show that the geometrical distortion from one
-        end to the other in the dispersion direction is small. With LT/SPRAT, the
-        linear distortion is less than 0.5%, thus, even provided as an option,
-        the rescale option is set to False by default. Given how unlikely a
-        geometrical distortion correction is needed, higher order correction
-        options are not provided.
+        end to the other in the dispersion direction is small. With LT/SPRAT,
+        the linear distortion is less than 0.5%, thus, even provided as an
+        option, the rescale option is set to False by default. Given how
+        unlikely a geometrical distortion correction is needed, higher order
+        correction options are not provided.
 
         A rough estimation on the background level is done by taking the
         n-th percentile of the slice, a rough guess can improve the
@@ -2264,8 +2265,8 @@ class TwoDSpec:
                 open_iframe=open_iframe,
             )
 
-        if return_jsonstring:
-            return to_return
+            if return_jsonstring:
+                return to_return
 
     def inspect_trace(
         self,
@@ -3166,6 +3167,7 @@ class TwoDSpec:
         filename: str = None,
         open_iframe: bool = False,
         spec_id: Union[int, list, np.ndarray] = None,
+        flux_correction: Union[bool, int, float] = False,
     ):
         """
         Extract the spectra using the traces, support tophat or optimal
@@ -3214,6 +3216,11 @@ class TwoDSpec:
             Available algorithms are horne86 and marsh89
         model: str (Default: 'lowess')
             Choice of model: 'lowess' and 'gauss'.
+        flux_correction: bool or float (Default: False)
+            Set to True to estimate the fraction of flux outside the
+            extraction aperture during Horne86 extraction from the fitted
+            Gaussian line spread function. A positive number is used directly
+            as a multiplicative correction factor for any extraction method.
         bounds: dict
             Limits of the gaussian function: 'amplitude', 'mean' and 'stddev'.
             e.g. {'amplitude': [0.0, 100.0]}
@@ -3300,6 +3307,25 @@ class TwoDSpec:
             spec_id = list(self.spectrum_list.keys())
 
         self.cosmicray_sigma = cosmicray_sigma
+
+        flux_correction_multiplier = None
+        if flux_correction is True:
+            pass
+
+        elif (
+            isinstance(flux_correction, (int, float))
+            and not isinstance(flux_correction, bool)
+            and np.isfinite(flux_correction)
+            and flux_correction > 0
+        ):
+            flux_correction_multiplier = float(flux_correction)
+
+        elif flux_correction is not False:
+            self.logger.error(
+                "flux_correction has to be False, True, or a positive "
+                "float. Flux correction is disabled."
+            )
+            flux_correction = False
 
         to_return = []
 
@@ -3641,7 +3667,42 @@ class TwoDSpec:
                         bad_mask=source_bad_mask,
                     )
 
-                    # Safely assign the extracted profile slice to avoid broadcasting errors
+                    correction_factor = None
+                    if flux_correction is True:
+                        gauss_profile = spec.profile_func.left
+                        sigma = gauss_profile.stddev.value
+                        delta_trace = spec.profile_func.mean_0.value - pos
+                        lower = (
+                            source_pix[0]
+                            + delta_trace
+                            - 0.5
+                            - gauss_profile.mean.value
+                        ) / sigma
+                        upper = (
+                            source_pix[-1]
+                            + delta_trace
+                            + 0.5
+                            - gauss_profile.mean.value
+                        ) / sigma
+                        flux_fraction = stats.norm.cdf(upper) - stats.norm.cdf(
+                            lower
+                        )
+
+                        if np.isfinite(flux_fraction) and flux_fraction > 0:
+                            correction_factor = 1.0 / flux_fraction
+
+                        else:
+                            self.logger.warning(
+                                "Unable to estimate flux correction from the "
+                                "fitted Gaussian line spread function."
+                            )
+
+                    if correction_factor is not None:
+                        count[i] *= correction_factor
+                        count_err[i] *= correction_factor
+
+                    # Safely assign the extracted profile slice to avoid
+                    # broadcasting errors
                     prof_len = profile_end_idx - profile_start_idx
                     if prof_len > 0:
                         profile[i][profile_start_idx:profile_end_idx] = (
@@ -3649,7 +3710,7 @@ class TwoDSpec:
                         )
                     else:
                         self.logger.warning(
-                            "Empty profile slice (start >= end); skipping profile assignment."
+                            "Empty profile slice (start >= end), skipping."
                         )
 
                     if var_i is None:
@@ -3688,6 +3749,10 @@ class TwoDSpec:
                     qmode=qmode,
                     nreject=nreject,
                 )
+
+            if flux_correction_multiplier is not None:
+                count *= flux_correction_multiplier
+                count_err *= flux_correction_multiplier
 
             spec.add_aperture(
                 width_dn, width_up, sep_dn, sep_up, sky_width_dn, sky_width_up

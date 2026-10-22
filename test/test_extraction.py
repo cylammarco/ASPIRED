@@ -228,6 +228,62 @@ def test_gaussian_spectral_extraction():
     )
 
 
+def test_horne_flux_correction():
+    spec_mask = np.arange(10, 900)
+    spatial_mask = np.arange(15, 85)
+    broad_profile = np.exp(-0.5 * ((np.arange(100) - 50) / 3.0) ** 2.0)
+    broad_profile /= broad_profile.sum()
+    broad_gaussian_data = (
+        np.tile(broad_profile[:, np.newaxis], (1, 1000)) * 10000.0 + bg_level
+    )
+
+    dummy_twodspec = spectral_reduction.TwoDSpec(
+        broad_gaussian_data,
+        spatial_mask=spatial_mask,
+        spec_mask=spec_mask,
+        log_file_name=None,
+        log_level="CRITICAL",
+        saxis=1,
+        flip=False,
+        readnoise=0.1,
+        gain=1.0,
+    )
+    trace = np.ones(len(spec_mask)) * 35.0
+    dummy_twodspec.add_trace(trace=trace, trace_sigma=np.ones(len(trace)))
+
+    dummy_twodspec.ap_extract(
+        apwidth=2,
+        skysep=10,
+        skywidth=3,
+        optimal=True,
+        model="gauss",
+    )
+    uncorrected_count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    assert uncorrected_count < 8000.0
+
+    dummy_twodspec.ap_extract(
+        apwidth=2,
+        skysep=10,
+        skywidth=3,
+        optimal=True,
+        model="gauss",
+        flux_correction=True,
+    )
+    corrected_count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    assert np.isclose(corrected_count, 10000.0, rtol=0.03)
+
+    dummy_twodspec.ap_extract(
+        apwidth=2,
+        skysep=10,
+        skywidth=3,
+        optimal=True,
+        model="gauss",
+        flux_correction=1.5,
+    )
+    fixed_count = np.mean(dummy_twodspec.spectrum_list[0].count)
+    assert np.isclose(fixed_count, uncorrected_count * 1.5)
+
+
 def test_gaussian_spectral_extraction_top_hat_low_signal():
     # masking
     spec_mask = np.arange(10, 900)
