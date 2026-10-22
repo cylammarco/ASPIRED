@@ -267,6 +267,27 @@ def test_telluric_uncalibrated_data():
     onedspec.add_telluric_function(lambda x: np.ones_like(x))
 
 
+def test_flux_calibration_preserves_science_metadata():
+    onedspec = make_flux()
+    science = onedspec.science_spectrum_list[0]
+    standard = onedspec.standard_spectrum_list[0]
+    science_header = fits.Header({"EXPTIME": 100.0, "OBJECT": "science"})
+    standard_header = fits.Header({"EXPTIME": 10.0, "OBJECT": "standard"})
+
+    science.add_spectrum_header(science_header)
+    standard.add_spectrum_header(standard_header)
+    onedspec.apply_flux_calibration(stype="science")
+
+    assert science.exptime == 100.0
+    assert science.spectrum_header["OBJECT"] == "science"
+    assert science.standard_header["OBJECT"] == "standard"
+    assert science.sensitivity_func is not None
+
+    science.create_flux_fits()
+    assert science.flux_hdulist[0].header["EXPTIME"] == 100.0
+    assert science.flux_hdulist[0].header["XPOSURE"] == 100.0
+
+
 # header modifiers
 def test_modify_arc_and_resampled_headers():
     onedspec = make_flux()
