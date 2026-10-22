@@ -405,11 +405,17 @@ def test_pressure_default_and_bad_sizes():
 @pytest.mark.parametrize("name", ["get_count_continuum", "get_flux_continuum"])
 def test_continuum_fit_method_and_unavailable(name):
     onedspec = make_flux()
-    getattr(onedspec, name)(method="fit")
-    getattr(onedspec, name)(method="fit", median_window=5)
-    getattr(onedspec, name)(method="lowess", frac=0.3)
-    bare = spectral_reduction.OneDSpec(log_file_name=None, log_level="ERROR")
-    getattr(bare, name)()
+    with patch(
+        "aspired.onedspec.get_continuum",
+        side_effect=lambda _wave, values, **_kwargs: np.asarray(values),
+    ):
+        getattr(onedspec, name)(method="fit")
+        getattr(onedspec, name)(method="fit", median_window=5)
+        getattr(onedspec, name)(method="lowess", frac=0.3)
+        bare = spectral_reduction.OneDSpec(
+            log_file_name=None, log_level="ERROR"
+        )
+        getattr(bare, name)()
 
 
 # telluric
