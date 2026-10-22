@@ -39,6 +39,16 @@ def test_cutoff_mask_1D_array():
     util.create_cutoff_mask(np.ones(100))
 
 
+def test_fit_continuum_with_large_flux_values():
+    x = np.arange(20.0)
+    y = np.full(20, 1.0e87)
+
+    continuum = util.get_continuum(x, y, method="fit")
+
+    assert np.all(np.isfinite(continuum))
+    assert np.allclose(continuum, y)
+
+
 @pytest.mark.xfail()
 def test_cutoff_mask_expect_fail_list():
     util.create_cutoff_mask(dummy_image, cutoff=[0, 1000, 60000])

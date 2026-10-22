@@ -318,18 +318,20 @@ def get_continuum(
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
 
-    mask = np.isfinite(y) & ~np.isnan(y) & (y > 0.0)
+    mask = np.isfinite(x) & np.isfinite(y) & (y > 0.0)
 
     assert method in ["fit", "lowess"], (
         "Please choose from 'fit' and " f"'lowess', {method} is provided."
     )
 
     if method == "fit":
+        scale = np.nanmedian(y[mask])
         spectrum = Spectrum1D(
-            flux=y[mask] * u.ct, spectral_axis=x[mask] * u.AA
+            flux=(y[mask] / scale) * u.ct,
+            spectral_axis=x[mask] * u.AA,
         )
         fitted_continuum = fit_generic_continuum(spectrum, **kwargs)
-        continuum = fitted_continuum(x * u.AA).to_value()
+        continuum = fitted_continuum(x * u.AA).to_value() * scale
 
     else:
         continuum = lowess(y[mask], x[mask], xvals=x, **kwargs)
