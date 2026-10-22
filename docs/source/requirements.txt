@@ -1,3 +1,4 @@
 docutils<0.18
 pillow>=6.2.0
+sphinx>=4
 sphinx-rtd-theme

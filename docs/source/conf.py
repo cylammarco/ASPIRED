@@ -11,21 +11,44 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+import ast
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.abspath("../../src"))
 
+
+def get_package_metadata():
+    metadata_file = Path(__file__).parents[2] / "src/aspired/__init__.py"
+    metadata_tree = ast.parse(metadata_file.read_text(encoding="utf-8"))
+    metadata = {}
+
+    for node in metadata_tree.body:
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id.startswith("__")
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+        ):
+            metadata[node.targets[0].id] = node.value.value
+
+    return metadata
+
+
+package_metadata = get_package_metadata()
+
 # -- Project information -----------------------------------------------------
 
-project = "ASPIRED"
-project_copyright = "2017-2026, Marco C Lam"
-author = "Marco C Lam"
-__version__ = "0.6.0"
+project = package_metadata["__project__"]
+project_copyright = package_metadata["__copyright__"]
+author = package_metadata["__author__"]
 
 # The full version, including alpha/beta/rc tags
-version = __version__
-release = __version__
+version = package_metadata["__version__"]
+release = package_metadata["__version__"]
 
 # -- General configuration ---------------------------------------------------
 
