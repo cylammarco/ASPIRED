@@ -41,7 +41,7 @@ jobs:
       continue-on-error: ${{ startsWith(matrix.os, 'windows') &&
         (matrix.python-version == '3.13' || matrix.python-version == '3.14')}}
       run: |
-        pytest --disable-warnings -p no:warnings test --cov=aspired --cov-report=xml --cov-report=term --cov-config=setup.cfg --cov-branch
+        pytest --disable-warnings -p no:warnings test --cov=aspired --cov-report=xml --cov-report=term
         cp .coverage .coverage_${{ matrix.os }}_${{ matrix.python-version }}
         ls -la
     - name: Upload coverage data
