@@ -1326,6 +1326,12 @@ class OneDSpec:
             self.add_science_spectrum_oned(spec_id)
             # fits_file[0] is the empty PrimaryHDU
             try:
+                self.science_spectrum_list[spec_id].add_spectrum_header(
+                    fits_file["count"].header
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
                 self.science_spectrum_list[spec_id].add_trace(
                     fits_file["trace"].data, fits_file["trace_sigma"].data
                 )
@@ -1361,12 +1367,6 @@ class OneDSpec:
             try:
                 self.science_spectrum_list[spec_id].add_readnoise(
                     fits_file["count"].header["RNOISE"]
-                )
-            except KeyError as err:
-                self.logger.warning(err)
-            try:
-                self.science_spectrum_list[spec_id].add_exptime(
-                    fits_file["count"].header["XPOSURE"]
                 )
             except KeyError as err:
                 self.logger.warning(err)
@@ -1412,6 +1412,12 @@ class OneDSpec:
 
         if "standard" in stype_split:
             try:
+                self.standard_spectrum_list[0].add_spectrum_header(
+                    fits_file["count"].header
+                )
+            except KeyError as err:
+                self.logger.warning(err)
+            try:
                 self.standard_spectrum_list[0].add_trace(
                     fits_file["trace"].data, fits_file["trace_sigma"].data
                 )
@@ -1446,12 +1452,6 @@ class OneDSpec:
             try:
                 self.standard_spectrum_list[0].add_readnoise(
                     fits_file["count"].header["RNOISE"]
-                )
-            except KeyError as err:
-                self.logger.warning(err)
-            try:
-                self.standard_spectrum_list[0].add_exptime(
-                    fits_file["count"].header["XPOSURE"]
                 )
             except KeyError as err:
                 self.logger.warning(err)

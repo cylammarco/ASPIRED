@@ -1604,9 +1604,9 @@ class FluxCalibration(StandardLibrary):
 
         target_spectrum_oned.add_flux(flux, flux_err, flux_sky)
         target_spectrum_oned.add_sensitivity(sensitivity)
-
         # Add the rest of the flux calibration parameters
         target_spectrum_oned.merge(self.spectrum_oned)
+        target_spectrum_oned.add_sensitivity_func(sensitivity_func)
 
         if wave_min is None:
             wave_min = 3500.0

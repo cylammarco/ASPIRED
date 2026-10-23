@@ -531,16 +531,41 @@ class SpectrumOneD:
         if header is not None:
             if isinstance(header, fits.Header):
                 self.spectrum_header = header
-                self.logger.info("spectrum_header is stored.")
             elif isinstance(header[0], fits.Header):
                 self.spectrum_header = header[0]
-                self.logger.info("spectrum_header is stored.")
             else:
                 self.logger.error(
                     "Unsupported type of header is provided: {}. "
                     "Only astropy.io.fits.Header or such in a list or array "
                     "can beaccepted.".format(type(header))
                 )
+                return
+
+            self.logger.info("spectrum_header is stored.")
+
+            if self.exptime is None:
+                for keyword in ("EXPOSURE", "EXPTIME", "XPOSURE"):
+                    if keyword not in self.spectrum_header:
+                        continue
+
+                    try:
+                        exptime = float(self.spectrum_header[keyword])
+                    except (TypeError, ValueError):
+                        self.logger.warning(
+                            "Exposure time header %s is not numeric.", keyword
+                        )
+                        continue
+
+                    if np.isfinite(exptime):
+                        self.add_exptime(exptime)
+                        self.logger.info(
+                            "Exposure time is set from header %s.", keyword
+                        )
+                        break
+
+                    self.logger.warning(
+                        "Exposure time header %s is not finite.", keyword
+                    )
 
     def remove_spectrum_header(self):
         """

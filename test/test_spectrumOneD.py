@@ -1,7 +1,21 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from aspired import spectrum_oneD
+from astropy.io import fits
 from rascal.calibrator import Calibrator
+
+
+def test_spectrum_header_sets_exposure_time():
+    spec = spectrum_oneD.SpectrumOneD(log_file_name=None)
+
+    for keyword in ("EXPOSURE", "EXPTIME", "XPOSURE"):
+        spec.remove_exptime()
+        spec.add_spectrum_header(fits.Header({keyword: 123.0}))
+        assert spec.exptime == 123.0
+
+    spec.add_exptime(456.0)
+    spec.add_spectrum_header(fits.Header({"EXPTIME": 123.0}))
+    assert spec.exptime == 456.0
 
 
 def test_spectrum_oned():

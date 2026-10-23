@@ -267,6 +267,27 @@ def test_telluric_uncalibrated_data():
     onedspec.add_telluric_function(lambda x: np.ones_like(x))
 
 
+def test_flux_calibration_preserves_science_metadata():
+    onedspec = make_flux()
+    science = onedspec.science_spectrum_list[0]
+    standard = onedspec.standard_spectrum_list[0]
+    science_header = fits.Header({"EXPTIME": 100.0, "OBJECT": "science"})
+    standard_header = fits.Header({"EXPTIME": 10.0, "OBJECT": "standard"})
+
+    science.add_spectrum_header(science_header)
+    standard.add_spectrum_header(standard_header)
+    onedspec.apply_flux_calibration(stype="science")
+
+    assert science.exptime == 100.0
+    assert science.spectrum_header["OBJECT"] == "science"
+    assert science.standard_header["OBJECT"] == "standard"
+    assert science.sensitivity_func is not None
+
+    science.create_flux_fits()
+    assert science.flux_hdulist[0].header["EXPTIME"] == 100.0
+    assert science.flux_hdulist[0].header["XPOSURE"] == 100.0
+
+
 # header modifiers
 def test_modify_arc_and_resampled_headers():
     onedspec = make_flux()
@@ -384,11 +405,17 @@ def test_pressure_default_and_bad_sizes():
 @pytest.mark.parametrize("name", ["get_count_continuum", "get_flux_continuum"])
 def test_continuum_fit_method_and_unavailable(name):
     onedspec = make_flux()
-    getattr(onedspec, name)(method="fit")
-    getattr(onedspec, name)(method="fit", median_window=5)
-    getattr(onedspec, name)(method="lowess", frac=0.3)
-    bare = spectral_reduction.OneDSpec(log_file_name=None, log_level="ERROR")
-    getattr(bare, name)()
+    with patch(
+        "aspired.onedspec.get_continuum",
+        side_effect=lambda _wave, values, **_kwargs: np.asarray(values),
+    ):
+        getattr(onedspec, name)(method="fit")
+        getattr(onedspec, name)(method="fit", median_window=5)
+        getattr(onedspec, name)(method="lowess", frac=0.3)
+        bare = spectral_reduction.OneDSpec(
+            log_file_name=None, log_level="ERROR"
+        )
+        getattr(bare, name)()
 
 
 # telluric
