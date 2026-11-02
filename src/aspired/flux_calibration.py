@@ -1086,6 +1086,8 @@ class FluxCalibration(StandardLibrary):
         return_function: bool = True,
         sens_deg: int = 7,
         use_continuum: bool = False,
+        airmass: float = 1.0,
+        extinction_func: Callable = None,
         **kwargs: str,
     ):
         """
@@ -1126,6 +1128,13 @@ class FluxCalibration(StandardLibrary):
         use_continuum: bool (Default: False)
             Set to True to use continuum for finding the sensitivity function.
             If used, the smoothing filter will be applied on the continuum.
+        airmass: float (Default: 1.0)
+            Airmass of the standard observation. When ``extinction_func`` is
+            supplied, the observed counts are corrected to airmass 1.0 before
+            computing the sensitivity curve.
+        extinction_func: callable or None (Default: None)
+            Function that returns atmospheric extinction in magnitudes per
+            airmass for input wavelengths in Angstrom.
         **kwargs:
             keyword arguments for passing to the LOWESS function for getting
             the continuum, see
@@ -1142,16 +1151,26 @@ class FluxCalibration(StandardLibrary):
         # in unit of flux per second. The higher resolution spectrum is
         # resampled to match the lower resolution one.
         if use_continuum:
-            count = np.array(getattr(self.spectrum_oned, "count_continuum"))
+            count = np.array(
+                getattr(self.spectrum_oned, "count_continuum"), copy=True
+            )
 
         else:
-            count = np.array(getattr(self.spectrum_oned, "count"))
+            count = np.array(getattr(self.spectrum_oned, "count"), copy=True)
 
-        count_err = np.array(getattr(self.spectrum_oned, "count_err"))
+        count_err = np.array(
+            getattr(self.spectrum_oned, "count_err"), copy=True
+        )
         wave = np.array(getattr(self.spectrum_oned, "wave"))
         exptime = getattr(self.spectrum_oned, "exptime")
         if exptime is None:
             exptime = 1.0
+
+        if extinction_func is not None:
+            extinction = extinction_func(wave)
+            airmass_factor = 10.0 ** ((extinction * (airmass - 1.0)) / 2.5)
+            count *= airmass_factor
+            count_err *= airmass_factor
 
         self.logger.info(
             (

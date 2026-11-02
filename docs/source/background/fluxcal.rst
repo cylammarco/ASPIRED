@@ -76,6 +76,23 @@ The template is divided by the continuum (with a lowess function) of the observe
 then interpolated by the ``scipy.interpolate.interp1d()``. A `Satvisky Golay smoothing
 <https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.savgol_filter.html>`_ can be applied before the interpolation.
 
+The standard observation is corrected to airmass 1.0 before the sensitivity
+curve is computed. ASPIRED uses the effective airmass from the spectrum, which
+can be set with ``onedspec.add_airmass(..., stype="standard")``; if it is not
+set, it reads the ``AIRMASS`` header keyword by default and then assumes
+airmass 1.0 if the keyword is missing. Pass ``airmass_keyword="KEYWORD"`` to
+``onedspec.get_sensitivity()`` to select another header keyword. The
+atmospheric extinction law defaults to ORM and can be changed with
+``onedspec.set_atmospheric_extinction()``.
+
+After flux calibration, ``onedspec.apply_atmospheric_extinction_correction()``
+corrects each science spectrum to the same airmass 1.0 reference. Its
+``science_airmass`` argument can override the effective science airmass, which
+otherwise comes from ``onedspec.add_airmass(..., stype="science")`` or the
+``AIRMASS`` header. The
+``standard_airmass`` argument is retained for compatibility but is ignored;
+set the standard airmass before computing the sensitivity curve instead.
+
 .. image:: ../_static/fig_06_flux_calibration_diagnostics.jpg
 
 Masking

@@ -92,6 +92,65 @@ def test_sensitivity(mock_show):
     )
 
 
+def test_sensitivity_is_normalized_to_airmass_one():
+    spectrum_oned = SpectrumOneD(log_file_name=None)
+    fluxcal = FluxCalibration(log_file_name=None)
+    count = np.loadtxt(
+        os.path.join(HERE, "test_data", "test_full_run_standard_count.csv"),
+        delimiter=",",
+        skiprows=1,
+    )[:, 0]
+    wavelength = np.loadtxt(
+        os.path.join(
+            HERE, "test_data", "test_full_run_standard_wavelength.csv"
+        ),
+        skiprows=1,
+    )
+    spectrum_oned.add_count(count)
+    spectrum_oned.add_wavelength(wavelength)
+    fluxcal.from_spectrum_oned(spectrum_oned)
+    fluxcal.load_standard("hiltner102")
+
+    baseline = fluxcal.get_sensitivity(
+        return_function=True, smooth=False, mask_range=None
+    )
+    extinction = 0.2
+    corrected = fluxcal.get_sensitivity(
+        return_function=True,
+        smooth=False,
+        mask_range=None,
+        airmass=1.5,
+        extinction_func=lambda wave: np.full_like(wave, extinction),
+    )
+
+    expected_ratio = 10.0 ** (-extinction * (1.5 - 1.0) / 2.5)
+    np.testing.assert_allclose(
+        10.0 ** corrected(wavelength),
+        10.0 ** baseline(wavelength) * expected_ratio,
+    )
+    np.testing.assert_array_equal(spectrum_oned.count, count)
+
+    spectrum_oned.add_count_continuum(count)
+    baseline_continuum = fluxcal.get_sensitivity(
+        return_function=True,
+        smooth=False,
+        mask_range=None,
+        use_continuum=True,
+    )
+    corrected_continuum = fluxcal.get_sensitivity(
+        return_function=True,
+        smooth=False,
+        mask_range=None,
+        use_continuum=True,
+        airmass=1.5,
+        extinction_func=lambda wave: np.full_like(wave, extinction),
+    )
+    np.testing.assert_allclose(
+        10.0 ** corrected_continuum(wavelength),
+        10.0 ** baseline_continuum(wavelength) * expected_ratio,
+    )
+
+
 @patch("plotly.graph_objects.Figure.show")
 def test_fluxcalibration(mock_show):
     hiltner_spectrum_oned = SpectrumOneD(log_file_name=None)

@@ -44,6 +44,13 @@ We are to cover as many use cases as possible. If you would like to apply some r
 11. [x] Apply atmospheric extinction correction.
 12. [x] Apply basic telluric absorption correction.
 
+### Version 0.6.0
+
+Flux calibration and atmospheric extinction correction now use a common
+airmass 1.0 reference. Set the standard observation's airmass with
+`onedspec.add_airmass(..., stype="standard")` when it is not present in the
+`AIRMASS` header.
+
 ### Output
 13. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
 14. [x] Save data in FITS (with header information) or ascii (csv).
