@@ -1152,14 +1152,14 @@ class FluxCalibration(StandardLibrary):
         # resampled to match the lower resolution one.
         if use_continuum:
             count = np.array(
-                getattr(self.spectrum_oned, "count_continuum"), copy=True
+                getattr(self.spectrum_oned, "count_continuum"), dtype=float
             )
 
         else:
-            count = np.array(getattr(self.spectrum_oned, "count"), copy=True)
+            count = np.array(getattr(self.spectrum_oned, "count"), dtype=float)
 
         count_err = np.array(
-            getattr(self.spectrum_oned, "count_err"), copy=True
+            getattr(self.spectrum_oned, "count_err"), dtype=float
         )
         wave = np.array(getattr(self.spectrum_oned, "wave"))
         exptime = getattr(self.spectrum_oned, "exptime")
