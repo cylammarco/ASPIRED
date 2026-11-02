@@ -1169,8 +1169,8 @@ class FluxCalibration(StandardLibrary):
         if extinction_func is not None:
             extinction = extinction_func(wave)
             airmass_factor = 10.0 ** ((extinction * (airmass - 1.0)) / 2.5)
-            count *= airmass_factor
-            count_err *= airmass_factor
+            count = count * airmass_factor
+            count_err = count_err * airmass_factor
 
         self.logger.info(
             (
