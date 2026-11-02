@@ -3685,6 +3685,7 @@ class OneDSpec:
         return_function: bool = False,
         sens_deg: int = 7,
         use_continuum: bool = False,
+        airmass_keyword: str = "AIRMASS",
         **kwargs,
     ):
         """
@@ -3718,6 +3719,9 @@ class OneDSpec:
         use_continuum: bool (Default: False)
             Set to True to use continuum for finding the sensitivity function.
             If used, the smoothing filter will be applied on the continuum.
+        airmass_keyword: str (Default: 'AIRMASS')
+            Header keyword used to read the standard observation's airmass
+            when its effective airmass has not been set directly.
         **kwargs:
             keyword arguments for passing to the LOWESS function for getting
             the continuum, see
@@ -3735,6 +3739,23 @@ class OneDSpec:
             self.get_count_continuum()
 
         if self.standard_wavelength_calibrated:
+            if not self.atmospheric_extinction_correction_available:
+                self.set_atmospheric_extinction()
+
+            standard_spec = self.standard_spectrum_list[0]
+            standard_airmass = standard_spec.airmass
+            if standard_airmass is None:
+                try:
+                    standard_airmass = standard_spec.spectrum_header[
+                        airmass_keyword
+                    ]
+                except (KeyError, TypeError):
+                    self.logger.warning(
+                        f"Standard airmass keyword {airmass_keyword!r} "
+                        "is unavailable; assuming 1.0."
+                    )
+                    standard_airmass = 1.0
+
             self.fluxcal.get_sensitivity(
                 k=k,
                 method=method,
@@ -3745,6 +3766,8 @@ class OneDSpec:
                 return_function=return_function,
                 sens_deg=sens_deg,
                 use_continuum=use_continuum,
+                airmass=standard_airmass,
+                extinction_func=self.extinction_func,
                 **kwargs,
             )
             self.logger.info("Sensitivity curve computed.")
@@ -5156,31 +5179,27 @@ class OneDSpec:
 
     def apply_atmospheric_extinction_correction(
         self,
-        science_airmass: float = None,
-        standard_airmass: float = None,
+        science_airmass: Union[float, str] = None,
+        standard_airmass: Union[float, str] = None,
         spec_id: Union[np.ndarray, list, int] = None,
     ):
         """
-        This is the first step in allowing atmospheric extinction correction
-        of the spectra. Currently it only works if both the science and
-        standard spectra are present and both airmass values are provided.
-        Towards completion, this function should allow atmospheric
-        extinction correction on any meaningful combination of
-        (1) science and/or standard spectrum/a, and (2) airmass of either
-        or both science and standard observations.
+        Correct flux-calibrated science spectra to airmass 1.0. The standard
+        spectrum is normalized to this reference when its sensitivity curve is
+        computed.
 
         Parameters
         ----------
         science_airmass: float, str or None (Default: None)
-            - If None, it will look for the airmass in the header, if the
-              keyword AIRMASS is not found, correction will not be performed.
-            - A string input will be used as the header keyword of the airmass,
-              if the keyword or header is not found, correction will not be
-              performed.
-            - A floatpoint value will override the other two and directly be
-              use as the airmass
+            A float overrides other sources. A string selects the header
+            keyword to use. If None, the effective spectrum airmass is used,
+            followed by the ``AIRMASS`` header value and then 1.0.
         standard_airmass: float, str or None (Default: None)
-            The same as science_airmass.
+            Retained for compatibility. The standard is normalized to
+            airmass 1.0 while computing the sensitivity curve, so this value
+            is not used here. Set the standard airmass with
+            ``add_airmass(..., stype="standard")`` before calling
+            ``get_sensitivity()``.
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum_oned object
 
@@ -5199,38 +5218,10 @@ class OneDSpec:
         standard_spec = self.standard_spectrum_list[0]
 
         if standard_airmass is not None:
-            if isinstance(standard_airmass, (int, float)):
-                standard_am = standard_airmass
-                self.logger.info(f"Airmass is set to be {standard_am}.")
-
-            if isinstance(standard_airmass, str):
-                try:
-                    standard_am = standard_spec.spectrum_header[
-                        standard_airmass
-                    ]
-
-                except Exception as e:
-                    self.logger.warning(str(e))
-
-                    standard_am = 1.0
-                    self.logger.warning(
-                        f"Keyword for airmass: {standard_airmass} cannot be "
-                        "found in header."
-                    )
-                    self.logger.warning("Airmass is set to be 1.0")
-
-        else:
-            try:
-                standard_am = standard_spec.spectrum_header["AIRMASS"]
-
-            except Exception as e:
-                self.logger.warning(str(e))
-
-                standard_am = 1.0
-                self.logger.warning(
-                    "Keyword for airmass: AIRMASS cannot be found in header."
-                )
-                self.logger.warning("Airmass is set to be 1.0")
+            self.logger.warning(
+                "standard_airmass is ignored during extinction correction; "
+                "the sensitivity curve is normalized to airmass 1.0."
+            )
 
         spec_id = self._check_spec_id(spec_id)
 
@@ -5252,7 +5243,8 @@ class OneDSpec:
                         science_am = 1.0
 
             else:
-                if science_airmass is None:
+                science_am = science_spec.airmass
+                if science_am is None:
                     try:
                         science_am = science_spec.spectrum_header["AIRMASS"]
 
@@ -5263,27 +5255,12 @@ class OneDSpec:
             if science_am is None:
                 science_am = 1.0
 
-            self.logger.info(f"Standard airmass is {standard_am}.")
             self.logger.info(f"Science airmass is {science_am}.")
 
             _interpolated_ext = self.extinction_func(science_spec.wave)
-            # Get the atmospheric extinction correction factor
-            science_flux_extinction_factor = 10.0 ** (
-                -(_interpolated_ext * science_am) / 2.5
-            )
-            # note that we are still using the science_spec.wave because we
-            # want to "uncorrect" the atmospheric correction on the standard
-            # star at the wavelength of of the science target
-            standard_flux_extinction_factor = 10.0 ** (
-                -(_interpolated_ext * standard_am) / 2.5
-            )
-
-            # ratio of the +ve flux adjustment due to the airmass of the
-            # science observation, and the -ve flux adjustment due to the
-            # airmass of the standard observation
-            self.extinction_fraction = (
-                science_flux_extinction_factor
-                / standard_flux_extinction_factor
+            # The sensitivity curve is normalized to airmass 1.0.
+            self.extinction_fraction = 10.0 ** (
+                -(_interpolated_ext * (science_am - 1.0)) / 2.5
             )
 
             self.science_spectrum_list[i].add_atm_ext(self.extinction_fraction)

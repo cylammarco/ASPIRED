@@ -1597,6 +1597,76 @@ def test_applying_atmospheric_extinction_correction_wrong_spec_id():
     global_onedspec.apply_atmospheric_extinction_correction(spec_id=1000)
 
 
+def test_atmospheric_extinction_targets_airmass_one():
+    extinction = 0.2
+    global_onedspec.set_atmospheric_extinction(
+        extinction_func=lambda wave: np.full_like(wave, extinction)
+    )
+    science = global_onedspec.science_spectrum_list[0]
+    original_airmass = science.airmass
+    science.add_airmass(1.5)
+    try:
+        global_onedspec.apply_atmospheric_extinction_correction(
+            standard_airmass=2.0
+        )
+    finally:
+        if original_airmass is None:
+            science.remove_airmass()
+        else:
+            science.add_airmass(original_airmass)
+
+    expected_fraction = 10.0 ** (-extinction * (1.5 - 1.0) / 2.5)
+    np.testing.assert_allclose(
+        global_onedspec.extinction_fraction, expected_fraction
+    )
+
+
+def test_sensitivity_uses_standard_airmass():
+    standard = global_onedspec.standard_spectrum_list[0]
+    original_airmass = standard.airmass
+    standard.add_airmass(1.7)
+
+    with (
+        patch.object(global_onedspec, "get_count_continuum"),
+        patch.object(
+            global_onedspec.fluxcal, "get_sensitivity"
+        ) as get_sensitivity,
+    ):
+        global_onedspec.get_sensitivity()
+
+    assert get_sensitivity.call_args.kwargs["airmass"] == 1.7
+    assert callable(get_sensitivity.call_args.kwargs["extinction_func"])
+    if original_airmass is None:
+        standard.remove_airmass()
+    else:
+        standard.add_airmass(original_airmass)
+
+
+def test_sensitivity_reads_custom_standard_airmass_keyword():
+    standard = global_onedspec.standard_spectrum_list[0]
+    original_airmass = standard.airmass
+    original_header = standard.spectrum_header
+    standard.remove_airmass()
+    standard.add_spectrum_header(fits.Header({"OBSAM": 1.7}))
+
+    try:
+        with (
+            patch.object(global_onedspec, "get_count_continuum"),
+            patch.object(
+                global_onedspec.fluxcal, "get_sensitivity"
+            ) as get_sensitivity,
+        ):
+            global_onedspec.get_sensitivity(airmass_keyword="OBSAM")
+
+        assert get_sensitivity.call_args.kwargs["airmass"] == 1.7
+    finally:
+        standard.spectrum_header = original_header
+        if original_airmass is None:
+            standard.remove_airmass()
+        else:
+            standard.add_airmass(original_airmass)
+
+
 @patch("plotly.graph_objects.Figure.show")
 def test_miscellaneous(mock_show):
     global_onedspec.apply_flux_calibration()
