@@ -32,6 +32,7 @@ User Guide
    background/apextract
    background/wavecal
    background/fluxcal
+   background/plotting
 
 .. toctree::
    :maxdepth: 2

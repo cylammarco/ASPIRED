@@ -12,12 +12,17 @@ from importlib.resources import files
 from typing import Callable, Union
 
 import numpy as np
-from plotly import graph_objects as go
-from plotly import io as pio
 from scipy import interpolate as itp
 from spectresc import spectres
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
+from .plotting import (
+    FigureSpec,
+    Panel,
+    Trace,
+    build_figure,
+    finalise_figure,
+)
 from .spectrum_oneD import SpectrumOneD
 
 base_dir = os.path.dirname(__file__)
@@ -548,6 +553,8 @@ class StandardLibrary:
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Display the standard star plot.
@@ -577,98 +584,57 @@ class StandardLibrary:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True (plotly only), the
+        figure object if return_figure is set to True.
 
         """
 
-        fig = go.Figure(
-            layout=dict(
-                autosize=False,
-                height=height,
-                width=width,
-                updatemenus=list(
-                    [
-                        dict(
-                            active=0,
-                            buttons=list(
-                                [
-                                    dict(
-                                        label="Log Scale",
-                                        method="update",
-                                        args=[
-                                            {"visible": [True, True]},
-                                            {
-                                                "title": "Log scale",
-                                                "yaxis": {"type": "log"},
-                                            },
-                                        ],
-                                    ),
-                                    dict(
-                                        label="Linear Scale",
-                                        method="update",
-                                        args=[
-                                            {"visible": [True, False]},
-                                            {
-                                                "title": "Linear scale",
-                                                "yaxis": {"type": "linear"},
-                                            },
-                                        ],
-                                    ),
-                                ]
-                            ),
+        spec = FigureSpec(
+            panels=[
+                Panel(
+                    traces=[
+                        Trace(
+                            kind="line",
+                            x=self.standard_wave_true,
+                            y=self.standard_fluxmag_true,
+                            color="royalblue",
+                            width=4,
                         )
-                    ]
-                ),
-                title="Log scale",
-            )
-        )
-
-        # show the image on the top
-        fig.add_trace(
-            go.Scatter(
-                x=self.standard_wave_true,
-                y=self.standard_fluxmag_true,
-                line=dict(color="royalblue", width=4),
-            )
-        )
-
-        fig.update_layout(
+                    ],
+                    xlabel="Wavelength / A",
+                    ylabel="Flux / ergs cm-2 s-1 A-1",
+                )
+            ],
             title=self.library + ": " + self.target + " " + self.ftype,
-            xaxis_title=r"$\text{Wavelength / A}$",
-            yaxis_title=(
-                r"$\text{Flux / ergs cm}^{-2} \text{s}^{-1}" + "\text{A}^{-1}$"
-            ),
-            hovermode="closest",
-            showlegend=False,
+            width=width,
+            height=height,
+            show_legend=False,
+            scale_toggle=True,
         )
+        fig = build_figure(spec, plot_library)
 
-        if filename is None:
-            filename = "standard"
-
-        if save_fig:
-            fig_type_split = fig_type.split("+")
-
-            for _t in fig_type_split:
-                if _t == "iframe":
-                    pio.write_html(
-                        fig, filename + "." + _t, auto_open=open_iframe
-                    )
-
-                elif _t in ["jpg", "png", "svg", "pdf"]:
-                    pio.write_image(fig, filename + "." + _t)
-
-        if display:
-            if renderer == "default":
-                fig.show()
-
-            else:
-                fig.show(renderer)
-
-        if return_jsonstring:
-            return fig.to_json()
+        return finalise_figure(
+            fig,
+            display=display,
+            renderer=renderer,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            default_filename="standard",
+            open_iframe=open_iframe,
+            return_jsonstring=return_jsonstring,
+            return_figure=return_figure,
+        )
 
 
 class FluxCalibration(StandardLibrary):
@@ -973,6 +939,8 @@ class FluxCalibration(StandardLibrary):
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Display the Telluric profile.
@@ -1002,75 +970,60 @@ class FluxCalibration(StandardLibrary):
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True (plotly only), the
+        figure object if return_figure is set to True.
 
         """
-        fig = go.Figure(
-            layout=dict(
-                autosize=False, height=height, width=width, title="Log scale"
-            )
-        )
-        # show the image on the top
-        self.logger.debug(np.asarray(self.spectrum_oned.wave))
-        self.logger.debug(
-            self.spectrum_oned.telluric_func(
-                np.asarray(self.spectrum_oned.wave)
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=np.asarray(self.spectrum_oned.wave),
-                y=self.spectrum_oned.telluric_func(
-                    np.asarray(self.spectrum_oned.wave)
-                ),
-                line=dict(color="royalblue", width=4),
-                name="Flux",
-            )
-        )
+        wave = np.asarray(self.spectrum_oned.wave)
+        telluric = self.spectrum_oned.telluric_func(wave)
+        self.logger.debug(wave)
+        self.logger.debug(telluric)
 
-        fig.update_layout(
-            hovermode="closest",
+        spec = FigureSpec(
+            panels=[
+                Panel(
+                    traces=[
+                        Trace(
+                            kind="line",
+                            x=wave,
+                            y=telluric,
+                            color="royalblue",
+                            width=4,
+                            name="Flux",
+                        )
+                    ],
+                    xlabel="Wavelength / A",
+                    ylabel="Flux",
+                )
+            ],
             title="Telluric Profile",
-            showlegend=True,
-            xaxis_title=r"$\text{Wavelength / A}$",
-            yaxis_title="Arbitrary",
-            yaxis=dict(title="Flux"),
-            legend=go.layout.Legend(
-                x=0,
-                y=1,
-                traceorder="normal",
-                font=dict(family="sans-serif", size=12, color="black"),
-                bgcolor="rgba(0,0,0,0)",
-            ),
+            width=width,
+            height=height,
         )
+        fig = build_figure(spec, plot_library)
 
-        if filename is None:
-            filename = "telluric_profile"
-
-        if save_fig:
-            fig_type_split = fig_type.split("+")
-
-            for f_type in fig_type_split:
-                if f_type == "iframe":
-                    pio.write_html(
-                        fig, filename + "." + f_type, auto_open=open_iframe
-                    )
-
-                elif f_type in ["jpg", "png", "svg", "pdf"]:
-                    pio.write_image(fig, filename + "." + f_type)
-
-        if display:
-            if renderer == "default":
-                fig.show()
-
-            else:
-                fig.show(renderer)
-
-        if return_jsonstring:
-            return fig.to_json()
+        return finalise_figure(
+            fig,
+            display=display,
+            renderer=renderer,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            default_filename="telluric_profile",
+            open_iframe=open_iframe,
+            return_jsonstring=return_jsonstring,
+            return_figure=return_figure,
+        )
 
     def get_sensitivity(
         self,
@@ -1365,6 +1318,8 @@ class FluxCalibration(StandardLibrary):
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Display the computed sensitivity curve.
@@ -1394,10 +1349,18 @@ class FluxCalibration(StandardLibrary):
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True (plotly only), the
+        figure object if return_figure is set to True.
 
         """
 
@@ -1409,126 +1372,62 @@ class FluxCalibration(StandardLibrary):
         library = getattr(self.spectrum_oned, "library")
         target = getattr(self.spectrum_oned, "target")
 
-        fig = go.Figure(
-            layout=dict(
-                autosize=False,
-                height=height,
-                width=width,
-                updatemenus=list(
-                    [
-                        dict(
-                            active=0,
-                            buttons=list(
-                                [
-                                    dict(
-                                        label="Log Scale",
-                                        method="update",
-                                        args=[
-                                            {"visible": [True, True]},
-                                            {
-                                                "title": "Log scale",
-                                                "yaxis": {"type": "log"},
-                                            },
-                                        ],
-                                    ),
-                                    dict(
-                                        label="Linear Scale",
-                                        method="update",
-                                        args=[
-                                            {"visible": [True, False]},
-                                            {
-                                                "title": "Linear scale",
-                                                "yaxis": {"type": "linear"},
-                                            },
-                                        ],
-                                    ),
-                                ]
-                            ),
-                        )
-                    ]
-                ),
-                title="Log scale",
-            )
+        spec = FigureSpec(
+            panels=[
+                Panel(
+                    traces=[
+                        Trace(
+                            kind="line",
+                            x=wave_literature,
+                            y=flux_literature,
+                            color="royalblue",
+                            width=4,
+                            name="Count / s (Observed)",
+                        ),
+                        Trace(
+                            kind="line",
+                            x=wave_literature,
+                            y=sensitivity,
+                            color="firebrick",
+                            width=4,
+                            name="Sensitivity Curve",
+                            secondary=True,
+                        ),
+                        Trace(
+                            kind="line",
+                            x=wave_literature,
+                            y=10.0 ** sensitivity_func(wave_literature),
+                            color="black",
+                            width=2,
+                            name="Best-fit Sensitivity Curve",
+                            secondary=True,
+                        ),
+                    ],
+                    xlabel="Wavelength / A",
+                    ylabel="Count / s",
+                    y2label="Sensitivity Curve",
+                    y2scale="log",
+                )
+            ],
+            title=library + ": " + target,
+            width=width,
+            height=height,
+            scale_toggle=True,
         )
-        # show the image on the top
-        fig.add_trace(
-            go.Scatter(
-                x=wave_literature,
-                y=flux_literature,
-                line=dict(color="royalblue", width=4),
-                name="Count / s (Observed)",
-            )
+        fig = build_figure(spec, plot_library)
+
+        return finalise_figure(
+            fig,
+            display=display,
+            renderer=renderer,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            default_filename="senscurve",
+            open_iframe=open_iframe,
+            return_jsonstring=return_jsonstring,
+            return_figure=return_figure,
         )
-
-        fig.add_trace(
-            go.Scatter(
-                x=wave_literature,
-                y=sensitivity,
-                yaxis="y2",
-                line=dict(color="firebrick", width=4),
-                name="Sensitivity Curve",
-            )
-        )
-
-        fig.add_trace(
-            go.Scatter(
-                x=wave_literature,
-                y=10.0 ** sensitivity_func(wave_literature),
-                yaxis="y2",
-                line=dict(color="black", width=2),
-                name="Best-fit Sensitivity Curve",
-            )
-        )
-
-        fig.update_layout(
-            title=library + ": " + target, yaxis_title="Count / s"
-        )
-
-        fig.update_layout(
-            hovermode="closest",
-            showlegend=True,
-            xaxis_title=r"$\text{Wavelength / A}$",
-            yaxis=dict(title="Count / s"),
-            yaxis2=dict(
-                title="Sensitivity Curve",
-                type="log",
-                anchor="x",
-                overlaying="y",
-                side="right",
-            ),
-            legend=go.layout.Legend(
-                x=0,
-                y=1,
-                traceorder="normal",
-                font=dict(family="sans-serif", size=12, color="black"),
-                bgcolor="rgba(0,0,0,0)",
-            ),
-        )
-
-        if filename is None:
-            filename = "senscurve"
-
-        if save_fig:
-            fig_type_split = fig_type.split("+")
-
-            for f_type in fig_type_split:
-                if f_type == "iframe":
-                    pio.write_html(
-                        fig, filename + "." + f_type, auto_open=open_iframe
-                    )
-
-                elif f_type in ["jpg", "png", "svg", "pdf"]:
-                    pio.write_image(fig, filename + "." + f_type)
-
-        if display:
-            if renderer == "default":
-                fig.show()
-
-            else:
-                fig.show(renderer)
-
-        if return_jsonstring:
-            return fig.to_json()
 
     def apply_flux_calibration(
         self,
@@ -1545,6 +1444,8 @@ class FluxCalibration(StandardLibrary):
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Apply the computed sensitivity curve. And resample the spectra to
@@ -1588,10 +1489,18 @@ class FluxCalibration(StandardLibrary):
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True (plotly only), the
+        figure object if return_figure is set to True.
 
         """
 
@@ -1649,134 +1558,81 @@ class FluxCalibration(StandardLibrary):
             flux_mask = (np.array(flux).reshape(-1) > flux_low) & (
                 np.array(flux).reshape(-1) < flux_high
             )
-            flux_min = np.log10(
-                np.nanmin(np.array(flux).reshape(-1)[flux_mask])
-            )
-            flux_max = np.log10(
-                np.nanmax(np.array(flux).reshape(-1)[flux_mask])
-            )
+            flux_kept = np.array(flux).reshape(-1)[flux_mask]
+            flux_kept = flux_kept[np.isfinite(flux_kept) & (flux_kept > 0)]
+            if flux_kept.size > 0:
+                flux_range = (flux_kept.min(), flux_kept.max())
+            else:
+                flux_range = None
 
-            fig = go.Figure(
-                layout=dict(
-                    autosize=False,
-                    height=height,
-                    width=width,
-                    updatemenus=list(
-                        [
-                            dict(
-                                active=0,
-                                buttons=list(
-                                    [
-                                        dict(
-                                            label="Log Scale",
-                                            method="update",
-                                            args=[
-                                                {"visible": [True, True]},
-                                                {
-                                                    "title": "Log scale",
-                                                    "yaxis": {"type": "log"},
-                                                },
-                                            ],
-                                        ),
-                                        dict(
-                                            label="Linear Scale",
-                                            method="update",
-                                            args=[
-                                                {"visible": [True, False]},
-                                                {
-                                                    "title": "Linear scale",
-                                                    "yaxis": {
-                                                        "type": "linear"
-                                                    },
-                                                },
-                                            ],
-                                        ),
-                                    ]
-                                ),
-                            )
-                        ]
-                    ),
-                    title="Log scale",
-                )
-            )
-
-            # show the image on the top
-            fig.add_trace(
-                go.Scatter(
+            traces = [
+                Trace(
+                    kind="line",
                     x=wave,
                     y=flux,
-                    line=dict(color="royalblue"),
+                    color="royalblue",
                     name="Flux",
                 )
-            )
-
+            ]
             if flux_err is not None:
-                fig.add_trace(
-                    go.Scatter(
+                traces.append(
+                    Trace(
+                        kind="line",
                         x=wave,
                         y=flux_err,
-                        line=dict(color="firebrick"),
+                        color="firebrick",
                         name="Flux Uncertainty",
                     )
                 )
 
             if flux_sky is not None:
-                fig.add_trace(
-                    go.Scatter(
+                traces.append(
+                    Trace(
+                        kind="line",
                         x=wave,
                         y=flux_sky,
-                        line=dict(color="orange"),
+                        color="orange",
                         name="Sky Flux",
                     )
                 )
 
-            fig.update_layout(
-                hovermode="closest",
-                showlegend=True,
-                xaxis=dict(title="Wavelength / A", range=[wave_min, wave_max]),
-                yaxis=dict(
-                    title="Flux", range=[flux_min, flux_max], type="log"
-                ),
-                legend=go.layout.Legend(
-                    x=0,
-                    y=1,
-                    traceorder="normal",
-                    font=dict(family="sans-serif", size=12, color="black"),
-                    bgcolor="rgba(0,0,0,0)",
-                ),
+            spec = FigureSpec(
+                panels=[
+                    Panel(
+                        traces=traces,
+                        xlabel="Wavelength / A",
+                        ylabel="Flux",
+                        yscale="log",
+                        xrange=(wave_min, wave_max),
+                        yrange=flux_range,
+                    )
+                ],
+                title="Log scale",
+                width=width,
+                height=height,
+                scale_toggle=True,
             )
+            fig = build_figure(spec, plot_library)
 
-            if filename is None:
-                filename = "spectrum_" + str(self.target_spec_id)
-
-            else:
+            if filename is not None:
                 filename = (
                     os.path.splitext(filename)[0]
                     + "_"
                     + str(self.target_spec_id)
                 )
 
-            if save_fig:
-                fig_type_split = fig_type.split("+")
-
-                for f_type in fig_type_split:
-                    if f_type == "iframe":
-                        pio.write_html(
-                            fig, filename + "." + f_type, auto_open=open_iframe
-                        )
-
-                    elif f_type in ["jpg", "png", "svg", "pdf"]:
-                        pio.write_image(fig, filename + "." + f_type)
-
-            if display:
-                if renderer == "default":
-                    fig.show()
-
-                else:
-                    fig.show(renderer)
-
-            if return_jsonstring:
-                return fig.to_json()
+            return finalise_figure(
+                fig,
+                display=display,
+                renderer=renderer,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename,
+                default_filename="spectrum_" + str(self.target_spec_id),
+                open_iframe=open_iframe,
+                return_jsonstring=return_jsonstring,
+                return_figure=return_figure,
+            )
 
     def create_fits(
         self,

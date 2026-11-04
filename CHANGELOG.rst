@@ -16,8 +16,16 @@ Version 0.6.0
     Gaussian line-spread function; a fixed correction factor is also available
     for all extraction algorithms.
 
+  * Diagnostic plots can be drawn with matplotlib (new default) or plotly.
+    The library is chosen globally with ``aspired.set_plot_library()`` or per
+    call with ``plot_library``; ``return_figure`` returns the figure object.
+    All plotting code now lives in ``aspired.plotting``.
+
 * Other changes:
 
+  * matplotlib is a new dependency and plotly requires version 6.1 or later.
+    The ``iframe`` output, ``renderer``, ``return_jsonstring`` and the
+    log/linear buttons are available with plotly only.
   * Exposure time is accounted for when computing sensitivity and applying
     flux calibration.
   * Updated standard-star matching, spectral resampling, and line-spread
