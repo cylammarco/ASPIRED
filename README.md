@@ -51,8 +51,15 @@ airmass 1.0 reference. Set the standard observation's airmass with
 `onedspec.add_airmass(..., stype="standard")` when it is not present in the
 `AIRMASS` header.
 
+Diagnostic plots can now be drawn with either matplotlib (the default) or
+plotly. Select one globally with `aspired.set_plot_library("plotly")`, or for a
+single call with `plot_library="plotly"` in any `inspect_*` method. The plotly
+interactive features (`renderer`, `return_jsonstring`, `iframe` output and the
+log/linear buttons) are plotly-only; use `return_figure=True` to get the
+figure object back from either library. Static plotly exports are kept.
+
 ### Output
-13. [x] Save diagnostic plots in [these formats](https://plotly.com/python/renderers/#setting-the-default-renderer).
+13. [x] Save diagnostic plots (matplotlib or plotly, jpg/png/svg/pdf, plus interactive html with plotly).
 14. [x] Save data in FITS (with header information) or ascii (csv).
 
 See the examples of these use cases at [aspired-example](https://github.com/cylammarco/ASPIRED-example/).

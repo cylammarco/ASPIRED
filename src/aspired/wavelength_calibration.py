@@ -2,17 +2,22 @@
 import datetime
 import logging
 import os
+import types
 from typing import Union
 
 import numpy as np
-from plotly import graph_objects as go
-from plotly import io as pio
 from rascal.atlas import Atlas
 from rascal.calibrator import Calibrator
 from rascal.util import refine_peaks
 from scipy import signal
-import types
 
+from .plotting import (
+    FigureSpec,
+    Panel,
+    Trace,
+    build_figure,
+    finalise_figure,
+)
 from .spectrum_oneD import SpectrumOneD
 
 __all__ = ["WavelengthCalibration"]
@@ -269,6 +274,8 @@ class WavelengthCalibration:
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
 
@@ -298,10 +305,18 @@ class WavelengthCalibration:
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True. Only used
             if an iframe is saved.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True (plotly only), the
+        figure object if return_figure is set to True.
 
         """
 
@@ -312,64 +327,48 @@ class WavelengthCalibration:
 
         peaks = getattr(self.spectrum_oned, "peaks")
 
-        fig = go.Figure(
-            layout=dict(autosize=False, height=height, width=width)
+        spec = FigureSpec(
+            panels=[
+                Panel(
+                    traces=[
+                        Trace(
+                            kind="line",
+                            x=np.arange(len(arc_spec)),
+                            y=arc_spec,
+                            color="royalblue",
+                            width=1,
+                        ),
+                        Trace(
+                            kind="markers",
+                            x=peaks,
+                            y=np.array(arc_spec)[np.rint(peaks).astype("int")],
+                            color="firebrick",
+                        ),
+                    ],
+                    xlabel="Spectral Direction / pixel",
+                    ylabel="e- / s",
+                    xrange=(0, len(arc_spec)),
+                    yrange=(0, max(arc_spec)),
+                )
+            ],
+            width=width,
+            height=height,
+            show_legend=False,
         )
+        fig = build_figure(spec, plot_library)
 
-        fig.add_trace(
-            go.Scatter(
-                x=np.arange(len(arc_spec)),
-                y=arc_spec,
-                mode="lines",
-                line=dict(color="royalblue", width=1),
-            )
+        return finalise_figure(
+            fig,
+            display=display,
+            renderer=renderer,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            default_filename="arc_lines",
+            open_iframe=open_iframe,
+            return_jsonstring=return_jsonstring,
+            return_figure=return_figure,
         )
-        fig.add_trace(
-            go.Scatter(
-                x=peaks,
-                y=np.array(arc_spec)[np.rint(peaks).astype("int")],
-                mode="markers",
-                line=dict(color="firebrick", width=1),
-            )
-        )
-
-        fig.update_layout(
-            xaxis=dict(
-                zeroline=False,
-                range=[0, len(arc_spec)],
-                title="Spectral Direction / pixel",
-            ),
-            yaxis=dict(
-                zeroline=False, range=[0, max(arc_spec)], title="e- / s"
-            ),
-            hovermode="closest",
-            showlegend=False,
-        )
-
-        if filename is None:
-            filename = "arc_lines"
-
-        if save_fig:
-            fig_type_split = fig_type.split("+")
-
-            for t in fig_type_split:
-                if t == "iframe":
-                    pio.write_html(
-                        fig, filename + "." + t, auto_open=open_iframe
-                    )
-
-                elif t in ["jpg", "png", "svg", "pdf"]:
-                    pio.write_image(fig, filename + "." + t)
-
-        if display:
-            if renderer == "default":
-                fig.show()
-
-            else:
-                fig.show(renderer)
-
-        if return_jsonstring:
-            return fig.to_json()
 
     def find_arc_lines(
         self,
@@ -1042,7 +1041,10 @@ class WavelengthCalibration:
                 logging.warning("pairs list is empty. Try generating now.")
                 self_._generate_pairs()
                 # If still empty, log error but continue to let downstream raise if needed
-                if isinstance(self_.pairs, np.ndarray) and self_.pairs.size == 0:
+                if (
+                    isinstance(self_.pairs, np.ndarray)
+                    and self_.pairs.size == 0
+                ):
                     logging.error("pairs list is still empty.")
 
             # Proceed as in rascal
@@ -1059,7 +1061,9 @@ class WavelengthCalibration:
                 )
             else:
                 self_.ht.generate_hough_points(
-                    self_.pairs[:, 0], self_.pairs[:, 1], num_slopes=self_.num_slopes
+                    self_.pairs[:, 0],
+                    self_.pairs[:, 1],
+                    num_slopes=self_.num_slopes,
                 )
 
             self_.ht.bin_hough_points(self_.xbins, self_.ybins)
@@ -1068,7 +1072,9 @@ class WavelengthCalibration:
 
         # Temporarily monkey-patch and call
         try:
-            cal.do_hough_transform = types.MethodType(_safe_to_do_hough_transform, cal)
+            cal.do_hough_transform = types.MethodType(
+                _safe_to_do_hough_transform, cal
+            )
             cal.do_hough_transform(brute_force=brute_force)
         finally:
             if orig_do_hough is not None:
@@ -1085,6 +1091,8 @@ class WavelengthCalibration:
         return_jsonstring: bool = False,
         renderer: str = "default",
         display: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         A wrapper function to plot the search space in the Hough space.
@@ -1117,6 +1125,12 @@ class WavelengthCalibration:
             used.
         display: bool (Default: False)
             Set to True to display disgnostic plot.
+        plot_library: str (Default: None)
+            Accepted for a consistent interface with the other plotting
+            methods. The figure is drawn by rascal, which does not use the
+            ASPIRED plotting selection, so this is ignored.
+        return_figure: bool (Default: False)
+            Accepted for a consistent interface, ignored (see above).
 
         Return
         ------

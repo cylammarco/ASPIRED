@@ -13,13 +13,12 @@ from typing import Callable, Union
 import numpy as np
 from astropy.io import fits
 from astropy.modeling.polynomial import Chebyshev1D
-from plotly import graph_objects as go
-from plotly import io as pio
 from scipy import optimize
 from scipy.interpolate import interp1d
 from spectresc import spectres
 
 from .flux_calibration import FluxCalibration
+from .plotting import FigureSpec, Panel, Trace, build_figure, finalise_figure
 from .spectrum_oneD import SpectrumOneD
 from .twodspec import TwoDSpec
 from .util import get_continuum
@@ -1641,7 +1640,7 @@ class OneDSpec:
                 )
 
         elif stype == "standard":
-            self.standard_spectrum_list[spec_id].add_seeing(
+            self.standard_spectrum_list[0].add_seeing(
                 seeing,
             )
 
@@ -1671,7 +1670,7 @@ class OneDSpec:
                 )
 
         elif stype == "standard":
-            self.standard_spectrum_list[spec_id].add_airmass(
+            self.standard_spectrum_list[0].add_airmass(
                 airmass,
             )
 
@@ -1844,6 +1843,8 @@ class OneDSpec:
         open_iframe: bool = False,
         spec_id: Union[int, list, np.ndarray] = None,
         stype: str = "science+standard",
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Parameters
@@ -1876,15 +1877,25 @@ class OneDSpec:
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
-            'science' and/or 'standard' to indicate type, use '+' as delimiter
+            'science' and/or 'standard' to indicate type, use '+' as
+            delimiter.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True
+        JSON strings if return_jsonstring is set to True, or the figure
+        object if return_figure is set to True.
 
         """
 
         stype_split = stype.split("+")
+        ret = []
 
         if "science" in stype_split:
             if self.science_arc_lines_available:
@@ -1893,11 +1904,10 @@ class OneDSpec:
                 for i in spec_id:
                     if len(spec_id) == 1:
                         filename_i = filename
-
                     else:
                         filename_i = filename + "_" + str(i)
 
-                    self.science_wavecal[i].inspect_arc_lines(
+                    result = self.science_wavecal[i].inspect_arc_lines(
                         display=display,
                         width=width,
                         height=height,
@@ -1907,7 +1917,11 @@ class OneDSpec:
                         fig_type=fig_type,
                         filename=filename_i,
                         open_iframe=open_iframe,
+                        plot_library=plot_library,
+                        return_figure=return_figure,
                     )
+                    if result is not None:
+                        ret.append(result)
 
             else:
                 self.logger.warning(
@@ -1917,7 +1931,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
             if self.standard_arc_lines_available:
-                self.standard_wavecal.inspect_arc_lines(
+                result = self.standard_wavecal.inspect_arc_lines(
                     display=display,
                     width=width,
                     height=height,
@@ -1927,13 +1941,21 @@ class OneDSpec:
                     fig_type=fig_type,
                     filename=filename,
                     open_iframe=open_iframe,
+                    plot_library=plot_library,
+                    return_figure=return_figure,
                 )
+                if result is not None:
+                    ret.append(result)
 
             else:
                 self.logger.warning(
                     "Standard arc spectrum/a are not imported. Nothing to"
                     " inspect."
                 )
+
+        if ret:
+            return ret[0] if len(ret) == 1 else ret
+        return None
 
     def initialise_calibrator(
         self,
@@ -2833,6 +2855,8 @@ class OneDSpec:
         display: bool = False,
         spec_id: Union[int, list, np.ndarray] = None,
         stype: str = "science+standard",
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         A wrapper function to plot the search space in the Hough space.
@@ -2870,17 +2894,25 @@ class OneDSpec:
             The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         """
 
         stype_split = stype.split("+")
+        ret = []
 
         if "science" in stype_split:
             if self.science_hough_pairs_available:
                 spec_id = self._check_spec_id(spec_id)
 
                 for i in spec_id:
-                    self.science_wavecal[i].plot_search_space(
+                    result = self.science_wavecal[i].plot_search_space(
                         fit_coeff=fit_coeff,
                         top_n_candidate=top_n_candidate,
                         weighted=weighted,
@@ -2890,7 +2922,11 @@ class OneDSpec:
                         return_jsonstring=return_jsonstring,
                         renderer=renderer,
                         display=display,
+                        plot_library=plot_library,
+                        return_figure=return_figure,
                     )
+                    if result is not None:
+                        ret.append(result)
                     self.logger.info(
                         "Search area of the Hough space is plotted for the "
                         f"science_spectrum_list for spec_id: {i}."
@@ -2901,7 +2937,7 @@ class OneDSpec:
 
         if "standard" in stype_split:
             if self.standard_hough_pairs_available:
-                self.standard_wavecal.plot_search_space(
+                result = self.standard_wavecal.plot_search_space(
                     fit_coeff=fit_coeff,
                     top_n_candidate=top_n_candidate,
                     weighted=weighted,
@@ -2911,7 +2947,11 @@ class OneDSpec:
                     return_jsonstring=return_jsonstring,
                     renderer=renderer,
                     display=display,
+                    plot_library=plot_library,
+                    return_figure=return_figure,
                 )
+                if result is not None:
+                    ret.append(result)
                 self.logger.info(
                     "Search area of the Hough space is plotted for the "
                     "standard_spectrum_list."
@@ -2919,6 +2959,10 @@ class OneDSpec:
 
             else:
                 self.logger.warning("Standard hour pairs are not available.")
+
+        if ret:
+            return ret[0] if len(ret) == 1 else ret
+        return None
 
     def fit(
         self,
@@ -3624,6 +3668,8 @@ class OneDSpec:
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Parameters
@@ -3651,14 +3697,22 @@ class OneDSpec:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True, or the figure
+        object if return_figure is set to True.
 
         """
 
-        self.fluxcal.inspect_standard(
+        result = self.fluxcal.inspect_standard(
             renderer=renderer,
             return_jsonstring=return_jsonstring,
             display=display,
@@ -3668,11 +3722,14 @@ class OneDSpec:
             fig_type=fig_type,
             filename=filename,
             open_iframe=open_iframe,
+            plot_library=plot_library,
+            return_figure=return_figure,
         )
         self.logger.info("Inspect standard.")
 
-        if return_jsonstring:
-            return return_jsonstring
+        if return_jsonstring or return_figure:
+            return result
+        return None
 
     def get_sensitivity(
         self,
@@ -3823,6 +3880,8 @@ class OneDSpec:
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Parameters
@@ -3850,11 +3909,22 @@ class OneDSpec:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
+
+        Returns
+        -------
+        JSON strings if return_jsonstring is set to True, or the figure
+        object if return_figure is set to True.
 
         """
-
         if self.sensitivity_curve_available:
-            self.fluxcal.inspect_sensitivity(
+            result = self.fluxcal.inspect_sensitivity(
                 renderer=renderer,
                 width=width,
                 height=height,
@@ -3864,13 +3934,18 @@ class OneDSpec:
                 fig_type=fig_type,
                 filename=filename,
                 open_iframe=open_iframe,
+                plot_library=plot_library,
+                return_figure=return_figure,
             )
             self.logger.info("Inspect sensitivity function.")
+            if return_jsonstring or return_figure:
+                return result
+            return None
 
-        else:
-            self.logger.warning(
-                "Sensitivity function not available, it cannot be inspected."
-            )
+        self.logger.warning(
+            "Sensitivity function not available, it cannot be inspected."
+        )
+        return None
 
     def apply_flux_calibration(
         self,
@@ -3888,6 +3963,8 @@ class OneDSpec:
         open_iframe: bool = False,
         spec_id: Union[int, list, np.ndarray] = None,
         stype: str = "science+standard",
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Apply the computed sensitivity curve. And resample the spectra to
@@ -3931,6 +4008,13 @@ class OneDSpec:
             The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         """
 
@@ -3955,6 +4039,8 @@ class OneDSpec:
                         fig_type=fig_type,
                         filename=filename,
                         open_iframe=open_iframe,
+                        plot_library=plot_library,
+                        return_figure=return_figure,
                     )
                     self.science_spectrum_list[i].add_standard_header(
                         self.standard_spectrum_list[0].spectrum_header
@@ -3981,6 +4067,8 @@ class OneDSpec:
                     fig_type=fig_type,
                     filename=filename,
                     open_iframe=open_iframe,
+                    plot_library=plot_library,
+                    return_figure=return_figure,
                 )
                 self.standard_spectrum_list[0].add_standard_header(
                     self.standard_spectrum_list[0].spectrum_header
@@ -4608,6 +4696,8 @@ class OneDSpec:
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Display the Telluric profile.
@@ -4637,10 +4727,18 @@ class OneDSpec:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True, or the figure
+        object if return_figure is set to True.
 
         """
 
@@ -4656,7 +4754,7 @@ class OneDSpec:
             )
             self.standard_telluric_profile_available = True
 
-        self.fluxcal.inspect_telluric_profile(
+        result = self.fluxcal.inspect_telluric_profile(
             display=display,
             renderer=renderer,
             width=width,
@@ -4666,8 +4764,13 @@ class OneDSpec:
             fig_type=fig_type,
             filename=filename,
             open_iframe=open_iframe,
+            plot_library=plot_library,
+            return_figure=return_figure,
         )
         self.logger.info("Inspecting the telluric absorption profile.")
+        if return_jsonstring or return_figure:
+            return result
+        return None
 
     def inspect_telluric_correction(
         self,
@@ -4682,6 +4785,8 @@ class OneDSpec:
         filename: str = None,
         open_iframe: bool = False,
         spec_id: Union[int, list, np.ndarray] = None,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Inspect the Telluric absorption correction on top of the spectra. This
@@ -4719,10 +4824,18 @@ class OneDSpec:
             Open the iframe in the default browser if set to True.
         spec_id: int or None (Default: None)
             The ID corresponding to the spectrum_oned object
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True, or the figure
+        object if return_figure is set to True.
 
         """
 
@@ -4744,15 +4857,11 @@ class OneDSpec:
             self.get_telluric_strength()
 
         spec_id = self._check_spec_id(spec_id)
-
         to_return = []
 
-        # Get the telluric profile
         for i in spec_id:
             spec = self.science_spectrum_list[i]
-
             wave = spec.wave
-
             fluxcount = spec.flux
             fluxcount_name = "Flux"
             fluxcount_continuum = spec.flux_continuum
@@ -4777,149 +4886,89 @@ class OneDSpec:
                 flux_max = np.nanmax(
                     np.array(fluxcount).reshape(-1)[flux_mask]
                 )
-
             else:
                 flux_min = np.nanmin(np.array(fluxcount).reshape(-1))
                 flux_max = np.nanmax(np.array(fluxcount).reshape(-1))
 
-            fig_sci = go.Figure(
-                layout=dict(
-                    autosize=False,
-                    height=height,
-                    width=width,
-                    updatemenus=list(
-                        [
-                            dict(
-                                active=0,
-                                buttons=list(
-                                    [
-                                        dict(
-                                            label="Log Scale",
-                                            method="update",
-                                            args=[
-                                                {"visible": [True, True]},
-                                                {
-                                                    "title": "Log scale",
-                                                    "yaxis": {"type": "log"},
-                                                },
-                                            ],
-                                        ),
-                                        dict(
-                                            label="Linear Scale",
-                                            method="update",
-                                            args=[
-                                                {"visible": [True, False]},
-                                                {
-                                                    "title": "Linear scale",
-                                                    "yaxis": {
-                                                        "type": "linear"
-                                                    },
-                                                },
-                                            ],
-                                        ),
-                                    ]
+            fig = build_figure(
+                FigureSpec(
+                    panels=[
+                        Panel(
+                            traces=[
+                                Trace(
+                                    x=wave,
+                                    y=fluxcount,
+                                    name=fluxcount_name,
+                                    color="royalblue",
                                 ),
-                            )
-                        ]
-                    ),
-                    title="Log scale",
-                )
-            )
-
-            # show the image on the top
-            fig_sci.add_trace(
-                go.Scatter(
-                    x=wave,
-                    y=fluxcount,
-                    line=dict(color="royalblue"),
-                    name=fluxcount_name,
-                )
-            )
-
-            fig_sci.add_trace(
-                go.Scatter(
-                    x=wave,
-                    y=fluxcount_continuum,
-                    line=dict(color="firebrick"),
-                    name="Continuum Flux",
-                )
-            )
-
-            fig_sci.add_trace(
-                go.Scatter(
-                    x=wave,
-                    y=(
-                        fluxcount
-                        + telluric_func(wave) * telluric_factor * factor
-                    ),
-                    line=dict(color="orange"),
-                    name="Telluric Corrected Spectrum",
-                )
-            )
-
-            fig_sci.add_trace(
-                go.Scatter(
-                    x=wave,
-                    y=(telluric_func(wave) * telluric_factor * factor),
-                    line=dict(color="grey"),
-                    name="Telluric Profile",
-                )
-            )
-
-            fig_sci.update_layout(
-                hovermode="closest",
-                showlegend=True,
-                xaxis=dict(title="Wavelength / A"),
-                yaxis=dict(
-                    title="Flux", range=[flux_min, flux_max], type="linear"
-                ),
-                legend=go.layout.Legend(
-                    x=0,
-                    y=1,
-                    traceorder="normal",
-                    font=dict(family="sans-serif", size=12, color="black"),
-                    bgcolor="rgba(0,0,0,0)",
-                ),
-            )
-
-            if filename is None:
-                filename = "telluric_inspection"
-
-            if save_fig:
-                fig_type_split = fig_type.split("+")
-
-                for t in fig_type_split:
-                    if len(spec_id) == 1:
-                        save_path = filename + "." + t
-
-                    else:
-                        save_path = filename + "_" + str(i) + "." + t
-
-                    if t == "iframe":
-                        pio.write_html(
-                            fig_sci, save_path, auto_open=open_iframe
+                                Trace(
+                                    x=wave,
+                                    y=fluxcount_continuum,
+                                    name="Continuum Flux",
+                                    color="firebrick",
+                                ),
+                                Trace(
+                                    x=wave,
+                                    y=(
+                                        fluxcount
+                                        + telluric_func(wave)
+                                        * telluric_factor
+                                        * factor
+                                    ),
+                                    name="Telluric Corrected Spectrum",
+                                    color="orange",
+                                ),
+                                Trace(
+                                    x=wave,
+                                    y=(
+                                        telluric_func(wave)
+                                        * telluric_factor
+                                        * factor
+                                    ),
+                                    name="Telluric Profile",
+                                    color="grey",
+                                ),
+                            ],
+                            title="Log scale",
+                            xlabel="Wavelength / A",
+                            ylabel="Flux",
+                            yscale="log",
+                            yrange=(flux_min, flux_max),
                         )
+                    ],
+                    title="Log scale",
+                    width=width,
+                    height=height,
+                    scale_toggle=True,
+                ),
+                plot_library=plot_library,
+            )
 
-                    elif t in ["jpg", "png", "svg", "pdf"]:
-                        pio.write_image(fig_sci, save_path)
+            filename_i = (
+                filename if filename is not None else "telluric_inspection"
+            )
+            if len(spec_id) > 1:
+                filename_i = filename_i + "_" + str(i)
 
-                    self.logger.info(
-                        f"Figure is saved to {save_path} for the "
-                        f"science_spectrum_list for spec_id: {i}."
-                    )
+            result = finalise_figure(
+                fig,
+                display=display,
+                renderer=renderer,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename_i,
+                default_filename="telluric_inspection",
+                open_iframe=open_iframe,
+                return_jsonstring=return_jsonstring,
+                return_figure=return_figure,
+            )
+            if result is not None:
+                to_return.append(result)
 
-            if display:
-                if renderer == "default":
-                    fig_sci.show()
-
-                else:
-                    fig_sci.show(renderer)
-
-            if return_jsonstring:
-                to_return.append(fig_sci.to_json())
-
-        if return_jsonstring:
-            return to_return
+        if return_jsonstring or return_figure:
+            ret = to_return[0] if len(to_return) == 1 else to_return
+            return ret
+        return None
 
     def apply_telluric_correction(
         self,
@@ -5352,6 +5401,8 @@ class OneDSpec:
         return_jsonstring: bool = False,
         spec_id: Union[int, list, np.ndarray] = None,
         stype: str = "science+standard",
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Parameters
@@ -5392,298 +5443,249 @@ class OneDSpec:
             The ID corresponding to the spectrum_oned object
         stype: str (Default: 'science+standard')
             'science' and/or 'standard' to indicate type, use '+' as delimiter
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         """
 
         stype_split = stype.split("+")
         to_return = []
 
+        def _build_reduced_figure(
+            wave,
+            fluxcount,
+            fluxcount_sky,
+            fluxcount_err,
+            fluxcount_name,
+            fluxcount_sky_name,
+            fluxcount_err_name,
+            fluxcount_continuum,
+            telluric,
+            telluric_factor,
+            telluric_nudge_factor,
+            title,
+            default_name,
+            filename_override,
+        ):
+            wave_array = np.asarray(wave).reshape(-1)
+            flux_array = np.asarray(fluxcount).reshape(-1)
+            mask = (wave_array > wave_min) & (wave_array < wave_max)
+            if np.sum(mask) > 0:
+                flux_low = np.nanpercentile(flux_array[mask], 10) / 1.5
+                flux_high = np.nanpercentile(flux_array[mask], 90) * 1.5
+                flux_mask = (flux_array > flux_low) & (flux_array < flux_high)
+                if np.sum(flux_mask) > 0:
+                    flux_min = np.nanmin(flux_array[flux_mask])
+                    flux_max = np.nanmax(flux_array[flux_mask])
+                else:
+                    flux_min = np.nanmin(flux_array)
+                    flux_max = np.nanmax(flux_array)
+            else:
+                flux_min = np.nanmin(flux_array)
+                flux_max = np.nanmax(flux_array)
+
+            traces = [
+                Trace(
+                    x=wave,
+                    y=fluxcount,
+                    name=fluxcount_name,
+                    color="royalblue",
+                )
+            ]
+            if fluxcount_err is not None:
+                traces.append(
+                    Trace(
+                        x=wave,
+                        y=fluxcount_err,
+                        name=fluxcount_err_name,
+                        color="firebrick",
+                    )
+                )
+            if fluxcount_sky is not None:
+                traces.append(
+                    Trace(
+                        x=wave,
+                        y=fluxcount_sky,
+                        name=fluxcount_sky_name,
+                        color="orange",
+                    )
+                )
+            if telluric is not None:
+                traces.append(
+                    Trace(
+                        x=wave,
+                        y=telluric * telluric_factor * telluric_nudge_factor,
+                        name="Telluric Correction",
+                        color="grey",
+                    )
+                )
+            if fluxcount_continuum is not None:
+                traces.append(
+                    Trace(
+                        x=wave,
+                        y=fluxcount_continuum,
+                        name="Continuum",
+                        color="black",
+                    )
+                )
+
+            fig = build_figure(
+                FigureSpec(
+                    panels=[
+                        Panel(
+                            traces=traces,
+                            title=title,
+                            xlabel="Wavelength / A",
+                            ylabel="Flux",
+                            xscale="linear",
+                            yscale="log",
+                            xrange=(wave_min, wave_max),
+                            yrange=(flux_min, flux_max),
+                        )
+                    ],
+                    title=title,
+                    width=width,
+                    height=height,
+                    show_legend=True,
+                    scale_toggle=True,
+                ),
+                plot_library=plot_library,
+            )
+            result = finalise_figure(
+                fig,
+                display=display,
+                renderer=renderer,
+                save_fig=save_fig,
+                fig_type=fig_type,
+                filename=filename_override,
+                default_filename=default_name,
+                open_iframe=open_iframe,
+                return_jsonstring=return_jsonstring,
+                return_figure=return_figure,
+            )
+            if result is not None:
+                to_return.append(result)
+
         if "science" in stype_split:
             spec_id = self._check_spec_id(spec_id)
 
             for i in spec_id:
                 spec = self.science_spectrum_list[i]
-                telluric = None
-
-                if self.science_wavelength_calibrated:
-                    wave = spec.wave
-
-                    if self.science_flux_calibrated:
-                        if (
-                            atm_ext_corrected
-                            & self.atmospheric_extinction_corrected
-                        ):
-                            if (
-                                telluric_corrected
-                                & self.science_telluric_corrected
-                            ):
-                                fluxcount = (
-                                    spec.flux_atm_ext_telluric_corrected
-                                )
-                                fluxcount_sky = (
-                                    spec.flux_sky_atm_ext_telluric_corrected
-                                )
-                                fluxcount_err = (
-                                    spec.flux_err_atm_ext_telluric_corrected
-                                )
-                                fluxcount_name = "Flux"
-                                fluxcount_sky_name = "Sky Flux"
-                                fluxcount_err_name = "Flux Uncertainty"
-                                telluric = spec.telluric_profile
-                                telluric_factor = spec.telluric_factor
-                                telluric_nudge_factor = (
-                                    spec.telluric_nudge_factor
-                                )
-                                fluxcount_continuum = spec.flux_continuum
-
-                            else:
-                                fluxcount = spec.flux_atm_ext_corrected
-                                fluxcount_sky = spec.flux_sky_atm_ext_corrected
-                                fluxcount_err = spec.flux_err_atm_ext_corrected
-                                fluxcount_name = "Flux"
-                                fluxcount_sky_name = "Sky Flux"
-                                fluxcount_err_name = "Flux Uncertainty"
-                                telluric = spec.telluric_profile
-                                telluric_factor = spec.telluric_factor
-                                telluric_nudge_factor = (
-                                    spec.telluric_nudge_factor
-                                )
-                                fluxcount_continuum = spec.flux_continuum
-
-                        elif (
-                            telluric_corrected
-                            & self.science_telluric_corrected
-                        ):
-                            fluxcount = spec.flux_telluric_corrected
-                            fluxcount_sky = spec.flux_sky_telluric_corrected
-                            fluxcount_err = spec.flux_err_telluric_corrected
-                            fluxcount_name = "Flux"
-                            fluxcount_sky_name = "Sky Flux"
-                            fluxcount_err_name = "Flux Uncertainty"
-                            telluric = spec.telluric_profile
-                            telluric_factor = spec.telluric_factor
-                            telluric_nudge_factor = spec.telluric_nudge_factor
-                            fluxcount_continuum = spec.flux_continuum
-
-                        else:
-                            fluxcount = spec.flux
-                            fluxcount_sky = spec.flux_sky
-                            fluxcount_err = spec.flux_err
-                            fluxcount_name = "Flux"
-                            fluxcount_sky_name = "Sky Flux"
-                            fluxcount_err_name = "Flux Uncertainty"
-                            telluric = spec.telluric_profile
-                            telluric_factor = spec.telluric_factor
-                            telluric_nudge_factor = spec.telluric_nudge_factor
-                            fluxcount_continuum = spec.flux_continuum
-
-                    else:
-                        fluxcount = spec.count
-                        fluxcount_sky = spec.count_sky
-                        fluxcount_err = spec.count_err
-                        fluxcount_name = "Count / (e- / s)"
-                        fluxcount_sky_name = "Sky Count / (e- / s)"
-                        fluxcount_err_name = "Count Uncertainty / (e- / s)"
-                        fluxcount_continuum = spec.count_continuum
-
-                else:
+                if not self.science_wavelength_calibrated:
                     self.logger.warning(
                         "Spectrum is not wavelength "
                         "calibrated, it cannot be plotted."
                     )
                     continue
 
-                wave_mask = (np.array(wave).reshape(-1) > wave_min) & (
-                    np.array(wave).reshape(-1) < wave_max
-                )
-
-                flux_low = (
-                    np.nanpercentile(
-                        np.array(fluxcount).reshape(-1)[wave_mask], 10
-                    )
-                    / 1.5
-                )
-                flux_high = (
-                    np.nanpercentile(
-                        np.array(fluxcount).reshape(-1)[wave_mask], 90
-                    )
-                    * 1.5
-                )
-                flux_mask = (np.array(fluxcount).reshape(-1) > flux_low) & (
-                    np.array(fluxcount).reshape(-1) < flux_high
-                )
-
-                if np.sum(flux_mask) > 0:
-                    flux_min = np.nanmin(
-                        np.array(fluxcount).reshape(-1)[flux_mask]
-                    )
-                    flux_max = np.nanmax(
-                        np.array(fluxcount).reshape(-1)[flux_mask]
-                    )
-
-                else:
-                    flux_min = np.nanmin(np.array(fluxcount).reshape(-1))
-                    flux_max = np.nanmax(np.array(fluxcount).reshape(-1))
-
-                fig_sci = go.Figure(
-                    layout=dict(
-                        autosize=False,
-                        height=height,
-                        width=width,
-                        updatemenus=list(
-                            [
-                                dict(
-                                    active=0,
-                                    buttons=list(
-                                        [
-                                            dict(
-                                                label="Log Scale",
-                                                method="update",
-                                                args=[
-                                                    {"visible": [True, True]},
-                                                    {
-                                                        "title": "Log",
-                                                        "yaxis": {
-                                                            "type": "log"
-                                                        },
-                                                    },
-                                                ],
-                                            ),
-                                            dict(
-                                                label="Linear Scale",
-                                                method="update",
-                                                args=[
-                                                    {"visible": [True, False]},
-                                                    {
-                                                        "title": "Linear",
-                                                        "yaxis": {
-                                                            "type": "linear"
-                                                        },
-                                                    },
-                                                ],
-                                            ),
-                                        ]
-                                    ),
-                                )
-                            ]
-                        ),
-                        title="Science Spectrum",
-                    )
-                )
-
-                # show the image on the top
-                fig_sci.add_trace(
-                    go.Scatter(
-                        x=wave,
-                        y=fluxcount,
-                        line=dict(color="royalblue"),
-                        name=fluxcount_name,
-                    )
-                )
-
-                if fluxcount_err is not None:
-                    fig_sci.add_trace(
-                        go.Scatter(
-                            x=wave,
-                            y=fluxcount_err,
-                            line=dict(color="firebrick"),
-                            name=fluxcount_err_name,
-                        )
-                    )
-
-                if fluxcount_sky is not None:
-                    fig_sci.add_trace(
-                        go.Scatter(
-                            x=wave,
-                            y=fluxcount_sky,
-                            line=dict(color="orange"),
-                            name=fluxcount_sky_name,
-                        )
-                    )
-
-                if telluric is not None:
-                    fig_sci.add_trace(
-                        go.Scatter(
-                            x=wave,
-                            y=telluric
-                            * telluric_factor
-                            * telluric_nudge_factor,
-                            line=dict(color="grey"),
-                            name="Telluric Correction",
-                        )
-                    )
-
-                if fluxcount_continuum is not None:
-                    fig_sci.add_trace(
-                        go.Scatter(
-                            x=wave,
-                            y=fluxcount_continuum,
-                            line=dict(color="black"),
-                            name="Continuum",
-                        )
-                    )
-
-                fig_sci.update_layout(
-                    hovermode="closest",
-                    showlegend=True,
-                    xaxis=dict(
-                        title="Wavelength / A", range=[wave_min, wave_max]
-                    ),
-                    yaxis=dict(
-                        title="Flux", range=[flux_min, flux_max], type="linear"
-                    ),
-                    legend=go.layout.Legend(
-                        x=0,
-                        y=1,
-                        traceorder="normal",
-                        font=dict(family="sans-serif", size=12, color="black"),
-                        bgcolor="rgba(0,0,0,0)",
-                    ),
-                )
-
-                if filename is None:
-                    filename = "spectrum"
-
-                if save_fig:
-                    fig_type_split = fig_type.split("+")
-
-                    for t in fig_type_split:
-                        if len(spec_id) == 1:
-                            save_path = filename + "." + t
-
-                        else:
-                            save_path = filename + "_" + str(i) + "." + t
-
-                        if t == "iframe":
-                            pio.write_html(
-                                fig_sci, save_path, auto_open=open_iframe
+                wave = spec.wave
+                if self.science_flux_calibrated:
+                    if (
+                        atm_ext_corrected
+                        & self.atmospheric_extinction_corrected
+                    ):
+                        if (
+                            telluric_corrected
+                            & self.science_telluric_corrected
+                        ):
+                            fluxcount = spec.flux_atm_ext_telluric_corrected
+                            fluxcount_sky = (
+                                spec.flux_sky_atm_ext_telluric_corrected
                             )
-
-                        elif t in ["jpg", "png", "svg", "pdf"]:
-                            pio.write_image(fig_sci, save_path)
-
-                        self.logger.info(
-                            f"Figure is saved to {save_path} for the "
-                            f"science_spectrum_list for spec_id: {i}."
-                        )
-
-                if display:
-                    if renderer == "default":
-                        fig_sci.show()
-
+                            fluxcount_err = (
+                                spec.flux_err_atm_ext_telluric_corrected
+                            )
+                            fluxcount_name = "Flux"
+                            fluxcount_sky_name = "Sky Flux"
+                            fluxcount_err_name = "Flux Uncertainty"
+                            telluric = spec.telluric_profile
+                            telluric_factor = spec.telluric_factor
+                            telluric_nudge_factor = spec.telluric_nudge_factor
+                            fluxcount_continuum = spec.flux_continuum
+                        else:
+                            fluxcount = spec.flux_atm_ext_corrected
+                            fluxcount_sky = spec.flux_sky_atm_ext_corrected
+                            fluxcount_err = spec.flux_err_atm_ext_corrected
+                            fluxcount_name = "Flux"
+                            fluxcount_sky_name = "Sky Flux"
+                            fluxcount_err_name = "Flux Uncertainty"
+                            telluric = spec.telluric_profile
+                            telluric_factor = spec.telluric_factor
+                            telluric_nudge_factor = spec.telluric_nudge_factor
+                            fluxcount_continuum = spec.flux_continuum
+                    elif telluric_corrected & self.science_telluric_corrected:
+                        fluxcount = spec.flux_telluric_corrected
+                        fluxcount_sky = spec.flux_sky_telluric_corrected
+                        fluxcount_err = spec.flux_err_telluric_corrected
+                        fluxcount_name = "Flux"
+                        fluxcount_sky_name = "Sky Flux"
+                        fluxcount_err_name = "Flux Uncertainty"
+                        telluric = spec.telluric_profile
+                        telluric_factor = spec.telluric_factor
+                        telluric_nudge_factor = spec.telluric_nudge_factor
+                        fluxcount_continuum = spec.flux_continuum
                     else:
-                        fig_sci.show(renderer)
+                        fluxcount = spec.flux
+                        fluxcount_sky = spec.flux_sky
+                        fluxcount_err = spec.flux_err
+                        fluxcount_name = "Flux"
+                        fluxcount_sky_name = "Sky Flux"
+                        fluxcount_err_name = "Flux Uncertainty"
+                        telluric = spec.telluric_profile
+                        telluric_factor = spec.telluric_factor
+                        telluric_nudge_factor = spec.telluric_nudge_factor
+                        fluxcount_continuum = spec.flux_continuum
+                else:
+                    fluxcount = spec.count
+                    fluxcount_sky = spec.count_sky
+                    fluxcount_err = spec.count_err
+                    fluxcount_name = "Count / (e- / s)"
+                    fluxcount_sky_name = "Sky Count / (e- / s)"
+                    fluxcount_err_name = "Count Uncertainty / (e- / s)"
+                    fluxcount_continuum = spec.count_continuum
+                    telluric = None
+                    telluric_factor = 1.0
+                    telluric_nudge_factor = 1.0
 
-                if return_jsonstring:
-                    to_return.append(fig_sci.to_json())
+                if len(spec_id) > 1:
+                    plot_name = (
+                        filename if filename is not None else "spectrum"
+                    )
+                    plot_name = plot_name + "_" + str(i)
+                else:
+                    plot_name = (
+                        filename if filename is not None else "spectrum"
+                    )
+                _build_reduced_figure(
+                    wave=wave,
+                    fluxcount=fluxcount,
+                    fluxcount_sky=fluxcount_sky,
+                    fluxcount_err=fluxcount_err,
+                    fluxcount_name=fluxcount_name,
+                    fluxcount_sky_name=fluxcount_sky_name,
+                    fluxcount_err_name=fluxcount_err_name,
+                    fluxcount_continuum=fluxcount_continuum,
+                    telluric=telluric,
+                    telluric_factor=telluric_factor,
+                    telluric_nudge_factor=telluric_nudge_factor,
+                    title="Science Spectrum",
+                    default_name="spectrum",
+                    filename_override=plot_name,
+                )
 
         if "standard" in stype_split:
-            spec = self.standard_spectrum_list[0]
-            standard_telluric = None
-
-            if self.standard_wavelength_calibrated:
-                standard_wave = spec.wave
-
+            standard_spec = self.standard_spectrum_list[0]
+            if not self.standard_wavelength_calibrated:
+                self.logger.warning(
+                    "Spectrum is not wavelength calibrated, it cannot be plotted."
+                )
+            else:
+                standard_wave = standard_spec.wave
                 if self.standard_flux_calibrated:
                     if (
                         atm_ext_corrected
@@ -5694,292 +5696,129 @@ class OneDSpec:
                             & self.standard_telluric_corrected
                         ):
                             standard_fluxcount = (
-                                spec.flux_atm_ext_telluric_corrected
+                                standard_spec.flux_atm_ext_telluric_corrected
                             )
                             standard_fluxcount_sky = (
-                                spec.flux_sky_atm_ext_telluric_corrected
+                                standard_spec.flux_sky_atm_ext_telluric_corrected
                             )
                             standard_fluxcount_err = (
-                                spec.flux_err_atm_ext_telluric_corrected
+                                standard_spec.flux_err_atm_ext_telluric_corrected
                             )
                             standard_fluxcount_name = "Flux"
                             standard_fluxcount_sky_name = "Sky Flux"
                             standard_fluxcount_err_name = "Flux Uncertainty"
-                            standard_telluric = spec.telluric_profile
-                            standard_telluric_factor = spec.telluric_factor
-                            standard_telluric_nudge_factor = (
-                                spec.telluric_nudge_factor
+                            standard_telluric = standard_spec.telluric_profile
+                            standard_telluric_factor = (
+                                standard_spec.telluric_factor
                             )
-                            standard_fluxcount_continuum = spec.flux_continuum
-
+                            standard_telluric_nudge_factor = (
+                                standard_spec.telluric_nudge_factor
+                            )
+                            standard_fluxcount_continuum = (
+                                standard_spec.flux_continuum
+                            )
                         else:
-                            standard_fluxcount = spec.flux_atm_ext_corrected
+                            standard_fluxcount = (
+                                standard_spec.flux_atm_ext_corrected
+                            )
                             standard_fluxcount_sky = (
-                                spec.flux_sky_atm_ext_corrected
+                                standard_spec.flux_sky_atm_ext_corrected
                             )
                             standard_fluxcount_err = (
-                                spec.flux_err_atm_ext_corrected
+                                standard_spec.flux_err_atm_ext_corrected
                             )
                             standard_fluxcount_name = "Flux"
                             standard_fluxcount_sky_name = "Sky Flux"
                             standard_fluxcount_err_name = "Flux Uncertainty"
-                            standard_telluric = spec.telluric_profile
-                            standard_telluric_factor = spec.telluric_factor
-                            standard_telluric_nudge_factor = (
-                                spec.telluric_nudge_factor
+                            standard_telluric = standard_spec.telluric_profile
+                            standard_telluric_factor = (
+                                standard_spec.telluric_factor
                             )
-                            standard_fluxcount_continuum = spec.flux_continuum
-
+                            standard_telluric_nudge_factor = (
+                                standard_spec.telluric_nudge_factor
+                            )
+                            standard_fluxcount_continuum = (
+                                standard_spec.flux_continuum
+                            )
                     elif telluric_corrected & self.standard_telluric_corrected:
-                        standard_fluxcount = spec.flux_telluric_corrected
+                        standard_fluxcount = (
+                            standard_spec.flux_telluric_corrected
+                        )
                         standard_fluxcount_sky = (
-                            spec.flux_sky_telluric_corrected
+                            standard_spec.flux_sky_telluric_corrected
                         )
                         standard_fluxcount_err = (
-                            spec.flux_err_telluric_corrected
+                            standard_spec.flux_err_telluric_corrected
                         )
                         standard_fluxcount_name = "Flux"
                         standard_fluxcount_sky_name = "Sky Flux"
                         standard_fluxcount_err_name = "Flux Uncertainty"
-                        standard_telluric = spec.telluric_profile
-                        standard_telluric_factor = spec.telluric_factor
-                        standard_telluric_nudge_factor = (
-                            spec.telluric_nudge_factor
+                        standard_telluric = standard_spec.telluric_profile
+                        standard_telluric_factor = (
+                            standard_spec.telluric_factor
                         )
-                        standard_fluxcount_continuum = spec.flux_continuum
-
+                        standard_telluric_nudge_factor = (
+                            standard_spec.telluric_nudge_factor
+                        )
+                        standard_fluxcount_continuum = (
+                            standard_spec.flux_continuum
+                        )
                     else:
-                        standard_fluxcount = spec.flux
-                        standard_fluxcount_sky = spec.flux_sky
-                        standard_fluxcount_err = spec.flux_err
+                        standard_fluxcount = standard_spec.flux
+                        standard_fluxcount_sky = standard_spec.flux_sky
+                        standard_fluxcount_err = standard_spec.flux_err
                         standard_fluxcount_name = "Flux"
                         standard_fluxcount_sky_name = "Sky Flux"
                         standard_fluxcount_err_name = "Flux Uncertainty"
-                        standard_telluric = spec.telluric_profile
-                        standard_telluric_factor = spec.telluric_factor
-                        standard_telluric_nudge_factor = (
-                            spec.telluric_nudge_factor
+                        standard_telluric = standard_spec.telluric_profile
+                        standard_telluric_factor = (
+                            standard_spec.telluric_factor
                         )
-                        standard_fluxcount_continuum = spec.flux_continuum
-
+                        standard_telluric_nudge_factor = (
+                            standard_spec.telluric_nudge_factor
+                        )
+                        standard_fluxcount_continuum = (
+                            standard_spec.flux_continuum
+                        )
                 else:
-                    standard_fluxcount = spec.count
-                    standard_fluxcount_sky = spec.count_sky
-                    standard_fluxcount_err = spec.count_err
+                    standard_fluxcount = standard_spec.count
+                    standard_fluxcount_sky = standard_spec.count_sky
+                    standard_fluxcount_err = standard_spec.count_err
                     standard_fluxcount_name = "Count / (e- / s)"
                     standard_fluxcount_sky_name = "Sky Count / (e- / s)"
                     standard_fluxcount_err_name = (
                         "Count Uncertainty / (e- / s)"
                     )
-                    standard_fluxcount_continuum = spec.count_continuum
+                    standard_fluxcount_continuum = (
+                        standard_spec.count_continuum
+                    )
+                    standard_telluric = None
+                    standard_telluric_factor = 1.0
+                    standard_telluric_nudge_factor = 1.0
 
-            else:
-                self.logger.warning(
-                    "Spectrum is not wavelength "
-                    "calibrated, it cannot be plotted."
-                )
-
-            standard_wave_mask = (
-                np.array(standard_wave).reshape(-1) > wave_min
-            ) & (np.array(standard_wave).reshape(-1) < wave_max)
-            standard_flux_mask = (
-                np.array(standard_fluxcount).reshape(-1)
-                > np.nanpercentile(
-                    np.array(standard_fluxcount).reshape(-1)[
-                        standard_wave_mask
-                    ],
-                    10,
-                )
-                / 1.5
-            ) & (
-                np.array(standard_fluxcount).reshape(-1)
-                < np.nanpercentile(
-                    np.array(standard_fluxcount).reshape(-1)[
-                        standard_wave_mask
-                    ],
-                    90,
-                )
-                * 1.5
-            )
-
-            if np.nansum(standard_flux_mask) > 0:
-                standard_flux_min = np.nanmin(
-                    np.array(standard_fluxcount).reshape(-1)[
-                        standard_flux_mask
-                    ]
-                )
-                standard_flux_max = np.nanmax(
-                    np.array(standard_fluxcount).reshape(-1)[
-                        standard_flux_mask
-                    ]
-                )
-
-            else:
-                standard_flux_min = np.nanmin(
-                    np.array(standard_fluxcount).reshape(-1)
-                )
-                standard_flux_max = np.nanmax(
-                    np.array(standard_fluxcount).reshape(-1)
-                )
-
-            fig_standard = go.Figure(
-                layout=dict(
-                    updatemenus=list(
-                        [
-                            dict(
-                                active=0,
-                                buttons=list(
-                                    [
-                                        dict(
-                                            label="Log Scale",
-                                            method="update",
-                                            args=[
-                                                {"visible": [True, True]},
-                                                {
-                                                    "title": "Log scale",
-                                                    "yaxis": {"type": "log"},
-                                                },
-                                            ],
-                                        ),
-                                        dict(
-                                            label="Linear Scale",
-                                            method="update",
-                                            args=[
-                                                {"visible": [True, False]},
-                                                {
-                                                    "title": "Linear scale",
-                                                    "yaxis": {
-                                                        "type": "linear"
-                                                    },
-                                                },
-                                            ],
-                                        ),
-                                    ]
-                                ),
-                            )
-                        ]
-                    ),
-                    autosize=False,
-                    height=height,
-                    width=width,
+                _build_reduced_figure(
+                    wave=standard_wave,
+                    fluxcount=standard_fluxcount,
+                    fluxcount_sky=standard_fluxcount_sky,
+                    fluxcount_err=standard_fluxcount_err,
+                    fluxcount_name=standard_fluxcount_name,
+                    fluxcount_sky_name=standard_fluxcount_sky_name,
+                    fluxcount_err_name=standard_fluxcount_err_name,
+                    fluxcount_continuum=standard_fluxcount_continuum,
+                    telluric=standard_telluric,
+                    telluric_factor=standard_telluric_factor,
+                    telluric_nudge_factor=standard_telluric_nudge_factor,
                     title="Standard Spectrum",
-                )
-            )
-
-            # show the image on the top
-            fig_standard.add_trace(
-                go.Scatter(
-                    x=standard_wave,
-                    y=standard_fluxcount,
-                    line=dict(color="royalblue"),
-                    name=standard_fluxcount_name,
-                )
-            )
-
-            if standard_fluxcount_err is not None:
-                fig_standard.add_trace(
-                    go.Scatter(
-                        x=standard_wave,
-                        y=standard_fluxcount_err,
-                        line=dict(color="firebrick"),
-                        name=standard_fluxcount_err_name,
-                    )
+                    default_name="spectrum_standard",
+                    filename_override=(
+                        filename
+                        if filename is not None
+                        else "spectrum_standard"
+                    ),
                 )
 
-            if standard_fluxcount_sky is not None:
-                fig_standard.add_trace(
-                    go.Scatter(
-                        x=standard_wave,
-                        y=standard_fluxcount_sky,
-                        line=dict(color="orange"),
-                        name=standard_fluxcount_sky_name,
-                    )
-                )
-
-            if self.fluxcal.standard_fluxmag_true is not None:
-                fig_standard.add_trace(
-                    go.Scatter(
-                        x=self.fluxcal.standard_wave_true,
-                        y=self.fluxcal.standard_fluxmag_true,
-                        line=dict(color="black"),
-                        name="Standard",
-                    )
-                )
-
-            if standard_telluric is not None:
-                fig_standard.add_trace(
-                    go.Scatter(
-                        x=standard_wave,
-                        y=standard_telluric
-                        * standard_telluric_factor
-                        * standard_telluric_nudge_factor,
-                        line=dict(color="grey"),
-                        name="Telluric Correction",
-                    )
-                )
-
-            if standard_fluxcount_continuum is not None:
-                fig_standard.add_trace(
-                    go.Scatter(
-                        x=standard_wave,
-                        y=standard_fluxcount_continuum,
-                        line=dict(color="grey"),
-                        name="Continuum",
-                    )
-                )
-
-            fig_standard.update_layout(
-                hovermode="closest",
-                showlegend=True,
-                xaxis=dict(title="Wavelength / A", range=[wave_min, wave_max]),
-                yaxis=dict(
-                    title="Flux",
-                    range=[standard_flux_min, standard_flux_max],
-                    type="linear",
-                ),
-                legend=go.layout.Legend(
-                    x=0,
-                    y=1,
-                    traceorder="normal",
-                    font=dict(family="sans-serif", size=12, color="black"),
-                    bgcolor="rgba(0,0,0,0)",
-                ),
-            )
-
-            if filename is None:
-                filename = "spectrum_standard"
-
-            if save_fig:
-                fig_type_split = fig_type.split("+")
-
-                for t in fig_type_split:
-                    save_path = filename + "." + t
-
-                    if t == "iframe":
-                        pio.write_html(
-                            fig_standard, save_path, auto_open=open_iframe
-                        )
-
-                    elif t in ["jpg", "png", "svg", "pdf"]:
-                        pio.write_image(fig_standard, save_path)
-
-                    self.logger.info(
-                        f"Figure is saved to {save_path} for the "
-                        "standard_spectrum_list."
-                    )
-
-            if display:
-                if renderer == "default":
-                    fig_standard.show(height=height, width=width)
-
-                else:
-                    fig_standard.show(renderer, height=height, width=width)
-
-            if return_jsonstring:
-                to_return.append(fig_standard.to_json())
-
-        if return_jsonstring:
-            return to_return
+        if return_jsonstring or return_figure:
+            return to_return[0] if len(to_return) == 1 else to_return
 
         if ("science" not in stype_split) and ("standard" not in stype_split):
             error_msg = (
@@ -5988,6 +5827,7 @@ class OneDSpec:
             )
             self.logger.critical(error_msg)
             raise TypeError(error_msg)
+        return None
 
     def resample(
         self,

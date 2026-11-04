@@ -15,9 +15,14 @@ from astropy.io import fits
 from astropy.nddata import CCDData
 from astroscrappy import detect_cosmics
 from ccdproc import Combiner
-from plotly import graph_objects as go
-from plotly import io as pio
 
+from .plotting import (
+    FigureSpec,
+    Panel,
+    Trace,
+    build_figure,
+    finalise_figure,
+)
 from .util import bfixpix, create_bad_pixel_mask, create_cutoff_mask
 
 __all__ = ["ImageReduction", "ImageReducer"]
@@ -2866,6 +2871,8 @@ class ImageReducer:
         fig_type: str = "iframe+png",
         filename: str = None,
         open_iframe: bool = False,
+        plot_library: str = None,
+        return_figure: bool = False,
     ):
         """
         Display the reduced image with a supported plotly renderer or export
@@ -2898,63 +2905,58 @@ class ImageReducer:
             will have different extension.
         open_iframe: bool (Default: False)
             Open the save_iframe in the default browser if set to True.
+        plot_library: str (Default: None)
+            Choose between 'matplotlib' and 'plotly'. None uses the global
+            setting, see plotting.set_plot_library(). The renderer,
+            return_jsonstring, open_iframe and the 'iframe' fig_type are
+            plotly-only.
+        return_figure: bool (Default: False)
+            Set to True to return the matplotlib or plotly figure object.
 
         Returns
         -------
-        JSON strings if return_jsonstring is set to True.
+        JSON strings if return_jsonstring is set to True (plotly only), the
+        figure object if return_figure is set to True.
 
         """
 
-        if log:
-            fig = go.Figure(
-                data=go.Heatmap(
-                    z=np.log10(self.light_reduced), colorscale="Viridis"
+        spec = FigureSpec(
+            panels=[
+                Panel(
+                    traces=[
+                        Trace(
+                            kind="heatmap",
+                            z=(
+                                np.log10(self.light_reduced)
+                                if log
+                                else self.light_reduced
+                            ),
+                            colorscale="Viridis",
+                        )
+                    ],
+                    xlabel="Spectral Direction / pixel",
+                    ylabel="Spatial Direction / pixel",
+                    show_grid=False,
                 )
-            )
-        else:
-            fig = go.Figure(
-                data=go.Heatmap(z=self.light_reduced, colorscale="Viridis")
-            )
-
-        fig.update_layout(
-            yaxis_title="Spatial Direction / pixel",
-            xaxis=dict(
-                zeroline=False,
-                showgrid=False,
-                title="Spectral Direction / pixel",
-            ),
-            bargap=0,
-            hovermode="closest",
-            showlegend=False,
-            autosize=False,
-            height=height,
+            ],
             width=width,
+            height=height,
+            show_legend=False,
         )
+        fig = build_figure(spec, plot_library)
 
-        if filename is None:
-            filename = "reduced_image"
-
-        if save_fig:
-            fig_type_split = fig_type.split("+")
-
-            for f_type in fig_type_split:
-                if f_type == "iframe":
-                    pio.write_html(
-                        fig, filename + "." + f_type, auto_open=open_iframe
-                    )
-
-                elif f_type in ["jpg", "png", "svg", "pdf"]:
-                    pio.write_image(fig, filename + "." + f_type)
-
-        if display:
-            if renderer == "default":
-                fig.show()
-
-            else:
-                fig.show(renderer)
-
-        if return_jsonstring:
-            return fig.to_json()
+        return finalise_figure(
+            fig,
+            display=display,
+            renderer=renderer,
+            save_fig=save_fig,
+            fig_type=fig_type,
+            filename=filename,
+            default_filename="reduced_image",
+            open_iframe=open_iframe,
+            return_jsonstring=return_jsonstring,
+            return_figure=return_figure,
+        )
 
     def list_files(self):
         """

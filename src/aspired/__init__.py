@@ -26,6 +26,7 @@ __credits__ = [
 ]
 
 from . import image_reduction, spectral_reduction, standard_list
+from .plotting import get_plot_library, set_plot_library
 
 __all__ = [
     "image_reduction",
@@ -34,4 +35,6 @@ __all__ = [
     "util",
     "flux_calibration",
     "wavelength_calibration",
+    "set_plot_library",
+    "get_plot_library",
 ]
